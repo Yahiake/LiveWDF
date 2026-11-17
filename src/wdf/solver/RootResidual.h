@@ -62,9 +62,9 @@ public:
                 const unsigned char pin = triodeDomainPin[static_cast<size_t>(o)];
                 TriodeModel::Currents cur;
                 if (pin == 1) {
-                    const double zeeWire = Z[static_cast<size_t>(o) * K + o];
-                    cur.ip = vpk / zeeWire;
-                    cur.dvpk = 1.0 / zeeWire;
+                    const double gShort = 1.0 / (TriodeModel::kShort * Z[static_cast<size_t>(o) * K + o]);
+                    cur.ip = vpk * gShort;
+                    cur.dvpk = gShort;
                 } else if (pin != 2) {
                     cur = comp.tri[dev.compIndex].model.evaluateQuadric(vgint, vpk);
                 }

@@ -156,7 +156,7 @@ public:
                     continue;
                 const double ipq = m.p.kP2 * q * q;
                 if (voPk - zee * ipq < 0.0)
-                    triodeDomainPin[o] = (zee > 0.0) ? 1 : 2;
+                    triodeDomainPin[o] = (zee > 0.0 && voPk > 0.0) ? 1 : 2;
             }
         }
     }
@@ -241,7 +241,7 @@ public:
         double ip = 0.0;
         if (pin == 1) {
             const double zee = zData[static_cast<size_t>(o) * K + o];
-            ip = (zee > 0.0) ? voPk / (2.0 * zee) : 0.0;
+            ip = (zee > 0.0) ? voPk / ((1.0 + TriodeModel::kShort) * zee) : 0.0;
         } else if (pin == 2) {
             ip = 0.0;
         } else if (D >= 0.0) {
