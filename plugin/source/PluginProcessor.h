@@ -228,9 +228,11 @@ private:
     long long acSampleCounter_ = 0;
     double acSampleRate_ = 48000.0;
 
-    // Cached probe voltages for UI
+    /// Probe nets and their engine node, resolved at load; the audio thread
+    /// only writes `probeVoltages_`, and skips the write when the UI holds the lock.
     mutable std::mutex probeMutex_;
-    std::map<std::string, double> cachedProbeVoltages_;
+    std::vector<std::pair<std::string, int>> probeNodes_;
+    std::vector<double> probeVoltages_;
     std::atomic<float> signalActivity_ { 0.0f };
 
     // Circular buffers for dual-trace oscilloscope

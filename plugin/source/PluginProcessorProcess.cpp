@@ -233,20 +233,12 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // **Do not step again here.** An extra step advances the engine's state and
     // makes the probe readout a different circuit from the one just heard.
     {
-        std::lock_guard<std::mutex> pLock(probeMutex_);
-        cachedProbeVoltages_.clear();
-        if (lastNodesL != nullptr) {
-            // **A meter is a thing on the sheet**, so the meters are the scope
-            // parts -- `allProbes()` asks the drawing. The document used to keep
-            // a separate `probes` array beside the circuit, which is the thing
-            // the geometry-only format no longer has: a probe that is not drawn
-            // on a net is not a probe. The answer is keyed by the net it
-            // watches, which is how the schematic canvas wants its voltages.
-            for (const auto& probe : currentDoc_.allProbes()) {
-                const std::string& netName = probe.second;
-                const int pIdx = leftEngine_->nodeIndex(netName);
-                if (pIdx >= 0 && pIdx < static_cast<int>(lastNodesL->size()))
-                    cachedProbeVoltages_[netName] = (*lastNodesL)[static_cast<size_t>(pIdx)];
+        std::unique_lock<std::mutex> pLock(probeMutex_, std::try_to_lock);
+        if (pLock.owns_lock() && lastNodesL != nullptr) {
+            for (size_t i = 0; i < probeNodes_.size(); ++i) {
+                const auto node = static_cast<size_t>(probeNodes_[i].second);
+                if (node < lastNodesL->size())
+                    probeVoltages_[i] = (*lastNodesL)[node];
             }
         }
     }
@@ -285,7 +277,10 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
 std::map<std::string, double> LiveWDFPluginProcessor::getLiveProbeVoltages() const {
     std::lock_guard<std::mutex> lock(probeMutex_);
-    return cachedProbeVoltages_;
+    std::map<std::string, double> voltages;
+    for (size_t i = 0; i < probeNodes_.size(); ++i)
+        voltages[probeNodes_[i].first] = probeVoltages_[i];
+    return voltages;
 }
 
 } // namespace livewdf

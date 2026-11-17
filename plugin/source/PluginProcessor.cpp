@@ -339,6 +339,16 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         return false;
     }
 
+    // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
+    // its scope parts, keyed by the net each one watches, which is how the
+    // schematic canvas wants its voltages.
+    std::vector<std::pair<std::string, int>> probeNodes;
+    for (const auto& probe : doc.allProbes()) {
+        const int idx = newLeft->nodeIndex(probe.second);
+        if (idx >= 0)
+            probeNodes.emplace_back(probe.second, idx);
+    }
+
     {
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
@@ -351,6 +361,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         acSources_ = std::move(acSources);
         acSampleRate_ = effectiveFs;
         acSampleCounter_ = 0;
+        {
+            std::lock_guard<std::mutex> probeLock(probeMutex_);
+            probeVoltages_.assign(probeNodes.size(), 0.0);
+            probeNodes_ = std::move(probeNodes);
+        }
         currentOversamplingFactor_ = factor;
         useHalfBand_ = halfBand;
         if (halfBand) {
