@@ -242,12 +242,6 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         baseSources[i] = c.src[i].dc;
     }
 
-    // The per-block source scratch has one slot per source. This runs on the
-    // message thread while the engine is being rebuilt, never in the audio
-    // callback.
-    svLeft_.assign(baseSources.size(), 0.0);
-    svRight_.assign(baseSources.size(), 0.0);
-
     // The AC sources: those with an amplitude *and* a frequency. The plugin
     // generates their sine itself, because a host's audio is not a sine wave
     // and the engine drives sources with values the caller supplies.
@@ -358,6 +352,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_ = doc.outputFullScaleVolts();
         baseSourceValues_ = std::move(baseSources);
+        svLeft_.assign(baseSourceValues_.size(), 0.0);
+        svRight_.assign(baseSourceValues_.size(), 0.0);
         acSources_ = std::move(acSources);
         acSampleRate_ = effectiveFs;
         acSampleCounter_ = 0;
