@@ -72,6 +72,7 @@ set(LIVEWDF_EDITOR_CORE_SOURCES
 )
 
 add_library(LiveWDF_EditorCore STATIC ${LIVEWDF_EDITOR_CORE_SOURCES})
+set_target_properties(LiveWDF_EditorCore PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(LiveWDF_EditorCore PUBLIC
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0

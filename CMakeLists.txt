@@ -33,6 +33,7 @@ add_library(livewdf STATIC ${LIVEWDF_SOURCES})
 target_include_directories(livewdf PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(livewdf PRIVATE livewdf_options)
+set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # --- Symbol artwork -----------------------------------------------------------
 # The parts' shapes live as SVG files and are embedded into the binary, exactly as
