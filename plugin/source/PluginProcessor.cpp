@@ -392,10 +392,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
             // The switch's starting throw is the one in the file. If a
             // hand-edited file has members of one group disagreeing, the first
-            // member is the group's state -- and the first audio block makes
-            // them agree.
+            // member is the group's state.
             switchGroupStates_.assign(switchGroupsInCircuit_.size(), false);
-            switchGroupAppliedB_.assign(switchGroupsInCircuit_.size(), -1);
             for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
                 for (const auto& member : switchGroupsInCircuit_[i].members) {
                     const auto comp = std::find_if(doc.components.begin(), doc.components.end(),
@@ -409,6 +407,31 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                 }
             }
         }
+
+        potTargets_.clear();
+        const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
+        for (int i = 0; i < potLimit; ++i) {
+            auto* knob = apvts_.getRawParameterValue("pot_" + juce::String(i));
+            for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
+                const bool varRes = member.type == "varres";
+                const int index = varRes ? leftEngine_->varResIndexByName(member.id)
+                                         : leftEngine_->potIndexByName(member.id);
+                if (index >= 0)
+                    potTargets_.push_back({knob, index, varRes});
+            }
+        }
+        switchTargets_.clear();
+        for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
+            for (const auto& member : switchGroupsInCircuit_[i].members) {
+                const int resA = leftEngine_->resIndexByName(member.id + "_A");
+                const int resB = leftEngine_->resIndexByName(member.id + "_B");
+                if (resA >= 0 && resB >= 0)
+                    switchTargets_.push_back({i, resA, resB});
+            }
+        }
+        potMoves_.reserve(potTargets_.size());
+        varResMoves_.reserve(potTargets_.size());
+        resistorMoves_.reserve(2 * switchTargets_.size());
 
         // A new document brings its own pot positions. This is a document load,
         // not a sample-rate rebuild, so the saved `pos` becomes the knob value;
@@ -582,72 +605,28 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
 
-    applySwitchGroupToEnginesLocked(index);
-}
-
-void LiveWDFPluginProcessor::applySwitchGroupToEnginesLocked(int index) {
-    if (!leftEngine_ || index < 0 || index >= static_cast<int>(switchGroupsInCircuit_.size())
-        || index >= static_cast<int>(switchGroupStates_.size()))
-        return;
-
-    const bool throwB = switchGroupStates_[static_cast<size_t>(index)];
-    const int requested = throwB ? 1 : 0;
-
-    // `applyLiveControlsToEngines()` runs every block, but a switch usually has
-    // not moved. Writing an ordinary resistor rebuilds the linear transfer
-    // (~25 us), so only write when the throw actually changes.
-    if (index < static_cast<int>(switchGroupAppliedB_.size())
-        && switchGroupAppliedB_[static_cast<size_t>(index)] == requested)
-        return;
-
-    const double rA = throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms;
-    const double rB = throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms;
-
-    std::vector<std::pair<std::string, double>> updates;
-    updates.reserve(switchGroupsInCircuit_[static_cast<size_t>(index)].members.size() * 2);
-    for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
-        updates.emplace_back(member.id + "_A", rA);
-        updates.emplace_back(member.id + "_B", rB);
-    }
-
-    leftEngine_->setResistances(updates);
-    if (rightEngine_)
-        rightEngine_->setResistances(updates);
-
-    if (index < static_cast<int>(switchGroupAppliedB_.size()))
-        switchGroupAppliedB_[static_cast<size_t>(index)] = requested;
+    applyLiveControlsToEngines();
 }
 
 void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
     if (!leftEngine_) return;
 
-    // Pots and rheostats: one parameter per group, applied to every member.
-    // The parameter count is the APVTS's eight; a document with more groups
-    // than that still plays its saved positions, it just has no more knobs.
-    const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
-    for (int i = 0; i < potLimit; ++i) {
-        const juce::String potId = "pot_" + juce::String(i);
-        auto* param = apvts_.getRawParameterValue(potId);
-        if (param == nullptr)
-            continue;
-
-        const double val = static_cast<double>(param->load());
-        for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
-            if (member.type == "varres") {
-                leftEngine_->setVarResPosition(member.id, val);
-                if (rightEngine_)
-                    rightEngine_->setVarResPosition(member.id, val);
-            } else {
-                leftEngine_->setPotPosition(member.id, val);
-                if (rightEngine_)
-                    rightEngine_->setPotPosition(member.id, val);
-            }
-        }
+    // Every pot and switch member goes to the engine in one batch, so a moved
+    // ganged group re-derives the linear transfer once, not once per member.
+    potMoves_.clear();
+    varResMoves_.clear();
+    resistorMoves_.clear();
+    for (const auto& t : potTargets_)
+        (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, static_cast<double>(t.knob->load()));
+    for (const auto& t : switchTargets_) {
+        const bool throwB = switchGroupStates_[t.group];
+        resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+        resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
     }
 
-    // SPDTs: one switch per group, both resistor branches thrown together.
-    for (int i = 0; i < static_cast<int>(switchGroupsInCircuit_.size()); ++i)
-        applySwitchGroupToEnginesLocked(i);
+    leftEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+    if (rightEngine_)
+        rightEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
 }
 
 // ==============================================================================

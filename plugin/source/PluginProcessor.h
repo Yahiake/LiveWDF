@@ -202,11 +202,13 @@ private:
     std::vector<wdf::LiveControlGroup> switchGroupsInCircuit_;
     std::vector<bool> switchGroupStates_;   // parallel to switchGroupsInCircuit_
 
-    /// The throw last written to the engine's switch resistors, parallel to
-    /// `switchGroupsInCircuit_`; -1 until an engine has been told. Without it
-    /// the per-block control refresh would rebuild the linear transfer for
-    /// every switch even when no throw moved.
-    std::vector<int> switchGroupAppliedB_;
+    /// Engine indices of every grouped member, resolved at load, and the
+    /// per-block batch built from them (reserved at load, so no allocation).
+    struct PotTarget { std::atomic<float>* knob; int index; bool varRes; };
+    struct SwitchTarget { size_t group; int resA; int resB; };
+    std::vector<PotTarget> potTargets_;
+    std::vector<SwitchTarget> switchTargets_;
+    std::vector<std::pair<int, double>> potMoves_, varResMoves_, resistorMoves_;
 
     /// A source that is running an AC signal: which source, how big, how fast.
     ///
@@ -246,7 +248,6 @@ private:
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
     void applyLiveControlsToEngines();
-    void applySwitchGroupToEnginesLocked(int index);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
