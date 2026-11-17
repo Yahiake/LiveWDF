@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The ideal op-amp: the amplifier triangle with two inputs and an output,
+     and **no supply leads**. A real card's V+/V- set its headroom; this part
+     has none to set, so the drawing must not suggest terminals that its pin
+     table does not have.
+
+     Pins at grid (-3,-1) inverting, (-3,1) non-inverting, (3,0) output.
+     10 SVG units = 1 grid square, (0,0) the centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+  <!-- Input leads. -->
+  <path d="M -30 -10 L -15 -10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M -30 10 L -15 10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Output lead. -->
+  <path d="M 15 0 L 30 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Body. -->
+  <path d="M -15 -18 L -15 18 L 15 0 Z" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

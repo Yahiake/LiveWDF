@@ -1,0 +1,131 @@
+cmake_minimum_required(VERSION 3.22)
+project(LiveWDF VERSION 0.1.0 LANGUAGES C CXX)
+
+# --- Language / toolchain -----------------------------------------------------
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+option(LIVEWDF_BUILD_TESTS "Build LiveWDF tests" ON)
+
+# Shared warning options for LiveWDF targets (third_party is included as SYSTEM).
+add_library(livewdf_options INTERFACE)
+if(MSVC)
+    target_compile_options(livewdf_options INTERFACE /W4 /permissive- /utf-8 /D_USE_MATH_DEFINES /arch:AVX2 /D_CRT_SECURE_NO_WARNINGS)
+else()
+    target_compile_options(livewdf_options INTERFACE -Wall -Wextra -Wpedantic -mavx2 -mfma)
+endif()
+
+# --- Core library -------------------------------------------------------------
+# Layout (see docs/ARCHITECTURE.md):
+#   src/spice/    SPICE front end: parser -> netlist IR
+#   src/circuit/  SPQR contraction, R-type scattering, tree compilation
+#   src/devices/  nonlinear device models (triode, pentode, diode)
+#   src/wdf/      engine: dense step, root solve, compile, buffers
+#   src/format/   native .livewdf document/JSON format
+#
+# The core is deliberately JUCE-free. Anything that includes a JUCE header
+# lives under `plugin/` or `editor/`, whose targets own the JUCE include paths.
+file(GLOB_RECURSE LIVEWDF_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+
+add_library(livewdf STATIC ${LIVEWDF_SOURCES})
+target_include_directories(livewdf PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_link_libraries(livewdf PRIVATE livewdf_options)
+
+# --- Symbol artwork -----------------------------------------------------------
+# The parts' shapes live as SVG files and are embedded into the binary, exactly as
+# Celine does it -- so redrawing a resistor is editing a file, not a C++ edit,
+# which is the whole point of porting the loader. Defined here, above both the
+# tests and the editor, because both link it: the editor draws with it, the editor
+# tests walk its type list to catch a missing file.
+#
+# JUCE has to be added first: `juce_add_binary_data` is a JUCE CMake function, so
+# it is not defined until the JUCE subdirectory has been processed.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/JUCE/CMakeLists.txt")
+    add_subdirectory(modules/JUCE EXCLUDE_FROM_ALL)
+endif()
+
+# The glob is CONFIGURE_DEPENDS: dropping a new file in comes back on the next
+# build without re-running CMake by hand. It is recursive because the
+# transistor symbols live in `elements/transistors/`; a non-recursive glob
+# silently skipped them, which is exactly the "BJT is missing" symptom.
+file(GLOB_RECURSE LIVEWDF_ELEMENT_ASSETS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/editor/assets/elements/*.svg")
+
+if(LIVEWDF_ELEMENT_ASSETS AND COMMAND juce_add_binary_data)
+    juce_add_binary_data(LiveWDF_EditorArtwork
+        SOURCES ${LIVEWDF_ELEMENT_ASSETS}
+        NAMESPACE ArtworkData
+    )
+endif()
+
+# The editor's typeface. Jura, bundled rather than asked for by name: the
+# editor cannot assume anything about the machine it runs on, and
+# `juce::Font("Jura", ...)` on a machine without it silently falls back to the
+# platform sans -- which looks like a layout bug rather than a missing font,
+# because every label is suddenly a different width.
+#
+# Jura is under the SIL Open Font License 1.1, whose text is bundled alongside it
+# in `editor/assets/fonts/`.
+file(GLOB LIVEWDF_FONT_ASSETS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/editor/assets/fonts/*.ttf")
+
+if(LIVEWDF_FONT_ASSETS AND COMMAND juce_add_binary_data)
+    # `HEADER_NAME` because every binary-data target generates a header called
+    # `BinaryData.h`, and two of them on one include path means the compiler
+    # picks whichever it likes -- silently, and the symptom is a namespace that
+    # is not there.
+    juce_add_binary_data(LiveWDF_EditorFonts
+        SOURCES ${LIVEWDF_FONT_ASSETS}
+        NAMESPACE FontData
+        HEADER_NAME FontData.h
+    )
+endif()
+
+# --- Tests --------------------------------------------------------------------
+if(LIVEWDF_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# --- Shared Schematic GUI / Standalone Editor ---------------------------------
+# The drawing surface for .livewdf circuits owns the schematic GUI: the model,
+# the canvas and the look. The plugin embeds that canvas read-only, so a file
+# renders identically in both windows.
+#
+# `LiveWDF_EditorCore` is shared, so the editor subdirectory is added whenever
+# either target is enabled. The editor app itself is guarded by
+# `LIVEWDF_BUILD_EDITOR` inside editor/CMakeLists.txt.
+option(LIVEWDF_BUILD_EDITOR "Build LiveWDF Standalone Editor" ON)
+option(LIVEWDF_BUILD_PLUGIN "Build LiveWDF Audio Plugin" ON)
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/JUCE/CMakeLists.txt"
+   AND (LIVEWDF_BUILD_EDITOR OR LIVEWDF_BUILD_PLUGIN))
+    add_subdirectory(editor)
+
+    # The editor tests link `LiveWDF_EditorCore`, so they are added after the
+    # editor target that defines it. They still hang off the tests option.
+    if(LIVEWDF_BUILD_TESTS)
+        add_subdirectory(tests/editor)
+    endif()
+endif()
+
+# --- Audio Plugin (VST3 / Standalone) -----------------------------------------
+# The plugin plays a circuit; its schematic view is the editor's canvas from
+# `LiveWDF_EditorCore`, linked read-only.
+if(LIVEWDF_BUILD_PLUGIN AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/JUCE/CMakeLists.txt")
+    add_subdirectory(plugin)
+endif()
+
+# --- Visual verification harness ----------------------------------------------
+# Renders Celine's editor and ours to PNG, so the appearance of the drawing can
+# be checked by looking at it rather than by trusting a green build. Off by
+# default: it is a development tool, not part of the product, and it compiles
+# Celine's sources when they are present. See docs/FINDINGS_CELINE_EDITOR.md.
+option(LIVEWDF_BUILD_RENDER "Build the PNG render harness" OFF)
+if(LIVEWDF_BUILD_RENDER AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/JUCE/CMakeLists.txt")
+    add_subdirectory(tools/render)
+endif()
+

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- P-channel JFET. 120 x 120 frame; 10 SVG units = 1 grid square.
+     Pins: G (-30,0), D (0,-30), S (0,30).
+
+     DERIVED, not attested: nothing on the sheet is a National Semiconductor JFET -
+     the sheet has no jfet group at all - so this file is `n-jfet.svg`, which is that
+     series' BJT drawing (`g23363`) with the junction's contact applied, with the
+     arrowhead set the other way: pointing AWAY from the plate. Setting it that way
+     is this sheet's own PNP mark - `g23363` and `g23363-6-9` are one drawing with
+     the arrowhead reversed - and is why the N and P files here differ by the arrow
+     alone, as the N and P BJT files do.
+
+     That sheet is MIT (© 2023 Sam Gallagher); this repo is AGPL-3.0, and MIT
+     licenses are compatible with it. The proportions come from the sheet, rescaled
+     into this frame: the body and plate are the same length, the legs bend onto the
+     body at 0.4 of it out from the centre, and the arrowhead is as deep as its own
+     base. The plate's length follows the body's, which is the junction's meaning:
+     the electrode spans the whole contact.
+
+     What differs from the sheet, and why: the series' BJT offsets its two legs
+     across the body, while this frame's drain and source pins sit ON the part's
+     centre line, so the legs run down that line and bend sideways; and the arrowhead
+     is sized to the gate lead our frame has, which is shorter than the sheet's. The
+     weights are the house's multiples rather than the sheet's, which draws every
+     stroke at 6% of the body's length. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     viewBox="-60 -60 120 120" width="120" height="120"
+     fill="none" stroke="#000" stroke-width="1.2"
+     stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-labelledby="title desc">
+  <title id="title">P-channel junction field-effect transistor</title>
+  <desc id="desc">National Semiconductor style JFET: the drain and source legs bend onto one straight body stroke, a gate plate of the same length lies straight against it, and a solid arrowhead on the gate lead points away from that plate.</desc>
+
+  <g id="symbol">
+    <!-- Gate lead, and the gate plate pressed straight against the body: contact, no gap -->
+    <path d="M -30 0 H -12.7" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M -12.7 -11.2 V 11.2" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="butt"/>
+
+    <!-- The body: the same length as the plate, one stroke both legs join -->
+    <path d="M -10.5 -11.2 V 11.2" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="butt"/>
+
+    <!-- Drain, from its pin at (0,-30): run down the centre line, then bend onto the body -->
+    <path d="M 0 -30 V -9 H -10.5" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Source, from its pin at (0,30): the mirror leg -->
+    <path d="M 0 30 V 9 H -10.5" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Gate arrow, pointing away from the plate: the series' P-channel mark -->
+    <path d="M -23 0 L -13.2 -5 L -13.2 5 Z" fill="#000" stroke="none"/>
+  </g>
+</svg>

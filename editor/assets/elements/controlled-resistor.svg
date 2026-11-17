@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Controlled resistor: the resistor's body with a line across the middle.
+
+     The IEC mark for a resistor whose value is under control. **The body is the
+     plain resistor's rectangle** -- the same part, seen a different way -- and
+     the line across it is what says "controlled". An earlier version of this
+     part had no artwork at all, so it was drawn by code in the accent colour,
+     which made it read as a purple box rather than as a resistor.
+
+     Vertical, because the part's pins are: `a` at grid (0,-2) and `b` at grid
+     (0,2), which is SVG (0,-20) and (0,20).
+
+     Convention: 10 SVG units = 1 grid square, (0,0) the centre. Colour ignored. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+  <path d="M 0 -20 L 0 -12" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M 0 20 L 0 12" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M -7 -12 L 7 -12 L 7 12 L -7 12 Z" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+  <!-- The control line across the body. -->
+  <path d="M -9 0 L 9 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+</svg>

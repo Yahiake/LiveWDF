@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- N-channel MOSFET. 120 x 120 frame; 10 SVG units = 1 grid square.
+     Pins: G (-30,0), D (0,-30), S (0,30).
+
+     Redrawn from `SchematicSymbolsSVG-main/Symbols.svg`, the group `<g id="g7-0">`
+     that `symbol_names.json` calls `nmos` inside the National Semiconductor group:
+     the drain and source side is ONE straight stroke that both legs bend onto, and
+     the gate is a SECOND, shorter stroke lying parallel to it with a gap between the
+     two - the gate plate is insulated from the body, which is what makes this a MOS
+     rather than a junction. The gate lead runs up to that plate, and there is no
+     arrowhead anywhere: the glyph carries no polarity mark of its own, which is why
+     the p-channel file here is a derivation rather than an attested drawing.
+
+     That sheet is MIT (© 2023 Sam Gallagher); this repo is AGPL-3.0, and MIT
+     licenses are compatible with it. The group's transforms are flattened and the
+     glyph is rescaled into this frame, so the proportions are the sheet's: the body
+     stroke is 1.667x the gate plate, the gap between the two is 0.33 of the body
+     stroke, and each leg bends onto it at 0.4 of that stroke out from the centre.
+
+     What differs from the sheet, and why: the sheet offsets its two legs from the
+     gate axis (they run at 1.98 units, the body at 0.74, the plate at -0.13), while
+     this frame's drain and source pins sit ON the part's centre line, so the legs
+     run down that line and bend sideways onto the body; and the sheet's leads stop
+     at 2.65 units out, while ours stop at the pins, three grid squares out. The
+     weights are the house's multiples rather than the sheet's, which draws every
+     stroke at 15% of the body stroke. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     viewBox="-60 -60 120 120" width="120" height="120"
+     fill="none" stroke="#000" stroke-width="1.2"
+     stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-labelledby="title desc">
+  <title id="title">N-channel MOSFET</title>
+  <desc id="desc">National Semiconductor style MOS: the drain and source legs bend onto one straight body stroke, and a shorter, parallel gate plate sits between it and the gate lead.</desc>
+
+  <g id="symbol">
+    <!-- Gate lead, and the gate plate: the second, shorter stroke, with a gap -->
+    <path d="M -30 0 H -17.94" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M -17.94 -6.75 V 6.75" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="butt"/>
+
+    <!-- The body: one straight stroke both legs join -->
+    <path d="M -10.5 -11.2 V 11.2" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="butt"/>
+
+    <!-- Drain, from its pin at (0,-30): run down the centre line, then bend onto the body -->
+    <path d="M 0 -30 V -9 H -10.5" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Source, from its pin at (0,30): the mirror leg -->
+    <path d="M 0 30 V 9 H -10.5" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

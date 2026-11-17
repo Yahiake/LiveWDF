@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Signal diode.
+
+     Redrawn from `SchematicSymbolsSVG-main/Symbols.svg`, the group `<g id="g7">`
+     that `symbol_names.json` calls `diode` inside the National Semiconductor
+     group: a solid arrowhead pointing at a bar that is longer than the arrowhead's
+     own back, and the anode lead meeting the arrowhead's notched back rather than
+     stopping short of it. The Céline glyph this file used to hold was the same
+     idea with a plain triangle whose base was as wide as the bar.
+
+     That sheet is MIT (© 2023 Sam Gallagher); this repo is AGPL-3.0, and MIT
+     licenses are compatible with it. The group's transforms are flattened and the
+     glyph is rescaled into this frame, so the PROPORTIONS are the sheet's: the
+     bar is 1.667x the arrowhead's back, and the back is notched 0.068 bar-lengths.
+
+     Two things the sheet cannot give us, and why:
+       * The sheet's diode forks its cathode side around the bar with two elbow
+         leads, because in that era a diode carried a third, sensing terminal.
+         Our frame's cathode pin is one point at grid (0,2), so the cathode lead
+         runs straight into the bar instead - the fork would be stray ink.
+       * The sheet draws every stroke at 15% of the bar's length, which at this
+         part's size reads as a blob, so the weights are this repo's house
+         multiples (1.2 = normal, 1.68 = the bar) instead of the sheet's.
+
+     The house convention, which replacements must follow:
+       * viewBox is -60 -60 120 120, and (0,0) is the part's CENTRE.
+       * 10 SVG units = 1 grid square, so a pin at grid (0,-2) is at (0,-20).
+       * stroke-width 1.2 is the schematic's normal line weight. Heavier lines
+         are multiples of it (1.56 = 1.3x, 1.8 = 1.5x); the app re-strokes at
+         that ratio so lines stay visible when zoomed out.
+       * Colour is ignored - everything is recoloured by the app. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+  <path d="M 0 -20 L 0 -6.45" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M 0 20 L 0 6.25" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M 0 6.45 L 6 -5.1 L 0 -6.45 L -6 -5.1 Z" fill="#000" stroke="none"/>
+  <path d="M -10 6.25 L 10 6.25" fill="none" stroke="#000" stroke-width="1.68" stroke-linecap="round"/>
+</svg>

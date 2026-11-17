@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- DC Rail. 120 x 120 frame; 10 SVG units = 1 grid square.
+     Pin: pos (0,0) at grid (0,0) - connection at centre of rail.
+     A clean horizontal rail bar with an upward power arrow indicator. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     viewBox="-60 -60 120 120" width="120" height="120"
+     fill="none" stroke="#000" stroke-width="1.2"
+     stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-labelledby="title desc">
+  <title id="title">DC Rail</title>
+  <desc id="desc">Horizontal DC supply rail with upward power arrow. Electrical connection at centre of rail.</desc>
+
+  <g id="symbol">
+    <!-- Rail horizontal bar -->
+    <path d="M -16 0 H 16" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Connection pin stub and upward power arrow -->
+    <path d="M 0 3 V -8" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M -5 -3 L 0 -8 L 5 -3" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>

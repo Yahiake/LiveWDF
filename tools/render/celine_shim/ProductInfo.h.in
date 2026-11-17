@@ -1,0 +1,26 @@
+#pragma once
+
+// The harness's stand-in for the plugin's ProductInfo.h.
+//
+// CelineUI's ThemePalette.cpp includes "ProductInfo.h" for two things: the
+// company folder a theme file is stored under, and the application name. A
+// headless render never reads or writes a theme file, so the values are never
+// reached -- but the translation unit still has to compile, and the real header
+// lives in Celine/source, which this harness deliberately does not include.
+//
+// Written here rather than edited into Celine/: the rule is that Celine's files
+// are read-only to us.
+
+#include <juce_core/juce_core.h>
+
+namespace ProductInfo
+{
+    inline constexpr auto companyName = "Celine Audio";
+    inline constexpr auto wordmarkAsset = "designer.svg";
+}
+
+// ThemePalette.cpp also reads PRODUCT_NAME_WITHOUT_VERSION when it builds the
+// stored-file path. A macro, which is how Celine's CMake defines it.
+#ifndef PRODUCT_NAME_WITHOUT_VERSION
+#define PRODUCT_NAME_WITHOUT_VERSION "Celine"
+#endif

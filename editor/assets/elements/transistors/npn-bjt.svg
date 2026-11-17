@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- NPN BJT. 120 x 120 frame; 10 SVG units = 1 grid square.
+     Pins: B (-30,0), C (10,-30), E (10,30).
+
+     Redrawn from `SchematicSymbolsSVG-main/Symbols.svg`, the group `<g id="g23363-6-9">`
+     that `symbol_names.json` calls `npn_bjt` inside the National Semiconductor group
+     (its `pnp_bjt` sibling in the same series is `g23363`, which `pnp-bjt.svg` holds):
+     one straight base bar, the collector and emitter leads coming in from the same
+     side and bent onto it at right angles, and the base lead carrying a solid
+     arrowhead set pointing AWAY from the bar. That is what marks the two polarities
+     in this series, so the N and P files differ by the arrow alone, as the sheet's
+     pair does.
+
+     That sheet is MIT (© 2023 Sam Gallagher); this repo is AGPL-3.0, and MIT
+     licenses are compatible with it. The group's transforms are flattened and the
+     glyph is rescaled into this frame, so the proportions are the sheet's: the base
+     bar is 1.95x the distance between it and the two legs, it overhangs each leg
+     bend by 0.226 of its own length, and the arrowhead is 0.314 of the bar deep.
+
+     What differs from the sheet, and why: the sheet's legs end where the leads
+     happen to run out, at 1.98 units from the bar; ours end on the pin grid, at
+     the collector and emitter pins, so the bends sit on the pins' column. The
+     weights are the house's multiples rather than the sheet's, which draws every
+     stroke at 6% of the bar's length. -->
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     viewBox="-60 -60 120 120" width="120" height="120"
+     fill="none" stroke="#000" stroke-width="1.2"
+     stroke-linecap="round" stroke-linejoin="round"
+     role="img" aria-labelledby="title desc">
+  <title id="title">NPN bipolar junction transistor</title>
+  <desc id="desc">National Semiconductor style BJT: a straight base bar with the collector and emitter leads bent onto it, and a solid arrowhead on the base lead pointing away from the bar.</desc>
+
+  <g id="symbol">
+    <!-- Base lead, and the base bar: one straight stroke, on the pins' centre line -->
+    <path d="M -30 0 H 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+    <path d="M 0 -9.75 V 9.75" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="butt"/>
+
+    <!-- Collector, from its pin at (10,-30): run down, then bend onto the bar -->
+    <path d="M 10 -30 V -5.35 H 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Emitter, from its pin at (10,30): the mirror leg -->
+    <path d="M 10 30 V 5.35 H 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Base arrow, pointing away from the bar: the series' NPN mark -->
+    <path d="M -11.33 0 L -5.25 -3.04 L -5.25 3.04 Z" fill="#000" stroke="none"/>
+  </g>
+</svg>

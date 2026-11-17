@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Variable resistor (rheostat): the resistor's body and leads. **The diagonal
+     arrow is drawn by the app**, like the potentiometer's wiper, because its
+     height is a live reading of the control rather than a fixed mark.
+
+     **The body is the same IEC rectangle the plain resistor uses**, because that
+     is the house style and the two should be recognisably the same part.
+
+     There is **no wiper**: a rheostat has two terminals. The diagonal arrow is a
+     mark through the body, not a third connection -- the potentiometer is the
+     part with the wiper, and it has three pins.
+
+     The symbol is **vertical**, because the part's pins are: `a` at grid (0,-2)
+     and `b` at grid (0,2), which is SVG (0,-20) and (0,20). An earlier version
+     of this file was drawn sideways, so it lay across its own pins.
+
+     Convention: 10 SVG units = 1 grid square, (0,0) the centre. Colour ignored. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+  <path d="M 0 -20 L 0 -12" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M 0 20 L 0 12" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M -7 -12 L 7 -12 L 7 12 L -7 12 Z" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>

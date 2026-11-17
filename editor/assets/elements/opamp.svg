@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Operational amplifier: the amplifier triangle with two inputs, an output,
+     and the two supply leads.
+
+     Pins at grid (-3,-1) inverting, (-3,1) non-inverting, (3,0) output,
+     (0,-3) V+ and (0,3) V-. 10 SVG units = 1 grid square, (0,0) the centre. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 120 120" width="120" height="120">
+  <!-- Input leads. -->
+  <path d="M -30 -10 L -15 -10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M -30 10 L -15 10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Output lead. -->
+  <path d="M 15 0 L 30 0" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Supply leads meet the sloped edges at x=0. -->
+  <path d="M 0 -30 L 0 -9" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M 0 9 L 0 30" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Body. -->
+  <path d="M -15 -18 L -15 18 L 15 0 Z" fill="none" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>
+  <!-- Inverting input mark. -->
+  <path d="M -13 -10 L -9 -10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <!-- Non-inverting input mark. -->
+  <path d="M -13 10 L -9 10" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M -11 8 L -11 12" fill="none" stroke="#000" stroke-width="1.2" stroke-linecap="round"/>
+</svg>
