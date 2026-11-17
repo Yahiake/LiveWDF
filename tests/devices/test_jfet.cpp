@@ -221,10 +221,14 @@ TEST_CASE("JFET closed form matches an independent bracketed solve across bias",
 
                         const double vds = bc.voDs - bc.zdd * fast.id;
                         const double vgs = bc.voGs - bc.zgd * fast.id;
-                        REQUIRE(regionInequalities(m.p, fast.region, vgs, vds));
+                        // On the exact ohmic/saturation boundary the label is down to rounding.
+                        const double vov = (vds < 0.0 ? vgs - vds : vgs) - m.p.Vp;
+                        const bool onBoundary = fast.region != wdf::JfetRegion::Cutoff &&
+                                                std::abs(std::abs(vds) - vov) <= 1e-12;
+                        REQUIRE((onBoundary || regionInequalities(m.p, fast.region, vgs, vds)));
                         const auto e = m.evaluate(vgs, vds);
                         REQUIRE(e.valid);
-                        REQUIRE(e.region == fast.region);
+                        REQUIRE((onBoundary || e.region == fast.region));
                         REQUIRE(e.id == Approx(fast.id).margin(2e-8 * (1.0 + std::abs(fast.id))));
                     }
                 }
