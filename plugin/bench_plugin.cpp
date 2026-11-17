@@ -67,8 +67,6 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
     juce::AudioBuffer<float> input(2, blockSize);
     juce::MidiBuffer midi;
 
-    // One block through the processor also applies the oversampling choice and
-    // rebuilds the engines at the oversampled rate.
     for (int i = 0; i < blockSize; ++i) {
         const float v = 0.25f * static_cast<float>(
             std::sin(2.0 * kPi * 440.0 * static_cast<double>(i) / kSampleRate));

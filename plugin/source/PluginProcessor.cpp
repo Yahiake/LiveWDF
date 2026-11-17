@@ -84,6 +84,7 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts_(*this, nullptr, "Parameters", createParameterLayout()) {
+    startTimerHz(10);
 
     // Initialize oversamplers (2x = factor 1, 4x = factor 2, 8x = factor 3)
     oversampler2x_ = std::make_unique<juce::dsp::Oversampling<float>>(
@@ -98,7 +99,7 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     // a `.livewdf` file (or a host session that restores one).
 }
 
-LiveWDFPluginProcessor::~LiveWDFPluginProcessor() = default;
+LiveWDFPluginProcessor::~LiveWDFPluginProcessor() { stopTimer(); }
 
 bool LiveWDFPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
     const auto& mainIn = layouts.getMainInputChannelSet();
@@ -114,6 +115,8 @@ bool LiveWDFPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
 }
 
 void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    std::unique_lock<std::mutex> engineLock(engineMutex_);
     sampleRate_ = sampleRate;
     samplesPerBlock_ = samplesPerBlock;
 
@@ -126,6 +129,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     oversampler8x_->reset();
     halfBandOversamplerL_.reset();
     halfBandOversamplerR_.reset();
+    engineLock.unlock();
 
     // Scratch for the dry/wet copy. The engine source vectors are sized when a
     // document is built, because their length is the circuit's source count.
@@ -145,6 +149,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 }
 
 void LiveWDFPluginProcessor::releaseResources() {
+    std::lock_guard<std::mutex> lock(engineMutex_);
     oversampler2x_->reset();
     oversampler4x_->reset();
     oversampler8x_->reset();
@@ -152,38 +157,19 @@ void LiveWDFPluginProcessor::releaseResources() {
     halfBandOversamplerR_.reset();
 }
 
-void LiveWDFPluginProcessor::updateOversampler(int factorChoice) {
-    int newFactor = 1;
-    bool newUseHalfband = false;
-    if (factorChoice == 1) { newFactor = 2; newUseHalfband = false; }
-    else if (factorChoice == 2) { newFactor = 4; newUseHalfband = false; }
-    else if (factorChoice == 3) { newFactor = 8; newUseHalfband = false; }
-    else if (factorChoice == 4) { newFactor = 2; newUseHalfband = true; }
-    else if (factorChoice == 5) { newFactor = 4; newUseHalfband = true; }
+// The oversampling choice rebuilds the engines, so it is applied here on the
+// message thread and never in the realtime audio callback.
+void LiveWDFPluginProcessor::timerCallback() {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    if (currentDoc_.components.empty()
+        || static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_)
+        return;
 
-    if (newFactor != currentOversamplingFactor_ || newUseHalfband != useHalfBand_) {
-        currentOversamplingFactor_ = newFactor;
-        useHalfBand_ = newUseHalfband;
-        if (useHalfBand_) {
-            const auto f = (currentOversamplingFactor_ == 4)
-                               ? wdf::OversamplingFactor::X4
-                               : wdf::OversamplingFactor::X2;
-            halfBandOversamplerL_.setFactor(f);
-            halfBandOversamplerR_.setFactor(f);
-            halfBandOversamplerL_.reset();
-            halfBandOversamplerR_.reset();
-        }
-        // Rebuild engines for updated oversampled rate. The circuit is the same,
-        // so do not overwrite the knob positions from the document.
-        //
-        // The *file* is the same too. `loadCircuitDocument` clears the reload
-        // path (a document can come from anywhere), so restore it here; an
-        // oversampling change must not make the Reload button go dead.
-        const juce::File circuitFile = currentFile_;
-        if (!currentDoc_.components.empty())
-            loadCircuitDocument(currentDoc_, false);
-        currentFile_ = circuitFile;
-    }
+    // `loadCircuitDocument` clears the reload path; an oversampling change must
+    // not make the Reload button go dead.
+    const juce::File circuitFile = currentFile_;
+    loadCircuitDocument(currentDoc_, false);
+    currentFile_ = circuitFile;
 }
 
 void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
@@ -325,6 +311,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc,
                                                  bool initializePotParameters) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     lastError_.clear();
 
     // A document loaded from anywhere but a file has no file to reload. The
@@ -333,7 +320,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     // restored from host state.
     currentFile_ = juce::File();
 
-    const double effectiveFs = sampleRate_ * static_cast<double>(currentOversamplingFactor_);
+    attemptedOversamplingChoice_ = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
+    constexpr int kFactors[] = {1, 2, 4, 8, 2, 4};
+    const int factor = kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
+    const bool halfBand = attemptedOversamplingChoice_ >= 4;
+    const double effectiveFs = sampleRate_ * static_cast<double>(factor);
 
     std::unique_ptr<wdf::Engine> newLeft, newRight;
     int inSrcIdx = -1;
@@ -360,6 +351,15 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         acSources_ = std::move(acSources);
         acSampleRate_ = effectiveFs;
         acSampleCounter_ = 0;
+        currentOversamplingFactor_ = factor;
+        useHalfBand_ = halfBand;
+        if (halfBand) {
+            const auto f = factor == 4 ? wdf::OversamplingFactor::X4 : wdf::OversamplingFactor::X2;
+            halfBandOversamplerL_.setFactor(f);
+            halfBandOversamplerR_.setFactor(f);
+            halfBandOversamplerL_.reset();
+            halfBandOversamplerR_.reset();
+        }
 
         // **One control per label.** The editor writes a grouped value to the
         // whole group; the plugin builds a group from the same document and

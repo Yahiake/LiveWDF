@@ -24,9 +24,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     if (numChannels == 0 || numSamples == 0) return;
 
-    // Check oversampling choice parameter
-    const int oversamplingChoice = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
-    updateOversampler(oversamplingChoice);
+    // An offline bounce applies an oversampling change now, not on the next timer tick.
+    if (isNonRealtime())
+        timerCallback();
 
     // Read audio gain parameters
     const float inputTrimDb = *apvts_.getRawParameterValue("input_trim");

@@ -14,7 +14,7 @@
 
 namespace livewdf {
 
-class LiveWDFPluginProcessor : public juce::AudioProcessor {
+class LiveWDFPluginProcessor : public juce::AudioProcessor, private juce::Timer {
 public:
     /// The APVTS layout is fixed when the processor is constructed, so this is
     /// the ceiling on how many document pot groups can get a knob. A document
@@ -137,12 +137,15 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler2x_;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler4x_;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
+    int attemptedOversamplingChoice_ = 0;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     wdf::HalfBandOversampler halfBandOversamplerL_{wdf::OversamplingFactor::X1};
     wdf::HalfBandOversampler halfBandOversamplerR_{wdf::OversamplingFactor::X1};
 
     // Engine instances (stereo pair)
+    // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.
+    std::recursive_mutex loadMutex_;
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
@@ -239,7 +242,7 @@ private:
 
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
-    void updateOversampler(int factorIndex);
+    void timerCallback() override;
     void applyLiveControlsToEngines();
     void applySwitchGroupToEnginesLocked(int index);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
