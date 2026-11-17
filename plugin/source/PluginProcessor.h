@@ -237,11 +237,6 @@ private:
     double sampleRate_ = 48000.0;
     int samplesPerBlock_ = 512;
 
-    /// Diagnostic build: counters for the temporary log in processBlock.
-    /// These do not affect audio and are removed once the failure is found.
-    long long diagBlockCounter_ = 0;
-    double diagLastHeartbeatMs_ = 0.0;
-
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void updateOversampler(int factorIndex);

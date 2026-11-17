@@ -3,71 +3,11 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
-#include <fstream>
 #include <mutex>
-#include <sstream>
 
 namespace livewdf {
-namespace {
 
-// Temporary diagnostic build. This writes a plain-text log only when the
-// engine reports a rejected state, the output or a node is far outside normal,
-// or once a second as a heartbeat. It is deliberately self-contained so it can
-// be removed without touching the audio path's structure.
-constexpr const char* kDiagBuild = "DIAG-2026-11-12-A";
-
-std::mutex gDiagMutex;
-std::ofstream gDiag;
-bool gDiagOpenAttempted = false;
-long long gDiagLines = 0;
-
-void openDiagLocked() {
-    if (gDiagOpenAttempted) return;
-    gDiagOpenAttempted = true;
-
-    auto tryOpen = [](const juce::File& file) {
-        gDiag.open(file.getFullPathName().toStdString(),
-                   std::ios::out | std::ios::app);
-        return gDiag.is_open();
-    };
-
-    juce::File file =
-        juce::File::getSpecialLocation(juce::File::tempDirectory)
-            .getChildFile("LiveWDF_diag.log");
-    if (!tryOpen(file)) {
-        gDiag.clear();
-        file = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
-                   .getChildFile("LiveWDF_diag.log");
-        tryOpen(file);
-    }
-
-    if (gDiag) {
-        gDiag << "\n=== " << kDiagBuild << " "
-              << juce::Time::getCurrentTime().toISO8601(true).toStdString()
-              << " path=" << file.getFullPathName().toStdString() << " ===\n";
-        gDiag.flush();
-    }
-}
-
-void diagWrite(const std::string& line) {
-    std::lock_guard<std::mutex> lock(gDiagMutex);
-    openDiagLocked();
-    if (!gDiag) return;
-    if (gDiagLines >= 20000) return;
-    gDiag << line << '\n';
-    gDiag.flush();
-    ++gDiagLines;
-}
-
-std::string controlLabel(const wdf::LiveControlGroup& group) {
-    if (!group.name.empty()) return group.name;
-    if (!group.members.empty()) return group.members.front().id;
-    return "?";
-}
-
-} // namespace
 void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
     // Denormals for the whole callback. The WDF state is a network of
     // capacitors and tube junctions; as a note decays the state can reach
@@ -83,8 +23,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int numSamples = buffer.getNumSamples();
 
     if (numChannels == 0 || numSamples == 0) return;
-
-    const auto diagStart = std::chrono::steady_clock::now();
 
     // Check oversampling choice parameter
     const int oversamplingChoice = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
@@ -119,10 +57,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             right[i] = mono;
         }
     }
-
-    float blockMaxIn = buffer.getMagnitude(0, 0, numSamples);
-    if (numChannels > 1)
-        blockMaxIn = std::max(blockMaxIn, buffer.getMagnitude(1, 0, numSamples));
 
     // Push input audio into circular scope buffer
     inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
@@ -184,35 +118,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const std::vector<double>* lastNodesL = nullptr;
     float maxAbsOut = 0.0f;
 
-    // Diagnostic accumulation. `noteStep` is called after every engine step;
-    // it reads the engine's guard counters rather than scanning the nodes a
-    // second time.
-    double blockMaxNode = 0.0;
-    int blockMaxNodeIdx = -1;
-    double blockMaxOutNode = 0.0;
-    long long blockRejects = 0;
-    int blockRejectNodeIdx = -1;
-    double blockRejectNodeVolts = 0.0;
-    long long blockNonfinite = 0;
-    const long long diagIters0 = leftEngine_->newtonIterations();
-
-    auto noteStep = [&](const auto& engine, const auto& nodes) {
-        const double maxNode = engine.lastMaxNodeVolts();
-        if (maxNode > blockMaxNode) {
-            blockMaxNode = maxNode;
-            blockMaxNodeIdx = engine.lastMaxNodeIndex();
-        }
-        if (engine.lastStateRejected()) {
-            ++blockRejects;
-            blockRejectNodeIdx = engine.lastRejectNodeIndex();
-            blockRejectNodeVolts = engine.lastRejectNodeVolts();
-        }
-        if (outIdx >= 0 && outIdx < static_cast<int>(nodes.size())) {
-            const double outNode = std::abs(nodes[static_cast<size_t>(outIdx)]);
-            if (outNode > blockMaxOutNode) blockMaxOutNode = outNode;
-        }
-    };
-
     if (useHalfBand_) {
         float* leftData = buffer.getWritePointer(0);
         float* rightData = (numChannels > 1) ? buffer.getWritePointer(1) : nullptr;
@@ -235,7 +140,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     svLeft_[static_cast<size_t>(inIdx)] = osIn;
                 const auto& nodesL = leftEngine_->step(svLeft_);
                 lastNodesL = &nodesL;
-                noteStep(*leftEngine_, nodesL);
                 return (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
                     ? nodesL[static_cast<size_t>(outIdx)] * outputScale
                     : 0.0;
@@ -259,7 +163,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     if (inIdx >= 0 && inIdx < static_cast<int>(svRight_.size()))
                         svRight_[static_cast<size_t>(inIdx)] = osIn;
                     const auto& nodesR = rightEngine_->step(svRight_);
-                    noteStep(*rightEngine_, nodesR);
                     return (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
                         ? nodesR[static_cast<size_t>(outIdx)] * outputScale
                         : 0.0;
@@ -304,7 +207,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             }
             const auto& nodesL = leftEngine_->step(svLeft_);
             lastNodesL = &nodesL;
-            noteStep(*leftEngine_, nodesL);
             const float outL = (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
                                    ? static_cast<float>(nodesL[static_cast<size_t>(outIdx)]) * outputScale
                                    : 0.0f;
@@ -316,7 +218,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     svRight_[static_cast<size_t>(inIdx)] = static_cast<double>(rightData[s]);
                 }
                 const auto& nodesR = rightEngine_->step(svRight_);
-                noteStep(*rightEngine_, nodesR);
                 const float outR = (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
                                        ? static_cast<float>(nodesR[static_cast<size_t>(outIdx)]) * outputScale
                                        : 0.0f;
@@ -372,104 +273,10 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             // engine rejects non-physical states too; this also covers a bad
             // input buffer or a dry-path sample from the host.
             if (!std::isfinite(outSample)) {
-                ++blockNonfinite;
                 outSample = 0.0f;
             }
             channelData[i] = outSample;
         }
-    }
-
-    const auto diagEnd = std::chrono::steady_clock::now();
-    const double blockUs =
-        std::chrono::duration<double, std::micro>(diagEnd - diagStart).count();
-    ++diagBlockCounter_;
-    const double nowMs = juce::Time::getMillisecondCounterHiRes();
-    const bool heartbeat = (nowMs - diagLastHeartbeatMs_) >= 1000.0;
-    if (heartbeat) diagLastHeartbeatMs_ = nowMs;
-    const bool anomaly = blockRejects > 0 || blockNonfinite > 0 ||
-                         maxAbsOut > 4.0f || blockMaxNode > 600.0;
-    if (anomaly || heartbeat) {
-        const auto& nodeNames = leftEngine_->nodeNames();
-        if (diagBlockCounter_ == 1) {
-            int pentodes = 0;
-            int sixL6 = 0;
-            for (const auto& comp : currentDoc_.components) {
-                if (comp.type == "pentode") {
-                    ++pentodes;
-                    for (const auto& prop : comp.properties) {
-                        if (prop.second.find("6L6") != std::string::npos) {
-                            ++sixL6;
-                            break;
-                        }
-                    }
-                }
-            }
-            std::ostringstream header;
-            header.precision(9);
-            header << "HEADER build=" << kDiagBuild
-                   << " doc=\"" << currentDoc_.name << "\""
-                   << " comps=" << currentDoc_.components.size()
-                   << " pentodes=" << pentodes << " sixL6=" << sixL6
-                   << " fullScale=" << outputFullScaleVolts_
-                   << " fs=" << sampleRate_ << " blockSize=" << numSamples
-                   << " osFactor=" << currentOversamplingFactor_
-                   << " halfBand=" << useHalfBand_
-                   << " stereo=" << processStereo;
-            diagWrite(header.str());
-        }
-
-        std::ostringstream line;
-        line.precision(9);
-        line << "BLOCK n=" << diagBlockCounter_
-             << " t=" << juce::Time::getCurrentTime().toISO8601(true).toStdString()
-             << " in=" << blockMaxIn << " out=" << maxAbsOut
-             << " outNode=" << blockMaxOutNode
-             << " maxNode=" << blockMaxNode << " maxNodeIdx=" << blockMaxNodeIdx;
-        if (blockMaxNodeIdx >= 0 &&
-            blockMaxNodeIdx < static_cast<int>(nodeNames.size())) {
-            line << " maxNodeName=\"" << nodeNames[static_cast<size_t>(blockMaxNodeIdx)]
-                 << "\"";
-        }
-        line << " rejects=" << blockRejects << " nonfinite=" << blockNonfinite
-             << " conv=" << leftEngine_->lastConverged()
-             << " residual=" << leftEngine_->lastResidual()
-             << " iters=" << (leftEngine_->newtonIterations() - diagIters0)
-             << " blockUs=" << blockUs
-             << " os=" << currentOversamplingFactor_
-             << " stereo=" << processStereo
-             << " inTrimDb=" << inputTrimDb
-             << " outDb=" << outputMasterDb << " mix=" << mixPercent;
-        if (blockRejects > 0) {
-            line << " rejectNode=" << blockRejectNodeIdx
-                 << " rejectVolts=" << blockRejectNodeVolts;
-            if (blockRejectNodeIdx >= 0 &&
-                blockRejectNodeIdx < static_cast<int>(nodeNames.size())) {
-                line << " rejectName=\""
-                     << nodeNames[static_cast<size_t>(blockRejectNodeIdx)] << "\"";
-            }
-        }
-
-        line << " pots=[";
-        const int potLimit =
-            std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
-        for (int i = 0; i < potLimit; ++i) {
-            if (i > 0) line << ',';
-            line << controlLabel(potGroupsInCircuit_[static_cast<size_t>(i)]) << '=';
-            if (const auto* raw = apvts_.getRawParameterValue("pot_" + juce::String(i)))
-                line << raw->load();
-            else
-                line << '?';
-        }
-        line << "] switches=[";
-        const size_t switchLimit =
-            std::min(switchGroupsInCircuit_.size(), switchGroupStates_.size());
-        for (size_t i = 0; i < switchLimit; ++i) {
-            if (i > 0) line << ',';
-            line << controlLabel(switchGroupsInCircuit_[i]) << '='
-                 << (switchGroupStates_[i] ? 1 : 0);
-        }
-        line << ']';
-        diagWrite(line.str());
     }
 
     // Push output audio into circular scope buffer
