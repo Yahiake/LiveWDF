@@ -249,6 +249,7 @@ TEST_CASE("a .model line no diode uses is still just read past", "[diode][spice]
 // --------------------------------------------------------------------------------------
 
 TEST_CASE("ngspice DC oracle: a single diode on a series resistor", "[diode][ngspice][dc]") {
+    if (!lwdf_test::requireNgspice("diode DC oracle")) return;
     const std::string net =
         "V1 in 0 DC 5\n"
         "R1 in out 1k\n"
@@ -290,6 +291,7 @@ TEST_CASE("ngspice DC oracle: a single diode on a series resistor", "[diode][ngs
 // --------------------------------------------------------------------------------------
 
 TEST_CASE("ngspice transient oracle: the diode clipper", "[diode][ngspice][tran]") {
+    if (!lwdf_test::requireNgspice("diode clipper oracle")) return;
     const std::string net = clipperNet();
 
     const double tstop = 0.02;  // 20 ms = 960 samples (~3 cycles at 159.15 Hz)
@@ -367,6 +369,7 @@ TEST_CASE("ngspice transient oracle: the diode clipper", "[diode][ngspice][tran]
 // --------------------------------------------------------------------------------------
 
 TEST_CASE("ngspice transient oracle: one diode, solved in closed form", "[diode][ngspice][tran]") {
+    if (!lwdf_test::requireNgspice("closed-form diode oracle")) return;
     // The clipper's oracle above checks the *element* against ngspice; this checks
     // the *closed form* against it, on a circuit where the engine is not running
     // Newton at all. Without this, the group solve's one-device diode path would

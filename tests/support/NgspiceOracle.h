@@ -48,7 +48,17 @@ inline fs::path ngspiceExe() {
     if (const char* env = std::getenv("NGSPICE"); env && *env)
         return fs::path(env);
 #endif
+#ifdef _WIN32
     return fs::path(R"(C:\Code\test\Spice64\bin\ngspice_con.exe)");
+#else
+    std::string path;
+    char buf[4096];
+    if (FILE* p = popen("command -v ngspice", "r")) {
+        if (fgets(buf, sizeof buf, p)) path = buf;
+        pclose(p);
+    }
+    return fs::path(path.substr(0, path.find('\n')));
+#endif
 }
 
 /// True when the configured ngspice executable exists. Tests use this to turn
@@ -63,7 +73,7 @@ inline bool ngspiceAvailable() {
 /// warning when the external simulator is not installed.
 inline bool requireNgspice(const char* what) {
     if (ngspiceAvailable()) return true;
-    WARN("ngspice not found at " << ngspiceExe().string() << "; skipping " << what);
+    WARN("ngspice not found; skipping " << what);
     return false;
 }
 
@@ -105,8 +115,11 @@ inline NgspiceRun runDeck(const std::string& deckBody, const std::string& tag) {
 
     // `cmd /c ""<exe>" -b -o "<log>" "<deck>""` with relative deck/log names,
     // executed from the scratch directory.
-    const std::string cmd = "cmd /c \"\"" + ngspiceExe().string() + "\" -b -o \"" + (tag + ".log") +
-                            "\" \"" + (tag + ".cir") + "\"\"";
+    std::string cmd = "\"" + ngspiceExe().string() + "\" -b -o \"" + (tag + ".log") + "\" \"" +
+                      (tag + ".cir") + "\"";
+#ifdef _WIN32
+    cmd = "cmd /c \"" + cmd + "\"";
+#endif
 
     NgspiceRun r;
     std::error_code ec;

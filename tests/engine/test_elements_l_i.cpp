@@ -67,6 +67,7 @@ TEST_CASE("inductor DC is a short and current source drives negative", "[phase1]
 }
 
 TEST_CASE("ngspice DC oracle: RL short and current source", "[phase1][elements][ngspice][dc]") {
+    if (!lwdf_test::requireNgspice("RL/current source DC oracle")) return;
     const std::string deck =
         "* livewdf rl/isrc dc oracle\n"
         "V1 in 0 DC 1\n"
@@ -93,6 +94,7 @@ TEST_CASE("ngspice DC oracle: RL short and current source", "[phase1][elements][
 }
 
 TEST_CASE("ngspice transient oracle: RL lowpass with DC bias", "[phase1][elements][ngspice][tran]") {
+    if (!lwdf_test::requireNgspice("RL lowpass oracle")) return;
     // R/(R + sL) lowpass at fc = R/(2*pi*L) = 159 Hz, with tau = L/R = 1 ms
     // (h/tau = 1/48) so the two second-order schemes agree tightly; plus a
     // 0.5 V / 5 mA DC bias so the inductor's DC state seeding is exercised (a
@@ -142,6 +144,7 @@ TEST_CASE("ngspice transient oracle: RL lowpass with DC bias", "[phase1][element
 }
 
 TEST_CASE("ngspice transient oracle: current source into RC", "[phase1][elements][ngspice][tran]") {
+    if (!lwdf_test::requireNgspice("current source RC oracle")) return;
     // Current sources are driven through the extra `sourceValues` slots (after
     // the nsrc voltage-source values); this checks the per-sample path.
     // tau = RC = 1 ms, omega*tau = 1 at 159.15 Hz: the capacitor is fully
