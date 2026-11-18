@@ -1,66 +1,110 @@
 # LiveWDF
 
-LiveWDF is an audio plugin and app that simulates guitar-amp circuits using Wave Digital Filters.
+**An open-source, real-time Wave Digital Filter circuit simulator for audio.**
 
+LiveWDF is a C++ project focused on simulating analog audio circuits using Wave Digital Filters (WDFs). The goal is to make circuit-level simulation practical for real-time audio processing, with guitar amplifiers and effects as a primary application.
 
-## What is it?
+The project is being developed around three parts: a simulation engine, a circuit editor, and an audio plugin.
 
-LiveWDF models amplifier circuits so you can try them as a plugin in a music program (a DAW). It has two parts. The circuit editor is where you draw and save circuits. The plugin loads those circuits and lets you try them out on your audio. LiveWDF runs on Windows and Linux.
+## What is LiveWDF?
+
+Rather than recreating an amplifier's sound with EQ curves or neural models, LiveWDF takes a circuit-based approach. You build a circuit from its components, and the engine simulates how that circuit behaves.
+
+The project has two main applications built around the same simulation core:
+
+- **Circuit Editor:** Design, modify and save circuits. The idea is to work directly with components and their values, rather than being limited to a collection of fixed amplifier models.
+- **Audio Plugin:** Load circuits created in the editor and run them on live audio inside a DAW.
+
+At the center of both is the WDF engine, which handles the circuit simulation.
 
 ## Who is it for?
 
-- **Anyone.** You do not need to know anything about circuits. Ready-made example circuits are planned, so you can pick one and play.
-- **Researchers and tinkerers** who want to build and study circuits of their own.
+LiveWDF is being built with a few different audiences in mind:
+
+- **Musicians and guitar players** who want to experiment with circuit-based amplifier and effect simulations without having to design circuits themselves. Ready-made circuits are part of the plan.
+- **Circuit enthusiasts and tinkerers** who want to build their own circuits and experiment with analog components.
+- **Developers and researchers** interested in Wave Digital Filters, real-time simulation, numerical methods, and audio software development.
+
+You don't need to understand circuit theory to eventually use the plugin. But if you want to understand or contribute to the engine, some C++ and electronics knowledge will certainly help.
+
+## Project status
+
+LiveWDF is open source and under active development. There are currently no official releases.
+
+The C++ simulation core builds and its test suite passes. Some tests can also compare results against ngspice, when it is installed.
+
+The editor and audio plugin are still being worked on, and their builds have not yet been fully confirmed across platforms.
+
+**Contributions, testing, bug reports and ideas are welcome.** There is still a lot to build, and the project would benefit from people interested in working on it.
 
 ## Getting started
 
-Building the core and running its tests is confirmed to work. The editor and plugin builds are still being confirmed.
+For now, the simulation core is the part you can build and test reliably.
 
-**You will need:**
+### Requirements
 
-On Windows:
-
-- Visual Studio Build Tools, with the "Desktop development with C++" workload
+**Windows**
+- Visual Studio Build Tools with the *Desktop development with C++* workload
 - CMake 3.22 or newer
 - Git
 
-On Linux:
-
-- A C++20 compiler (GCC or Clang)
+**Linux**
+- GCC or Clang with C++20 support
 - CMake 3.22 or newer
 - Git
 
-**Get the code.** Clone the repository from its GitHub page with Git. Then, inside the project folder, fetch the JUCE submodule. JUCE is only needed for the editor and the plugin, so you can skip this step if you only want the core.
+### Clone the repository
 
+```bash
+git clone https://github.com/Yahiake/LiveWDF.git
+cd LiveWDF
 ```
+
+### Initialize JUCE
+
+JUCE is used by the editor and audio plugin. It is not required to build the simulation core alone.
+
+```bash
 git submodule update --init modules/JUCE
 ```
 
-**Build the core and run its tests:**
+### Build the core and run the tests
 
-Windows:
+**Windows (PowerShell or terminal)**
 
-```
+```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF
+
 cmake --build build/core --config Release --target livewdf livewdf_tests
+
 ctest --test-dir build/core -C Release --output-on-failure
 ```
 
-Linux:
+**Linux**
 
-```
+```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF -DCMAKE_BUILD_TYPE=Release
+
 cmake --build build/core --target livewdf livewdf_tests
+
 ctest --test-dir build/core --output-on-failure
 ```
 
+The first build may take several minutes. Some tests use ngspice as an external reference simulator. They are skipped automatically when ngspice is not installed.
 
-The first build takes several minutes. A few tests compare against a reference circuit simulator (ngspice). They skip themselves if it is not installed.
+## Contributing
 
-## Community
+LiveWDF is still taking shape, and there's plenty of room to get involved.
 
-Questions, ideas or want to help? Join our Discord: https://discord.gg/ZJtGJQaPWh
+Whether you're interested in the WDF engine, circuit models, numerical methods, audio processing, the editor, or plugin development, contributions are welcome.
+
+Found a bug? Have an idea? Want to work on something? Open an issue or join the discussion.
+
+- **GitHub:** [Yahiake/LiveWDF](https://github.com/Yahiake/LiveWDF)
+- **Discord:** [Join the LiveWDF community](https://discord.gg/ZJtGJQaPWh)
 
 ## License
 
-LiveWDF is released under the AGPL-3.0, see [LICENSE](LICENSE). Third-party software has its own terms, see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+LiveWDF is licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0).
+
+Third-party dependencies and their respective licenses are listed in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
