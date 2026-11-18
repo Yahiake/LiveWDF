@@ -10,7 +10,9 @@
 // The library is a dropdown rather than a permanent column because the editor
 // already has a palette and an inspector; a third always-on panel would leave
 // the sheet narrower than the circuit deserves. The folder is the user's
-// choice, and the list is re-read from disk every time it opens.
+// choice, and the list is re-read from disk every time it opens. A `Factory/`
+// child folder is shown as its own section, so the circuits that ship with the
+// application are distinct from the user's own presets.
 
 #include <juce_gui_basics/juce_gui_basics.h>
 
