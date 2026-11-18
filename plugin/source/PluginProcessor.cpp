@@ -84,6 +84,7 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts_(*this, nullptr, "Parameters", createParameterLayout()) {
+    startTimerHz(10);
 
     // Initialize oversamplers (2x = factor 1, 4x = factor 2, 8x = factor 3)
     oversampler2x_ = std::make_unique<juce::dsp::Oversampling<float>>(
@@ -98,7 +99,7 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     // a `.livewdf` file (or a host session that restores one).
 }
 
-LiveWDFPluginProcessor::~LiveWDFPluginProcessor() = default;
+LiveWDFPluginProcessor::~LiveWDFPluginProcessor() { stopTimer(); }
 
 bool LiveWDFPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
     const auto& mainIn = layouts.getMainInputChannelSet();
@@ -114,6 +115,8 @@ bool LiveWDFPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) 
 }
 
 void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBlock) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    std::unique_lock<std::mutex> engineLock(engineMutex_);
     sampleRate_ = sampleRate;
     samplesPerBlock_ = samplesPerBlock;
 
@@ -126,6 +129,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     oversampler8x_->reset();
     halfBandOversamplerL_.reset();
     halfBandOversamplerR_.reset();
+    engineLock.unlock();
 
     // Scratch for the dry/wet copy. The engine source vectors are sized when a
     // document is built, because their length is the circuit's source count.
@@ -145,6 +149,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 }
 
 void LiveWDFPluginProcessor::releaseResources() {
+    std::lock_guard<std::mutex> lock(engineMutex_);
     oversampler2x_->reset();
     oversampler4x_->reset();
     oversampler8x_->reset();
@@ -152,38 +157,19 @@ void LiveWDFPluginProcessor::releaseResources() {
     halfBandOversamplerR_.reset();
 }
 
-void LiveWDFPluginProcessor::updateOversampler(int factorChoice) {
-    int newFactor = 1;
-    bool newUseHalfband = false;
-    if (factorChoice == 1) { newFactor = 2; newUseHalfband = false; }
-    else if (factorChoice == 2) { newFactor = 4; newUseHalfband = false; }
-    else if (factorChoice == 3) { newFactor = 8; newUseHalfband = false; }
-    else if (factorChoice == 4) { newFactor = 2; newUseHalfband = true; }
-    else if (factorChoice == 5) { newFactor = 4; newUseHalfband = true; }
+// The oversampling choice rebuilds the engines, so it is applied here on the
+// message thread and never in the realtime audio callback.
+void LiveWDFPluginProcessor::timerCallback() {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    if (currentDoc_.components.empty()
+        || static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_)
+        return;
 
-    if (newFactor != currentOversamplingFactor_ || newUseHalfband != useHalfBand_) {
-        currentOversamplingFactor_ = newFactor;
-        useHalfBand_ = newUseHalfband;
-        if (useHalfBand_) {
-            const auto f = (currentOversamplingFactor_ == 4)
-                               ? wdf::OversamplingFactor::X4
-                               : wdf::OversamplingFactor::X2;
-            halfBandOversamplerL_.setFactor(f);
-            halfBandOversamplerR_.setFactor(f);
-            halfBandOversamplerL_.reset();
-            halfBandOversamplerR_.reset();
-        }
-        // Rebuild engines for updated oversampled rate. The circuit is the same,
-        // so do not overwrite the knob positions from the document.
-        //
-        // The *file* is the same too. `loadCircuitDocument` clears the reload
-        // path (a document can come from anywhere), so restore it here; an
-        // oversampling change must not make the Reload button go dead.
-        const juce::File circuitFile = currentFile_;
-        if (!currentDoc_.components.empty())
-            loadCircuitDocument(currentDoc_, false);
-        currentFile_ = circuitFile;
-    }
+    // `loadCircuitDocument` clears the reload path; an oversampling change must
+    // not make the Reload button go dead.
+    const juce::File circuitFile = currentFile_;
+    loadCircuitDocument(currentDoc_, false);
+    currentFile_ = circuitFile;
 }
 
 void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
@@ -256,12 +242,6 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         baseSources[i] = c.src[i].dc;
     }
 
-    // The per-block source scratch has one slot per source. This runs on the
-    // message thread while the engine is being rebuilt, never in the audio
-    // callback.
-    svLeft_.assign(baseSources.size(), 0.0);
-    svRight_.assign(baseSources.size(), 0.0);
-
     // The AC sources: those with an amplitude *and* a frequency. The plugin
     // generates their sine itself, because a host's audio is not a sine wave
     // and the engine drives sources with values the caller supplies.
@@ -325,6 +305,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc,
                                                  bool initializePotParameters) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     lastError_.clear();
 
     // A document loaded from anywhere but a file has no file to reload. The
@@ -333,7 +314,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     // restored from host state.
     currentFile_ = juce::File();
 
-    const double effectiveFs = sampleRate_ * static_cast<double>(currentOversamplingFactor_);
+    attemptedOversamplingChoice_ = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
+    constexpr int kFactors[] = {1, 2, 4, 8, 2, 4};
+    const int factor = kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
+    const bool halfBand = attemptedOversamplingChoice_ >= 4;
+    const double effectiveFs = sampleRate_ * static_cast<double>(factor);
 
     std::unique_ptr<wdf::Engine> newLeft, newRight;
     int inSrcIdx = -1;
@@ -348,6 +333,16 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         return false;
     }
 
+    // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
+    // its scope parts, keyed by the net each one watches, which is how the
+    // schematic canvas wants its voltages.
+    std::vector<std::pair<std::string, int>> probeNodes;
+    for (const auto& probe : doc.allProbes()) {
+        const int idx = newLeft->nodeIndex(probe.second);
+        if (idx >= 0)
+            probeNodes.emplace_back(probe.second, idx);
+    }
+
     {
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
@@ -357,9 +352,25 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_ = doc.outputFullScaleVolts();
         baseSourceValues_ = std::move(baseSources);
+        svLeft_.assign(baseSourceValues_.size(), 0.0);
+        svRight_.assign(baseSourceValues_.size(), 0.0);
         acSources_ = std::move(acSources);
         acSampleRate_ = effectiveFs;
         acSampleCounter_ = 0;
+        {
+            std::lock_guard<std::mutex> probeLock(probeMutex_);
+            probeVoltages_.assign(probeNodes.size(), 0.0);
+            probeNodes_ = std::move(probeNodes);
+        }
+        currentOversamplingFactor_ = factor;
+        useHalfBand_ = halfBand;
+        if (halfBand) {
+            const auto f = factor == 4 ? wdf::OversamplingFactor::X4 : wdf::OversamplingFactor::X2;
+            halfBandOversamplerL_.setFactor(f);
+            halfBandOversamplerR_.setFactor(f);
+            halfBandOversamplerL_.reset();
+            halfBandOversamplerR_.reset();
+        }
 
         // **One control per label.** The editor writes a grouped value to the
         // whole group; the plugin builds a group from the same document and
@@ -377,10 +388,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
             // The switch's starting throw is the one in the file. If a
             // hand-edited file has members of one group disagreeing, the first
-            // member is the group's state -- and the first audio block makes
-            // them agree.
+            // member is the group's state.
             switchGroupStates_.assign(switchGroupsInCircuit_.size(), false);
-            switchGroupAppliedB_.assign(switchGroupsInCircuit_.size(), -1);
             for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
                 for (const auto& member : switchGroupsInCircuit_[i].members) {
                     const auto comp = std::find_if(doc.components.begin(), doc.components.end(),
@@ -394,6 +403,31 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                 }
             }
         }
+
+        potTargets_.clear();
+        const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
+        for (int i = 0; i < potLimit; ++i) {
+            auto* knob = apvts_.getRawParameterValue("pot_" + juce::String(i));
+            for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
+                const bool varRes = member.type == "varres";
+                const int index = varRes ? leftEngine_->varResIndexByName(member.id)
+                                         : leftEngine_->potIndexByName(member.id);
+                if (index >= 0)
+                    potTargets_.push_back({knob, index, varRes});
+            }
+        }
+        switchTargets_.clear();
+        for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
+            for (const auto& member : switchGroupsInCircuit_[i].members) {
+                const int resA = leftEngine_->resIndexByName(member.id + "_A");
+                const int resB = leftEngine_->resIndexByName(member.id + "_B");
+                if (resA >= 0 && resB >= 0)
+                    switchTargets_.push_back({i, resA, resB});
+            }
+        }
+        potMoves_.reserve(potTargets_.size());
+        varResMoves_.reserve(potTargets_.size());
+        resistorMoves_.reserve(2 * switchTargets_.size());
 
         // A new document brings its own pot positions. This is a document load,
         // not a sample-rate rebuild, so the saved `pos` becomes the knob value;
@@ -567,72 +601,28 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
 
-    applySwitchGroupToEnginesLocked(index);
-}
-
-void LiveWDFPluginProcessor::applySwitchGroupToEnginesLocked(int index) {
-    if (!leftEngine_ || index < 0 || index >= static_cast<int>(switchGroupsInCircuit_.size())
-        || index >= static_cast<int>(switchGroupStates_.size()))
-        return;
-
-    const bool throwB = switchGroupStates_[static_cast<size_t>(index)];
-    const int requested = throwB ? 1 : 0;
-
-    // `applyLiveControlsToEngines()` runs every block, but a switch usually has
-    // not moved. Writing an ordinary resistor rebuilds the linear transfer
-    // (~25 us), so only write when the throw actually changes.
-    if (index < static_cast<int>(switchGroupAppliedB_.size())
-        && switchGroupAppliedB_[static_cast<size_t>(index)] == requested)
-        return;
-
-    const double rA = throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms;
-    const double rB = throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms;
-
-    std::vector<std::pair<std::string, double>> updates;
-    updates.reserve(switchGroupsInCircuit_[static_cast<size_t>(index)].members.size() * 2);
-    for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
-        updates.emplace_back(member.id + "_A", rA);
-        updates.emplace_back(member.id + "_B", rB);
-    }
-
-    leftEngine_->setResistances(updates);
-    if (rightEngine_)
-        rightEngine_->setResistances(updates);
-
-    if (index < static_cast<int>(switchGroupAppliedB_.size()))
-        switchGroupAppliedB_[static_cast<size_t>(index)] = requested;
+    applyLiveControlsToEngines();
 }
 
 void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
     if (!leftEngine_) return;
 
-    // Pots and rheostats: one parameter per group, applied to every member.
-    // The parameter count is the APVTS's eight; a document with more groups
-    // than that still plays its saved positions, it just has no more knobs.
-    const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
-    for (int i = 0; i < potLimit; ++i) {
-        const juce::String potId = "pot_" + juce::String(i);
-        auto* param = apvts_.getRawParameterValue(potId);
-        if (param == nullptr)
-            continue;
-
-        const double val = static_cast<double>(param->load());
-        for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
-            if (member.type == "varres") {
-                leftEngine_->setVarResPosition(member.id, val);
-                if (rightEngine_)
-                    rightEngine_->setVarResPosition(member.id, val);
-            } else {
-                leftEngine_->setPotPosition(member.id, val);
-                if (rightEngine_)
-                    rightEngine_->setPotPosition(member.id, val);
-            }
-        }
+    // Every pot and switch member goes to the engine in one batch, so a moved
+    // ganged group re-derives the linear transfer once, not once per member.
+    potMoves_.clear();
+    varResMoves_.clear();
+    resistorMoves_.clear();
+    for (const auto& t : potTargets_)
+        (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, static_cast<double>(t.knob->load()));
+    for (const auto& t : switchTargets_) {
+        const bool throwB = switchGroupStates_[t.group];
+        resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+        resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
     }
 
-    // SPDTs: one switch per group, both resistor branches thrown together.
-    for (int i = 0; i < static_cast<int>(switchGroupsInCircuit_.size()); ++i)
-        applySwitchGroupToEnginesLocked(i);
+    leftEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+    if (rightEngine_)
+        rightEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
 }
 
 // ==============================================================================
