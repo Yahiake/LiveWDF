@@ -36,6 +36,7 @@ target_compile_definitions(LiveWDF_Plugin PRIVATE
     JUCE_WEB_BROWSER=0
     JUCE_USE_CURL=0
     JUCE_VST3_CAN_REPLACE_VST2=0
+    $<$<PLATFORM_ID:Linux>:JUCE_JACK=1>
 )
 
 target_include_directories(LiveWDF_Plugin PRIVATE
