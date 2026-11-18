@@ -54,6 +54,8 @@ set(LIVEWDF_EDITOR_CORE_SOURCES
     source/MessageConsole.h
     source/PresetLibraryPanel.cpp
     source/PresetLibraryPanel.h
+    source/FactorySchematics.cpp
+    source/FactorySchematics.h
     source/DiagLog.cpp
     source/DiagLog.h
     gui/Fonts.cpp
@@ -91,6 +93,7 @@ target_link_libraries(LiveWDF_EditorCore PUBLIC
     livewdf_options
     LiveWDF_EditorArtwork
     LiveWDF_EditorFonts
+    LiveWDF_FactorySchematics
     juce::juce_graphics
     juce::juce_gui_basics
     juce::juce_recommended_config_flags
