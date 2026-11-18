@@ -138,6 +138,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler4x_;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
     int attemptedOversamplingChoice_ = 0;
+    bool attemptedGridCurrent_ = true;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     wdf::HalfBandOversampler halfBandOversamplerL_{wdf::OversamplingFactor::X1};

@@ -24,7 +24,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     if (numChannels == 0 || numSamples == 0) return;
 
-    // An offline bounce applies an oversampling change now, not on the next timer tick.
+    // An offline bounce applies an oversampling or grid current change now, not on the next timer tick.
     if (isNonRealtime())
         timerCallback();
 

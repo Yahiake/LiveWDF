@@ -57,6 +57,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         juce::StringArray{ "1x (Direct)", "2x (Polyphase)", "4x (Polyphase)", "8x (Polyphase)",
                            "2x (Halfband IIR)", "4x (Halfband IIR)" }, 0));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"grid_current", 1}, "Grid Current", true));
+
     // Mono is the default because one engine is half the work of two and most
     // guitar/amp chains are mono until the very end. Stereo is opt-in, and the
     // editor exposes it as a button next to the oversampling choice.
@@ -157,12 +160,13 @@ void LiveWDFPluginProcessor::releaseResources() {
     halfBandOversamplerR_.reset();
 }
 
-// The oversampling choice rebuilds the engines, so it is applied here on the
+// The oversampling and grid current choices rebuild the engines, so they are applied here on the
 // message thread and never in the realtime audio callback.
 void LiveWDFPluginProcessor::timerCallback() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (currentDoc_.components.empty()
-        || static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_)
+        || (static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_
+            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_))
         return;
 
     // `loadCircuitDocument` clears the reload path; an oversampling change must
@@ -261,8 +265,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
 
     // Build twin engines for stereo
     try {
-        left = std::make_unique<wdf::Engine>(c, fs);
-        right = std::make_unique<wdf::Engine>(c, fs);
+        left = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
+        right = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
 
         std::vector<double> nL, rL, nR, rR;
         left->solveDc(nL, rL);
@@ -315,6 +319,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     currentFile_ = juce::File();
 
     attemptedOversamplingChoice_ = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
+    attemptedGridCurrent_ = *apvts_.getRawParameterValue("grid_current") > 0.5f;
     constexpr int kFactors[] = {1, 2, 4, 8, 2, 4};
     const int factor = kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
     const bool halfBand = attemptedOversamplingChoice_ >= 4;
