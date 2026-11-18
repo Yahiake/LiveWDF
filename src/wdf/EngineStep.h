@@ -371,7 +371,7 @@ public:
             }
         }
 
-        bool stateOk = (lastResidual_ >= 0.0 && lastResidual_ <= 1e12);
+        bool stateOk = std::isnan(lastResidual_) || lastResidual_ <= 1e12;
         if (stateOk) {
             double maxVolts = 0.0;
             int maxIndex = -1;

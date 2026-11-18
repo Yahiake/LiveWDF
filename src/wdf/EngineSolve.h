@@ -74,6 +74,18 @@ public:
             staticMode_, triodeDomainPin_.data(), Z_.data(), K_, vData, iData, jData, deviceEvals_);
     }
 
+    /// The joint residual of the last `step()`'s solution, evaluated now if the
+    /// closed form left it unevaluated.
+    double evaluateResidual() {
+        if (std::isnan(lastResidual_)) {
+            for (const auto& dev : rootDevices_)
+                currentsForDevice(dev, vv_.data(), iv_.data(), nullptr);
+            residualInto(vv_, vOc_, Z_, iv_, F_);
+            lastResidual_ = solver::RootNewton::maxAbs(F_, K_);
+        }
+        return lastResidual_;
+    }
+
     /// Whether the exact closed-form root can drive this circuit: every group
     /// (one device each) has a closed form and the coupling between groups is
     /// acyclic, so the root splits into groups that can be solved in sequence.

@@ -1398,7 +1398,7 @@ public:
         ctx.keptBest = false;
         const bool failed = ctx.jfetSolveFailed || ctx.mosfetSolveFailed;
         ctx.lastConverged = !failed;
-        ctx.lastResidual = failed ? std::numeric_limits<double>::infinity() : 0.0;
+        ctx.lastResidual = failed ? std::numeric_limits<double>::infinity() : std::numeric_limits<double>::quiet_NaN();
         ctx.vvPrev2 = ctx.vvPrev;
         ctx.vvPrev = ctx.vv;
     }

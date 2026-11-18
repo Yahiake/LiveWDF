@@ -281,7 +281,8 @@ public:
     long long gridLimitHits() const { return gridLimitHits_; }
     /// Did the last `step()` reach the residual tolerance?
     bool lastConverged() const { return lastConverged_; }
-    /// Max |residual| (volts) at the accepted point of the last `step()`.
+    /// Max |residual| (volts) at the accepted point of the last `step()`, NaN
+    /// after the closed form until `evaluateResidual()`.
     double lastResidual() const { return lastResidual_; }
     /// Did the last `step()` finish by restoring an earlier iterate with a lower residual?
     bool lastKeptBest() const { return keptBest_; }

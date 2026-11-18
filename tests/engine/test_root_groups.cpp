@@ -204,6 +204,26 @@ TEST_CASE("with grid current the cascades stay close to the joint Newton", "[roo
     }
 }
 
+TEST_CASE("the closed form's residual is unevaluated until asked for", "[rootgroups]") {
+    const lwdf_test::CircuitCase tc{"two_stage_cascade", &lwdf_test::twoStageCascade, &lwdf_test::sine1v};
+    const wdf::Circuit c = (*tc.build)();
+    for (const bool grid : {true, false}) {
+        wdf::Engine e(c, kFs, grid);
+        REQUIRE(e.explicitRoots());
+        double worst = 0.0;
+        for (int n = 0; n < 4800; ++n) {
+            e.step(lwdf_test::sampleSources(c, tc, n));
+            REQUIRE(std::isnan(e.lastResidual()));
+            worst = std::max(worst, e.evaluateResidual());
+            REQUIRE(e.lastResidual() <= worst);
+        }
+        // Without grid current the second plate is shorted for part of the run,
+        // and a shorted plate scales its voltage's rounding by 1 / kShort.
+        CAPTURE(grid, worst);
+        REQUIRE((grid ? worst > 1e-2 : worst < 1e-4));
+    }
+}
+
 TEST_CASE("wherever the closed form claims the split, it equals the joint Newton", "[rootgroups]") {
     // The general form of the claim above, swept over every fixture instead of the
     // named ones: if `explicitRoots()` is on, the sequence of closed forms has to be

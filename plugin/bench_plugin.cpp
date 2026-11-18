@@ -1139,7 +1139,7 @@ int runB1Diag(const juce::File& file) {
 
             if (!engine->lastConverged())
                 ++misses;
-            maxResidual = std::max(maxResidual, engine->lastResidual());
+            maxResidual = std::max(maxResidual, engine->evaluateResidual());
 
             if (n >= startSample) {
                 double vp = (pIdx >= 0) ? nodes[static_cast<size_t>(pIdx)] : 0.0;
