@@ -498,8 +498,11 @@ protected:
     }
 
     /// Compile the netlist into ports, element conductances and root ports.
-    EngineCore(const Circuit& circuit, double fs) : circuit_(circuit), fs_(fs), T_(1.0 / fs) {
+    EngineCore(const Circuit& circuit, double fs, bool gridCurrent)
+        : circuit_(circuit), fs_(fs), T_(1.0 / fs) {
         comp_ = compile(circuit_, {});
+        for (auto& t : comp_.tri)
+            t.model.gridConducts = gridCurrent;
         N_ = comp_.N;
         nsrc_ = comp_.nsrc;
         dcValues_.resize(static_cast<size_t>(nsrc_));

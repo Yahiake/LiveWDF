@@ -51,6 +51,14 @@ public:
                 }
                 rowP[rBase] += 1.0;
                 r[rBase] = -(dvpk * fData[o] + dvgk * fData[o + 2]);
+                if (dev.numActiveRows == 2) {
+                    const double dig = jData[(o + 2) * K + o + 2];
+                    double* LIVEWDF_RESTRICT rowG = rowP + nN;
+                    for (int j = 0; j < nN; ++j)
+                        rowG[j] = dig * zgi[colOf[j]];
+                    rowG[rBase + 1] += 1.0;
+                    r[rBase + 1] = -(dig * fData[o + 2]);
+                }
                 break;
             }
             case DeviceKind::Diode:
@@ -186,6 +194,7 @@ public:
                 const double* LIVEWDF_RESTRICT zp = zData + o * K;
                 const double* LIVEWDF_RESTRICT zgi = zData + (o + 2) * K;
                 const int rowPIdx = redToActive[static_cast<size_t>(rBase)];
+                const int rowGIdx = dev.numActiveRows == 2 ? redToActive[static_cast<size_t>(rBase + 1)] : -1;
                 double* LIVEWDF_RESTRICT rowP = M + rowPIdx * nN;
                 for (int j = 0; j < nN; ++j) {
                     const int c = colOf[j];
@@ -193,6 +202,14 @@ public:
                 }
                 rowP[rowPIdx] += 1.0;
                 r[rowPIdx] = -(dvpk * fData[o] + dvgk * fData[o + 2]);
+                if (rowGIdx >= 0) {
+                    const double dig = jData[(o + 2) * K + o + 2];
+                    double* LIVEWDF_RESTRICT rowG = M + rowGIdx * nN;
+                    for (int j = 0; j < nN; ++j)
+                        rowG[j] = dig * zgi[colOf[j]];
+                    rowG[rowGIdx] += 1.0;
+                    r[rowGIdx] = -(dig * fData[o + 2]);
+                }
                 break;
             }
             case DeviceKind::Diode:
@@ -365,6 +382,14 @@ public:
                 }
                 rowP[rBase] += 1.0;
                 r[rBase] = -(dvpk * fData[o] + dvgk * fData[o + 2]);
+                if (dev.numActiveRows == 2) {
+                    const double dig = jData[(o + 2) * K + o + 2];
+                    double* LIVEWDF_RESTRICT rowG = rowP + N;
+                    for (int j = 0; j < N; ++j)
+                        rowG[j] = dig * zgi[j];
+                    rowG[rBase + 1] += 1.0;
+                    r[rBase + 1] = -(dig * fData[o + 2]);
+                }
                 break;
             }
             case DeviceKind::Diode:
@@ -524,6 +549,14 @@ public:
                 }
                 rowP[rBase] += 1.0;
                 r[rBase] = -(dvpk * fData[o] + dvgk * fData[o + 2]);
+                if (dev.numActiveRows == 2) {
+                    const double dig = jData[(o + 2) * K + o + 2];
+                    double* LIVEWDF_RESTRICT rowG = rowP + nN;
+                    for (int j = 0; j < nN; ++j)
+                        rowG[j] = dig * zgi[j];
+                    rowG[rBase + 1] += 1.0;
+                    r[rBase + 1] = -(dig * fData[o + 2]);
+                }
                 break;
             }
             case DeviceKind::Diode:

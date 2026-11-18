@@ -113,8 +113,8 @@ TEST_CASE("Forced Newton achieves sub-nanovolt parity with closed-form roots", "
     for (const auto& f : fixtures) {
         DYNAMIC_SECTION("Parity check for " << f.name) {
             const wdf::Circuit c = (*f.build)();
-            wdf::Engine eClosed(c, kFs);
-            wdf::Engine eNewton(c, kFs);
+            wdf::Engine eClosed(c, kFs, false);
+            wdf::Engine eNewton(c, kFs, false);
 
             REQUIRE(eClosed.explicitRoots());
             eNewton.setExplicitRoots(false);

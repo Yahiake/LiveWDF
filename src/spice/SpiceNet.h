@@ -13,7 +13,7 @@
 // `.model`, `.include` and `.control` blocks. The tube's *passive* parameters --
 // `rgi`, `vct`, `ccg`, `cgp`, `ccp` -- are read back out of the netlist's own
 // `12AX7_model`, so the network matches the reference. The plate-current law is
-// always the D'Angelo quadric 12AX7 (gridless); the `Tubes.lib` Koren
+// always the D'Angelo quadric 12AX7; the `Tubes.lib` Koren
 // parameters are not used.
 //
 // The subckt wiring (`Tubes_12AX7 gnd _net1 _net0 _net2` -> `12AX7_model 1 6 3`)

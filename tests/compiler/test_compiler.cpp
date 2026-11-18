@@ -37,7 +37,7 @@ TEST_CASE("compiler: a valid circuit compiles to immutable data", "[compiler]") 
     const auto& compiled = *result.circuit;
     REQUIRE(compiled.sourceCount() == static_cast<int>(circuit.src.size()));
     REQUIRE(compiled.topology().rootLayout().K == 3);  // one triode, three ports
-    REQUIRE(compiled.topology().rootLayout().nRed == 1);
+    REQUIRE(compiled.topology().rootLayout().nRed == 2);
     REQUIRE(compiled.devices().size() == 1);
     REQUIRE(compiled.devices().front().type == "triode");
     REQUIRE(compiled.revision().size() == 16);

@@ -28,8 +28,10 @@ public:
     /// Compile `circuit` and prepare to run at `fs` Hz. Throws if the network is
     /// singular. Runs the transfer build, sizes every buffer, and seeds the
     /// reactive states from the DC operating point, so the first `step()` already
-    /// reproduces the operating point.
-    Engine(const Circuit& circuit, double fs) : EngineStep(circuit, fs) {
+    /// reproduces the operating point. `gridCurrent = false` builds every triode
+    /// with the plate-only law.
+    Engine(const Circuit& circuit, double fs, bool gridCurrent = true)
+        : EngineStep(circuit, fs, gridCurrent) {
         if (!rebuildLinear())
             throw std::runtime_error("rootTransfer failed (singular linear network)");
         allocateBuffers();

@@ -144,8 +144,13 @@ public:
                 double voGik = foldPort(view, o + 2, view.count, zData, vOcData, iiData, K);
                 voPk += zData[static_cast<size_t>(o) * K + o] * iiData[o];
                 voGik += zData[static_cast<size_t>(o + 2) * K + o] * iiData[o];
+                if (dev.numActiveRows == 2) {
+                    voPk += zData[static_cast<size_t>(o) * K + o + 2] * iiData[o + 2];
+                    voGik += zData[static_cast<size_t>(o + 2) * K + o + 2] * iiData[o + 2];
+                }
                 double ip = 0.0;
-                const unsigned char pin = triodeDomain(m, voPk, voGik, zData, o, K, ip);
+                double ig = 0.0;
+                const unsigned char pin = solveTriode(m, voPk, voGik, zData, o, K, ip, ig);
                 changed |= triodeDomainPin[o] != pin;
                 triodeDomainPin[o] = pin;
             }
@@ -153,23 +158,12 @@ public:
         return changed;
     }
 
-    /// The paper's post-solve test: solve the quadric, read `Vpk` back, and
-    /// when it is negative project onto the short if the open-circuit plate
-    /// voltage is positive and onto cold otherwise. Returns the domain state
-    /// and leaves its plate current in `ip`.
-    static inline unsigned char triodeDomain(
-        const TriodeModel& m,
-        double voPk,
-        double voGik,
-        const double* LIVEWDF_RESTRICT zData,
-        int o,
-        int K,
-        double& ip) noexcept
+    /// The plate law for `vpk = pv - pz*ip`, `vgk = gv - gz*ip`.
+    static inline unsigned char solvePlate(
+        const TriodeModel& m, double pv, double pz, double gv, double gz, double& ip) noexcept
     {
-        const double zee = zData[static_cast<size_t>(o) * K + o];
-        const double B = zee + m.cg * zData[static_cast<size_t>(o + 2) * K + o];
-        const double Q = voPk + m.cg * voGik + m.c0;
-        const double D = 1.0 + 4.0 * m.p.kP2 * B * Q;
+        const double Q = pv + m.cg * gv + m.c0;
+        const double D = 1.0 + 4.0 * m.p.kP2 * (pz + m.cg * gz) * Q;
         ip = 0.0;
         if (D < 0.0)
             return 0;
@@ -177,14 +171,43 @@ public:
         if (q <= 0.0)
             return 0;
         ip = m.p.kP2 * q * q;
-        if (voPk - zee * ip >= 0.0)
+        if (pv - pz * ip >= 0.0)
             return 0;
-        if (zee > 0.0 && voPk > 0.0) {
-            ip = voPk / ((1.0 + TriodeModel::kShort) * zee);
+        if (pz > 0.0 && pv > 0.0) {
+            ip = pv / ((1.0 + TriodeModel::kShort) * pz);
             return 1;
         }
         ip = 0.0;
         return 2;
+    }
+
+    /// The paper's post-solve test, once per grid state: solve the quadric,
+    /// read `Vpk` back, and when it is negative project onto the short if the
+    /// open-circuit plate voltage is positive and onto cold otherwise. A
+    /// conducting grid folds its line into the plate's source and impedance,
+    /// which leaves the same quadratic in `q`. Returns the domain state.
+    static inline unsigned char solveTriode(
+        const TriodeModel& m,
+        double voPk,
+        double voGik,
+        const double* LIVEWDF_RESTRICT zData,
+        int o,
+        int K,
+        double& ip,
+        double& ig) noexcept
+    {
+        const double* zp = zData + static_cast<size_t>(o) * K;
+        const double* zg = zData + static_cast<size_t>(o + 2) * K;
+        unsigned char pin = solvePlate(m, voPk, zp[o], voGik, zg[o], ip);
+        ig = 0.0;
+        if (m.gridCurrent(voGik - zg[o] * ip) > 0.0) {
+            const double a = 1.0 / (TriodeModel::kGridR + zg[o + 2]);
+            const double e = a * (voGik - TriodeModel::kGridOn);
+            pin = solvePlate(m, voPk - zp[o + 2] * e, zp[o] - zp[o + 2] * a * zg[o],
+                             TriodeModel::kGridOn + TriodeModel::kGridR * e, TriodeModel::kGridR * a * zg[o], ip);
+            ig = e - a * zg[o] * ip;
+        }
+        return pin;
     }
 
     /// The block's final port voltages after a scalar closed form.
@@ -234,7 +257,7 @@ public:
         }
     }
 
-    /// One gridless quadric triode in exact scalar closed form.
+    /// One quadric triode with its grid line in exact closed form.
     static inline void solveTriodeGroup(
         int g,
         int s,
@@ -259,10 +282,14 @@ public:
         const double voGik = relaxed ? foldPortAll(view, block, 2, o + 2, b, zData, vOcData, iiData, K)
                                      : foldPort(view, block, 2, o + 2, s, zData, vOcData, iiData, K);
         double ip = 0.0;
-        triodeDomainPin[o] = triodeDomain(m, voPk, voGik, zData, o, K, ip);
+        double ig = 0.0;
+        triodeDomainPin[o] = m.gridConducts
+            ? solveTriode(m, voPk, voGik, zData, o, K, ip, ig)
+            : solvePlate(m, voPk, zData[static_cast<size_t>(o) * K + o], voGik,
+                         zData[static_cast<size_t>(o + 2) * K + o], ip);
         iiData[o] = ip;
         iiData[o + 1] = 0.0;
-        iiData[o + 2] = 0.0;
+        iiData[o + 2] = ig;
     }
 
     /// One diode in exact scalar closed form via Wright Omega.

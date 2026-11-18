@@ -125,14 +125,13 @@ public:
         };
         const auto coupled = [&](int g, int h) {
             const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-            const int hBase = dh.portBase;
             const int hLive = liveCount(h);
             const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
             const int row0 = dg.portBase;
             const int nPorts = dg.numPorts;
             for (int r = row0; r < row0 + nPorts; ++r)
                 for (int k = 0; k < hLive; ++k)
-                    if (std::abs(ctx.Z[static_cast<size_t>(r) * ctx.K + hBase + k]) > 0.0)
+                    if (std::abs(ctx.Z[static_cast<size_t>(r) * ctx.K + activePort(dh, k)]) > 0.0)
                         return true;
             return false;
         };
@@ -235,20 +234,13 @@ public:
             block.isAntiParallelDiodePair = false;
             for (int di : block.devices) {
                 const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                const int o = dev.portBase;
-                switch (dev.kind) {
-                case DeviceKind::Triode:
-                case DeviceKind::Diode:
-                case DeviceKind::ControlledRes:
-                case DeviceKind::Jfet:
-                case DeviceKind::Mosfet:
-                case DeviceKind::OpAmp:
-                    block.ports.push_back(o);
-                    block.portDevice.push_back(di);
-                    break;
-                default:
+                if (dev.kind == DeviceKind::Bjt || dev.kind == DeviceKind::Pentode) {
                     ctx.runtimeBlockCount = 0;
                     return false;
+                }
+                for (int rr = 0; rr < activePortCount(dev); ++rr) {
+                    block.ports.push_back(activePort(dev, rr));
+                    block.portDevice.push_back(di);
                 }
             }
             if (block.devices.size() == 2 && block.ports.size() == 2) {
@@ -565,26 +557,9 @@ public:
             NewtonBlock& block = ctx.newtonBlocks[static_cast<size_t>(b)];
             for (int di : block.devices) {
                 const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                const int o = dev.portBase;
-                switch (dev.kind) {
-                case DeviceKind::Triode:
-                case DeviceKind::Diode:
-                case DeviceKind::ControlledRes:
-                case DeviceKind::Jfet:
-                case DeviceKind::Mosfet:
-                case DeviceKind::OpAmp:
-                    block.ports.push_back(o);
+                for (int rr = 0; rr < activePortCount(dev); ++rr) {
+                    block.ports.push_back(activePort(dev, rr));
                     block.portDevice.push_back(di);
-                    break;
-                case DeviceKind::Bjt:
-                case DeviceKind::Pentode:
-                    block.ports.push_back(o);
-                    block.portDevice.push_back(di);
-                    block.ports.push_back(o + 1);
-                    block.portDevice.push_back(di);
-                    break;
-                default:
-                    return false;
                 }
             }
         }
@@ -622,7 +597,7 @@ public:
         int scalarBlocks = 0;
         for (int b = 0; b < nb; ++b) {
             const NewtonBlock& block = ctx.newtonBlocks[static_cast<size_t>(b)];
-            if (block.devices.size() == 1 && block.ports.size() == 1)
+            if (isScalarBlock(block, ctx.rootDevices.data()))
                 ++scalarBlocks;
         }
         ctx.allScalarBlocks = (scalarBlocks == nb);
@@ -685,10 +660,17 @@ public:
                     const double* zRow = zData + static_cast<size_t>(globalPort) * K;
                     auto& deps = block.predFold[static_cast<size_t>(devPortOffset + q)];
                     deps.clear();
-                    for (int p = 0; p < s; ++p) {
-                        const int bp = order[p];
-                        const NewtonBlock& prevBlock = blocks[static_cast<size_t>(bp)];
-                        for (int c : prevBlock.ports) {
+                    for (int p = 0; p < nb; ++p) {
+                        if (p == s)
+                            continue;
+                        const NewtonBlock& otherBlock = blocks[static_cast<size_t>(order[p])];
+                        for (size_t k = 0; k < otherBlock.ports.size(); ++k) {
+                            const int c = otherBlock.ports[k];
+                            const RootDevice& od = rootDevices[otherBlock.portDevice[k]];
+                            // A later block's grid current is the previous sample's,
+                            // so its back-coupling lags one sample instead of iterating.
+                            if (p > s && !(od.kind == DeviceKind::Triode && c == od.portBase + 2))
+                                continue;
                             const double z = zRow[c];
                             if (z != 0.0)
                                 deps.push_back(PredecessorPort{c, z});

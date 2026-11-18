@@ -69,12 +69,14 @@ public:
                     cur = comp.tri[dev.compIndex].model.evaluateQuadric(vgint, vpk);
                 }
                 ++deviceEvals;
+                const double ig = comp.tri[dev.compIndex].model.gridCurrent(vgint);
                 iData[o] = cur.ip;
                 iData[o + 1] = 0.0;
-                iData[o + 2] = 0.0;
+                iData[o + 2] = ig;
                 if (jData) {
                     jData[o * K + o] = cur.dvpk;
                     jData[o * K + o + 2] = cur.dvgk;
+                    jData[(o + 2) * K + o + 2] = (ig > 0.0) ? 1.0 / TriodeModel::kGridR : 0.0;
                 }
                 break;
             }
@@ -348,6 +350,8 @@ public:
                     const int o = dev.portBase;
                     ar[o] += zr[o] * jData[o * K + o];
                     ar[o + 2] += zr[o] * jData[o * K + o + 2];
+                    if (dev.numActiveRows == 2)
+                        ar[o + 2] += zr[o + 2] * jData[(o + 2) * K + o + 2];
                     ar[o + 1] += zr[o + 1] * jData[(o + 1) * K + o + 1];
                     break;
                 }

@@ -22,7 +22,7 @@
 //
 // `Z` alone is *not* the answer, and that is why both blocks are reported: an
 // interstage coupling capacitor makes `Z` nonzero in **both** directions (it is
-// reciprocal), yet a triode's grid ports carry no current of their own, so `J`'s
+// reciprocal), yet without grid current a triode's grid ports carry none, so `J`'s
 // grid entries are zero and the backwards coupling is annihilated. Groups
 // of a cap-coupled cascade are then block-triangular in device order and solving
 // them in sequence is *exact* -- not the handoff approximation a hardcoded
@@ -128,7 +128,7 @@ struct RootGroupCoupling {
 inline RootGroupCoupling rootGroupCoupling(const wdf::Circuit& c, const CircuitCase& tc, double fs,
                                            int nSamples = 4000) {
     RootGroupCoupling out;
-    wdf::Engine e(c, fs);
+    wdf::Engine e(c, fs, false);
     const int K = e.rootCount();
     out.nTri = static_cast<int>(e.compiled().tri.size());
     out.nD = static_cast<int>(e.compiled().diode.size());

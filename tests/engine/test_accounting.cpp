@@ -107,9 +107,8 @@ TEST_CASE("Root accounting and scalar solver eligibility", "[accounting]") {
 // Regression for the invalid-row access that corrupted the heap: the runtime
 // active-set reduction can delete rows and `redToActive_[rBase + 1]` then
 // becomes -1, so the assembly must not index the matrix with it. The layout
-// half is static: a triode declares no grid unknown at all -- its grid ports
-// carry no current -- so the reduced system is its plate row alone, whatever
-// the grid voltage is.
+// half is static: a triode declares its plate and internal grid as unknowns,
+// whatever the grid voltage is.
 TEST_CASE("Inactive triode grid rows cannot be indexed", "[layout][newton]") {
     const auto runSamples = [](wdf::Engine& e, const wdf::Circuit& c, double bias,
                                int samples) {
@@ -127,24 +126,20 @@ TEST_CASE("Inactive triode grid rows cannot be indexed", "[layout][newton]") {
         }
     };
 
-    SECTION("triode has one active row and no grid unknown") {
+    SECTION("triode has a plate row and an internal grid row") {
         const wdf::Circuit c = lwdf_test::commonCathodeBypassed();
         wdf::Engine e(c, kFs);
 
         REQUIRE(e.rootLayout().devices.size() == 1);
-        CHECK(e.rootLayout().devices[0].numActiveRows == 1);
-        CHECK(e.rootLayout().nRed == 1);
-        // External grid (port 1) and internal grid (port 2) are not unknowns.
+        CHECK(e.rootLayout().devices[0].numActiveRows == 2);
+        CHECK(e.rootLayout().nRed == 2);
         CHECK(e.rootLayout().redRow[1] == -1);
-        CHECK(e.rootLayout().redRow[2] == -1);
+        CHECK(e.rootLayout().redRow[2] == 1);
 
         runSamples(e, c, 0.5, 2400);
     }
 
-    SECTION("a biased triode keeps one active row whatever the grid's sign is") {
-        // A direct grid bias would once have made the sign of Vgk decide whether
-        // a second row was live. The grid carries no current, so the same
-        // single row is active under either bias.
+    SECTION("a biased triode keeps both rows whatever the grid's sign is") {
         wdf::Circuit c;
         c.addSrc("bias", "0", -4.0);
         c.addRes("bias", "g", 1e3);
@@ -156,10 +151,9 @@ TEST_CASE("Inactive triode grid rows cannot be indexed", "[layout][newton]") {
 
         wdf::Engine e(c, kFs);
         REQUIRE(e.rootLayout().devices.size() == 1);
-        CHECK(e.rootLayout().devices[0].numActiveRows == 1);
-        CHECK(e.rootLayout().nRed == 1);
+        CHECK(e.rootLayout().devices[0].numActiveRows == 2);
+        CHECK(e.rootLayout().nRed == 2);
 
-        // Negative bias and positive bias: the plate row either way.
         runSamples(e, c, -4.0, 1200);
         runSamples(e, c, 4.0, 1200);
     }

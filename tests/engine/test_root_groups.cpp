@@ -109,14 +109,14 @@ TEST_CASE("the split solves the same circuit as the joint Newton", "[rootgroups]
     // and quietly compute a different circuit.
     const auto check = [](const lwdf_test::CircuitCase& tc, bool splittable) {
         const wdf::Circuit c = (*tc.build)();
-        wdf::Engine fast(c, kFs);
+        wdf::Engine fast(c, kFs, false);
         // The plate-only partition applies to every shape here -- `allows`
         // is eligibility. The closed form *drives* the solve only when every
         // block is a scalar singleton, and that is the `splittable` claim.
         REQUIRE(fast.allowsExplicitRoot());
         REQUIRE(fast.explicitRoots() == splittable);
 
-        wdf::Engine slow((*tc.build)(), kFs);
+        wdf::Engine slow((*tc.build)(), kFs, false);
         REQUIRE(slow.setExplicitRoots(false));
         REQUIRE_FALSE(slow.explicitRoots());
 
@@ -149,6 +149,36 @@ TEST_CASE("the split solves the same circuit as the joint Newton", "[rootgroups]
     check({"diode_clipper", &lwdf_test::diodeClipper, &lwdf_test::sine1v}, false);
 }
 
+TEST_CASE("with grid current the closed form solves the joint Newton's circuit", "[rootgroups]") {
+    // One stage ramped out of grid-conducting saturation has no later grid to
+    // lag, so both solvers must agree and keep the plate above the cathode;
+    // deciding the domain without the tube's own grid state chattered here.
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("e", "0", 250.0);
+    c.addRes("in", "g", 33e3);
+    c.addRes("k", "0", 39e3);
+    c.addRes("e", "p", 100e3);
+    c.addTri("g", "p", "k", "g", wdf::k12ax7Quadric());
+    wdf::Engine fast(c, kFs);
+    wdf::Engine slow(c, kFs);
+    REQUIRE(fast.explicitRoots());
+    REQUIRE(slow.setExplicitRoots(false));
+    const auto p = static_cast<size_t>(fast.nodeIndex("p"));
+    const auto k = static_cast<size_t>(fast.nodeIndex("k"));
+    double worst = 0.0, lowest = 0.0;
+    for (int n = 0; n < 4800; ++n) {
+        const std::vector<double> sv{150.0 * (1.0 - 1.1 * n / 4800.0), 250.0};
+        const std::vector<double>& a = fast.step(sv);
+        const std::vector<double>& b = slow.step(sv);
+        worst = std::max(worst, std::abs(a[p] - b[p]));
+        lowest = std::min({lowest, a[p] - a[k], b[p] - b[k]});
+    }
+    CAPTURE(worst, lowest);
+    REQUIRE(worst < 1e-6);
+    REQUIRE(lowest > -1e-6);
+}
+
 TEST_CASE("wherever the closed form claims the split, it equals the joint Newton", "[rootgroups]") {
     // The general form of the claim above, swept over every fixture instead of the
     // named ones: if `explicitRoots()` is on, the sequence of closed forms has to be
@@ -159,12 +189,12 @@ TEST_CASE("wherever the closed form claims the split, it equals the joint Newton
     int split = 0;
     for (const auto& tc : lwdf_test::circuitCases()) {
         const wdf::Circuit c = (*tc.build)();
-        wdf::Engine fast(c, kFs);
+        wdf::Engine fast(c, kFs, false);
         if (!fast.explicitRoots())
             continue;  // the joint Newton is its own reference; nothing to compare
         ++split;
 
-        wdf::Engine slow((*tc.build)(), kFs);
+        wdf::Engine slow((*tc.build)(), kFs, false);
         REQUIRE(slow.setExplicitRoots(false));
         fast.reset();
         slow.reset();

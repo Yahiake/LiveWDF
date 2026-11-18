@@ -68,9 +68,8 @@ struct RootLayout {
     std::vector<int> redRow;  // root port -> reduced row, or -1
     // Root ports whose currents physically enter the linear network and hence
     // belong in node reconstruction. This is deliberately not `redCol`: the
-    // triode's external-grid current is physical even though its reduced
-    // column is the zero-current internal-grid port, and the BJT's e0 port is
-    // dependent (`iE = -(iC + iB)`) already represented by the ce/be returns.
+    // BJT's e0 port is dependent (`iE = -(iC + iB)`) already represented by
+    // the ce/be returns.
     std::vector<int> nodeCol;
 };
 
@@ -99,9 +98,9 @@ inline RootLayout buildRootLayout(const Compiled& c) {
     for (int t = 0; t < static_cast<int>(c.tri.size()); ++t) {
         const auto& ct = c.tri[static_cast<size_t>(t)];
         const Port ports[3] = {ct.pk, ct.gk, ct.gik};
-        // A triode conducts plate current only, so the plate port is its one
-        // active row; both grid ports are passive and their current is zero.
-        add(RootKind::Triode, t, ports, 3, 1, {0, 0, 0});
+        // The plate conducts, and the internal grid too when grid current is
+        // on; the external grid is passive.
+        add(RootKind::Triode, t, ports, 3, ct.model.gridConducts ? 2 : 1, {0, 2, 0});
     }
 
     for (int q = 0; q < static_cast<int>(c.diode.size()); ++q) {
@@ -168,9 +167,8 @@ inline RootLayout buildRootLayout(const Compiled& c) {
     // columns. Keep every port except the BJT's dependent emitter port: its
     // current is already the return path of `ce` and `be`, so summing it a
     // second time doubles the emitter voltage drop. The remaining non-active
-    // ports are either physical currents (a conducting triode grid) or
-    // identically zero (triode internal grid, JFET/MOSFET gate), so they are
-    // harmless and preserve the existing node response.
+    // ports are identically zero (triode external grid, JFET/MOSFET gate), so
+    // they are harmless and preserve the existing node response.
     layout.nodeCol.clear();
     for (const auto& dev : layout.devices) {
         for (int q = 0; q < dev.numPorts; ++q) {

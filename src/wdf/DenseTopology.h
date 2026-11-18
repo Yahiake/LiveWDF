@@ -47,6 +47,7 @@ inline DeviceKind deviceKind(RootKind kind) noexcept {
 inline int activePortCount(const RootDevice& dev) noexcept {
     switch (dev.kind) {
     case DeviceKind::Triode:
+        return dev.numActiveRows;
     case DeviceKind::Diode:
     case DeviceKind::ControlledRes:
     case DeviceKind::Jfet:
@@ -62,7 +63,7 @@ inline int activePortCount(const RootDevice& dev) noexcept {
 }
 
 inline int activePort(const RootDevice& dev, int rr) noexcept {
-    return dev.portBase + rr;
+    return dev.portBase + (dev.kind == DeviceKind::Triode ? 2 * rr : rr);
 }
 
 struct JunctionLimiter {
@@ -150,6 +151,15 @@ struct NewtonBlock {
         reducedScalarPort = -1;
     }
 };
+
+/// A singleton block with a scalar closed form: one live port, or a triode's
+/// active rows.
+inline bool isScalarBlock(const NewtonBlock& block, const RootDevice* devices) noexcept {
+    if (block.devices.size() != 1)
+        return false;
+    const RootDevice& dev = devices[block.devices[0]];
+    return static_cast<int>(block.ports.size()) == (dev.kind == DeviceKind::Triode ? activePortCount(dev) : 1);
+}
 
 /// One precomputed runtime partition. The vector-of-blocks is built at
 /// topology time, so selecting a partition in the audio loop is a pointer

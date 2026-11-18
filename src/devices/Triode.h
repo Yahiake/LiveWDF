@@ -49,19 +49,27 @@ inline void softplusSigmoid(double u, double& sp, double& sg) noexcept {
 /// `ip = vo/Z`, and with `vo <= 0` as cold, `ip = 0`, so it never conducts
 /// in reverse and meets the quadric's own root continuously on both sides.
 ///
-/// The law conducts plate current only, so neither grid port carries a current
-/// of its own and the grid ports are passive: the triode group is exact in
-/// closed form rather than a Newton circuit.
+/// The internal grid conducts to the cathode piecewise linearly,
+///
+///     ig = max(0, Vgk - kGridOn) / kGridR
+///
+/// a line fitted to the Dempwolf 12AX7 grid curve over 0.25..2.5 V. Inside
+/// either grid state the plate law stays one quadratic in `q`, so the group
+/// keeps its closed form; a diode here costs a Newton solve per sample.
+/// `gridConducts = false` is the plate-only law.
 struct TriodeModel {
     /// The projected short is `kShort*Z`, not zero, because the Newton row is
     /// i(v) and needs a finite conductance; the closed form uses the same one
     /// so both solve one circuit.
     static constexpr double kShort = 1e-9;
+    static constexpr double kGridOn = 0.3;
+    static constexpr double kGridR = 1100.0;
 
     QuadricTriodeParams p{};
     double cg = p.kPg / (2.0 * p.kP2);  // kPg/(2*kP2)
     double c0 = p.kP / (2.0 * p.kP2);   // kP/(2*kP2)
     double two_kP2 = 2.0 * p.kP2;
+    bool gridConducts = true;
 
     void prepareQuadric() noexcept {
         cg = p.kPg / (2.0 * p.kP2);
@@ -70,13 +78,17 @@ struct TriodeModel {
     }
 
     /// Currents into the tube and their derivatives w.r.t. the port voltages.
-    /// `ip` flows plate->cathode and is the only current a triode conducts; it
-    /// answers to the INTERNAL grid only through that port's voltage, via `q`.
+    /// `ip` flows plate->cathode and answers to the INTERNAL grid through that
+    /// port's voltage, via `q`.
     struct Currents {
         double ip = 0.0;
         double dvgk = 0.0;  // dIp/dVgk_int
         double dvpk = 0.0;  // dIp/dVpk
     };
+
+    double gridCurrent(double vgk) const noexcept {
+        return gridConducts && vgk > kGridOn ? (vgk - kGridOn) / kGridR : 0.0;
+    }
 
     Currents evaluate(double vgk, double vpk) const noexcept {
         if (vpk < 0.0)

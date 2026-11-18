@@ -77,16 +77,15 @@ public:
     /// Whether the exact closed-form root can drive this circuit: every group
     /// (one device each) has a closed form and the coupling between groups is
     /// acyclic, so the root splits into groups that can be solved in sequence.
-    /// A triode group is a gridless quadric one, so `K_` is a whole number of
-    /// triodes and the plate law is the quadratic surface `ip = kP2*q^2` in the
-    /// completed-square variable `q`; a diode group is the junction law over its
-    /// port resistance, which is one `wrightOmega` call. Both are exact.
-    /// Whether the root partition applied at all: the plate-only blocking
-    /// succeeded. This is eligibility, not runtime exactness -- coupled
-    /// blocks (shared cathodes, long-tailed pairs, anti-parallel diodes)
-    /// partition into one multi-device block and grid-conducting triodes
-    /// carry their grid column live, so they partition but have no scalar
-    /// closed form; `explicitRoots()` adds that second half.
+    /// A triode group is the quadratic surface `ip = kP2*q^2` in the
+    /// completed-square variable `q` with a piecewise-linear grid; a diode
+    /// group is the junction law over its port resistance, which is one
+    /// `wrightOmega` call. Each is exact for its own group.
+    /// Whether the root partition applied at all: the blocking succeeded. This
+    /// is eligibility, not runtime exactness -- coupled blocks (shared
+    /// cathodes, long-tailed pairs, anti-parallel diodes)
+    /// partition into one multi-device block, so they partition but have no
+    /// scalar closed form; `explicitRoots()` adds that second half.
     bool allowsExplicitRoot() const {
         return groupCount_ > 0 && nPent_ == 0 && nBjt_ == 0 && nOpAmp_ == 0;
     }
@@ -272,12 +271,10 @@ protected:
 
     /// Assemble the reduced Newton system. See `reducedFinish` for the algebra:
     /// with u = J*dv the K x K step (I + Z J) dv = -F is *equivalent* to the
-    /// 2*nTri x 2*nTri system (I + J Z) u = -J F (Sylvester). The internal-grid
-    /// port carries no current, so the corresponding rows of J are zero, the gi
-    /// rows of (I + J Z) are the identity, and u[gi] = 0 identically: the system
-    /// lives entirely on the plate / external-grid ports. This writes
-    /// M = I + (J Z) restricted to those ports into `Mr_` and -J F into `rN_`,
-    /// indexed plate(t) -> 2t, extgrid(t) -> 2t+1.
+    /// system (I + J Z) u = -J F (Sylvester) on the active rows: a passive
+    /// port's row of J is zero, so its u is zero identically. This writes
+    /// M = I + (J Z) restricted to the active rows into `Mr_` and -J F into
+    /// `rN_`, indexed by `redCol_`.
     void reducedAssemble(const std::vector<double>& Z, const std::vector<double>& J,
                          const std::vector<double>& F) {
         solver::RootJacobian::reducedAssemble(
@@ -312,14 +309,14 @@ protected:
     }
 
     /// The exact closed form, applied to every group in dependency order. A group
-    /// is one device, and each kind has a scalar closed form: a gridless quadric
+    /// is one device, and each kind has a scalar closed form: a quadric
     /// triode's plate current is the relevant root of a scalar quadratic, a
     /// diode's is one `wrightOmega` call. Before a group's root is taken, the
     /// currents of the groups already solved are folded into its open-circuit
     /// voltages -- that fold is the residual's coupling term. Because the order is
-    /// topological under `coupled`, those are the *only* unknowns a group's
-    /// equations mention, so the sequence of scalar roots is exact and not a
-    /// per-stage handoff approximation.
+    /// topological under `coupled`, those are the only unknowns a group's
+    /// equations mention, except a later group's grid current, which is read
+    /// from the previous sample; without grid current the sequence is exact.
     ///
     /// With one device the fold loop is empty and this reproduces the previous
     /// single-device closed form bit for bit.
@@ -329,35 +326,6 @@ protected:
     /// the offset arithmetic in every solve function.
     const RootDevice& groupRootDevice(int g) const noexcept {
         return rootDevices_[static_cast<size_t>(g)];
-    }
-
-    /// Number of live/active rows of a device in the block solve. Every device
-    /// contributes one current column: the plate for a triode, the port itself
-    /// for a one-port device, drain-source for a JFET/MOSFET (whose gate row
-    /// is identically zero).
-    int activePortCount(const RootDevice& dev) const noexcept {
-        switch (dev.kind) {
-        case DeviceKind::Triode:
-        case DeviceKind::Diode:
-        case DeviceKind::ControlledRes:
-        case DeviceKind::Jfet:
-        case DeviceKind::Mosfet:
-        case DeviceKind::OpAmp:
-            return 1;
-        case DeviceKind::Bjt:
-            return 2;
-        case DeviceKind::Pentode:
-            return 2;
-        default:
-            return 0;
-        }
-    }
-
-    /// The port of active row `rr` for a device. Row order is the same as
-    /// `reducedAssemble`: the plate for a triode, the port itself for a
-    /// one-port device, drain-source for a JFET/MOSFET.
-    int activePort(const RootDevice& dev, int rr) const noexcept {
-        return dev.portBase + rr;
     }
 
     BlockView staticBlockView() const noexcept {
@@ -421,16 +389,10 @@ protected:
         solver::RootBlockSolve::solveRootBlocksRuntime(ctx, newtonCtx, runtimeBlockView(), maxIter, tol);
     }
 
-    /// Port `r`'s open-circuit voltage with the `s` blocks already solved folded
-    /// in. Every live column of a solved block is read: a grid-conducting
-    /// triode leaves both its plate and its external-grid current, and a
-    /// multi-device block leaves one column per device. Blocks later in
-    /// `groupOrder_` are not folded: the dependency graph guarantees their live
-    /// columns do not enter any row of this block -- a later block that did
-    /// would be a dependency and would have been emitted first. Reading a later
-    /// block's previous-sample current here would make the pass approximate
-    /// instead of exact, which is exactly what the full-residual check exists
-    /// to catch when the static graph is wrong.
+    /// Port `r`'s open-circuit voltage with every live column of the `s` blocks
+    /// already solved folded in. The solve's own fold (`NewtonBlock::predFold`)
+    /// also reads a later block's internal-grid current, from the previous
+    /// sample.
     double foldPort(int r, int s) const {
         return foldPort(staticBlockView(), r, s);
     }
@@ -448,7 +410,7 @@ protected:
             view, r, currentBlock, Z_.data(), vOc_.data(), ii_.data(), K_);
     }
 
-    /// One gridless quadric triode in exact scalar closed form.
+    /// One quadric triode with its grid line in exact closed form.
     void solveTriodeGroup(int g, int s, bool relaxed = false, int b = 0) {
         solver::RootClosedForms::solveTriodeGroup(
             g, s, relaxed, b, staticBlockView(), Z_.data(), vOc_.data(), ii_.data(),
@@ -602,20 +564,10 @@ protected:
             for (int di : ob.devices) {
                 NewtonBlock& block = newtonBlocks_[static_cast<size_t>(nb)];
                 const RootDevice& dev = rootDevices_[static_cast<size_t>(di)];
-                const int o = dev.portBase;
                 block.devices.push_back(di);
-                switch (dev.kind) {
-                case DeviceKind::Bjt:
-                case DeviceKind::Pentode:
-                    block.ports.push_back(o);
+                for (int rr = 0; rr < activePortCount(dev); ++rr) {
+                    block.ports.push_back(activePort(dev, rr));
                     block.portDevice.push_back(di);
-                    block.ports.push_back(o + 1);
-                    block.portDevice.push_back(di);
-                    break;
-                default:
-                    block.ports.push_back(o);
-                    block.portDevice.push_back(di);
-                    break;
                 }
                 blockOf_[static_cast<size_t>(di)] = nb;
                 ++nb;
@@ -631,7 +583,7 @@ protected:
         hasAntiParallelBlock_ = false;
         for (int b = 0; b < nb; ++b) {
             const NewtonBlock& block = newtonBlocks_[static_cast<size_t>(b)];
-            if (block.devices.size() == 1 && block.ports.size() == 1)
+            if (isScalarBlock(block, rootDevices_.data()))
                 ++scalarBlockCount_;
             if (block.isAntiParallelDiodePair)
                 hasAntiParallelBlock_ = true;

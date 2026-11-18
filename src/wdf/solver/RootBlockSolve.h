@@ -963,7 +963,7 @@ public:
         BlockSolveContext& ctx) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        if (block.devices.size() != 1 || block.ports.size() != 1)
+        if (!isScalarBlock(block, ctx.rootDevices.data()))
             return false;
         const int g = block.devices[0];
         switch (ctx.rootDevices[static_cast<size_t>(g)].kind) {
@@ -1047,7 +1047,7 @@ public:
                 RootClosedForms::solveAntiParallelDiodeGroup(
                     view, b, s, false, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
                     ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
-            } else if (block.devices.size() == 1 && block.ports.size() == 1) {
+            } else if (isScalarBlock(block, ctx.rootDevices.data())) {
                 if (!solveScalarBlock(view, b, s, false, ctx)) {
                     failed = true;
                     break;
@@ -1086,7 +1086,7 @@ public:
                     RootClosedForms::solveAntiParallelDiodeGroup(
                         view, b, s, true, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
                         ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
-                } else if (block.devices.size() == 1 && block.ports.size() == 1) {
+                } else if (isScalarBlock(block, ctx.rootDevices.data())) {
                     if (!solveScalarBlock(view, b, s, true, ctx)) {
                         failed = true;
                         break;
@@ -1276,7 +1276,7 @@ public:
             RootNewton::solveRootsNewtonSeeded(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
     }
 
-    /// Exact closed form pass for all-scalar partitioned stages.
+    /// Closed form pass for all-scalar partitioned stages.
     static inline void solveRootGroups(
         BlockSolveContext& ctx,
         const BlockView& view,
