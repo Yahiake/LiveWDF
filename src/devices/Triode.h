@@ -51,9 +51,10 @@ inline void softplusSigmoid(double u, double& sp, double& sg) noexcept {
 ///
 /// The internal grid conducts to the cathode piecewise linearly,
 ///
-///     ig = max(0, max over kGridLines of (Vgk - on) / r)
+///     ig = max(0, Vgk - kGridOn) / kGridR
 ///
-/// Inside each line the plate law stays one quadratic in `q`, so the group
+/// a line fitted to the Dempwolf 12AX7 grid curve over 0.25..2.5 V. Inside
+/// either grid state the plate law stays one quadratic in `q`, so the group
 /// keeps its closed form; a diode here costs a Newton solve per sample.
 /// `gridConducts = false` is the plate-only law.
 struct TriodeModel {
@@ -61,11 +62,8 @@ struct TriodeModel {
     /// i(v) and needs a finite conductance; the closed form uses the same one
     /// so both solve one circuit.
     static constexpr double kShort = 1e-9;
-    struct GridLine {
-        double on, r;
-    };
-    // Dempwolf RSD-1 12AX7 grid curve fitted over -0.25..1.05 V where amp grids sit on a DI, the last line over 0.25..2.5 V.
-    static constexpr GridLine kGridLines[] = {{-0.0745, 3494.0}, {0.0941, 1550.0}, {0.3, 1100.0}};
+    static constexpr double kGridOn = 0.3;
+    static constexpr double kGridR = 1100.0;
 
     QuadricTriodeParams p{};
     double cg = p.kPg / (2.0 * p.kP2);  // kPg/(2*kP2)
@@ -88,15 +86,8 @@ struct TriodeModel {
         double dvpk = 0.0;  // dIp/dVpk
     };
 
-    double gridCurrent(double vgk, double& slope) const noexcept {
-        double ig = 0.0;
-        slope = 0.0;
-        for (const GridLine& l : kGridLines)
-            if (gridConducts && vgk - l.on > l.r * ig) {
-                ig = (vgk - l.on) / l.r;
-                slope = 1.0 / l.r;
-            }
-        return ig;
+    double gridCurrent(double vgk) const noexcept {
+        return gridConducts && vgk > kGridOn ? (vgk - kGridOn) / kGridR : 0.0;
     }
 
     Currents evaluate(double vgk, double vpk) const noexcept {
