@@ -11,6 +11,7 @@
 #include "compiler/Compiler.h"
 #include "runtime/Runtime.h"
 
+#include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <algorithm>
@@ -30,6 +31,41 @@
 #include <string>
 #include <thread>
 #include <vector>
+
+struct ThreadUsage {
+    double cpuNs = 0.0;
+    long long allocs = 0;
+    long long faults = 0;
+};
+
+#ifdef __GLIBC__
+#include <sys/resource.h>
+#include <time.h>
+
+// Defining malloc here interposes it for the whole process, so JUCE's
+// HeapBlock, which calls std::malloc rather than operator new, is counted too.
+static thread_local long long tAllocs = 0;
+extern "C" {
+void* __libc_malloc(std::size_t);
+void* __libc_calloc(std::size_t, std::size_t);
+void* __libc_realloc(void*, std::size_t);
+void* __libc_memalign(std::size_t, std::size_t);
+void* malloc(std::size_t n) noexcept { ++tAllocs; return __libc_malloc(n); }
+void* calloc(std::size_t k, std::size_t n) noexcept { ++tAllocs; return __libc_calloc(k, n); }
+void* realloc(void* p, std::size_t n) noexcept { ++tAllocs; return __libc_realloc(p, n); }
+void* aligned_alloc(std::size_t a, std::size_t n) noexcept { ++tAllocs; return __libc_memalign(a, n); }
+}
+
+static ThreadUsage threadUsage() {
+    timespec ts{};
+    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
+    rusage ru{};
+    getrusage(RUSAGE_THREAD, &ru);
+    return {ts.tv_sec * 1e9 + static_cast<double>(ts.tv_nsec), tAllocs, ru.ru_minflt + ru.ru_majflt};
+}
+#else
+static ThreadUsage threadUsage() { return {}; }
+#endif
 
 namespace {
 
@@ -115,6 +151,64 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
     r.finite = finite;
     r.peak = peak;
     return r;
+}
+
+// Plays a WAV through processBlock() one callback at a time and reports the
+// spread of callback cost against the block's real-time budget (--wav).
+int runWav(const juce::File& file, const juce::File& wav, int blockSize) {
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
+    if (reader == nullptr) {
+        std::printf("cannot read %s\n", wav.getFullPathName().toRawUTF8());
+        return 1;
+    }
+    const double fs = reader->sampleRate;
+    const int frames = static_cast<int>(reader->lengthInSamples);
+    juce::AudioBuffer<float> input(1, frames);
+    reader->read(&input, 0, frames, 0, true, false);
+
+    livewdf::LiveWDFPluginProcessor processor;
+    processor.prepareToPlay(fs, blockSize);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::printf("load failed: %s\n", processor.lastError().c_str());
+        return 1;
+    }
+    juce::AudioBuffer<float> buffer(2, blockSize);
+    juce::MidiBuffer midi;
+    const double budgetNs = blockSize / fs * 1.0e9;
+    std::vector<double> wall, cpu;
+    long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
+    for (int start = 0; start + blockSize <= frames; start += blockSize) {
+        buffer.copyFrom(0, 0, input, 0, start, blockSize);
+        buffer.copyFrom(1, 0, input, 0, start, blockSize);
+        const ThreadUsage u0 = threadUsage();
+        const auto w0 = std::chrono::steady_clock::now();
+        processor.processBlock(buffer, midi);
+        const auto w1 = std::chrono::steady_clock::now();
+        const ThreadUsage u1 = threadUsage();
+        wall.push_back(100.0 * std::chrono::duration<double, std::nano>(w1 - w0).count() / budgetNs);
+        cpu.push_back(100.0 * (u1.cpuNs - u0.cpuNs) / budgetNs);
+        allocs += u1.allocs - u0.allocs;
+        allocBlocks += u1.allocs != u0.allocs;
+        faults += u1.faults - u0.faults;
+        faultBlocks += u1.faults != u0.faults;
+    }
+    const auto spread = [](std::vector<double>& v) {
+        std::sort(v.begin(), v.end());
+        const auto at = [&](double q) { return v[static_cast<size_t>(q * static_cast<double>(v.size() - 1))]; };
+        std::printf("p50 %.1f%%  p99 %.1f%%  p99.9 %.1f%%  max %.1f%%", at(0.5), at(0.99), at(0.999), v.back());
+    };
+    std::printf("%zu callbacks of %d at %.0f Hz, budget %.1f us\nwall ", wall.size(), blockSize, fs, budgetNs / 1e3);
+    spread(wall);
+#ifdef __GLIBC__
+    std::printf("\ncpu  ");
+    spread(cpu);
+    std::printf("  allocs %lld in %lld callbacks, page faults %lld in %lld callbacks",
+                allocs, allocBlocks, faults, faultBlocks);
+#endif
+    std::printf("\n");
+    return 0;
 }
 
 // ==============================================================================
@@ -1756,7 +1850,8 @@ int main(int argc, char** argv) {
     if (!file.existsAsFile()) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
-                    "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>]\n");
+                    "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
+                    "[--wav <file> [--block <n>]]\n");
         return 1;
     }
 
@@ -1769,6 +1864,8 @@ int main(int argc, char** argv) {
     std::string spiceDir;
     std::string probeCsv;
     std::string pluginProbeCsv;
+    std::string wavPath;
+    int wavBlock = 128;
     double probeRate = kSampleRate;
     double probeDrive = 0.001;
     double probeFreq = 1000.0;
@@ -1798,6 +1895,10 @@ int main(int argc, char** argv) {
             probeFreq = std::stod(argv[++i]);
         else if (arg == "--plugin-probe" && i + 1 < argc)
             pluginProbeCsv = argv[++i];
+        else if (arg == "--wav" && i + 1 < argc)
+            wavPath = argv[++i];
+        else if (arg == "--block" && i + 1 < argc)
+            wavBlock = std::stoi(argv[++i]);
     }
 
     if (validate)
@@ -1818,6 +1919,8 @@ int main(int argc, char** argv) {
         return runProbe(file, probeCsv, probeRate, probeDrive, probeFreq);
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
+    if (!wavPath.empty())
+        return runWav(file, juce::File(wavPath), wavBlock);
 
     livewdf::LiveWDFPluginProcessor processor;
 
