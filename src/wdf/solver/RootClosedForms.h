@@ -185,7 +185,9 @@ public:
     /// read `Vpk` back, and when it is negative project onto the short if the
     /// open-circuit plate voltage is positive and onto cold otherwise. A
     /// conducting grid folds its line into the plate's source and impedance,
-    /// which leaves the same quadratic in `q`. Returns the domain state.
+    /// which leaves the same quadratic in `q`. The lines' slopes rise, so it
+    /// solves again on each next line until the solved grid is below it.
+    /// Returns the domain state.
     static inline unsigned char solveTriode(
         const TriodeModel& m,
         double voPk,
@@ -200,11 +202,13 @@ public:
         const double* zg = zData + static_cast<size_t>(o + 2) * K;
         unsigned char pin = solvePlate(m, voPk, zp[o], voGik, zg[o], ip);
         ig = 0.0;
-        if (m.gridCurrent(voGik - zg[o] * ip) > 0.0) {
-            const double a = 1.0 / (TriodeModel::kGridR + zg[o + 2]);
-            const double e = a * (voGik - TriodeModel::kGridOn);
+        for (const TriodeModel::GridLine& l : TriodeModel::kGridLines) {
+            if (!m.gridConducts || voGik - zg[o] * ip - zg[o + 2] * ig - l.on <= l.r * ig)
+                break;
+            const double a = 1.0 / (l.r + zg[o + 2]);
+            const double e = a * (voGik - l.on);
             pin = solvePlate(m, voPk - zp[o + 2] * e, zp[o] - zp[o + 2] * a * zg[o],
-                             TriodeModel::kGridOn + TriodeModel::kGridR * e, TriodeModel::kGridR * a * zg[o], ip);
+                             l.on + l.r * e, l.r * a * zg[o], ip);
             ig = e - a * zg[o] * ip;
         }
         return pin;
