@@ -85,6 +85,56 @@ if(LIVEWDF_FONT_ASSETS AND COMMAND juce_add_binary_data)
     )
 endif()
 
+# The factory circuits shipped with the editor and plugin. They live as real
+# files in `schematics/` so they can be edited and reviewed in the repository,
+# but an installed binary cannot see the checkout. Pack the folder into one
+# archive, embed that archive, and let the shared factory helper unpack it into
+# the user's Documents folder on first run (or when the factory contents
+# change). A zip keeps the `amps/` and `pedals_fx/` paths; individual binary
+# resources would flatten them and need a second manifest.
+file(GLOB_RECURSE LIVEWDF_FACTORY_SCHEMATICS CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/schematics/*.livewdf")
+list(SORT LIVEWDF_FACTORY_SCHEMATICS)
+
+if(LIVEWDF_FACTORY_SCHEMATICS AND COMMAND juce_add_binary_data)
+    # Hash the source paths and bytes, not the generated zip: the archive's
+    # timestamps may change when it is rebuilt, while the circuits a user sees
+    # have not. The hash is the version marker the runtime compares.
+    set(LIVEWDF_FACTORY_SCHEMATICS_HASH "")
+    foreach(schematic IN LISTS LIVEWDF_FACTORY_SCHEMATICS)
+        file(SHA256 "${schematic}" schematic_hash)
+        file(RELATIVE_PATH schematic_relative
+            "${CMAKE_CURRENT_SOURCE_DIR}/schematics" "${schematic}")
+        string(APPEND LIVEWDF_FACTORY_SCHEMATICS_HASH
+            "${schematic_relative}:${schematic_hash}\n")
+    endforeach()
+    string(SHA256 LIVEWDF_FACTORY_SCHEMATICS_VERSION
+        "${LIVEWDF_FACTORY_SCHEMATICS_HASH}")
+
+    set(LIVEWDF_FACTORY_SCHEMATICS_ZIP
+        "${CMAKE_CURRENT_BINARY_DIR}/LiveWDF_FactorySchematics.zip")
+    add_custom_command(
+        OUTPUT "${LIVEWDF_FACTORY_SCHEMATICS_ZIP}"
+        COMMAND "${CMAKE_COMMAND}" -E tar cf
+            "${LIVEWDF_FACTORY_SCHEMATICS_ZIP}" --format=zip -- .
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/schematics"
+        DEPENDS ${LIVEWDF_FACTORY_SCHEMATICS}
+        COMMENT "Packing factory schematics"
+        VERBATIM
+    )
+    add_custom_target(LiveWDF_FactorySchematicsZip
+        DEPENDS "${LIVEWDF_FACTORY_SCHEMATICS_ZIP}")
+
+    juce_add_binary_data(LiveWDF_FactorySchematics
+        SOURCES "${LIVEWDF_FACTORY_SCHEMATICS_ZIP}"
+        NAMESPACE FactoryData
+        HEADER_NAME FactoryData.h
+    )
+    add_dependencies(LiveWDF_FactorySchematics LiveWDF_FactorySchematicsZip)
+    target_compile_definitions(LiveWDF_FactorySchematics INTERFACE
+        LIVEWDF_FACTORY_SCHEMATICS_VERSION="${LIVEWDF_FACTORY_SCHEMATICS_VERSION}")
+endif()
+
 # --- Tests --------------------------------------------------------------------
 if(LIVEWDF_BUILD_TESTS)
     enable_testing()

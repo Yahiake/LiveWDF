@@ -3,6 +3,7 @@
 #include "DiagLog.h"
 #include "EditorLayout.h"
 #include "EditorLookAndFeel.h"
+#include "FactorySchematics.h"
 #include "gui/Fonts.h"
 #include "gui/AboutDialog.h"
 #include "gui/PluginLayoutDialog.h"
@@ -44,6 +45,13 @@ EditorWindow::Content::Content() {
     // the editor opened with rather than a second, slowly diverging version.
     starterDocument_ = editor_.getDocument();
     starterDocument_.name = "RC Lowpass";
+
+    // The editor is often the first LiveWDF binary a new user opens. Install
+    // the factory circuits before the preset library scans, so they appear in
+    // the same list as the user's own presets. A failure here must not stop the
+    // editor from opening; the library simply has no sections yet.
+    if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed())
+        juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
 
     presetFolder_ = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
                         .getChildFile("LiveWDF");
