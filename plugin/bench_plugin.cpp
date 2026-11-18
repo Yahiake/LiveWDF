@@ -151,9 +151,20 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
     return r;
 }
 
+bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurrent) {
+    auto* parameter = processor.getAPVTS().getParameter("grid_current");
+    if (parameter == nullptr) {
+        std::printf("grid_current parameter not found\n");
+        return false;
+    }
+    parameter->setValueNotifyingHost(gridCurrent ? 1.0f : 0.0f);
+    std::printf("grid_current: %s\n", gridCurrent ? "ON" : "OFF");
+    return true;
+}
+
 // Plays a WAV through processBlock() one callback at a time and reports the
 // spread of callback cost against the block's real-time budget (--wav).
-int runWav(const juce::File& file, const juce::File& wav, int blockSize) {
+int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
@@ -167,6 +178,8 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize) {
     reader->read(&input, 0, frames, 0, true, false);
 
     livewdf::LiveWDFPluginProcessor processor;
+    if (!selectGridCurrent(processor, gridCurrent))
+        return 1;
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -1849,7 +1862,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]]\n");
+                    "[--wav <file> [--block <n>]] [--grid-current on|off]\n");
         return 1;
     }
 
@@ -1864,6 +1877,7 @@ int main(int argc, char** argv) {
     std::string pluginProbeCsv;
     std::string wavPath;
     int wavBlock = 128;
+    bool gridCurrent = true;
     double probeRate = kSampleRate;
     double probeDrive = 0.001;
     double probeFreq = 1000.0;
@@ -1895,6 +1909,21 @@ int main(int argc, char** argv) {
             pluginProbeCsv = argv[++i];
         else if (arg == "--wav" && i + 1 < argc)
             wavPath = argv[++i];
+        else if (arg == "--grid-current") {
+            if (i + 1 >= argc) {
+                std::printf("--grid-current requires on or off\n");
+                return 1;
+            }
+            const std::string value = argv[++i];
+            if (value == "on")
+                gridCurrent = true;
+            else if (value == "off")
+                gridCurrent = false;
+            else {
+                std::printf("invalid --grid-current value: %s\n", value.c_str());
+                return 1;
+            }
+        }
         else if (arg == "--block" && i + 1 < argc)
             wavBlock = std::stoi(argv[++i]);
     }
@@ -1918,9 +1947,11 @@ int main(int argc, char** argv) {
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
     if (!wavPath.empty())
-        return runWav(file, juce::File(wavPath), wavBlock);
+        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent);
 
     livewdf::LiveWDFPluginProcessor processor;
+    if (!selectGridCurrent(processor, gridCurrent))
+        return 1;
 
     std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  circuit=%s\n",
                 kSampleRate, file.getFileName().toRawUTF8());

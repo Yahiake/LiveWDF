@@ -77,6 +77,7 @@ static long long kSwitchAtSample = -1;
 static long long kSwitchPeriod = 0;
 static long long kSwitchCount = -1;
 static double kDriveVolts = 0.25;
+static bool kGridCurrent = true;
 
 struct Result {
     double nsPerSample = 0.0;  // median over kRepeats
@@ -150,7 +151,7 @@ int deadColumns(const wdf::Engine& e) {
 Result run(const lwdf_test::CircuitCase& tc, bool allowExplicit, bool profile) {
     Result r;
     const wdf::Circuit c = (*tc.build)();
-    wdf::Engine e(c, kFs);
+    wdf::Engine e(c, kFs, kGridCurrent);
     if (!allowExplicit)
         e.setExplicitRoots(false);
     r.explicitActive = e.explicitRoots();
@@ -300,7 +301,7 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
     std::vector<std::unique_ptr<wdf::Engine>> engines;
     engines.reserve(static_cast<size_t>(channels));
     for (int ch = 0; ch < channels; ++ch) {
-        auto e = std::make_unique<wdf::Engine>(c, fs);
+        auto e = std::make_unique<wdf::Engine>(c, fs, kGridCurrent);
         if (!allowExplicit)
             e->setExplicitRoots(false);
         if (kFineBlocks)
@@ -636,7 +637,7 @@ void printCoupling(const lwdf_test::CircuitCase& tc, const lwdf_test::RootGroupC
 /// fallback show up as dropped host blocks instead of hiding in a mean.
 void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double seconds) {
     wdf::Circuit c = doc.toCircuit();
-    wdf::Engine e(c, fs);
+    wdf::Engine e(c, fs, kGridCurrent);
     if (!kPotId.empty())
         e.setPotPosition(kPotId, kPotPos);
     std::vector<double> node, rootV;
@@ -746,7 +747,7 @@ void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double 
 void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
              double silenceSeconds, double driveVolts) {
     wdf::Circuit c = doc.toCircuit();
-    wdf::Engine e(c, fs);
+    wdf::Engine e(c, fs, kGridCurrent);
     std::vector<double> node, rootV;
     if (!e.solveDc(node, rootV)) {
         std::printf("soak: solveDc did not converge\n");
@@ -828,7 +829,7 @@ void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
 int main(int argc, char** argv) {
     if (argc >= 2 && std::string(argv[1]) == "--file") {
         if (argc < 3) {
-            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--burst]\n");
+            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst]\n");
             return 2;
         }
         bool profile = false;
@@ -852,6 +853,17 @@ int main(int argc, char** argv) {
             if (std::string(argv[a]) == "--drive" && a + 1 < argc) {
                 driveVolts = std::stod(argv[++a]);
                 kDriveVolts = driveVolts;
+            }
+            if (std::string(argv[a]) == "--grid-current" && a + 1 < argc) {
+                const std::string value = argv[++a];
+                if (value == "on")
+                    kGridCurrent = true;
+                else if (value == "off")
+                    kGridCurrent = false;
+                else {
+                    std::printf("invalid --grid-current value: %s\n", value.c_str());
+                    return 2;
+                }
             }
             if (std::string(argv[a]) == "--tol" && a + 1 < argc) {
                 kBenchTol = std::stod(argv[++a]);
