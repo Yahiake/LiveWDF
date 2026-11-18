@@ -35,6 +35,7 @@ add_executable(livewdf_editor_tests
     session/test_circuit_session.cpp
     session/test_session_diagnosis.cpp
 
+    panels/test_factory_schematics.cpp
     panels/test_message_console.cpp
     panels/test_preset_library.cpp
 
