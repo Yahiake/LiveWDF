@@ -39,27 +39,25 @@ inline void softplusSigmoid(double u, double& sp, double& sg) noexcept {
 ///
 ///     q  = Vpk + cg*Vgk + c0
 ///     ip = kP2*q^2    if Vpk >= 0 and q > 0
-///     ip = Vpk/Z      if Vpk < 0, Z = the plate port impedance
+///     Vpk = 0         if the solved Vpk < 0 (plate shorted to cathode)
 ///
 /// `Vpk >= 0` is the paper's own post-solve test: `triode_stage_quadric.m`
 /// solves the quadric, reads the solved plate voltage back, and projects
-/// when `Vpk < 0` -- replacing the tube with a junction wire of the
-/// element's impedance. The decomposed network does not carry that
-/// impedance separately -- `Z` is the impedance seen at the plate port,
-/// everything the wire can spell -- so the resolution state here is an
-/// impedance filter of it: every law in this engine takes the same-
-/// iterate port voltage (the resistor row is `i = v/R`), so `ip = vpk/Z`
-/// is Ohm's law read against `vpk = vo - Z*ip`, landing the solved
-/// `Vpk` at the midpoint of the excursion. It is the analogue of the
-/// paper's projection (`QuadricTriodeWdf::reflect`'s `Consistent`
-/// flavour in wave space), and it always exists -- which is what keeps
-/// the coupled decks solvable where a cold tube (no flow) would leave
-/// no fixed point.
+/// when `Vpk < 0` onto `Vpk = 0` (`QuadricTriodeWdf::reflect`'s
+/// `Consistent` flavour). The engine pins that state per sample: with an
+/// open-circuit plate voltage `vo > 0` it lands as the short, `ip = vo/Z`,
+/// and with `vo <= 0` as cold, `ip = 0`, so it never conducts in reverse and
+/// meets the quadric's own root continuously on both sides.
 ///
 /// The law conducts plate current only, so neither grid port carries a current
 /// of its own and the grid ports are passive: the triode group is exact in
 /// closed form rather than a Newton circuit.
 struct TriodeModel {
+    /// The projected short is `kShort*Z`, not zero, because the Newton row is
+    /// i(v) and needs a finite conductance; the closed form uses the same one
+    /// so both solve one circuit.
+    static constexpr double kShort = 1e-9;
+
     QuadricTriodeParams p{};
     double cg = p.kPg / (2.0 * p.kP2);  // kPg/(2*kP2)
     double c0 = p.kP / (2.0 * p.kP2);   // kP/(2*kP2)
@@ -74,23 +72,15 @@ struct TriodeModel {
     /// Currents into the tube and their derivatives w.r.t. the port voltages.
     /// `ip` flows plate->cathode and is the only current a triode conducts; it
     /// answers to the INTERNAL grid only through that port's voltage, via `q`.
-    /// `zeeWire` is the impedance seen at the plate port (`Z[o][o]`): the
-    /// wire the out-of-domain quadric projects onto.
     struct Currents {
         double ip = 0.0;
         double dvgk = 0.0;  // dIp/dVgk_int
         double dvpk = 0.0;  // dIp/dVpk
     };
 
-    Currents evaluate(double vgk, double vpk, double zeeWire = 0.0) const noexcept {
-        Currents c;
-        if (vpk < 0.0) {
-            if (zeeWire > 0.0) {
-                c.ip = vpk / zeeWire;
-                c.dvpk = 1.0 / zeeWire;
-            }
-            return c;
-        }
+    Currents evaluate(double vgk, double vpk) const noexcept {
+        if (vpk < 0.0)
+            return {};
         return evaluateQuadric(vgk, vpk);
     }
 
