@@ -3,7 +3,6 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include <crtdbg.h>
 
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"

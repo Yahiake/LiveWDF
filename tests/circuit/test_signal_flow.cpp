@@ -1,6 +1,7 @@
 #include <catch2.hpp>
 
 #include <chrono>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -286,6 +287,10 @@ TEST_CASE("SignalFlow: Mark IIC+ partitions into multiple independent stages",
 }
 
 static void runUserCircuitTest(const std::string& path, const std::string& name) {
+    if (!std::filesystem::exists(path)) {
+        WARN("user circuit not found, skipping: " << path);
+        return;
+    }
     std::cout << "\n==================================================\n";
     std::cout << "TESTING USER CIRCUIT: " << name << "\n";
     std::cout << "File: " << path << "\n";
