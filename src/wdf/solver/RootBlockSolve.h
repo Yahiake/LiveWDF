@@ -1062,7 +1062,8 @@ public:
 
         // A predicted grid current leaves its upstream block's rows off by the
         // prediction's error, so that residual is not checked, as in the closed form.
-        const bool predicted = !failed && !ctx.gridLag.empty() &&
+        // Relaxed sweeps iterate the grids with the rest, so they keep the check.
+        const bool predicted = !failed && relaxSweeps == 0 && !ctx.gridLag.empty() &&
                                resolveMissedGrids(ctx, view, maxIter, tol, failed);
         if (!failed && !predicted) {
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
