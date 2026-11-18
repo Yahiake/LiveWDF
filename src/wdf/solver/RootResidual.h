@@ -69,14 +69,15 @@ public:
                     cur = comp.tri[dev.compIndex].model.evaluateQuadric(vgint, vpk);
                 }
                 ++deviceEvals;
-                const double ig = comp.tri[dev.compIndex].model.gridCurrent(vgint);
+                double dig = 0.0;
+                const double ig = comp.tri[dev.compIndex].model.gridCurrent(vgint, dig);
                 iData[o] = cur.ip;
                 iData[o + 1] = 0.0;
                 iData[o + 2] = ig;
                 if (jData) {
                     jData[o * K + o] = cur.dvpk;
                     jData[o * K + o + 2] = cur.dvgk;
-                    jData[(o + 2) * K + o + 2] = (ig > 0.0) ? 1.0 / TriodeModel::kGridR : 0.0;
+                    jData[(o + 2) * K + o + 2] = dig;
                 }
                 break;
             }
