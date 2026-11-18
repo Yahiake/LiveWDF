@@ -169,10 +169,11 @@ void PresetLibraryPanel::rebuild() {
 
     entries_.push_back({Kind::NewSheet, "New empty sheet", {}, {}});
     entries_.push_back({Kind::Starter, "Starter: RC lowpass", {}, {}});
-    entries_.push_back({Kind::Section, "PRESETS", {}, {}});
 
     if (folder_.isDirectory()) {
-        juce::Array<juce::File> files;
+        const auto factoryRoot = folder_.getChildFile("Factory");
+        juce::Array<juce::File> presets;
+        juce::Array<juce::File> factory;
         int scanned = 0;
 
         for (const auto& entry : juce::RangedDirectoryIterator(
@@ -182,29 +183,43 @@ void PresetLibraryPanel::rebuild() {
             if (file.getFileName().startsWith("."))
                 continue;
 
-            files.add(file);
+            if (file.isAChildOf(factoryRoot))
+                factory.add(file);
+            else
+                presets.add(file);
+
             if (++scanned >= kMaxFiles)
                 break;
         }
 
-        sortFiles(files, folder_);
+        sortFiles(presets, folder_);
+        sortFiles(factory, factoryRoot);
 
-        for (const auto& file : files) {
-            Entry entry;
-            entry.kind = Kind::File;
-            entry.file = file;
-            entry.label = file.getFileNameWithoutExtension();
-            const auto parent = file.getParentDirectory();
-            entry.detail = parent == folder_
-                               ? juce::String()
-                               : parent.getRelativePathFrom(folder_);
-            entries_.push_back(std::move(entry));
+        auto addFiles = [this](const juce::Array<juce::File>& files,
+                               const juce::File& root) {
+            for (const auto& file : files) {
+                Entry entry;
+                entry.kind = Kind::File;
+                entry.file = file;
+                entry.label = file.getFileNameWithoutExtension();
+                const auto parent = file.getParentDirectory();
+                entry.detail = parent == root
+                                   ? juce::String()
+                                   : parent.getRelativePathFrom(root);
+                entries_.push_back(std::move(entry));
+            }
+        };
+
+        entries_.push_back({Kind::Section, "PRESETS", {}, {}});
+        if (presets.isEmpty())
+            entries_.push_back({Kind::Note, "No user presets yet", {}, {}});
+        else
+            addFiles(presets, folder_);
+
+        if (!factory.isEmpty()) {
+            entries_.push_back({Kind::Section, "FACTORY", {}, {}});
+            addFiles(factory, factoryRoot);
         }
-
-        if (files.isEmpty())
-            entries_.push_back({Kind::Note,
-                                "No .livewdf files in " + folder_.getFileName() + " yet",
-                                {}, {}});
     } else {
         entries_.push_back({Kind::Note, "No preset folder chosen.", {}, {}});
     }

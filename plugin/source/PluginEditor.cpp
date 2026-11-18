@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "FactorySchematics.h"
 #include "Fonts.h"
 #include "gui/AboutDialog.h"
 
@@ -33,7 +34,17 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     titleLabel_.setColour(juce::Label::textColourId, juce::Colour(0xFFFFFFFF));
     addAndMakeVisible(titleLabel_);
 
-    // 2. Load File Button
+    // The plugin editor is often opened before the standalone editor, so it is
+    // also a valid first run. Install the factory set here; the marker makes
+    // this a cheap no-op after the first binary has done it.
+    if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed())
+        juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
+
+    // 2. Factory and Load File Buttons
+    factoryBtn_.onClick = [this] { showFactoryMenu(); };
+    factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
+    addAndMakeVisible(factoryBtn_);
+
     loadFileBtn_.onClick = [this] { openCircuitFileChooser(); };
     addAndMakeVisible(loadFileBtn_);
 
@@ -252,25 +263,91 @@ void LiveWDFPluginEditor::openCircuitFileChooser() {
     const int chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
     fileChooser_->launchAsync(chooserFlags, [this](const juce::FileChooser& fc) {
         const auto result = fc.getResult();
-        if (result.existsAsFile()) {
-            if (processor_.loadCircuitFromFile(result)) {
-                schematicCanvas_.setDocument(processor_.getCurrentDocument());
-                syncSchematicLiveState();
-                rebuildDynamicControls();
-                statusLabel_.setText(currentCircuitDescription(), juce::dontSendNotification);
-            } else {
-                // **Say why.** A file that does not load used to fail silently,
-                // which is the worst way to fail: the user picked a file and
-                // nothing happened. The reason is in the user's words -- which
-                // part is joined to nothing, or which legacy sheet the format
-                // refuses outright -- and not the engine's.
-                const juce::String reason = processor_.lastError();
-                statusLabel_.setText(reason.isEmpty() ? juce::String("Could not open circuit")
-                                                     : "Could not open circuit -- " + reason,
-                                     juce::dontSendNotification);
-            }
-        }
+        if (result.existsAsFile())
+            loadCircuitFile(result);
     });
+}
+
+bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
+    if (!processor_.loadCircuitFromFile(file)) {
+        // **Say why.** A file that does not load used to fail silently, which is
+        // the worst way to fail: the user picked a file and nothing happened.
+        // The reason is in the user's words -- which part is joined to nothing,
+        // or which legacy sheet the format refuses outright -- and not the
+        // engine's.
+        const juce::String reason = processor_.lastError();
+        statusLabel_.setText(reason.isEmpty() ? juce::String("Could not open circuit")
+                                             : "Could not open circuit -- " + reason,
+                             juce::dontSendNotification);
+        return false;
+    }
+
+    schematicCanvas_.setDocument(processor_.getCurrentDocument());
+    syncSchematicLiveState();
+    rebuildDynamicControls();
+    statusLabel_.setText(currentCircuitDescription(), juce::dontSendNotification);
+    return true;
+}
+
+void LiveWDFPluginEditor::showFactoryMenu() {
+    factoryFiles_ = FactorySchematics::list();
+
+    // A user can delete the folder between launches. Retry once before showing
+    // an empty menu, because the archive is still in the binary.
+    if (factoryFiles_.isEmpty()) {
+        if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed()) {
+            statusLabel_.setText("Factory circuits unavailable -- " + factory.getErrorMessage(),
+                                 juce::dontSendNotification);
+            return;
+        }
+        factoryFiles_ = FactorySchematics::list();
+    }
+
+    juce::PopupMenu menu;
+    juce::PopupMenu amps;
+    juce::PopupMenu pedals;
+    juce::PopupMenu other;
+    const auto root = FactorySchematics::folder();
+
+    for (int i = 0; i < factoryFiles_.size(); ++i) {
+        const auto file = factoryFiles_.getReference(i);
+        const auto relative = file.getRelativePathFrom(root).replaceCharacter('\\', '/');
+        auto* destination = &other;
+        if (relative.startsWithIgnoreCase("amps/"))
+            destination = &amps;
+        else if (relative.startsWithIgnoreCase("pedals_fx/"))
+            destination = &pedals;
+
+        destination->addItem(i + 1, file.getFileNameWithoutExtension());
+    }
+
+    if (amps.getNumItems() > 0)
+        menu.addSubMenu("Amps", amps);
+    if (pedals.getNumItems() > 0)
+        menu.addSubMenu("Pedals & FX", pedals);
+    if (other.getNumItems() > 0)
+        menu.addSubMenu("Other", other);
+
+    if (factoryFiles_.isEmpty())
+        menu.addItem(1, "No factory circuits installed", false, false);
+
+    menu.addSeparator();
+    menu.addItem(100000, "Open factory folder...");
+
+    juce::Component::SafePointer<LiveWDFPluginEditor> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&factoryBtn_),
+                       [safe](int chosen) {
+                           if (safe == nullptr || chosen == 0)
+                               return;
+
+                           if (chosen == 100000) {
+                               FactorySchematics::folder().revealToUser();
+                               return;
+                           }
+
+                           if (chosen > 0 && chosen <= safe->factoryFiles_.size())
+                               safe->loadCircuitFile(safe->factoryFiles_[chosen - 1]);
+                       });
 }
 
 // -----------------------------------------------------------------------------
@@ -301,13 +378,8 @@ void LiveWDFPluginEditor::filesDropped(const juce::StringArray& files, int x, in
     isDraggingFile_ = false;
     for (const auto& file : files) {
         if (file.endsWithIgnoreCase(".livewdf") || file.endsWithIgnoreCase(".json")) {
-            if (processor_.loadCircuitFromFile(juce::File(file))) {
-                schematicCanvas_.setDocument(processor_.getCurrentDocument());
-                syncSchematicLiveState();
-                rebuildDynamicControls();
-                statusLabel_.setText(currentCircuitDescription(), juce::dontSendNotification);
+            if (loadCircuitFile(juce::File(file)))
                 break;
-            }
         }
     }
     repaint();
@@ -411,11 +483,12 @@ void LiveWDFPluginEditor::resized() {
     titleLabel_.setBounds(16, 7, 240, 20);
     statusLabel_.setBounds(16, 27, 280, 18);
 
-    aboutBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
-    oversamplingCombo_.setBounds(topBar.removeFromRight(125).reduced(6, 10));
-    stereoBtn_.setBounds(topBar.removeFromRight(95).reduced(6, 10));
-    reloadBtn_.setBounds(topBar.removeFromRight(85).reduced(6, 10));
-    loadFileBtn_.setBounds(topBar.removeFromRight(135).reduced(6, 10));
+    aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
+    oversamplingCombo_.setBounds(topBar.removeFromRight(120).reduced(6, 10));
+    stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
+    reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
+    loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
+    factoryBtn_.setBounds(topBar.removeFromRight(92).reduced(6, 10));
 
     // 2. Bottom Oscilloscope (height 150px)
     auto bottomScope = bounds.removeFromBottom(150);
