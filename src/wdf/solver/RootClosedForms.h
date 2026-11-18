@@ -118,8 +118,9 @@ public:
         return vo;
     }
 
-    /// Decide every triode's domain state for this sample, before any iteration begins.
-    static inline void pinTriodeDomains(
+    /// Decide every triode's domain state from the currents in `iiData`, and
+    /// report whether any decision changed.
+    static inline bool pinTriodeDomains(
         const BlockView& view,
         const double* LIVEWDF_RESTRICT zData,
         const double* LIVEWDF_RESTRICT vOcData,
@@ -129,9 +130,7 @@ public:
         const RootDevice* LIVEWDF_RESTRICT rootDevices,
         int K) noexcept
     {
-        for (int r = 0; r < K; ++r)
-            triodeDomainPin[r] = 0;
-
+        bool changed = false;
         for (int p = 0; p < view.count; ++p) {
             const int b = (*view.order)[static_cast<size_t>(p)];
             const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
@@ -145,20 +144,47 @@ public:
                 double voGik = foldPort(view, o + 2, view.count, zData, vOcData, iiData, K);
                 voPk += zData[static_cast<size_t>(o) * K + o] * iiData[o];
                 voGik += zData[static_cast<size_t>(o + 2) * K + o] * iiData[o];
-                const double zee = zData[static_cast<size_t>(o) * K + o];
-                const double B = zee + m.cg * zData[static_cast<size_t>(o + 2) * K + o];
-                const double Q = voPk + m.cg * voGik + m.c0;
-                const double D = 1.0 + 4.0 * m.p.kP2 * B * Q;
-                if (D < 0.0)
-                    continue;
-                const double q = 2.0 * Q / (1.0 + std::sqrt(D));
-                if (q <= 0.0)
-                    continue;
-                const double ipq = m.p.kP2 * q * q;
-                if (voPk - zee * ipq < 0.0)
-                    triodeDomainPin[o] = (zee > 0.0 && voPk > 0.0) ? 1 : 2;
+                double ip = 0.0;
+                const unsigned char pin = triodeDomain(m, voPk, voGik, zData, o, K, ip);
+                changed |= triodeDomainPin[o] != pin;
+                triodeDomainPin[o] = pin;
             }
         }
+        return changed;
+    }
+
+    /// The paper's post-solve test: solve the quadric, read `Vpk` back, and
+    /// when it is negative project onto the short if the open-circuit plate
+    /// voltage is positive and onto cold otherwise. Returns the domain state
+    /// and leaves its plate current in `ip`.
+    static inline unsigned char triodeDomain(
+        const TriodeModel& m,
+        double voPk,
+        double voGik,
+        const double* LIVEWDF_RESTRICT zData,
+        int o,
+        int K,
+        double& ip) noexcept
+    {
+        const double zee = zData[static_cast<size_t>(o) * K + o];
+        const double B = zee + m.cg * zData[static_cast<size_t>(o + 2) * K + o];
+        const double Q = voPk + m.cg * voGik + m.c0;
+        const double D = 1.0 + 4.0 * m.p.kP2 * B * Q;
+        ip = 0.0;
+        if (D < 0.0)
+            return 0;
+        const double q = 2.0 * Q / (1.0 + std::sqrt(D));
+        if (q <= 0.0)
+            return 0;
+        ip = m.p.kP2 * q * q;
+        if (voPk - zee * ip >= 0.0)
+            return 0;
+        if (zee > 0.0 && voPk > 0.0) {
+            ip = voPk / ((1.0 + TriodeModel::kShort) * zee);
+            return 1;
+        }
+        ip = 0.0;
+        return 2;
     }
 
     /// The block's final port voltages after a scalar closed form.
@@ -218,7 +244,7 @@ public:
         const double* LIVEWDF_RESTRICT zData,
         const double* LIVEWDF_RESTRICT vOcData,
         double* LIVEWDF_RESTRICT iiData,
-        const unsigned char* LIVEWDF_RESTRICT triodeDomainPin,
+        unsigned char* LIVEWDF_RESTRICT triodeDomainPin,
         const Compiled& comp,
         const RootDevice* LIVEWDF_RESTRICT rootDevices,
         int K) noexcept
@@ -232,23 +258,8 @@ public:
                                     : foldPort(view, block, 0, o, s, zData, vOcData, iiData, K);
         const double voGik = relaxed ? foldPortAll(view, block, 2, o + 2, b, zData, vOcData, iiData, K)
                                      : foldPort(view, block, 2, o + 2, s, zData, vOcData, iiData, K);
-        const double B = zData[static_cast<size_t>(o) * K + o] +
-                         m.cg * zData[static_cast<size_t>(o + 2) * K + o];
-        const double Q = voPk + m.cg * voGik + m.c0;
-        const double D = 1.0 + 4.0 * m.p.kP2 * B * Q;
-
-        const unsigned char pin = triodeDomainPin[o];
         double ip = 0.0;
-        if (pin == 1) {
-            const double zee = zData[static_cast<size_t>(o) * K + o];
-            ip = (zee > 0.0) ? voPk / ((1.0 + TriodeModel::kShort) * zee) : 0.0;
-        } else if (pin == 2) {
-            ip = 0.0;
-        } else if (D >= 0.0) {
-            const double q = 2.0 * Q / (1.0 + std::sqrt(D));
-            if (q > 0.0)
-                ip = m.p.kP2 * q * q;
-        }
+        triodeDomainPin[o] = triodeDomain(m, voPk, voGik, zData, o, K, ip);
         iiData[o] = ip;
         iiData[o + 1] = 0.0;
         iiData[o + 2] = 0.0;

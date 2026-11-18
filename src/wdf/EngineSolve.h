@@ -390,14 +390,6 @@ protected:
         solver::RootBlockSolve::solveRootGroups(ctx, staticBlockView(), maxIter, tol);
     }
 
-    /// Decide every triode's domain state for this sample, before any
-    /// iteration begins.
-    void pinTriodeDomains(const BlockView& view) {
-        solver::RootClosedForms::pinTriodeDomains(
-            view, Z_.data(), vOc_.data(), ii_.data(), triodeDomainPin_.data(),
-            comp_, rootDevices_.data(), K_);
-    }
-
     /// Solve the root in block order, using the scalar closed form for a
     /// singleton and the block Newton otherwise.
     ///

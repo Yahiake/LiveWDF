@@ -64,7 +64,7 @@ struct BlockSolveContext {
     const std::vector<double>& opAmpVp;
     const std::vector<double>& opAmpAlpha;
     const std::vector<double>& opAmpMaxDv;
-    const std::vector<unsigned char>& triodeDomainPin;
+    std::vector<unsigned char>& triodeDomainPin;
     const std::vector<DiodeModel>& grpDiode;
     const std::vector<JunctionLimiter>& junctionLimiters;
     const std::vector<GridJunctionLimiter>& gridJunctionLimiters;
@@ -1024,8 +1024,7 @@ public:
     {
         RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
+            ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
         ctx.lastBlockFallback = false;
         ctx.lastBlockResidual = std::numeric_limits<double>::infinity();
         ctx.jfetSolveFailed = false;
@@ -1132,7 +1131,12 @@ public:
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
-        if (!failed && ctx.lastBlockResidual <= effTol) {
+        // The pin above is the previous sample's, so a block Newton may have
+        // solved a triode in the wrong domain; the joint Newton re-decides it.
+        if (!failed && ctx.lastBlockResidual <= effTol &&
+            !RootClosedForms::pinTriodeDomains(
+                view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
@@ -1159,8 +1163,7 @@ public:
     {
         RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
+            ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
         ctx.lastBlockFallback = false;
         ctx.lastBlockResidual = std::numeric_limits<double>::infinity();
         ctx.jfetSolveFailed = false;
@@ -1250,7 +1253,12 @@ public:
             }
         }
 
-        if (!failed && ctx.lastBlockResidual <= effTol) {
+        // The pin above is the previous sample's, so a block Newton may have
+        // solved a triode in the wrong domain; the joint Newton re-decides it.
+        if (!failed && ctx.lastBlockResidual <= effTol &&
+            !RootClosedForms::pinTriodeDomains(
+                view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
@@ -1277,10 +1285,6 @@ public:
     {
         (void)maxIter;
         (void)tol;
-        RootClosedForms::pinTriodeDomains(
-            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
         ctx.jfetSolveFailed = false;
         ctx.mosfetSolveFailed = false;
 

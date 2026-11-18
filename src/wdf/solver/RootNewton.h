@@ -336,6 +336,21 @@ public:
         ctx.jointLastTrials = ctx.lineTrials - jointTr0;
     }
 
+    /// The callers pin from the previous sample's currents before solving, so
+    /// re-read the pin from the solved ones -- the in-sample test the closed
+    /// form makes -- and solve again while a triode changed domain, at most
+    /// `view.count` more times.
+    static inline void resolveTriodeDomains(NewtonContext& ctx, int maxIter, double tol,
+                                            const BlockView& view) noexcept {
+        for (int pass = 0; pass < view.count &&
+                           RootClosedForms::pinTriodeDomains(
+                               view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                               const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
+                               ctx.comp, ctx.rootDevices.data(), ctx.K);
+             ++pass)
+            solveRootsNewtonPass(ctx, maxIter, tol, false, true);
+    }
+
     /// Multiport Newton for the device currents.
     static inline void solveRootsNewton(NewtonContext& ctx, int maxIter, double tol,
                                         const BlockView& view, std::vector<double>& vvPrev,
@@ -348,6 +363,7 @@ public:
         if (!ctx.lastConverged) {
             solveRootsNewtonPass(ctx, maxIter, tol, false, false);
         }
+        resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
     }
@@ -363,6 +379,7 @@ public:
         solveRootsNewtonPass(ctx, maxIter, tol, false, true);
         if (!ctx.lastConverged)
             solveRootsNewtonPass(ctx, maxIter, tol, false, false);
+        resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
     }
