@@ -90,6 +90,7 @@ struct BlockSolveContext {
     bool& mosfetSolveFailed;
     long long& jfetFallbacks;
     long long& mosfetFallbacks;
+    std::vector<double>& gridLag;
 };
 
 class RootBlockSolve {
@@ -1276,6 +1277,59 @@ public:
             RootNewton::solveRootsNewtonSeeded(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
     }
 
+    /// A later block's grid current is folded in before that block is solved,
+    /// so predict it from the last two samples.
+    static inline void predictLaterGrids(BlockSolveContext& ctx) noexcept
+    {
+        const int K = ctx.K;
+        double* ii = ctx.ii.data();
+        double* lag = ctx.gridLag.data();
+        for (const RootDevice& dev : ctx.rootDevices) {
+            if (dev.kind != DeviceKind::Triode)
+                continue;
+            const int c = dev.portBase + 2;
+            const double now = ii[c];
+            ii[c] = lag[K + c] = std::max(0.0, 2.0 * now - lag[c]);
+            lag[c] = now;
+        }
+    }
+
+    /// Solve once more each block whose grid prediction missed or whose
+    /// inputs moved.
+    static inline void resolveMissedGrids(BlockSolveContext& ctx, const BlockView& view) noexcept
+    {
+        const int K = ctx.K;
+        double* ii = ctx.ii.data();
+        double* lag = ctx.gridLag.data();
+        bool conducts = false;
+        for (const RootDevice& dev : ctx.rootDevices)
+            conducts |= dev.kind == DeviceKind::Triode && ii[dev.portBase + 2] != lag[K + dev.portBase + 2];
+        if (!conducts)
+            return;
+        std::copy(ii, ii + K, lag + 2 * K);
+        bool moved = false;
+        for (int s = 0; s < view.count; ++s) {
+            const NewtonBlock& block = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])];
+            bool redo = false;
+            for (int c : block.laterGrid)
+                redo |= ii[c] != lag[K + c];
+            for (size_t r = 0; moved && !redo && r < block.predFold.size(); ++r)
+                for (const auto& d : block.predFold[r])
+                    redo |= ii[d.col] != lag[2 * K + d.col];
+            if (redo) {
+                const int b = (*view.order)[static_cast<size_t>(s)];
+                if (block.isAntiParallelDiodePair)
+                    RootClosedForms::solveAntiParallelDiodeGroup(
+                        view, b, s, false, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                        ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
+                else
+                    solveScalarBlock(view, b, s, false, ctx);
+                moved = true;
+            }
+        }
+        ctx.vvPrev = ctx.vv;
+    }
+
     /// Closed form pass for all-scalar partitioned stages.
     static inline void solveRootGroups(
         BlockSolveContext& ctx,
@@ -1287,6 +1341,7 @@ public:
         (void)tol;
         ctx.jfetSolveFailed = false;
         ctx.mosfetSolveFailed = false;
+
 
         for (int s = 0; s < view.count; ++s) {
             const int b = (*view.order)[static_cast<size_t>(s)];
@@ -1338,7 +1393,6 @@ public:
                 view, b, s, false, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
                 ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
         }
-
         ctx.newtonIters = 0;
         ctx.deviceEvals = view.count;
         ctx.keptBest = false;

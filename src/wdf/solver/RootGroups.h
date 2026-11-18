@@ -651,6 +651,7 @@ public:
                 totalDevPorts += rootDevices[di].numPorts;
             block.predFold.resize(static_cast<size_t>(totalDevPorts));
             block.allFold.resize(static_cast<size_t>(totalDevPorts));
+            block.laterGrid.clear();
 
             int devPortOffset = 0;
             for (int di : block.devices) {
@@ -667,13 +668,17 @@ public:
                         for (size_t k = 0; k < otherBlock.ports.size(); ++k) {
                             const int c = otherBlock.ports[k];
                             const RootDevice& od = rootDevices[otherBlock.portDevice[k]];
-                            // A later block's grid current is the previous sample's,
-                            // so its back-coupling lags one sample instead of iterating.
+                            // A later block's grid current is predicted, so its
+                            // back-coupling lags instead of iterating.
                             if (p > s && !(od.kind == DeviceKind::Triode && c == od.portBase + 2))
                                 continue;
                             const double z = zRow[c];
-                            if (z != 0.0)
-                                deps.push_back(PredecessorPort{c, z});
+                            if (z == 0.0)
+                                continue;
+                            deps.push_back(PredecessorPort{c, z});
+                            if (p > s && std::find(block.laterGrid.begin(), block.laterGrid.end(), c) ==
+                                             block.laterGrid.end())
+                                block.laterGrid.push_back(c);
                         }
                     }
 

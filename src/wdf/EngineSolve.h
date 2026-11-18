@@ -202,7 +202,7 @@ protected:
             lastBlockFallback_, lastBlockResidual_, blockFallbacks_,
             runtimeBlockFallbacks_, runtimeBlockUsed_, lastConverged_,
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
-            jfetFallbacks_, mosfetFallbacks_
+            jfetFallbacks_, mosfetFallbacks_, gridLag_
         };
     }
 
@@ -315,8 +315,9 @@ protected:
     /// currents of the groups already solved are folded into its open-circuit
     /// voltages -- that fold is the residual's coupling term. Because the order is
     /// topological under `coupled`, those are the only unknowns a group's
-    /// equations mention, except a later group's grid current, which is read
-    /// from the previous sample; without grid current the sequence is exact.
+    /// equations mention, except a later group's grid current, which is
+    /// predicted from the last two samples and re-solved once where it missed;
+    /// without grid current the sequence is exact.
     ///
     /// With one device the fold loop is empty and this reproduces the previous
     /// single-device closed form bit for bit.
@@ -354,8 +355,18 @@ protected:
     }
 
     void solveRootGroups(int maxIter, double tol) {
+        // The grid passes get their own context so the plain pass keeps its
+        // context in registers.
+        if (!gridLag_.empty()) {
+            auto lagCtx = makeBlockSolveContext();
+            solver::RootBlockSolve::predictLaterGrids(lagCtx);
+        }
         auto ctx = makeBlockSolveContext();
         solver::RootBlockSolve::solveRootGroups(ctx, staticBlockView(), maxIter, tol);
+        if (!gridLag_.empty()) {
+            auto lagCtx = makeBlockSolveContext();
+            solver::RootBlockSolve::resolveMissedGrids(lagCtx, staticBlockView());
+        }
     }
 
     /// Solve the root in block order, using the scalar closed form for a
@@ -391,8 +402,7 @@ protected:
 
     /// Port `r`'s open-circuit voltage with every live column of the `s` blocks
     /// already solved folded in. The solve's own fold (`NewtonBlock::predFold`)
-    /// also reads a later block's internal-grid current, from the previous
-    /// sample.
+    /// also reads a later block's internal-grid current, predicted.
     double foldPort(int r, int s) const {
         return foldPort(staticBlockView(), r, s);
     }

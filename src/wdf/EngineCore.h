@@ -807,6 +807,7 @@ protected:
         vv_.assign(K_, 0.0);
         vvSafe_.assign(K_, 0.0);
         triodeDomainPin_.assign(K_, 0);
+        gridLag_.assign(comp_.tri.empty() || !comp_.tri[0].model.gridConducts ? 0 : static_cast<size_t>(3 * K_), 0.0);
         vvPrev_.assign(K_, 0.0);
         vvPrev2_.assign(K_, 0.0);
         ii_.assign(K_, 0.0);
@@ -1099,6 +1100,7 @@ protected:
     /// sides of `vpk = 0` and there is no fixed point of the branch-flipping
     /// law at all. Indexed by plate port.
     std::vector<unsigned char> triodeDomainPin_;
+    std::vector<double> gridLag_;  // previous, predicted and first-pass grid currents
 
     std::vector<int> groupOrder_;
     std::vector<int> grpIndeg_;

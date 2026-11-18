@@ -179,6 +179,31 @@ TEST_CASE("with grid current the closed form solves the joint Newton's circuit",
     REQUIRE(lowest > -1e-6);
 }
 
+TEST_CASE("with grid current the cascades stay close to the joint Newton", "[rootgroups]") {
+    // A later stage's grid current is predicted and re-solved where the
+    // prediction missed; read from the previous sample instead, the four-stage
+    // preamp sat near -25 dB.
+    for (const auto& tc : {lwdf_test::CircuitCase{"two_stage_cascade", &lwdf_test::twoStageCascade, &lwdf_test::sine220},
+                           lwdf_test::CircuitCase{"four_stage_preamp", &lwdf_test::fourStagePreamp, &lwdf_test::sine220}}) {
+        const wdf::Circuit c = (*tc.build)();
+        wdf::Engine fast(c, kFs);
+        wdf::Engine slow(c, kFs);
+        REQUIRE(fast.explicitRoots());
+        REQUIRE(slow.setExplicitRoots(false));
+        const auto out = static_cast<size_t>(fast.nodeIndex("out"));
+        double signal = 0.0, error = 0.0;
+        for (int n = 0; n < 4800; ++n) {
+            const std::vector<double> sv = lwdf_test::sampleSources(c, tc, n);
+            const std::vector<double>& a = fast.step(sv);
+            const std::vector<double>& b = slow.step(sv);
+            signal += b[out] * b[out];
+            error += (a[out] - b[out]) * (a[out] - b[out]);
+        }
+        CAPTURE(tc.name, 10.0 * std::log10(error / signal));
+        REQUIRE(10.0 * std::log10(error / signal) < -35.0);
+    }
+}
+
 TEST_CASE("wherever the closed form claims the split, it equals the joint Newton", "[rootgroups]") {
     // The general form of the claim above, swept over every fixture instead of the
     // named ones: if `explicitRoots()` is on, the sequence of closed forms has to be

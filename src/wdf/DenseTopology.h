@@ -99,6 +99,7 @@ struct NewtonBlock {
     std::vector<double> blockZ;           ///< Pre-gathered submatrix of Z: totalDevicePorts x n
     std::vector<std::vector<PredecessorPort>> predFold; ///< Per local device port: non-zero predecessor couplings
     std::vector<std::vector<PredecessorPort>> allFold;  ///< Per local device port: non-zero couplings from all other blocks
+    std::vector<int> laterGrid;           ///< Grid columns of later blocks that `predFold` reads
 
     // ---- General linear/nonlinear decomposition -------------------------
     //
