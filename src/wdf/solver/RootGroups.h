@@ -348,6 +348,12 @@ public:
         return buildRuntimeBlocks(ctx);
     }
 
+    /// A triode's grid current is predicted (`predictLaterGrids`) rather than
+    /// ordered, so it does not merge a stage with the one driving it.
+    static int partitionPortCount(const RootDevice& dev) noexcept {
+        return dev.kind == DeviceKind::Triode ? 1 : activePortCount(dev);
+    }
+
     /// Build the Newton blocks and their dependency order.
     static bool buildRootOrder(RootGroupsContext& ctx, bool allowSignalFlowPruning = true) {
         ctx.hasAntiParallelBlock = false;
@@ -423,7 +429,7 @@ public:
                 if (flowReach[static_cast<size_t>(g) * nGroups + h])
                     return false;
                 const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-                const int hAct = activePortCount(dh);
+                const int hAct = partitionPortCount(dh);
                 const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
                 const int row0 = dg.portBase;
                 const int nPorts = dg.numPorts;
@@ -438,7 +444,7 @@ public:
             }
 
             const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-            const int hAct = activePortCount(dh);
+            const int hAct = partitionPortCount(dh);
             const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
             const int row0 = dg.portBase;
             const int nPorts = dg.numPorts;

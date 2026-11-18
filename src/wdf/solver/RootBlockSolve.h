@@ -1013,6 +1013,26 @@ public:
         return true;
     }
 
+    /// Solve block `b` at position `s` by its kind; false when its solve failed.
+    static inline bool solveBlock(
+        const BlockView& view, int b, int s, int maxIter, double tol, bool relaxed,
+        BlockSolveContext& ctx) noexcept
+    {
+        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        if (block.linearReduction)
+            return solveReducedBlock(view, b, s, maxIter, tol, relaxed, ctx) ||
+                   solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
+        if (block.isAntiParallelDiodePair) {
+            RootClosedForms::solveAntiParallelDiodeGroup(
+                view, b, s, relaxed, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
+            return true;
+        }
+        if (isScalarBlock(block, ctx.rootDevices.data()))
+            return solveScalarBlock(view, b, s, relaxed, ctx);
+        return solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
+    }
+
     /// Solve the root in block order, using the scalar closed form for a
     /// singleton and the block Newton otherwise.
     static inline void solveRootBlocks(
@@ -1023,6 +1043,8 @@ public:
         double tol,
         int relaxSweeps = 0) noexcept
     {
+        if (!ctx.gridLag.empty())
+            predictLaterGrids(ctx);
         RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
@@ -1035,31 +1057,14 @@ public:
         ctx.keptBest = false;
 
         bool failed = false;
-        for (int s = 0; s < view.count; ++s) {
-            const int b = (*view.order)[static_cast<size_t>(s)];
-            const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-            if (block.linearReduction) {
-                if (!solveReducedBlock(view, b, s, maxIter, tol, false, ctx) &&
-                    !solveBlockNewton(view, b, s, maxIter, tol, false, ctx)) {
-                    failed = true;
-                    break;
-                }
-            } else if (block.isAntiParallelDiodePair) {
-                RootClosedForms::solveAntiParallelDiodeGroup(
-                    view, b, s, false, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                    ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
-            } else if (isScalarBlock(block, ctx.rootDevices.data())) {
-                if (!solveScalarBlock(view, b, s, false, ctx)) {
-                    failed = true;
-                    break;
-                }
-            } else if (!solveBlockNewton(view, b, s, maxIter, tol, false, ctx)) {
-                failed = true;
-                break;
-            }
-        }
+        for (int s = 0; s < view.count && !failed; ++s)
+            failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx);
 
-        if (!failed) {
+        // A predicted grid current leaves its upstream block's rows off by the
+        // prediction's error, so that residual is not checked, as in the closed form.
+        const bool predicted = !failed && !ctx.gridLag.empty() &&
+                               resolveMissedGrids(ctx, view, maxIter, tol, failed);
+        if (!failed && !predicted) {
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
@@ -1074,29 +1079,8 @@ public:
         for (int sweep = 0; sweep < relaxSweeps && !failed; ++sweep) {
             if (ctx.lastBlockResidual <= effTol)
                 break;
-            for (int s = 0; s < view.count; ++s) {
-                const int b = (*view.order)[static_cast<size_t>(s)];
-                const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-                if (block.linearReduction) {
-                    if (!solveReducedBlock(view, b, s, maxIter, tol, true, ctx) &&
-                        !solveBlockNewton(view, b, s, maxIter, tol, true, ctx)) {
-                        failed = true;
-                        break;
-                    }
-                } else if (block.isAntiParallelDiodePair) {
-                    RootClosedForms::solveAntiParallelDiodeGroup(
-                        view, b, s, true, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                        ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
-                } else if (isScalarBlock(block, ctx.rootDevices.data())) {
-                    if (!solveScalarBlock(view, b, s, true, ctx)) {
-                        failed = true;
-                        break;
-                    }
-                } else if (!solveBlockNewton(view, b, s, maxIter, tol, true, ctx)) {
-                    failed = true;
-                    break;
-                }
-            }
+            for (int s = 0; s < view.count && !failed; ++s)
+                failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, true, ctx);
             if (failed)
                 break;
 
@@ -1134,12 +1118,12 @@ public:
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
-        if (!failed && ctx.lastBlockResidual <= effTol &&
+        if (!failed && (predicted || ctx.lastBlockResidual <= effTol) &&
             !RootClosedForms::pinTriodeDomains(
                 view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
                 ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
             ctx.lastConverged = true;
-            ctx.lastResidual = ctx.lastBlockResidual;
+            ctx.lastResidual = predicted ? std::numeric_limits<double>::quiet_NaN() : ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
             ctx.vvPrev = ctx.vv;
             return;
@@ -1295,8 +1279,9 @@ public:
     }
 
     /// Solve once more each block whose grid prediction missed or whose
-    /// inputs moved.
-    static inline void resolveMissedGrids(BlockSolveContext& ctx, const BlockView& view) noexcept
+    /// inputs moved. Returns whether a grid conducted.
+    static inline bool resolveMissedGrids(
+        BlockSolveContext& ctx, const BlockView& view, int maxIter, double tol, bool& failed) noexcept
     {
         const int K = ctx.K;
         double* ii = ctx.ii.data();
@@ -1305,7 +1290,7 @@ public:
         for (const RootDevice& dev : ctx.rootDevices)
             conducts |= dev.kind == DeviceKind::Triode && ii[dev.portBase + 2] != lag[K + dev.portBase + 2];
         if (!conducts)
-            return;
+            return false;
         std::copy(ii, ii + K, lag + 2 * K);
         bool moved = false;
         for (int s = 0; s < view.count; ++s) {
@@ -1317,17 +1302,11 @@ public:
                 for (const auto& d : block.predFold[r])
                     redo |= ii[d.col] != lag[2 * K + d.col];
             if (redo) {
-                const int b = (*view.order)[static_cast<size_t>(s)];
-                if (block.isAntiParallelDiodePair)
-                    RootClosedForms::solveAntiParallelDiodeGroup(
-                        view, b, s, false, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                        ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
-                else
-                    solveScalarBlock(view, b, s, false, ctx);
+                failed |= !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx);
                 moved = true;
             }
         }
-        ctx.vvPrev = ctx.vv;
+        return true;
     }
 
     /// Closed form pass for all-scalar partitioned stages.

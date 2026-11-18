@@ -379,7 +379,9 @@ protected:
         solver::RootBlockSolve::solveRootGroups(ctx, staticBlockView(), maxIter, tol);
         if (!gridLag_.empty()) {
             auto lagCtx = makeBlockSolveContext();
-            solver::RootBlockSolve::resolveMissedGrids(lagCtx, staticBlockView());
+            bool failed = false;
+            if (solver::RootBlockSolve::resolveMissedGrids(lagCtx, staticBlockView(), maxIter, tol, failed))
+                vvPrev_ = vv_;
         }
     }
 
