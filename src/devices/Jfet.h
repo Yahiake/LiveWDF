@@ -404,25 +404,13 @@ public:
                 return;
             if (vds < 0.0)
                 vds = 0.0;
-            const double vov = vgs - Vp;
-            bool inRegion = false;
-            switch (expected) {
-            case JfetRegion::Cutoff:
-                inRegion = !(vov > 0.0);
-                break;
-            case JfetRegion::Ohmic:
-                inRegion = (vov > 0.0) && (vds < vov);
-                break;
-            case JfetRegion::Saturation:
-                inRegion = (vov > 0.0) && (vds >= vov);
-                break;
-            default:
-                break;
-            }
-            if (!inRegion)
-                return;
             const JfetEvaluation e = evaluateForward(vgs, vds);
-            if (!e.valid || e.region != expected)
+            // Both laws agree on the ohmic/saturation boundary, and rounding can put
+            // a root there on the other cubic's side (zgd == zdd keeps every root on it).
+            const bool onBoundary = expected != JfetRegion::Cutoff &&
+                                    e.region != JfetRegion::Cutoff &&
+                                    std::abs(vds - (vgs - Vp)) <= vdsTol;
+            if (!e.valid || (e.region != expected && !onBoundary))
                 return;
             const double residual = std::abs(e.id - id);
             if (residual > 1.0e-7 * (1.0 + std::abs(id)))
@@ -430,7 +418,7 @@ public:
             if (better(id, residual)) {
                 bestResidual = residual;
                 bestId = id;
-                bestRegion = expected;
+                bestRegion = e.region;
             }
         };
 
