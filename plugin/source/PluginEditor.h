@@ -36,6 +36,7 @@ private:
 
     // Top Toolbar
     juce::Label titleLabel_;
+    juce::TextButton factoryBtn_ { "FACTORY" };
     juce::TextButton loadFileBtn_ { "Load .livewdf..." };
 
     /// Re-read the file the circuit came from.
@@ -109,11 +110,18 @@ private:
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
+    juce::Array<juce::File> factoryFiles_;
     bool isDraggingFile_ = false;
 
     void rebuildDynamicControls();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
+    void showFactoryMenu();
+
+    /// Load a file and update every part of the editor that depends on it.
+    /// Returns false and puts the reason in the status line when the document
+    /// is rejected.
+    bool loadCircuitFile(const juce::File& file);
 
     /// Hand the shared canvas the live knob positions and switch throws.
     void syncSchematicLiveState();
