@@ -177,3 +177,32 @@ TEST_CASE("engine reproduces the authors' Octave reference stage", "[phase1][roo
     // gate above.
     REQUIRE(maxDiff < 1e-9);
 }
+
+TEST_CASE("a square-driven cascade keeps the second plate above its cathode", "[phase1][root][paper]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("e", "0", 250.0);
+    c.addRes("in", "g1", 1e3);
+    c.addRes("k1", "0", 1.5e3);
+    c.addRes("e", "p1", 100e3);
+    c.addCap("p1", "x", 22e-9);
+    c.addRes("x", "0", 1e6);
+    c.addRes("x", "g2", 1e3);
+    c.addRes("k2", "0", 1.5e3);
+    c.addRes("e", "p2", 100e3);
+    c.addTri("g1", "p1", "k1", "g1", wdf::k12ax7Quadric());
+    c.addTri("g2", "p2", "k2", "g2", wdf::k12ax7Quadric());
+    for (const bool closedForm : {true, false}) {
+        wdf::Engine e(c, kFs);
+        REQUIRE(e.setExplicitRoots(closedForm));
+        const auto p2 = static_cast<size_t>(e.nodeIndex("p2"));
+        const auto k2 = static_cast<size_t>(e.nodeIndex("k2"));
+        double lowest = 0.0;
+        for (int n = 0; n < 4800; ++n) {
+            const std::vector<double>& y = e.step({(n / 240) % 2 ? -5.0 : 5.0, 250.0});
+            lowest = std::min(lowest, y[p2] - y[k2]);
+        }
+        CAPTURE(closedForm, lowest);
+        REQUIRE(lowest >= -1e-6);
+    }
+}

@@ -44,10 +44,10 @@ inline void softplusSigmoid(double u, double& sp, double& sg) noexcept {
 /// `Vpk >= 0` is the paper's own post-solve test: `triode_stage_quadric.m`
 /// solves the quadric, reads the solved plate voltage back, and projects
 /// when `Vpk < 0` onto `Vpk = 0` (`QuadricTriodeWdf::reflect`'s
-/// `Consistent` flavour). The engine pins that state per sample: with an
-/// open-circuit plate voltage `vo > 0` it lands as the short, `ip = vo/Z`,
-/// and with `vo <= 0` as cold, `ip = 0`, so it never conducts in reverse and
-/// meets the quadric's own root continuously on both sides.
+/// `Consistent` flavour). The engine makes that test on each sample's solve:
+/// with an open-circuit plate voltage `vo > 0` it lands as the short,
+/// `ip = vo/Z`, and with `vo <= 0` as cold, `ip = 0`, so it never conducts
+/// in reverse and meets the quadric's own root continuously on both sides.
 ///
 /// The law conducts plate current only, so neither grid port carries a current
 /// of its own and the grid ports are passive: the triode group is exact in
@@ -85,9 +85,8 @@ struct TriodeModel {
     }
 
     /// The quadric law proper, no domain test: the domain decision is the
-    /// caller's. The engine decides it once per sample (`EngineSolve` pins
-    /// the row) the way the paper tests the *solved* plate voltage; this
-    /// is what the joint Newton rows run inside a pinned state. `evaluate`
+    /// caller's, made on the solved plate voltage the way the paper does;
+    /// this is what the joint Newton rows run inside a pinned state. `evaluate`
     /// above is the device-level spelling of the paper's test.
     Currents evaluateQuadric(double vgk, double vpk) const noexcept {
         Currents c;
