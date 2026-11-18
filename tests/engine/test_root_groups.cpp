@@ -208,11 +208,12 @@ TEST_CASE("the closed form's residual is unevaluated until asked for", "[rootgro
     const lwdf_test::CircuitCase tc{"two_stage_cascade", &lwdf_test::twoStageCascade, &lwdf_test::sine1v};
     const wdf::Circuit c = (*tc.build)();
     for (const bool grid : {true, false}) {
-        wdf::Engine e(c, kFs, grid);
+        wdf::Engine e(c, kFs, grid), twin(c, kFs, grid);
         REQUIRE(e.explicitRoots());
         double worst = 0.0;
         for (int n = 0; n < 4800; ++n) {
-            e.step(lwdf_test::sampleSources(c, tc, n));
+            const std::vector<double> sv = lwdf_test::sampleSources(c, tc, n);
+            REQUIRE(e.step(sv) == twin.step(sv));
             REQUIRE(std::isnan(e.lastResidual()));
             worst = std::max(worst, e.evaluateResidual());
             REQUIRE(e.lastResidual() <= worst);

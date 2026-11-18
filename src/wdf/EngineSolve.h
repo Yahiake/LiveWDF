@@ -78,8 +78,10 @@ public:
     /// closed form left it unevaluated.
     double evaluateResidual() {
         if (std::isnan(lastResidual_)) {
+            const long long stepEvals = deviceEvals_;
             for (const auto& dev : rootDevices_)
                 currentsForDevice(dev, vv_.data(), iv_.data(), nullptr);
+            deviceEvals_ = stepEvals;
             residualInto(vv_, vOc_, Z_, iv_, F_);
             lastResidual_ = solver::RootNewton::maxAbs(F_, K_);
         }
