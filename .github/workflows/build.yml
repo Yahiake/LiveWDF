@@ -1,0 +1,102 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  LINUX_DEPS: libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
+  MACOSX_DEPLOYMENT_TARGET: "10.15"
+
+jobs:
+  build:
+    name: ${{ matrix.os }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: linux, arch: x86_64, runner: ubuntu-24.04 }
+          - { os: linux, arch: aarch64, runner: ubuntu-24.04-arm }
+          # Raspberry Pi OS 32-bit is ARMv6 hard-float, unlike Debian's armhf, so this builds against its own sysroot and runs on every Pi.
+          - os: linux
+            arch: armv6
+            runner: ubuntu-24.04
+            container: debian:trixie
+            cmake: >-
+              -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=armv6l -DCMAKE_SYSROOT=/sysroot
+              -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_LINKER_TYPE=LLD
+              -DCMAKE_C_COMPILER_TARGET=arm-linux-gnueabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-gnueabihf
+              "-DCMAKE_C_FLAGS=-mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -marm"
+              "-DCMAKE_CXX_FLAGS=-mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -marm"
+              -DJUCE_TARGET_ARCHITECTURE=armv6l -DLIVEWDF_VST3_MANIFEST=OFF -DLIVEWDF_BUILD_TESTS=ON
+          - { os: windows, arch: x64, runner: windows-2025, cmake: -A x64 }
+          - { os: windows, arch: arm64, runner: windows-11-arm, cmake: -A ARM64 }
+          - { os: macos, arch: x86_64, runner: macos-15-intel }
+          - { os: macos, arch: arm64, runner: macos-15 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    container: ${{ matrix.container }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Set up the Raspberry Pi OS sysroot
+        if: matrix.arch == 'armv6'
+        run: |
+          apt-get update
+          apt-get install -y git cmake g++ clang lld llvm pkgconf mmdebstrap curl gpg qemu-user $LINUX_DEPS
+          curl -fsSL https://archive.raspbian.org/raspbian.public.key | gpg --dearmor > /raspbian.gpg
+          gpg --show-keys --with-colons /raspbian.gpg | grep '^fpr:::::::::A0DA38D0D76E8B5D638872819165938D90FDDD2E:$' > /dev/null
+          mmdebstrap --variant=extract --architectures=armhf --include="libstdc++-14-dev $LINUX_DEPS" trixie /sysroot "deb [signed-by=/raspbian.gpg] http://raspbian.raspberrypi.com/raspbian trixie main"
+          ln -s usr/lib /sysroot/lib
+          printf '#!/bin/sh\nPKG_CONFIG_SYSROOT_DIR=/sysroot PKG_CONFIG_LIBDIR=/sysroot/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/usr/share/pkgconfig exec pkg-config "$@"\n' > /usr/local/bin/rpi-pkg-config
+          chmod +x /usr/local/bin/rpi-pkg-config
+          echo "PKG_CONFIG=rpi-pkg-config" >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux' && matrix.arch != 'armv6'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y $LINUX_DEPS
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF -DLIVEWDF_VERSION=${{ inputs.version }} ${{ matrix.cmake }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4 --target LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone LiveWDF_Editor
+
+      - name: Run the unit tests on an emulated Pi Zero
+        if: matrix.arch == 'armv6'
+        run: |
+          cmake --build build --parallel 4 --target livewdf_tests
+          qemu-arm -cpu arm1176 -L /sysroot build/tests/livewdf_tests
+
+      - name: Package
+        run: |
+          name=LiveWDF-${{ inputs.version }}-${{ matrix.os }}-${{ matrix.arch }}
+          mkdir "$name"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3 build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
+          cp -R build/editor/LiveWDF_Editor_artefacts/Release "$name/Editor"
+          cp LICENSE THIRD-PARTY-NOTICES.md "$name"
+          # VST3 hosts look for the folder named after uname -m, which is armv6l or armv7l on a 32-bit Pi.
+          if [ "${{ matrix.arch }}" = armv6 ]; then
+            cp -R "$name/VST3/LiveWDF.vst3/Contents/armv6l-linux" "$name/VST3/LiveWDF.vst3/Contents/armv7l-linux"
+          fi
+          cmake -E tar cf "$name.zip" --format=zip "$name"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.os }}-${{ matrix.arch }}
+          path: LiveWDF-*.zip
+          if-no-files-found: error
+          retention-days: 7

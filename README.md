@@ -1,6 +1,6 @@
 # LiveWDF
 
-[![Tests](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml)
+[![Tests](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml) [![Nightly](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml)
 
 **An open-source, real-time Wave Digital Filter circuit simulator for audio.**
 
