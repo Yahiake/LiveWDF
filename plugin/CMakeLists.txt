@@ -78,6 +78,7 @@ target_compile_definitions(LiveWDF_PluginBench PRIVATE
 )
 target_link_libraries(LiveWDF_PluginBench PRIVATE
     LiveWDF_Plugin
+    livewdf_options
     juce::juce_audio_processors
     juce::juce_audio_utils
     juce::juce_dsp
