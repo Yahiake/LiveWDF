@@ -91,6 +91,8 @@ struct TriodeModel {
     double gridCurrent(double vgk, double& slope) const noexcept {
         double ig = 0.0;
         slope = 0.0;
+        if (!gridConducts || vgk <= kGridLines[0].on)
+            return 0.0;
         for (const GridLine& l : kGridLines)
             if (gridConducts && vgk - l.on > l.r * ig) {
                 ig = (vgk - l.on) / l.r;
