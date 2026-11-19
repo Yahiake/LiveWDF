@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
+option(LIVEWDF_VST3_MANIFEST "Write the VST3 moduleinfo.json, which loads the built plugin and so needs a native build" ON)
+
 # ==============================================================================
 # LiveWDF Audio Plugin Target (VST3 & Standalone)
 # ==============================================================================
@@ -17,6 +19,7 @@ juce_add_plugin(LiveWDF_Plugin
     IS_MIDI_EFFECT FALSE
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
     COPY_PLUGIN_AFTER_BUILD FALSE
+    VST3_AUTO_MANIFEST ${LIVEWDF_VST3_MANIFEST}
 )
 
 target_sources(LiveWDF_Plugin PRIVATE
