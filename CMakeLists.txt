@@ -11,9 +11,17 @@ option(LIVEWDF_BUILD_TESTS "Build LiveWDF tests" ON)
 # Shared warning options for LiveWDF targets (third_party is included as SYSTEM).
 add_library(livewdf_options INTERFACE)
 if(MSVC)
-    target_compile_options(livewdf_options INTERFACE /W4 /permissive- /utf-8 /D_USE_MATH_DEFINES /arch:AVX2 /D_CRT_SECURE_NO_WARNINGS)
+    target_compile_options(livewdf_options INTERFACE /W4 /permissive- /utf-8 /D_USE_MATH_DEFINES /D_CRT_SECURE_NO_WARNINGS)
 else()
-    target_compile_options(livewdf_options INTERFACE -Wall -Wextra -Wpedantic -mavx2 -mfma)
+    target_compile_options(livewdf_options INTERFACE -Wall -Wextra -Wpedantic)
+endif()
+# The compiler's target, because CMAKE_SYSTEM_PROCESSOR is the host for a Visual Studio -A build.
+set(LIVEWDF_ARCH "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}")
+if(NOT LIVEWDF_ARCH)
+    set(LIVEWDF_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+if(LIVEWDF_ARCH MATCHES "^(x86_64|x64|X86|AMD64|i[3-6]86)$")
+    target_compile_options(livewdf_options INTERFACE "$<IF:$<BOOL:${MSVC}>,/arch:AVX2,-mavx2;-mfma>")
 endif()
 
 # --- Core library -------------------------------------------------------------
