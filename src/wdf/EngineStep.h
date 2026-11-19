@@ -74,6 +74,8 @@ public:
             vvPrev_ = rootV;
             vvPrev2_ = rootV;
         }
+        ppFactored_ = false;
+        ppFactoredAge_ = 0;
         if (powerSagEnabled_) {
             for (size_t i = 0; i < opAmpSagActive_.size(); ++i) {
                 if (opAmpSagActive_[i]) {

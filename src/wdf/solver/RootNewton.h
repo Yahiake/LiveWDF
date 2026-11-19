@@ -45,6 +45,9 @@ struct NewtonContext {
     std::vector<double>& rN;
     std::vector<int>& ppPiv;
     std::vector<double>& ppRhs;
+    std::vector<double>& ppJ;
+    bool& ppFactored;
+    int& ppFactoredAge;
     std::vector<double>& dv;
     std::vector<double>& vt;
     std::vector<double>& ft;
@@ -439,9 +442,99 @@ public:
         ctx.bestFn = std::numeric_limits<double>::infinity();
         bool reached = false;
 
+        // --- Frozen chord step: test previous sample's factored LU ---
+        if (usePrediction && !useCurrentSeed && ctx.ppFactored && ctx.ppFactoredAge < 16) {
+            tPhase = tick();
+            currentsOnlyInto(ctx, ctx.vv, ctx.ii);
+            residualInto(ctx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
+            if (ctx.prof)
+                tock(ctx.prof->device);
+
+            double base = maxAbs(ctx.F, ctx.K);
+            if (base < ctx.bestFn) {
+                ctx.bestFn = base;
+                ctx.bestV = ctx.vv;
+                ctx.bestI = ctx.ii;
+            }
+            if (base < tol) {
+                reached = true;
+                ctx.ppFactoredAge++;
+                ++ctx.newtonIters;
+            } else if (base < 1e-2) {
+                // Try frozen chord step with cached LU and ppJ
+                RootJacobian::reducedRhs(
+                    ctx.ppJ.data(), ctx.F.data(), ctx.K,
+                    ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.ppRhs.data());
+                detail::solveLUData(ctx.Mr.data(), ctx.ppPiv.data(), ctx.ppRhs.data(), ctx.nRed);
+
+                if (!ctx.Zred.empty()) {
+                    RootJacobian::backsubFast(
+                        ctx.ppRhs.data(), ctx.Zred.data(), ctx.F.data(), ctx.nRed, ctx.K, ctx.dv.data());
+                } else {
+                    for (int k = 0; k < ctx.K; ++k) {
+                        const double* LIVEWDF_RESTRICT zk = ctx.Z.data() + k * ctx.K;
+                        double s = -ctx.F[static_cast<size_t>(k)];
+                        for (int j = 0; j < ctx.nRed; ++j)
+                            s -= zk[ctx.redCol[static_cast<size_t>(j)]] * ctx.ppRhs[static_cast<size_t>(j)];
+                        ctx.dv[static_cast<size_t>(k)] = s;
+                    }
+                }
+
+                double scale = 1.0;
+                const double* LIVEWDF_RESTRICT dvData = ctx.dv.data();
+                const double* LIVEWDF_RESTRICT sUp = ctx.stepUp.data();
+                const double* LIVEWDF_RESTRICT sDown = ctx.stepDown.data();
+                for (int r = 0; r < ctx.K; ++r) {
+                    const double d = dvData[r];
+                    const double lim = (d >= 0.0) ? sUp[r] : sDown[r];
+                    const double mag = std::abs(d);
+                    if (mag * scale > lim)
+                        scale = lim / mag;
+                }
+                if (scale < 1.0) {
+                    for (int r = 0; r < ctx.K; ++r)
+                        ctx.dv[static_cast<size_t>(r)] *= scale;
+                }
+
+                for (int r = 0; r < ctx.K; ++r)
+                    ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + ctx.dv[static_cast<size_t>(r)];
+                limitDiodePorts(ctx, ctx.vt.data(), ctx.vv.data());
+                limitBjtJunctions(ctx, ctx.vt.data(), ctx.vv.data());
+
+                currentsOnlyInto(ctx, ctx.vt, ctx.iv);
+                residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
+                double trialNorm = maxAbs(ctx.ft, ctx.K);
+                if (trialNorm < tol) {
+                    ctx.vv = ctx.vt;
+                    ctx.ii = ctx.iv;
+                    ctx.F = ctx.ft;
+                    ctx.bestFn = trialNorm;
+                    ctx.bestV = ctx.vv;
+                    ctx.bestI = ctx.ii;
+                    reached = true;
+                    ctx.ppFactoredAge++;
+                    ++ctx.newtonIters;
+                } else if (trialNorm < base) {
+                    ctx.vv = ctx.vt;
+                    ctx.ii = ctx.iv;
+                    ctx.F = ctx.ft;
+                    base = trialNorm;
+                    if (base < ctx.bestFn) {
+                        ctx.bestFn = base;
+                        ctx.bestV = ctx.vv;
+                        ctx.bestI = ctx.ii;
+                    }
+                } else {
+                    ctx.ppFactored = false;
+                }
+            } else {
+                ctx.ppFactored = false;
+            }
+        }
+
         // Each outer PP iteration: 1 Jacobian + 1 LU factor + 2 device evals + 2 back-solves
         const int ppIters = (maxIter + 1) / 2;  // Each PP step counts as ~2 Newton iters
-        for (int it = 0; it < ppIters; ++it) {
+        for (int it = 0; it < ppIters && !reached; ++it) {
             // --- Step 1: Evaluate device law + Jacobian at current v ---
             tPhase = tick();
             currentsInto(ctx, ctx.vv, ctx.ii, ctx.J);
@@ -480,8 +573,13 @@ public:
             const bool factored = detail::factorLUData(ctx.Mr.data(), ctx.ppPiv.data(), ctx.nRed);
             if (ctx.prof)
                 tock(ctx.prof->lu);
-            if (!factored)
+            if (!factored) {
+                ctx.ppFactored = false;
                 break;
+            }
+            ctx.ppJ = ctx.J;
+            ctx.ppFactored = true;
+            ctx.ppFactoredAge = 0;
 
             // --- First chord step: solve LU * delta1 = r, compute dv1 ---
             detail::solveLUData(ctx.Mr.data(), ctx.ppPiv.data(), ctx.rN.data(), ctx.nRed);
