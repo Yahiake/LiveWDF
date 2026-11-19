@@ -7,7 +7,6 @@ cmake_minimum_required(VERSION 3.22)
 juce_add_plugin(LiveWDF_Plugin
     COMPANY_NAME "Yahia Kemari"
     BUNDLE_ID "com.yahia.livewdf"
-    VERSION "0.1.0"
     PLUGIN_MANUFACTURER_CODE "LWDF"
     PLUGIN_CODE "LWDF"
     FORMATS VST3 Standalone
