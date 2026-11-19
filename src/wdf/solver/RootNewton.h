@@ -185,8 +185,8 @@ public:
             const int r = gl.port;
             bool limited = false;
             ctx.vv[static_cast<size_t>(r)] =
-                gl.model->limitGrid(ctx.vvPrev[static_cast<size_t>(r)],
-                                    ctx.vv[static_cast<size_t>(r)], limited);
+                gl.limitGrid(ctx.vvPrev[static_cast<size_t>(r)],
+                             ctx.vv[static_cast<size_t>(r)], limited);
         }
         if (ctx.prof)
             tock(ctx.prof->predict);
@@ -433,8 +433,8 @@ public:
             const int r = gl.port;
             bool limited = false;
             ctx.vv[static_cast<size_t>(r)] =
-                gl.model->limitGrid(ctx.vvPrev[static_cast<size_t>(r)],
-                                    ctx.vv[static_cast<size_t>(r)], limited);
+                gl.limitGrid(ctx.vvPrev[static_cast<size_t>(r)],
+                             ctx.vv[static_cast<size_t>(r)], limited);
         }
         if (ctx.prof)
             tock(ctx.prof->predict);
@@ -620,9 +620,10 @@ public:
 
             // Update v -> y = v + dv1
             for (int r = 0; r < ctx.K; ++r)
-                ctx.vv[static_cast<size_t>(r)] += ctx.dv[static_cast<size_t>(r)];
-            ctx.limitHits += limitDiodePorts(ctx, ctx.vv.data(), vPrev);
-            ctx.limitHits += limitBjtJunctions(ctx, ctx.vv.data(), vPrev);
+                ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + ctx.dv[static_cast<size_t>(r)];
+            ctx.limitHits += limitDiodePorts(ctx, ctx.vt.data(), ctx.vv.data());
+            ctx.limitHits += limitBjtJunctions(ctx, ctx.vt.data(), ctx.vv.data());
+            ctx.vv = ctx.vt;
 
             // --- Check if first step already converged ---
             tPhase = tick();
@@ -688,9 +689,10 @@ public:
 
             // Update y -> x_new = y + dv2
             for (int r = 0; r < ctx.K; ++r)
-                ctx.vv[static_cast<size_t>(r)] += ctx.dv[static_cast<size_t>(r)];
-            ctx.limitHits += limitDiodePorts(ctx, ctx.vv.data(), vPrev);
-            ctx.limitHits += limitBjtJunctions(ctx, ctx.vv.data(), vPrev);
+                ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + ctx.dv[static_cast<size_t>(r)];
+            ctx.limitHits += limitDiodePorts(ctx, ctx.vt.data(), ctx.vv.data());
+            ctx.limitHits += limitBjtJunctions(ctx, ctx.vt.data(), ctx.vv.data());
+            ctx.vv = ctx.vt;
         }
 
         // Final evaluation to ensure we have valid i/J/F at the accepted point

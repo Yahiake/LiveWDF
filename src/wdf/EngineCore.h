@@ -591,8 +591,13 @@ protected:
                                     dev.activeRowBase, dev.numActiveRows,
                                     static_cast<size_t>(dev.compIndex)});
             switch (dev.kind) {
-            case RootKind::Triode:
+            case RootKind::Triode: {
+                const auto& tri = comp_.tri[static_cast<size_t>(dev.compIndex)].model;
+                if (tri.gridConducts) {
+                    gridJunctionLimiters_.push_back({dev.portBase + 2, nullptr, &tri});
+                }
                 break;
+            }
             case RootKind::Diode:
                 junctionLimiters_.push_back(
                     {dev.portBase, &comp_.diode[static_cast<size_t>(dev.compIndex)].second});
@@ -602,7 +607,7 @@ protected:
                 // `Pentode::limitGrid`, pedalkernel's own `pnjlim`. The plate
                 // needs no junction limiter.
                 gridJunctionLimiters_.push_back(
-                    {dev.portBase + 1, &pentodes_[static_cast<size_t>(dev.compIndex)]});
+                    {dev.portBase + 1, &pentodes_[static_cast<size_t>(dev.compIndex)], nullptr});
                 break;
             case RootKind::Bjt: {
                 // BJT has base-emitter junction at portBase + 1 (base-emitter voltage)
