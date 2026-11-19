@@ -31,7 +31,7 @@ jobs:
           sudo apt-get install -y ccache xvfb libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
 
       # ccache checks every hit against the compiler and preprocessed source, so an old cache only costs misses.
-      - uses: actions/cache@v6
+      - uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ccache
           key: ccache-${{ runner.os }}-${{ github.sha }}
@@ -41,12 +41,20 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
+        id: build
         run: cmake --build build --parallel "$(nproc)"
+
+      - uses: actions/cache/save@v6
+        if: always() && steps.build.outcome != 'skipped'
+        with:
+          path: ~/.cache/ccache
+          key: ccache-${{ runner.os }}-${{ github.sha }}
 
       - name: Unit tests
         run: ctest --test-dir build --output-on-failure
 
       - name: End-to-end tests
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           xvfb-run -a "build/editor/LiveWDF_Editor_artefacts/Release/LiveWDF Editor" --selftest
           for circuit in schematics/*/*.livewdf; do
