@@ -663,6 +663,140 @@ public:
         }
     }
 
+    /// Fast back-substitution using unrolled fixed-size kernel.
+    template <int N>
+    static inline void backsubFixed(
+        const double* LIVEWDF_RESTRICT r,
+        const double* LIVEWDF_RESTRICT zRed,
+        const double* LIVEWDF_RESTRICT fData,
+        int K,
+        double* LIVEWDF_RESTRICT dvData) noexcept
+    {
+        if constexpr (N == 1) {
+            const double r0 = r[0];
+            for (int k = 0; k < K; ++k)
+                dvData[k] = -fData[k] - zRed[k] * r0;
+        } else if constexpr (N == 2) {
+            const double r0 = r[0], r1 = r[1];
+            for (int k = 0; k < K; ++k) {
+                const double* LIVEWDF_RESTRICT zk = zRed + k * 2;
+                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1);
+            }
+        } else if constexpr (N == 3) {
+            const double r0 = r[0], r1 = r[1], r2 = r[2];
+            for (int k = 0; k < K; ++k) {
+                const double* LIVEWDF_RESTRICT zk = zRed + k * 3;
+                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1 + zk[2] * r2);
+            }
+        } else if constexpr (N == 4) {
+            const double r0 = r[0], r1 = r[1], r2 = r[2], r3 = r[3];
+            for (int k = 0; k < K; ++k) {
+                const double* LIVEWDF_RESTRICT zk = zRed + k * 4;
+                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1 + zk[2] * r2 + zk[3] * r3);
+            }
+        } else {
+            for (int k = 0; k < K; ++k) {
+                const double* LIVEWDF_RESTRICT zk = zRed + k * N;
+                double s = -fData[k];
+                for (int j = 0; j < N; ++j)
+                    s -= zk[j] * r[j];
+                dvData[k] = s;
+            }
+        }
+    }
+
+    /// Fast back-substitution dispatcher across sizes.
+    static inline void backsubFast(
+        const double* LIVEWDF_RESTRICT r,
+        const double* LIVEWDF_RESTRICT zRed,
+        const double* LIVEWDF_RESTRICT fData,
+        int nN,
+        int K,
+        double* LIVEWDF_RESTRICT dvData) noexcept
+    {
+        switch (nN) {
+        case 1: backsubFixed<1>(r, zRed, fData, K, dvData); return;
+        case 2: backsubFixed<2>(r, zRed, fData, K, dvData); return;
+        case 3: backsubFixed<3>(r, zRed, fData, K, dvData); return;
+        case 4: backsubFixed<4>(r, zRed, fData, K, dvData); return;
+        case 5: backsubFixed<5>(r, zRed, fData, K, dvData); return;
+        case 6: backsubFixed<6>(r, zRed, fData, K, dvData); return;
+        case 7: backsubFixed<7>(r, zRed, fData, K, dvData); return;
+        case 8: backsubFixed<8>(r, zRed, fData, K, dvData); return;
+        case 9: backsubFixed<9>(r, zRed, fData, K, dvData); return;
+        case 10: backsubFixed<10>(r, zRed, fData, K, dvData); return;
+        case 11: backsubFixed<11>(r, zRed, fData, K, dvData); return;
+        case 12: backsubFixed<12>(r, zRed, fData, K, dvData); return;
+        case 13: backsubFixed<13>(r, zRed, fData, K, dvData); return;
+        case 14: backsubFixed<14>(r, zRed, fData, K, dvData); return;
+        case 15: backsubFixed<15>(r, zRed, fData, K, dvData); return;
+        case 16: backsubFixed<16>(r, zRed, fData, K, dvData); return;
+        case 17: backsubFixed<17>(r, zRed, fData, K, dvData); return;
+        case 18: backsubFixed<18>(r, zRed, fData, K, dvData); return;
+        default:
+            for (int k = 0; k < K; ++k) {
+                const double* LIVEWDF_RESTRICT zk = zRed + k * nN;
+                double s = -fData[k];
+                for (int j = 0; j < nN; ++j)
+                    s -= zk[j] * r[j];
+                dvData[k] = s;
+            }
+            return;
+        }
+    }
+
+    /// Efficiently computes r = -J * f restricted to active rows, without touching M.
+    static inline void reducedRhs(
+        const double* LIVEWDF_RESTRICT jData,
+        const double* LIVEWDF_RESTRICT fData,
+        int K,
+        const RootDevice* devices,
+        size_t devCount,
+        double* LIVEWDF_RESTRICT r) noexcept
+    {
+        for (size_t di = 0; di < devCount; ++di) {
+            const auto& dev = devices[di];
+            switch (dev.kind) {
+            case DeviceKind::Triode: {
+                const int o = dev.portBase;
+                const int rBase = dev.activeRowBase;
+                r[rBase] = -(jData[o * K + o] * fData[o] + jData[o * K + o + 2] * fData[o + 2]);
+                break;
+            }
+            case DeviceKind::Diode:
+            case DeviceKind::ControlledRes: {
+                const int e = dev.portBase;
+                const int rBase = dev.activeRowBase;
+                r[rBase] = -(jData[e * K + e] * fData[e]);
+                break;
+            }
+            case DeviceKind::Pentode: {
+                const int base = dev.portBase;
+                const int rBase = dev.activeRowBase;
+                r[rBase] = -(jData[base * K + base] * fData[base] + jData[base * K + base + 1] * fData[base + 1]);
+                r[rBase + 1] = -(jData[(base + 1) * K + base + 1] * fData[base + 1]);
+                break;
+            }
+            case DeviceKind::Jfet:
+            case DeviceKind::Mosfet: {
+                const int o = dev.portBase;
+                const int rBase = dev.activeRowBase;
+                r[rBase] = -(jData[o * K + o] * fData[o] + jData[o * K + o + 1] * fData[o + 1]);
+                break;
+            }
+            case DeviceKind::Bjt: {
+                const int o = dev.portBase;
+                const int rBase = dev.activeRowBase;
+                r[rBase] = -(jData[o * K + o] * fData[o] + jData[o * K + o + 1] * fData[o + 1]);
+                r[rBase + 1] = -(jData[(o + 1) * K + o] * fData[o] + jData[(o + 1) * K + o + 1] * fData[o + 1]);
+                break;
+            }
+            case DeviceKind::OpAmp:
+                break;
+            }
+        }
+    }
+
     /// Fixed-size unrolled solve and back-substitution using contiguous Zred submatrix.
     template <int N>
     static inline bool reducedFinishFixed(
@@ -675,48 +809,16 @@ public:
     {
         if constexpr (N == 1) {
             if (!detail::solve1(M, r)) return false;
-            const double r0 = r[0];
-            for (int k = 0; k < K; ++k) {
-                dvData[k] = -fData[k] - zRed[k] * r0;
-            }
         } else if constexpr (N == 2) {
             if (!detail::solve2(M, r)) return false;
-            const double r0 = r[0];
-            const double r1 = r[1];
-            for (int k = 0; k < K; ++k) {
-                const double* LIVEWDF_RESTRICT zk = zRed + k * 2;
-                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1);
-            }
         } else if constexpr (N == 3) {
             if (!detail::solve3(M, r)) return false;
-            const double r0 = r[0];
-            const double r1 = r[1];
-            const double r2 = r[2];
-            for (int k = 0; k < K; ++k) {
-                const double* LIVEWDF_RESTRICT zk = zRed + k * 3;
-                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1 + zk[2] * r2);
-            }
         } else if constexpr (N == 4) {
             if (!detail::solve4(M, r)) return false;
-            const double r0 = r[0];
-            const double r1 = r[1];
-            const double r2 = r[2];
-            const double r3 = r[3];
-            for (int k = 0; k < K; ++k) {
-                const double* LIVEWDF_RESTRICT zk = zRed + k * 4;
-                dvData[k] = -fData[k] - (zk[0] * r0 + zk[1] * r1 + zk[2] * r2 + zk[3] * r3);
-            }
         } else {
             if (!detail::solveFixed<N>(M, r)) return false;
-            for (int k = 0; k < K; ++k) {
-                const double* LIVEWDF_RESTRICT zk = zRed + k * N;
-                double s = -fData[k];
-                for (int j = 0; j < N; ++j) {
-                    s -= zk[j] * r[j];
-                }
-                dvData[k] = s;
-            }
         }
+        backsubFixed<N>(r, zRed, fData, K, dvData);
         return true;
     }
 
