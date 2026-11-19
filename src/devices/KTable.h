@@ -100,4 +100,174 @@ private:
     std::vector<double> slopes_;
 };
 
+/// Fast 2D Lookup Table with Bilinear & Bicubic interpolation (K-Method).
+///
+/// Precomputes 2D nonlinear multi-terminal characteristics (e.g. Triode plate
+/// current Ip(Vgk, Vpk), BJT Ic(Vbe, Vce), or 2D root waves a_root(b_tree, ctrl))
+/// off the audio thread to eliminate expensive powers, transcendentals, and
+/// iterations in the real-time audio callback.
+///
+/// Reference: pedalkernel-rt/src/stage.rs (KTable lookup_2d), D'Angelo & Chowdhury DAFx 2019.
+class KTable2D {
+public:
+    KTable2D() = default;
+
+    /// Build a 2D table over [minX, maxX] x [minY, maxY] with `stepsX` x `stepsY` entries.
+    template <typename Func>
+    void build(double minX, double maxX, int stepsX,
+               double minY, double maxY, int stepsY,
+               Func&& func) {
+        minX_ = minX;
+        maxX_ = maxX;
+        minY_ = minY;
+        maxY_ = maxY;
+        stepsX_ = std::max(stepsX, 2);
+        stepsY_ = std::max(stepsY, 2);
+        invStepX_ = static_cast<double>(stepsX_ - 1) / (maxX_ - minX_);
+        invStepY_ = static_cast<double>(stepsY_ - 1) / (maxY_ - minY_);
+        stepX_ = (maxX_ - minX_) / static_cast<double>(stepsX_ - 1);
+        stepY_ = (maxY_ - minY_) / static_cast<double>(stepsY_ - 1);
+
+        const size_t total = static_cast<size_t>(stepsX_) * static_cast<size_t>(stepsY_);
+        table_.resize(total);
+
+        for (int iy = 0; iy < stepsY_; ++iy) {
+            const double y = (iy == stepsY_ - 1) ? maxY_ : (minY_ + iy * stepY_);
+            const size_t rowOffset = static_cast<size_t>(iy) * static_cast<size_t>(stepsX_);
+            for (int ix = 0; ix < stepsX_; ++ix) {
+                const double x = (ix == stepsX_ - 1) ? maxX_ : (minX_ + ix * stepX_);
+                table_[rowOffset + static_cast<size_t>(ix)] = func(x, y);
+            }
+        }
+        ready_ = true;
+    }
+
+    /// Fast 2D bilinear lookup (~5 ns).
+    inline double lookup(double x, double y) const noexcept {
+        if (!ready_)
+            return 0.0;
+
+        const double px = std::clamp((x - minX_) * invStepX_, 0.0, static_cast<double>(stepsX_ - 1));
+        const double py = std::clamp((y - minY_) * invStepY_, 0.0, static_cast<double>(stepsY_ - 1));
+
+        const int ix = std::min(static_cast<int>(px), stepsX_ - 2);
+        const int iy = std::min(static_cast<int>(py), stepsY_ - 2);
+
+        const double fx = px - static_cast<double>(ix);
+        const double fy = py - static_cast<double>(iy);
+
+        const size_t row0 = static_cast<size_t>(iy) * static_cast<size_t>(stepsX_);
+        const size_t row1 = row0 + static_cast<size_t>(stepsX_);
+
+        const double v00 = table_[row0 + static_cast<size_t>(ix)];
+        const double v10 = table_[row0 + static_cast<size_t>(ix + 1)];
+        const double v01 = table_[row1 + static_cast<size_t>(ix)];
+        const double v11 = table_[row1 + static_cast<size_t>(ix + 1)];
+
+        const double t0 = v00 + fx * (v10 - v00);
+        const double t1 = v01 + fx * (v11 - v01);
+        return t0 + fy * (t1 - t0);
+    }
+
+    /// Fast 2D lookup returning interpolated value and analytical partial derivatives (~8 ns).
+    inline void lookupWithDerivatives(double x, double y,
+                                      double& val, double& dx, double& dy) const noexcept {
+        if (!ready_) {
+            val = 0.0;
+            dx = 0.0;
+            dy = 0.0;
+            return;
+        }
+
+        const double px = std::clamp((x - minX_) * invStepX_, 0.0, static_cast<double>(stepsX_ - 1));
+        const double py = std::clamp((y - minY_) * invStepY_, 0.0, static_cast<double>(stepsY_ - 1));
+
+        const int ix = std::min(static_cast<int>(px), stepsX_ - 2);
+        const int iy = std::min(static_cast<int>(py), stepsY_ - 2);
+
+        const double fx = px - static_cast<double>(ix);
+        const double fy = py - static_cast<double>(iy);
+
+        const size_t row0 = static_cast<size_t>(iy) * static_cast<size_t>(stepsX_);
+        const size_t row1 = row0 + static_cast<size_t>(stepsX_);
+
+        const double v00 = table_[row0 + static_cast<size_t>(ix)];
+        const double v10 = table_[row0 + static_cast<size_t>(ix + 1)];
+        const double v01 = table_[row1 + static_cast<size_t>(ix)];
+        const double v11 = table_[row1 + static_cast<size_t>(ix + 1)];
+
+        const double diffX0 = v10 - v00;
+        const double diffX1 = v11 - v01;
+
+        const double t0 = v00 + fx * diffX0;
+        const double t1 = v01 + fx * diffX1;
+
+        val = t0 + fy * (t1 - t0);
+        dx = ((1.0 - fy) * diffX0 + fy * diffX1) * invStepX_;
+        dy = (t1 - t0) * invStepY_;
+    }
+
+    /// High-order Bicubic Hermite interpolation (Catmull-Rom tensor product, O(h^4) accuracy, ~15 ns).
+    inline double lookupBicubic(double x, double y) const noexcept {
+        if (!ready_)
+            return 0.0;
+
+        const double px = std::clamp((x - minX_) * invStepX_, 0.0, static_cast<double>(stepsX_ - 1));
+        const double py = std::clamp((y - minY_) * invStepY_, 0.0, static_cast<double>(stepsY_ - 1));
+
+        const int ix = std::min(static_cast<int>(px), stepsX_ - 2);
+        const int iy = std::min(static_cast<int>(py), stepsY_ - 2);
+
+        const double fx = px - static_cast<double>(ix);
+        const double fy = py - static_cast<double>(iy);
+
+        auto at = [this](int xi, int yi) noexcept -> double {
+            const int cx = std::clamp(xi, 0, stepsX_ - 1);
+            const int cy = std::clamp(yi, 0, stepsY_ - 1);
+            return table_[static_cast<size_t>(cy) * static_cast<size_t>(stepsX_) + static_cast<size_t>(cx)];
+        };
+
+        // 1D cubic Hermite / Catmull-Rom evaluator along a 4-point slice
+        auto hermite4 = [](double p0, double p1, double p2, double p3, double t) noexcept -> double {
+            const double c0 = p1;
+            const double c1 = 0.5 * (p2 - p0);
+            const double c2 = p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3;
+            const double c3 = 0.5 * (p3 - p0) + 1.5 * (p1 - p2);
+            return ((c3 * t + c2) * t + c1) * t + c0;
+        };
+
+        // Interpolate along the 4 rows
+        const double r0 = hermite4(at(ix - 1, iy - 1), at(ix, iy - 1), at(ix + 1, iy - 1), at(ix + 2, iy - 1), fx);
+        const double r1 = hermite4(at(ix - 1, iy),     at(ix, iy),     at(ix + 1, iy),     at(ix + 2, iy),     fx);
+        const double r2 = hermite4(at(ix - 1, iy + 1), at(ix, iy + 1), at(ix + 1, iy + 1), at(ix + 2, iy + 1), fx);
+        const double r3 = hermite4(at(ix - 1, iy + 2), at(ix, iy + 2), at(ix + 1, iy + 2), at(ix + 2, iy + 2), fx);
+
+        // Interpolate along the column
+        return hermite4(r0, r1, r2, r3, fy);
+    }
+
+    bool isReady() const noexcept { return ready_; }
+    double minX() const noexcept { return minX_; }
+    double maxX() const noexcept { return maxX_; }
+    double minY() const noexcept { return minY_; }
+    double maxY() const noexcept { return maxY_; }
+    int stepsX() const noexcept { return stepsX_; }
+    int stepsY() const noexcept { return stepsY_; }
+    size_t size() const noexcept { return table_.size(); }
+
+private:
+    double minX_ = 0.0;
+    double maxX_ = 0.0;
+    double minY_ = 0.0;
+    double maxY_ = 0.0;
+    double stepX_ = 0.0;
+    double stepY_ = 0.0;
+    double invStepX_ = 0.0;
+    double invStepY_ = 0.0;
+    int stepsX_ = 0;
+    int stepsY_ = 0;
+    bool ready_ = false;
+    std::vector<double> table_;
+};
+
 } // namespace wdf

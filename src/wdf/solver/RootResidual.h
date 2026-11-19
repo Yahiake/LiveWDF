@@ -423,7 +423,7 @@ public:
         for (size_t i = 0; i < gjlCount; ++i) {
             const auto& gl = gridJunctionLimiters[i];
             bool limited = false;
-            v[gl.port] = gl.model->limitGrid(vOld[gl.port], v[gl.port], limited);
+            v[gl.port] = gl.limitGrid(vOld[gl.port], v[gl.port], limited);
             if (limited) {
                 ++hits;
                 ++gridLimitHits;
