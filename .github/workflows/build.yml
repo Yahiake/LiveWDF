@@ -22,7 +22,6 @@ permissions:
 env:
   LINUX_DEPS: libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
   MACOSX_DEPLOYMENT_TARGET: "10.15"
-  VERSION: ${{ inputs.version }}
 
 jobs:
   build:
@@ -84,8 +83,13 @@ jobs:
         with:
           submodules: true
 
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
       - name: Configure
-        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF ${VERSION:+-DLIVEWDF_VERSION=$VERSION} ${{ matrix.cmake }}
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF -DLIVEWDF_VERSION=$VERSION ${{ matrix.cmake }}
 
       - name: Build
         run: cmake --build build --config Release --parallel 4 --target LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone LiveWDF_Editor
@@ -98,20 +102,129 @@ jobs:
 
       - name: Package
         run: |
-          name=LiveWDF-${VERSION:-dev}-${{ matrix.os }}-${{ matrix.arch }}
+          name=LiveWDF-$VERSION-${{ matrix.os }}-${{ matrix.arch }}
+          echo "NAME=$name" >> "$GITHUB_ENV"
           mkdir "$name"
           cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3 build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
           cp -R build/editor/LiveWDF_Editor_artefacts/Release "$name/Editor"
           cp LICENSE THIRD-PARTY-NOTICES.md "$name"
+          if [ "${{ runner.os }}" = Linux ]; then cp packaging/linux/install.sh "$name"; fi
           # VST3 hosts look for the folder named after uname -m, which is armv6l or armv7l on a 32-bit Pi.
           if [ "${{ matrix.arch }}" = armv6 ]; then
             cp -R "$name/VST3/LiveWDF.vst3/Contents/armv6l-linux" "$name/VST3/LiveWDF.vst3/Contents/armv7l-linux"
           fi
           cmake -E tar cf "$name.zip" --format=zip "$name"
 
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          iscc /DVersion=$env:VERSION /DPlatform=${{ matrix.arch }} "/DSource=$PWD\$env:NAME" "/O$PWD" packaging\windows\livewdf.iss
+          Start-Process -Wait "$env:NAME-setup.exe" '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+          $files = "$env:ProgramFiles\LiveWDF\LiveWDF.exe", "$env:ProgramFiles\LiveWDF\LiveWDF Editor.exe", "$env:CommonProgramFiles\VST3\LiveWDF.vst3"
+          if (($files | Test-Path) -contains $false) { throw "not installed: $files" }
+          Start-Process -Wait "$env:ProgramFiles\LiveWDF\unins000.exe" '/VERYSILENT /SUPPRESSMSGBOXES'
+          for ($i = 0; ($files | Test-Path) -contains $true; $i++) { if ($i -eq 30) { throw "not uninstalled" }; Start-Sleep 1 }
+
+      - name: macOS installer
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p root/Applications root/Library/Audio/Plug-Ins/VST3 resources
+          cp -R "$NAME/Standalone/LiveWDF.app" "$NAME/Editor/LiveWDF Editor.app" root/Applications/
+          cp -R "$NAME/VST3/LiveWDF.vst3" root/Library/Audio/Plug-Ins/VST3/
+          cp LICENSE resources/LICENSE.txt
+          # Without this the installer updates a copy found anywhere on disk instead of /Applications.
+          pkgbuild --analyze --root root bundles.plist
+          for i in 0 1 2; do plutil -replace $i.BundleIsRelocatable -bool NO bundles.plist; done
+          pkgbuild --root root --component-plist bundles.plist --identifier com.yahia.livewdf --version "$VERSION" --install-location / livewdf.pkg
+          productbuild --distribution packaging/macos/distribution.xml --resources resources --package-path . "$NAME.pkg"
+          sudo installer -pkg "$NAME.pkg" -target /
+          ls -d /Applications/LiveWDF.app "/Applications/LiveWDF Editor.app" /Library/Audio/Plug-Ins/VST3/LiveWDF.vst3
+          pkgutil --pkg-info com.yahia.livewdf
+
       - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.os }}-${{ matrix.arch }}
-          path: LiveWDF-*.zip
+          path: |
+            LiveWDF-*.zip
+            LiveWDF-*-setup.exe
+            LiveWDF-*.pkg
+          if-no-files-found: error
+          retention-days: 7
+
+  linux-packages:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: linux-*
+          merge-multiple: true
+
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Debian and RPM packages
+        run: |
+          sudo apt-get install -y rpm
+          for arch in x86_64:amd64 aarch64:arm64 armv6:armhf; do
+            name=LiveWDF-$VERSION-linux-${arch%:*}
+            unzip -q "$name.zip"
+            PREFIX=/usr VST3DIR=/usr/lib/vst3 DESTDIR="$PWD/deb" sh "$name/install.sh"
+            install -Dm644 LICENSE deb/usr/share/doc/livewdf/copyright
+            mkdir deb/DEBIAN
+            sed "s/@VERSION@/$VERSION/; s/@ARCH@/${arch#*:}/" packaging/linux/control.in > deb/DEBIAN/control
+            dpkg-deb --root-owner-group --build deb "$name.deb"
+            dpkg-deb --info "$name.deb" && dpkg-deb --contents "$name.deb"
+            rm -rf deb
+            if [ "${arch%:*}" != armv6 ]; then
+              rpmbuild -bb --target "${arch%:*}" --define "ver $VERSION" --define "zip $PWD/$name" --define "_rpmdir $PWD" --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" packaging/linux/livewdf.spec
+              rpm -qip "livewdf-$VERSION-1.${arch%:*}.rpm" && rpm -qlp "livewdf-$VERSION-1.${arch%:*}.rpm" && rpm -qRp "livewdf-$VERSION-1.${arch%:*}.rpm"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-linux
+          path: |
+            LiveWDF-*.deb
+            livewdf-*.rpm
+          if-no-files-found: error
+          retention-days: 7
+
+  arch-package:
+    needs: build
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86_64
+
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Arch package
+        run: |
+          useradd -m builder
+          cp packaging/arch/PKGBUILD LiveWDF-*-linux-x86_64.zip /home/builder/
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/" /home/builder/PKGBUILD
+          chown -R builder /home/builder
+          su builder -c 'cd && makepkg --nodeps --skipchecksums'
+          pacman -Qip /home/builder/livewdf-bin-*.pkg.tar.zst && pacman -Qlp /home/builder/livewdf-bin-*.pkg.tar.zst
+          cp /home/builder/livewdf-bin-*.pkg.tar.zst .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-arch
+          path: livewdf-bin-*.pkg.tar.zst
           if-no-files-found: error
           retention-days: 7

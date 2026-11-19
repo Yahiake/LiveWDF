@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<installer-gui-script minSpecVersion="2">
+    <title>LiveWDF</title>
+    <license file="LICENSE.txt"/>
+    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <choices-outline>
+        <line choice="default"/>
+    </choices-outline>
+    <choice id="default">
+        <pkg-ref id="com.yahia.livewdf"/>
+    </choice>
+    <pkg-ref id="com.yahia.livewdf">livewdf.pkg</pkg-ref>
+</installer-gui-script>

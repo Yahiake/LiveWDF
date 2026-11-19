@@ -1,0 +1,22 @@
+pkgname=livewdf-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Real-time wave digital filter circuit simulator: editor, standalone and VST3"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Yahiake/LiveWDF"
+license=('AGPL-3.0-only')
+depends=('glibc' 'gcc-libs' 'alsa-lib' 'freetype2' 'fontconfig' 'libx11' 'libxext' 'libxrandr' 'libxinerama' 'libxcursor' 'libxrender' 'libxi')
+optdepends=('pipewire-jack: JACK audio in the standalone')
+provides=('livewdf')
+conflicts=('livewdf')
+options=('!debug')
+source_x86_64=("https://github.com/Yahiake/LiveWDF/releases/download/v$pkgver/LiveWDF-$pkgver-linux-x86_64.zip")
+source_aarch64=("https://github.com/Yahiake/LiveWDF/releases/download/v$pkgver/LiveWDF-$pkgver-linux-aarch64.zip")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+    cd "LiveWDF-$pkgver-linux-$CARCH"
+    PREFIX=/usr VST3DIR=/usr/lib/vst3 DESTDIR="$pkgdir" sh install.sh
+    install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}
