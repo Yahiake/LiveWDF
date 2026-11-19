@@ -207,63 +207,68 @@ public:
         }
 
         bool converged = false;
+        bool curValid = false;
         bool currentsStale = false;
-        const int localMax = std::min(maxIter, 16);
+        double maxF = 0.0;
+        const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
+        const int localMax = std::min(maxIter, 24);
         for (int it = 0; it < localMax; ++it) {
             ++ctx.newtonIters;
-            for (int di : block.devices) {
-                RootResidual::currentsForDevice(
-                    ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
-                    ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
-                    ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
-                    ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
-            }
-            if (ctx.prof)
-                tock(ctx.prof->device);
+            if (!curValid) {
+                for (int di : block.devices) {
+                    RootResidual::currentsForDevice(
+                        ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                        ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                        ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                        ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->device);
 
-            for (int j = 0; j < nPorts; ++j)
-                iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                for (int j = 0; j < nPorts; ++j)
+                    iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
 
-            int localR = 0;
-            const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
-            for (int di : block.devices) {
-                const RootDevice& dev = ctx.rootDevices[di];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR) {
-                    double f = ctx.blockV[static_cast<size_t>(r)] -
-                               ctx.blockBase[static_cast<size_t>(r)];
-                    if (!block.blockZ.empty()) {
-                        const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR) * n;
-                        if (n == 1) {
-                            f += zr[0] * iPorts[0];
-                        } else if (n == 2) {
-                            f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
+                int localR = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR) {
+                        double f = ctx.blockV[static_cast<size_t>(r)] -
+                                   ctx.blockBase[static_cast<size_t>(r)];
+                        if (!block.blockZ.empty()) {
+                            const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR) * n;
+                            if (n == 1) {
+                                f += zr[0] * iPorts[0];
+                            } else if (n == 2) {
+                                f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
+                            } else {
+                                for (int j = 0; j < nPorts; ++j)
+                                    f += zr[j] * iPorts[j];
+                                for (int j = nPorts; j < n; ++j)
+                                    f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                            }
                         } else {
-                            for (int j = 0; j < nPorts; ++j)
-                                f += zr[j] * iPorts[j];
-                            for (int j = nPorts; j < n; ++j)
-                                f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                            const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                            for (int c : block.ports)
+                                f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
                         }
-                    } else {
-                        const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                        for (int c : block.ports)
-                            f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
+                        ctx.blockF[static_cast<size_t>(r)] = f;
                     }
-                    ctx.blockF[static_cast<size_t>(r)] = f;
+                }
+
+                maxF = 0.0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                        maxF = std::max(maxF, std::abs(ctx.blockF[static_cast<size_t>(r)]));
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->device);
+                if (maxF < effTol) {
+                    converged = true;
+                    break;
                 }
             }
-
-            double maxF = 0.0;
-            for (int di : block.devices) {
-                const RootDevice& dev = ctx.rootDevices[di];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
-                    maxF = std::max(maxF, std::abs(ctx.blockF[static_cast<size_t>(r)]));
-            }
-            if (ctx.prof)
-                tock(ctx.prof->device);
-            if (maxF < effTol) {
-                converged = true;
-                break;
-            }
+            curValid = false;
 
             std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
             std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
@@ -318,7 +323,7 @@ public:
             if (ctx.prof)
                 tock(ctx.prof->lu);
 
-            localR = 0;
+            int localR = 0;
             const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
             for (int di : block.devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
@@ -380,31 +385,142 @@ public:
                 }
             }
 
+            for (int di : block.devices) {
+                const RootDevice& dev = ctx.rootDevices[di];
+                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                    ctx.blockVOld[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
+                }
+            }
+
+            const double baseF = maxF;
+            double stepSize = 1.0;
+            double ftNorm = 0.0;
+            const int maxLineTrials = 4;
+            for (int h = 0; h < maxLineTrials; ++h) {
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                        ctx.blockV[static_cast<size_t>(r)] =
+                            ctx.blockVOld[static_cast<size_t>(r)] + stepSize * ctx.blockDv[static_cast<size_t>(r)];
+                    }
+                }
+
+                // Limit junctions belonging to this block
+                for (const auto& gl : ctx.gridJunctionLimiters) {
+                    bool inBlock = false;
+                    for (int di : block.devices) {
+                        const auto& dev = ctx.rootDevices[di];
+                        if (gl.port >= dev.portBase && gl.port < dev.portBase + dev.numPorts) {
+                            inBlock = true;
+                            break;
+                        }
+                    }
+                    if (inBlock) {
+                        bool limited = false;
+                        ctx.blockV[gl.port] = gl.limitGrid(ctx.blockVOld[gl.port], ctx.blockV[gl.port], limited);
+                        if (limited) {
+                            ++ctx.limitHits;
+                            ++ctx.gridLimitHits;
+                        }
+                    }
+                }
+                for (const auto& jl : ctx.junctionLimiters) {
+                    bool inBlock = false;
+                    for (int di : block.devices) {
+                        const auto& dev = ctx.rootDevices[di];
+                        if (jl.port >= dev.portBase && jl.port < dev.portBase + dev.numPorts) {
+                            inBlock = true;
+                            break;
+                        }
+                    }
+                    if (inBlock) {
+                        bool limited = false;
+                        if (jl.negate) {
+                            const double oldMirrored = -ctx.blockVOld[jl.port];
+                            const double newMirrored = -ctx.blockV[jl.port];
+                            const double clamped = jl.model->limit(oldMirrored, newMirrored, limited);
+                            ctx.blockV[jl.port] = -clamped;
+                        } else {
+                            ctx.blockV[jl.port] = jl.model->limit(ctx.blockVOld[jl.port], ctx.blockV[jl.port], limited);
+                        }
+                        if (limited)
+                            ++ctx.limitHits;
+                    }
+                }
+
+                for (int di : block.devices) {
+                    RootResidual::currentsForDevice(
+                        ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                        ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                        ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                        ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                }
+
+                for (int j = 0; j < nPorts; ++j)
+                    iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+
+                int localR2 = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR2) {
+                        double f = ctx.blockV[static_cast<size_t>(r)] -
+                                   ctx.blockBase[static_cast<size_t>(r)];
+                        if (!block.blockZ.empty()) {
+                            const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR2) * n;
+                            if (n == 1) {
+                                f += zr[0] * iPorts[0];
+                            } else if (n == 2) {
+                                f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
+                            } else {
+                                for (int j = 0; j < nPorts; ++j)
+                                    f += zr[j] * iPorts[j];
+                                for (int j = nPorts; j < n; ++j)
+                                    f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                            }
+                        } else {
+                            const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                            for (int c : block.ports)
+                                f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
+                        }
+                        ctx.blockF[static_cast<size_t>(r)] = f;
+                    }
+                }
+
+                ftNorm = 0.0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                        ftNorm = std::max(ftNorm, std::abs(ctx.blockF[static_cast<size_t>(r)]));
+                }
+
+                if (ftNorm <= baseF || h == maxLineTrials - 1)
+                    break;
+                stepSize *= 0.5;
+            }
+            if (ctx.prof)
+                tock(ctx.prof->linesearch);
+
             double maxStep = 0.0, maxV = 0.0;
             for (int di : block.devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
-                    const double old = ctx.blockV[static_cast<size_t>(r)];
-                    const double d = std::abs(ctx.blockDv[static_cast<size_t>(r)]);
-                    const double v = std::abs(old);
+                    const double d = std::abs(ctx.blockV[static_cast<size_t>(r)] - ctx.blockVOld[static_cast<size_t>(r)]);
+                    const double v = std::abs(ctx.blockV[static_cast<size_t>(r)]);
                     maxStep = std::max(maxStep, d);
                     maxV = std::max(maxV, v);
-                    ctx.blockVOld[static_cast<size_t>(r)] = old;
-                    ctx.blockV[static_cast<size_t>(r)] = old + ctx.blockDv[static_cast<size_t>(r)];
                 }
             }
 
-            ctx.limitHits += RootResidual::limitDiodePorts(
-                ctx.blockV.data(), ctx.blockVOld.data(), ctx.junctionLimiters.data(),
-                ctx.junctionLimiters.size(), ctx.gridJunctionLimiters.data(),
-                ctx.gridJunctionLimiters.size(), ctx.gridLimitHits);
-            if (ctx.prof)
-                tock(ctx.prof->linesearch);
-            if (it > 0 && maxStep < 1e-13 * std::max(1.0, maxV) && maxF < 1e-8) {
+            maxF = ftNorm;
+            if (maxF < effTol) {
                 converged = true;
-                currentsStale = true;
                 break;
             }
+            if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV) && maxF < 1e-5) {
+                converged = true;
+                break;
+            }
+            curValid = true;
         }
         if (!converged)
             return false;
@@ -628,7 +744,8 @@ public:
 
         bool converged = false;
         bool currentsStale = false;
-        const int localMax = std::min(maxIter, 16);
+        double maxF = 0.0;
+        const int localMax = std::min(maxIter, 24);
         for (int it = 0; it < localMax; ++it) {
             ++ctx.newtonIters;
             for (int di : block.reducedDevices) {
@@ -640,7 +757,7 @@ public:
                     ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
             }
 
-            const double maxF = residualMax();
+            maxF = residualMax();
             if (maxF < effTol) {
                 converged = true;
                 break;
@@ -754,7 +871,7 @@ public:
                 ctx.blockV.data(), ctx.blockVOld.data(), ctx.junctionLimiters.data(),
                 ctx.junctionLimiters.size(), ctx.gridJunctionLimiters.data(),
                 ctx.gridJunctionLimiters.size(), ctx.gridLimitHits);
-            if (it > 0 && maxStep < 1e-13 * std::max(1.0, maxV) && maxF < 1e-8) {
+            if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV) && maxF < 1e-5) {
                 converged = true;
                 currentsStale = true;
                 break;
@@ -1119,10 +1236,10 @@ public:
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
-        if (!failed && (predicted || ctx.lastBlockResidual <= effTol) &&
-            !RootClosedForms::pinTriodeDomains(
-                view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
+        const bool pinChanged = RootClosedForms::pinTriodeDomains(
+            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+            ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
+        if (!failed && (predicted || ctx.lastBlockResidual <= effTol) && !pinChanged) {
             ctx.lastConverged = true;
             ctx.lastResidual = predicted ? std::numeric_limits<double>::quiet_NaN() : ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
