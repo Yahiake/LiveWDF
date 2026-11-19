@@ -546,8 +546,10 @@ protected:
         for (size_t i = 0; i < circuit_.varRes.size(); ++i)
             varResResIndex_[i] = resIndexByNameCore(circuit_.varRes[i].name);
         pentodes_.clear();
-        for (const auto& cp : comp_.pent)
+        for (const auto& cp : comp_.pent) {
             pentodes_.push_back(cp.model);
+            pentodes_.back().ensureTable();
+        }
 
         opAmps_.clear();
         for (const auto& oa : comp_.opamp) {
