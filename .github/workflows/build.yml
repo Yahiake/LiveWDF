@@ -31,8 +31,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: linux, arch: x86_64, runner: ubuntu-24.04 }
-          - { os: linux, arch: aarch64, runner: ubuntu-24.04-arm }
+          # Built on the oldest base we support (glibc 2.35, ALSA 1.2.6), since binaries need what they were built against.
+          - { os: linux, arch: x86_64, runner: ubuntu-24.04, container: "ubuntu:22.04" }
+          - { os: linux, arch: aarch64, runner: ubuntu-24.04-arm, container: "ubuntu:22.04" }
           # Raspberry Pi OS 32-bit is ARMv6 hard-float, unlike Debian's armhf, so this builds against its own sysroot and runs on every Pi.
           - os: linux
             arch: armv6
@@ -63,21 +64,25 @@ jobs:
           apt-get install -y git cmake g++ clang lld llvm pkgconf mmdebstrap curl gpg qemu-user $LINUX_DEPS
           curl -fsSL https://archive.raspbian.org/raspbian.public.key | gpg --dearmor > /raspbian.gpg
           gpg --show-keys --with-colons /raspbian.gpg | grep '^fpr:::::::::A0DA38D0D76E8B5D638872819165938D90FDDD2E:$' > /dev/null
-          mmdebstrap --variant=extract --architectures=armhf --include="libstdc++-14-dev $LINUX_DEPS" trixie /sysroot "deb [signed-by=/raspbian.gpg] http://raspbian.raspberrypi.com/raspbian trixie main"
-          ln -s usr/lib /sysroot/lib
+          mmdebstrap --variant=extract --architectures=armhf --include="libstdc++-12-dev $LINUX_DEPS" bookworm /sysroot "deb [signed-by=/raspbian.gpg] http://raspbian.raspberrypi.com/raspbian bookworm main"
+          # Bookworm's libraries use absolute symlinks such as libm.so -> /lib/..., which must point into the sysroot.
+          find /sysroot -type l -lname '/*' -exec sh -c 'ln -sfn "/sysroot$(readlink "$1")" "$1"' _ {} \;
           printf '#!/bin/sh\nPKG_CONFIG_SYSROOT_DIR=/sysroot PKG_CONFIG_LIBDIR=/sysroot/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/usr/share/pkgconfig exec pkg-config "$@"\n' > /usr/local/bin/rpi-pkg-config
           chmod +x /usr/local/bin/rpi-pkg-config
           echo "PKG_CONFIG=rpi-pkg-config" >> "$GITHUB_ENV"
 
+      - name: Install Linux dependencies
+        if: matrix.container == 'ubuntu:22.04'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y git cmake g++-12 $LINUX_DEPS
+          printf 'CC=gcc-12\nCXX=g++-12\n' >> "$GITHUB_ENV"
+
       - uses: actions/checkout@v7
         with:
           submodules: true
-
-      - name: Install Linux dependencies
-        if: runner.os == 'Linux' && matrix.arch != 'armv6'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y $LINUX_DEPS
 
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF ${VERSION:+-DLIVEWDF_VERSION=$VERSION} ${{ matrix.cmake }}
