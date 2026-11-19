@@ -63,6 +63,11 @@ TEST_CASE("Coupled circuits strictly engage and exercise the Newton solver", "[n
             // either shape, so every sample has to run the joint Newton.
             REQUIRE_FALSE(e.explicitRoots());
 
+            // If the circuit has a block-level closed-form root (e.g. antiparallel diode pair),
+            // disable explicit roots so that this test strictly engages and exercises the Newton solver.
+            if (e.blockRoots())
+                e.setExplicitRoots(false);
+
             // 2. DC solve
             std::vector<double> node, rootV;
             REQUIRE(e.solveDc(node, rootV));
@@ -108,6 +113,8 @@ TEST_CASE("Forced Newton achieves sub-nanovolt parity with closed-form roots", "
         {"cathode_follower", &lwdf_test::cathodeFollower},
         {"two_stage_cascade", &lwdf_test::twoStageCascade},
         {"diode_single", &lwdf_test::diodeSingle},
+        {"diode_clipper", &lwdf_test::diodeClipper},
+        {"tube_screamer_clipping", &lwdf_test::tubeScreamerClippingStage},
     };
 
     for (const auto& f : fixtures) {
@@ -116,9 +123,10 @@ TEST_CASE("Forced Newton achieves sub-nanovolt parity with closed-form roots", "
             wdf::Engine eClosed(c, kFs, false);
             wdf::Engine eNewton(c, kFs, false);
 
-            REQUIRE(eClosed.explicitRoots());
+            REQUIRE((eClosed.explicitRoots() || eClosed.blockRoots()));
             eNewton.setExplicitRoots(false);
             REQUIRE_FALSE(eNewton.explicitRoots());
+            REQUIRE_FALSE(eNewton.blockRoots());
 
             eClosed.reset();
             eNewton.reset();

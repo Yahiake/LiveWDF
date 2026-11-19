@@ -828,6 +828,11 @@ protected:
             nRed_ = rootLayout_.nRed;
             Mr_.assign(static_cast<size_t>(nRed_) * nRed_, 0.0);
             rN_.assign(static_cast<size_t>(nRed_), 0.0);
+            ppPiv_.assign(static_cast<size_t>(nRed_), 0);
+            ppRhs_.assign(static_cast<size_t>(nRed_), 0.0);
+            ppJ_.assign(static_cast<size_t>(K_) * K_, 0.0);
+            ppFactored_ = false;
+            ppFactoredAge_ = 0;
             redCol_ = rootLayout_.redCol;
             redRow_ = rootLayout_.redRow;
             blockBase_.assign(K_, 0.0);
@@ -1036,6 +1041,11 @@ protected:
     std::vector<double> bestV_, bestI_;
     std::vector<double> F_, dv_, A_, vt_, ft_, iv_, Jt_;
     std::vector<double> Mr_, rN_;
+    std::vector<int> ppPiv_;        // LU pivot indices for Potra-Pták chord reuse
+    std::vector<double> ppRhs_;     // second-step RHS buffer for Potra-Pták
+    std::vector<double> ppJ_;       // cached Jacobian for across-sample chord steps
+    bool ppFactored_ = false;       // whether Mr_ and ppPiv_ hold a valid LU factorization
+    int ppFactoredAge_ = 0;         // age in samples of the cached factorization
     RootLayout rootLayout_;
     int nRed_ = 0;
     std::vector<int> redCol_, redRow_;

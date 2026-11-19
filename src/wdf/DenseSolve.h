@@ -373,5 +373,183 @@ inline bool solveGeneric(double* aData, double* bData, int n) {
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Two-step LU Factorization and Solve for Chord Methods (Potra-Ptak / WDPP).
+//
+// Separates O(N^3) Gaussian elimination with partial pivoting from O(N^2)
+// forward/back substitution. Factoring once allows multiple residual
+// evaluations and chord corrections at negligible additional cost.
+// ---------------------------------------------------------------------------
+
+template <int N>
+inline bool factorLUFixed(double* aData, int* piv) {
+    constexpr int n = N;
+    for (int k = 0; k < n; ++k) {
+        int p = k;
+        double best = std::abs(aData[k * n + k]);
+        for (int i = k + 1; i < n; ++i) {
+            const double val = std::abs(aData[i * n + k]);
+            if (val > best) {
+                best = val;
+                p = i;
+            }
+        }
+        if (best == 0.0 || !std::isfinite(best))
+            return false;
+        piv[k] = p;
+        if (p != k) {
+            double* rowP = aData + p * n;
+            double* rowK = aData + k * n;
+            for (int j = 0; j < n; ++j)
+                std::swap(rowP[j], rowK[j]);
+        }
+        const double invPiv = 1.0 / aData[k * n + k];
+        const double* rowK = aData + k * n;
+        for (int i = k + 1; i < n; ++i) {
+            double* rowI = aData + i * n;
+            const double f = rowI[k] * invPiv;
+            rowI[k] = f;
+            if (f == 0.0)
+                continue;
+            for (int j = k + 1; j < n; ++j)
+                rowI[j] -= f * rowK[j];
+        }
+    }
+    return true;
+}
+
+template <int N>
+inline void solveLUFixed(const double* aData, const int* piv, double* bData) {
+    constexpr int n = N;
+    for (int k = 0; k < n; ++k) {
+        const int p = piv[k];
+        if (p != k)
+            std::swap(bData[p], bData[k]);
+        const double bk = bData[k];
+        for (int i = k + 1; i < n; ++i)
+            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = n - 1; i >= 0; --i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = i + 1; j < n; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s / rowI[i];
+    }
+}
+
+inline bool factorLUGeneric(double* aData, int* piv, int n) {
+    for (int k = 0; k < n; ++k) {
+        int p = k;
+        double best = std::abs(aData[k * n + k]);
+        for (int i = k + 1; i < n; ++i) {
+            const double val = std::abs(aData[i * n + k]);
+            if (val > best) {
+                best = val;
+                p = i;
+            }
+        }
+        if (best == 0.0 || !std::isfinite(best))
+            return false;
+        piv[k] = p;
+        if (p != k) {
+            double* rowP = aData + p * n;
+            double* rowK = aData + k * n;
+            for (int j = 0; j < n; ++j)
+                std::swap(rowP[j], rowK[j]);
+        }
+        const double invPiv = 1.0 / aData[k * n + k];
+        const double* rowK = aData + k * n;
+        for (int i = k + 1; i < n; ++i) {
+            double* rowI = aData + i * n;
+            const double f = rowI[k] * invPiv;
+            rowI[k] = f;
+            if (f == 0.0)
+                continue;
+            for (int j = k + 1; j < n; ++j)
+                rowI[j] -= f * rowK[j];
+        }
+    }
+    return true;
+}
+
+inline void solveLUGeneric(const double* aData, const int* piv, double* bData, int n) {
+    for (int k = 0; k < n; ++k) {
+        const int p = piv[k];
+        if (p != k)
+            std::swap(bData[p], bData[k]);
+        const double bk = bData[k];
+        for (int i = k + 1; i < n; ++i)
+            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = n - 1; i >= 0; --i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = i + 1; j < n; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s / rowI[i];
+    }
+}
+
+inline bool factorLUData(double* aData, int* piv, int n) {
+    switch (n) {
+    case 1:  return factorLUFixed<1>(aData, piv);
+    case 2:  return factorLUFixed<2>(aData, piv);
+    case 3:  return factorLUFixed<3>(aData, piv);
+    case 4:  return factorLUFixed<4>(aData, piv);
+    case 5:  return factorLUFixed<5>(aData, piv);
+    case 6:  return factorLUFixed<6>(aData, piv);
+    case 7:  return factorLUFixed<7>(aData, piv);
+    case 8:  return factorLUFixed<8>(aData, piv);
+    case 9:  return factorLUFixed<9>(aData, piv);
+    case 10: return factorLUFixed<10>(aData, piv);
+    case 11: return factorLUFixed<11>(aData, piv);
+    case 12: return factorLUFixed<12>(aData, piv);
+    case 13: return factorLUFixed<13>(aData, piv);
+    case 14: return factorLUFixed<14>(aData, piv);
+    case 15: return factorLUFixed<15>(aData, piv);
+    case 16: return factorLUFixed<16>(aData, piv);
+    case 17: return factorLUFixed<17>(aData, piv);
+    case 18: return factorLUFixed<18>(aData, piv);
+    case 19: return factorLUFixed<19>(aData, piv);
+    case 20: return factorLUFixed<20>(aData, piv);
+    case 21: return factorLUFixed<21>(aData, piv);
+    case 22: return factorLUFixed<22>(aData, piv);
+    case 23: return factorLUFixed<23>(aData, piv);
+    case 24: return factorLUFixed<24>(aData, piv);
+    default: return factorLUGeneric(aData, piv, n);
+    }
+}
+
+inline void solveLUData(const double* aData, const int* piv, double* bData, int n) {
+    switch (n) {
+    case 1:  solveLUFixed<1>(aData, piv, bData); return;
+    case 2:  solveLUFixed<2>(aData, piv, bData); return;
+    case 3:  solveLUFixed<3>(aData, piv, bData); return;
+    case 4:  solveLUFixed<4>(aData, piv, bData); return;
+    case 5:  solveLUFixed<5>(aData, piv, bData); return;
+    case 6:  solveLUFixed<6>(aData, piv, bData); return;
+    case 7:  solveLUFixed<7>(aData, piv, bData); return;
+    case 8:  solveLUFixed<8>(aData, piv, bData); return;
+    case 9:  solveLUFixed<9>(aData, piv, bData); return;
+    case 10: solveLUFixed<10>(aData, piv, bData); return;
+    case 11: solveLUFixed<11>(aData, piv, bData); return;
+    case 12: solveLUFixed<12>(aData, piv, bData); return;
+    case 13: solveLUFixed<13>(aData, piv, bData); return;
+    case 14: solveLUFixed<14>(aData, piv, bData); return;
+    case 15: solveLUFixed<15>(aData, piv, bData); return;
+    case 16: solveLUFixed<16>(aData, piv, bData); return;
+    case 17: solveLUFixed<17>(aData, piv, bData); return;
+    case 18: solveLUFixed<18>(aData, piv, bData); return;
+    case 19: solveLUFixed<19>(aData, piv, bData); return;
+    case 20: solveLUFixed<20>(aData, piv, bData); return;
+    case 21: solveLUFixed<21>(aData, piv, bData); return;
+    case 22: solveLUFixed<22>(aData, piv, bData); return;
+    case 23: solveLUFixed<23>(aData, piv, bData); return;
+    case 24: solveLUFixed<24>(aData, piv, bData); return;
+    default: solveLUGeneric(aData, piv, bData, n); return;
+    }
+}
+
 }  // namespace detail
 }  // namespace wdf

@@ -548,3 +548,43 @@ TEST_CASE("a lone diode is a root the closed form takes", "[diode][closedform]")
     REQUIRE(clipped > 0);  // the junction conducts; a dead one would also agree
     WARN("diode_single: closed-form vs joint Newton, worst=" << worst);
 }
+
+// --------------------------------------------------------------------------------------
+// 7. K-Method 1D Lookup Table (KTable1D)
+// --------------------------------------------------------------------------------------
+
+TEST_CASE("KTable1D: cubic Hermite interpolation accuracy and continuation", "[diode][ktable]") {
+    wdf::KTable1D table;
+    REQUIRE_FALSE(table.isReady());
+
+    // Tabulate tanh(x) over [-5.0, 5.0] with 257 points (256 intervals, h = 10/256 = 0.039)
+    table.build(-5.0, 5.0, 257, [](double x) { return std::tanh(x); });
+    REQUIRE(table.isReady());
+    REQUIRE(table.steps() == 257);
+    REQUIRE(table.minV() == -5.0);
+    REQUIRE(table.maxV() == 5.0);
+
+    // Exact at nodes
+    for (int i = 0; i < 257; i += 16) {
+        const double x = -5.0 + i * (10.0 / 256.0);
+        CHECK(table.lookup(x) == Approx(std::tanh(x)).margin(1e-12));
+    }
+
+    // High fidelity between nodes (Cubic Hermite error < 5e-6 with 256 intervals)
+    double maxErr = 0.0;
+    for (int i = 0; i < 1000; ++i) {
+        const double x = -4.9 + i * (9.8 / 1000.0);
+        const double approx = table.lookup(x);
+        const double exact = std::tanh(x);
+        maxErr = std::max(maxErr, std::abs(approx - exact));
+    }
+    CHECK(maxErr < 5e-6);
+
+    // Linear extrapolation outside bounds
+    const double valUnder = table.lookup(-6.0);
+    const double valOver = table.lookup(6.0);
+    CHECK(std::isfinite(valUnder));
+    CHECK(std::isfinite(valOver));
+    CHECK(valUnder < table.lookup(-5.0));
+    CHECK(valOver > table.lookup(5.0));
+}
