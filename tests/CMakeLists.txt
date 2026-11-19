@@ -49,6 +49,7 @@ add_executable(livewdf_tests
     devices/test_pentode.cpp
     devices/test_pot_and_diodes.cpp
     devices/test_transformer.cpp
+    devices/test_triode_grid.cpp
     devices/test_new_presets.cpp
     devices/test_bjt.cpp
     devices/test_bjt_engine.cpp
