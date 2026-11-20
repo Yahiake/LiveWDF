@@ -210,18 +210,30 @@ TEST_CASE("the closed form's residual is unevaluated until asked for", "[rootgro
     for (const bool grid : {true, false}) {
         wdf::Engine e(c, kFs, grid), twin(c, kFs, grid);
         REQUIRE(e.explicitRoots());
-        double worst = 0.0;
+        double worst = 0.0, reported = 0.0;
         for (int n = 0; n < 4800; ++n) {
             const std::vector<double> sv = lwdf_test::sampleSources(c, tc, n);
             REQUIRE(e.step(sv) == twin.step(sv));
-            REQUIRE(std::isnan(e.lastResidual()));
+            // On a sample whose grid prediction did not need resolving, the
+            // closed form never evaluated the full system and leaves lastResidual()
+            // NaN. Where a grid current was predicted and had to be re-solved,
+            // solveRootGroups verifies the residual against the tolerance before
+            // it will accept, so the value it reports is always a converged one --
+            // never a large "success" carried off a mismatched prediction.
+            if (!std::isnan(e.lastResidual())) {
+                REQUIRE(std::isfinite(e.lastResidual()));
+                REQUIRE(e.lastResidual() <= 1e-9);
+                reported = std::max(reported, e.lastResidual());
+            }
             worst = std::max(worst, e.evaluateResidual());
-            REQUIRE(e.lastResidual() <= worst);
         }
-        // Without grid current the second plate is shorted for part of the run,
-        // and a shorted plate scales its voltage's rounding by 1 / kShort.
-        CAPTURE(grid, worst);
-        REQUIRE((grid ? worst > 1e-2 : worst < 1e-4));
+        // The verified closed form is machine precision. Without grid current the
+        // second plate is shorted part of the run and a shorted plate scales its
+        // voltage's rounding by 1 / kShort, but the closed form is still exact on
+        // its own block graph, so the residual it declined to evaluate is small.
+        CAPTURE(grid, reported, worst);
+        REQUIRE(reported <= 1e-9);
+        REQUIRE((grid ? worst <= 1e-8 : worst < 1e-4));
     }
 }
 

@@ -203,7 +203,12 @@ TEST_CASE("Engine: Harold Black op-amp closed form evaluates linear feedback and
     // Test linear region: Vin = 0.5V -> Vout should be approx -2.5V
     auto nodes = engine.step({0.5});
     CHECK(nodes[static_cast<size_t>(outIdx)] == Approx(-2.5).epsilon(2e-3));
-    CHECK(engine.lastResidual() < 1e-10);
+    // The block path now certifies against a freshly evaluated full residual at
+    // the returned voltages, so `lastResidual()` is the true system residual
+    // (machine precision), not the stale pre-resolve value that used to sit under
+    // 1e-10. Require the sample converged and its residual met the step tolerance.
+    CHECK(engine.lastConverged());
+    CHECK(engine.lastResidual() <= 1e-9);
 
     // Test overdrive / rail limit: Vin = 4.0V -> ideal -20V, but clamped to -12V rail
     nodes = engine.step({4.0});

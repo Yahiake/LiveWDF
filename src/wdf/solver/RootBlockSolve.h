@@ -1310,12 +1310,18 @@ public:
         for (int s = 0; s < view.count && !failed; ++s)
             failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx);
 
-        // A predicted grid current leaves its upstream block's rows off by the
-        // prediction's error, so that residual is not checked, as in the closed form.
-        // Relaxed sweeps iterate the grids with the rest, so they keep the check.
-        const bool predicted = !failed && relaxSweeps == 0 && !ctx.gridLag.empty() &&
-                               resolveMissedGrids(ctx, view, maxIter, tol, failed);
-        if (!failed && !predicted) {
+        // A predicted grid current can warm-start later blocks and be resolved
+        // by resolveMissedGrids. Regardless of prediction, the full system residual
+        // must ALWAYS be evaluated to verify convergence.
+        if (!failed && relaxSweeps == 0 && !ctx.gridLag.empty())
+            resolveMissedGrids(ctx, view, maxIter, tol, failed);
+
+        if (!failed) {
+            // A later block re-solve can move the voltage of an earlier block.
+            // Re-evaluate every root law at the final voltages before the
+            // residual check: `ii` must describe the returned `vv`, not a
+            // pre-resolve iterate that happens to leave a small stale residual.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
@@ -1362,8 +1368,11 @@ public:
                     ctx.vv[static_cast<size_t>(r)] = v;
                 }
             }
-            RootNewton::currentsInto(newtonCtx, ctx.vv, ctx.iv, ctx.J);
-            RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.iv, ctx.F);
+            // Re-evaluate into the live current vector: the accepted sample
+            // reconstructs node voltages and updates reactive state from
+            // `ii`, not from the scratch `iv` buffer.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+            RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
@@ -1372,9 +1381,9 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && (predicted || ctx.lastBlockResidual <= effTol) && !pinChanged) {
+        if (!failed && ctx.lastBlockResidual <= effTol && !pinChanged) {
             ctx.lastConverged = true;
-            ctx.lastResidual = predicted ? std::numeric_limits<double>::quiet_NaN() : ctx.lastBlockResidual;
+            ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
             ctx.vvPrev = ctx.vv;
             return;
@@ -1430,6 +1439,11 @@ public:
         }
 
         if (!failed) {
+            // The forward sweep may leave earlier blocks solved against a
+            // predecessor current that a later block has since changed.
+            // Re-evaluate the complete root-current vector at the final
+            // voltages before certifying the residual.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
@@ -1483,8 +1497,10 @@ public:
                         ctx.vv[static_cast<size_t>(r)] = v;
                     }
                 }
-                RootNewton::currentsInto(newtonCtx, ctx.vv, ctx.iv, ctx.J);
-                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.iv, ctx.F);
+                // Keep the live current vector consistent with the final
+                // voltages; `iv` is scratch and is not what `step()` commits.
+                RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
             }
         }
