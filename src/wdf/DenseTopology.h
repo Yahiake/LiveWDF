@@ -6,6 +6,7 @@
 #include "circuit/RootLayout.h"
 #include "devices/Diode.h"
 #include "devices/Pentode.h"
+#include "devices/Triode.h"
 #include "spice/Dense.h"
 
 namespace wdf {
@@ -75,13 +76,21 @@ struct JunctionLimiter {
     bool negate = false;
 };
 
-/// A pentode grid is an exponential junction but not a `DiodeModel`: the
-/// imported pedalkernel law has no series resistance and carries its own
-/// `grid_is` / `grid_vt`. Its limiter is still pedalkernel's `pnjlim`, so
-/// this holds the device and calls `limitGrid` on it.
+/// A pentode or triode grid is a conducting junction whose Newton steps
+/// overshoot without logarithmic damping (`pnjlim`). This holds the device
+/// and calls `limitGrid` on it.
 struct GridJunctionLimiter {
     int port = 0;
-    const Pentode* model = nullptr;
+    const Pentode* pentode = nullptr;
+    const TriodeModel* triode = nullptr;
+
+    double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (pentode)
+            return pentode->limitGrid(vold, vnew, limited);
+        if (triode)
+            return triode->limitGrid(vold, vnew, limited);
+        return vnew;
+    }
 };
 
 /// Predecessor port coupling for fast closed-form and block folding.

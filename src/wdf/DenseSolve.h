@@ -26,10 +26,9 @@ namespace detail {
 // matrices (N <= 4). Every matrix element and step is kept in local scalars,
 // which lets the compiler keep the row updates in registers and emit FMA.
 //
-// `solveFixed<N>` below is the same algorithm with `N` a compile-time constant;
-// it stays for the larger sizes the engine reaches (5, 6, 8, 12, 15, 18) and
-// for any N <= 4 that is not special-cased here. `solveData` owns the dispatch,
-// so this set and that switch must agree.
+// Sizes N <= 4 represent atomic circuit primitives (single diodes, triodes,
+// BJTs, and pairs) and run at full register speed (~6 ns). All larger systems
+// (N >= 5) dispatch to `solveGeneric`.
 
 inline bool solve1(const double* a, double* b) {
     const double a00 = a[0];
@@ -213,123 +212,7 @@ inline bool solve4(const double* a, double* b) {
     return true;
 }
 
-// Declared up front: `solveData` dispatches to both, so the two are defined
-// below it.
-template <int N>
-bool solveFixed(double* aData, double* bData);
-bool solveGeneric(double* aData, double* bData, int n);
-
-/// Dispatch to the compile-time bound for the sizes the engine reaches, else to
-/// the generic loop.
-inline bool solveData(double* aData, double* bData, int n) {
-    switch (n) {
-    case 1:
-        return solve1(aData, bData);
-    case 2:
-        return solve2(aData, bData);
-    case 3:
-        return solve3(aData, bData);
-    case 4:
-        return solve4(aData, bData);
-    case 5:
-        return solveFixed<5>(aData, bData);
-    case 6:
-        return solveFixed<6>(aData, bData);
-    case 7:
-        return solveFixed<7>(aData, bData);
-    case 8:
-        return solveFixed<8>(aData, bData);
-    case 9:
-        return solveFixed<9>(aData, bData);
-    case 10:
-        return solveFixed<10>(aData, bData);
-    case 11:
-        return solveFixed<11>(aData, bData);
-    case 12:
-        return solveFixed<12>(aData, bData);
-    case 13:
-        return solveFixed<13>(aData, bData);
-    case 14:
-        return solveFixed<14>(aData, bData);
-    case 15:
-        return solveFixed<15>(aData, bData);
-    case 16:
-        return solveFixed<16>(aData, bData);
-    case 17:
-        return solveFixed<17>(aData, bData);
-    case 18:
-        return solveFixed<18>(aData, bData);
-    case 19:
-        return solveFixed<19>(aData, bData);
-    case 20:
-        return solveFixed<20>(aData, bData);
-    case 21:
-        return solveFixed<21>(aData, bData);
-    case 22:
-        return solveFixed<22>(aData, bData);
-    case 23:
-        return solveFixed<23>(aData, bData);
-    case 24:
-        return solveFixed<24>(aData, bData);
-    default:
-        return solveGeneric(aData, bData, n);
-    }
-}
-
-/// Same thing over owning vectors, for the callers that keep `A`/`b` that way
-/// (the DC solve).
-inline bool solveSmall(std::vector<double>& A, std::vector<double>& b, int n) {
-    return solveData(A.data(), b.data(), n);
-}
-
-/// The algorithm with `N` a compile-time constant: `n` disappears into the
-/// loop bounds, so the compiler can unroll the back-substitution and keep each
-/// row's updates in registers.
-template <int N>
-inline bool solveFixed(double* aData, double* bData) {
-    constexpr int n = N;
-    for (int k = 0; k < n; ++k) {
-        int p = k;
-        double best = std::abs(aData[k * n + k]);
-        for (int i = k + 1; i < n; ++i) {
-            const double val = std::abs(aData[i * n + k]);
-            if (val > best) {
-                best = val;
-                p = i;
-            }
-        }
-        if (best == 0.0 || !std::isfinite(best))
-            return false;
-        if (p != k) {
-            double* rowP = aData + p * n;
-            double* rowK = aData + k * n;
-            for (int j = k; j < n; ++j)
-                std::swap(rowP[j], rowK[j]);
-            std::swap(bData[p], bData[k]);
-        }
-        const double invPiv = 1.0 / aData[k * n + k];
-        const double* rowK = aData + k * n;
-        const double bk = bData[k];
-        for (int i = k + 1; i < n; ++i) {
-            double* rowI = aData + i * n;
-            const double f = rowI[k] * invPiv;
-            if (f == 0.0)
-                continue;
-            for (int j = k + 1; j < n; ++j)
-                rowI[j] -= f * rowK[j];
-            bData[i] -= f * bk;
-        }
-    }
-    for (int i = n - 1; i >= 0; --i) {
-        const double* rowI = aData + i * n;
-        double s = bData[i];
-        for (int j = i + 1; j < n; ++j)
-            s -= rowI[j] * bData[j];
-        bData[i] = s / rowI[i];
-    }
-    return true;
-}
-
+/// Generic Gaussian elimination with partial pivoting for arbitrary matrix dimension n.
 inline bool solveGeneric(double* aData, double* bData, int n) {
     for (int k = 0; k < n; ++k) {
         int p = k;
@@ -371,6 +254,46 @@ inline bool solveGeneric(double* aData, double* bData, int n) {
         bData[i] = s / rowI[i];
     }
     return true;
+}
+
+/// Compile-time constant dispatch: sizes N <= 4 delegate to the fast register
+/// unrolled solvers; larger sizes run via `solveGeneric`.
+template <int N>
+inline bool solveFixed(double* aData, double* bData) {
+    if constexpr (N == 1)
+        return solve1(aData, bData);
+    else if constexpr (N == 2)
+        return solve2(aData, bData);
+    else if constexpr (N == 3)
+        return solve3(aData, bData);
+    else if constexpr (N == 4)
+        return solve4(aData, bData);
+    else
+        return solveGeneric(aData, bData, N);
+}
+
+/// Runtime dispatch: sizes N <= 4 (atomic primitives) route directly to hand-unrolled
+/// register math; all larger coupled blocks route to the generic solver.
+/// N = 2 is prioritized as the most frequent audio primitive (vacuum triodes, BJTs).
+inline bool solveData(double* aData, double* bData, int n) {
+    switch (n) {
+    case 2:
+        return solve2(aData, bData);
+    case 1:
+        return solve1(aData, bData);
+    case 3:
+        return solve3(aData, bData);
+    case 4:
+        return solve4(aData, bData);
+    default:
+        return solveGeneric(aData, bData, n);
+    }
+}
+
+/// Same thing over owning vectors, for the callers that keep `A`/`b` that way
+/// (the DC solve).
+inline bool solveSmall(std::vector<double>& A, std::vector<double>& b, int n) {
+    return solveData(A.data(), b.data(), n);
 }
 
 // ---------------------------------------------------------------------------
@@ -425,9 +348,13 @@ inline void solveLUFixed(const double* aData, const int* piv, double* bData) {
         const int p = piv[k];
         if (p != k)
             std::swap(bData[p], bData[k]);
-        const double bk = bData[k];
-        for (int i = k + 1; i < n; ++i)
-            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = 1; i < n; ++i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = 0; j < i; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s;
     }
     for (int i = n - 1; i >= 0; --i) {
         const double* rowI = aData + i * n;
@@ -478,9 +405,13 @@ inline void solveLUGeneric(const double* aData, const int* piv, double* bData, i
         const int p = piv[k];
         if (p != k)
             std::swap(bData[p], bData[k]);
-        const double bk = bData[k];
-        for (int i = k + 1; i < n; ++i)
-            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = 1; i < n; ++i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = 0; j < i; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s;
     }
     for (int i = n - 1; i >= 0; --i) {
         const double* rowI = aData + i * n;
