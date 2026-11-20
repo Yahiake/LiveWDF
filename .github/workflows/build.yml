@@ -102,7 +102,8 @@ jobs:
         if: matrix.arch == 'armv6'
         run: |
           cmake --build build --parallel 4 --target livewdf_tests
-          qemu-arm -cpu arm1176 -L /sysroot build/tests/livewdf_tests
+          # Bookworm keeps libc in /lib, which qemu's -L lookup misses, so run the sysroot's own loader.
+          qemu-arm -cpu arm1176 /sysroot/lib/ld-linux-armhf.so.3 --library-path /sysroot/lib/arm-linux-gnueabihf:/sysroot/usr/lib/arm-linux-gnueabihf build/tests/livewdf_tests
 
       - name: Package
         run: |
