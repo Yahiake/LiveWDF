@@ -62,6 +62,7 @@ jobs:
           apt-get update
           apt-get install -y git cmake g++ clang lld llvm pkgconf mmdebstrap curl gpg qemu-user $LINUX_DEPS
           curl -fsSL https://archive.raspbian.org/raspbian.public.key | gpg --dearmor > /raspbian.gpg
+          test "$(gpg --show-keys --with-colons /raspbian.gpg | grep -c '^pub:')" = 1
           gpg --show-keys --with-colons /raspbian.gpg | grep '^fpr:::::::::A0DA38D0D76E8B5D638872819165938D90FDDD2E:$' > /dev/null
           # The pinned key's self-signatures are SHA-1, which apt's Sequoia policy rejects since 2026-02-01.
           mkdir -p /etc/crypto-policies/back-ends
