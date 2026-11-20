@@ -348,9 +348,13 @@ inline void solveLUFixed(const double* aData, const int* piv, double* bData) {
         const int p = piv[k];
         if (p != k)
             std::swap(bData[p], bData[k]);
-        const double bk = bData[k];
-        for (int i = k + 1; i < n; ++i)
-            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = 1; i < n; ++i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = 0; j < i; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s;
     }
     for (int i = n - 1; i >= 0; --i) {
         const double* rowI = aData + i * n;
@@ -401,9 +405,13 @@ inline void solveLUGeneric(const double* aData, const int* piv, double* bData, i
         const int p = piv[k];
         if (p != k)
             std::swap(bData[p], bData[k]);
-        const double bk = bData[k];
-        for (int i = k + 1; i < n; ++i)
-            bData[i] -= aData[i * n + k] * bk;
+    }
+    for (int i = 1; i < n; ++i) {
+        const double* rowI = aData + i * n;
+        double s = bData[i];
+        for (int j = 0; j < i; ++j)
+            s -= rowI[j] * bData[j];
+        bData[i] = s;
     }
     for (int i = n - 1; i >= 0; --i) {
         const double* rowI = aData + i * n;
