@@ -210,6 +210,11 @@ public:
         bool curValid = false;
         bool currentsStale = false;
         double maxF = 0.0;
+        double prevF = 0.0;
+        bool luValid = false;
+        int luReuseCount = 0;
+        alignas(32) double luFactors[64 * 64];
+        alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
         const int localMax = std::min(maxIter, 24);
         for (int it = 0; it < localMax; ++it) {
@@ -270,67 +275,119 @@ public:
             }
             curValid = false;
 
-            std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
-            std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+            const double kappa = (prevF > 1e-15) ? (maxF / prevF) : 1.0;
+            const bool canReuse = (n >= 3) && (n <= 64) && luValid && (luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05);
 
-            int row = 0;
-            int devPortBase = 0;
-            for (int di : block.devices) {
-                const RootDevice& dev = ctx.rootDevices[di];
-                const int o = dev.portBase;
-                const int nAct = activePortCount(dev);
-                for (int rr = 0; rr < nAct; ++rr) {
-                    const int rp = activePort(dev, rr);
-                    const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
-                    double rhs = 0.0;
-                    double* LIVEWDF_RESTRICT mRow = ctx.blockM.data() + static_cast<size_t>(row) * n;
-                    for (int q = o; q < o + dev.numPorts; ++q) {
-                        const double jq = jRow[q];
-                        if (jq == 0.0)
-                            continue;
-                        const int localQ = devPortBase + (q - o);
-                        if (!block.blockZ.empty()) {
-                            const double* LIVEWDF_RESTRICT zq = bz + static_cast<size_t>(localQ) * n;
-                            if (n == 1) {
-                                mRow[0] += jq * zq[0];
-                            } else if (n == 2) {
-                                mRow[0] += jq * zq[0];
-                                mRow[1] += jq * zq[1];
-                            } else {
-                                for (int j = 0; j < n; ++j)
-                                    mRow[j] += jq * zq[j];
-                            }
-                        } else {
-                            const double* zq = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
-                            for (int j = 0; j < n; ++j)
-                                mRow[j] += jq * zq[block.ports[static_cast<size_t>(j)]];
-                        }
-                        rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
-                    }
-                    mRow[row] += 1.0;
-                    ctx.blockRhs[static_cast<size_t>(row)] = rhs;
-                    ++row;
-                }
-                devPortBase += dev.numPorts;
-            }
-            if (row != n)
-                return false;
-            if (ctx.prof)
-                tock(ctx.prof->jacobian);
-
-            alignas(16) int piv[32];
             bool solveOk = false;
-            if (n < 3) {
-                solveOk = detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n);
+            if (canReuse) {
+                std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+                int row = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    const int o = dev.portBase;
+                    const int nAct = activePortCount(dev);
+                    for (int rr = 0; rr < nAct; ++rr) {
+                        const int rp = activePort(dev, rr);
+                        const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
+                        double rhs = 0.0;
+                        for (int q = o; q < o + dev.numPorts; ++q) {
+                            const double jq = jRow[q];
+                            if (jq != 0.0)
+                                rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
+                        }
+                        ctx.blockRhs[static_cast<size_t>(row)] = rhs;
+                        ++row;
+                    }
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->jacobian);
+
+                detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
+                solveOk = true;
+                if (ctx.prof)
+                    tock(ctx.prof->lu);
+                ++luReuseCount;
             } else {
-                solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
-                if (solveOk)
-                    detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
+                if (it > 0 && n >= 3) {
+                    for (int di : block.devices) {
+                        RootResidual::currentsForDevice(
+                            ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                            ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                            ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                    }
+                    if (ctx.prof)
+                        tock(ctx.prof->device);
+                }
+
+                std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
+                std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+
+                int row = 0;
+                int devPortBase = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    const int o = dev.portBase;
+                    const int nAct = activePortCount(dev);
+                    for (int rr = 0; rr < nAct; ++rr) {
+                        const int rp = activePort(dev, rr);
+                        const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
+                        double rhs = 0.0;
+                        double* LIVEWDF_RESTRICT mRow = ctx.blockM.data() + static_cast<size_t>(row) * n;
+                        for (int q = o; q < o + dev.numPorts; ++q) {
+                            const double jq = jRow[q];
+                            if (jq == 0.0)
+                                continue;
+                            const int localQ = devPortBase + (q - o);
+                            if (!block.blockZ.empty()) {
+                                const double* LIVEWDF_RESTRICT zq = bz + static_cast<size_t>(localQ) * n;
+                                if (n == 1) {
+                                    mRow[0] += jq * zq[0];
+                                } else if (n == 2) {
+                                    mRow[0] += jq * zq[0];
+                                    mRow[1] += jq * zq[1];
+                                } else {
+                                    for (int j = 0; j < n; ++j)
+                                        mRow[j] += jq * zq[j];
+                                }
+                            } else {
+                                const double* zq = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
+                                for (int j = 0; j < n; ++j)
+                                    mRow[j] += jq * zq[block.ports[static_cast<size_t>(j)]];
+                            }
+                            rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
+                        }
+                        mRow[row] += 1.0;
+                        ctx.blockRhs[static_cast<size_t>(row)] = rhs;
+                        ++row;
+                    }
+                    devPortBase += dev.numPorts;
+                }
+                if (row != n)
+                    return false;
+                if (ctx.prof)
+                    tock(ctx.prof->jacobian);
+
+                if (n < 3) {
+                    solveOk = detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n);
+                } else if (n <= 64) {
+                    std::memcpy(luFactors, ctx.blockM.data(), static_cast<size_t>(n) * n * sizeof(double));
+                    solveOk = detail::factorLUData(luFactors, piv, n);
+                    if (solveOk) {
+                        luValid = true;
+                        luReuseCount = 0;
+                        detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
+                    }
+                } else {
+                    solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
+                    if (solveOk)
+                        detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->lu);
             }
             if (!solveOk)
                 return false;
-            if (ctx.prof)
-                tock(ctx.prof->lu);
 
             int localR = 0;
             const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
@@ -523,7 +580,7 @@ public:
                             ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
                             ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
                             ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
-                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                     }
 
                     for (int j = 0; j < nPorts; ++j)
@@ -581,6 +638,10 @@ public:
                     }
                 }
 
+                if (ftNorm > baseF) {
+                    luValid = false;
+                }
+                prevF = baseF;
                 maxF = ftNorm;
                 if (maxF < effTol) {
                     converged = true;
