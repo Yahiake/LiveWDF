@@ -145,6 +145,7 @@ jobs:
           # Without this the installer updates a copy found anywhere on disk instead of /Applications.
           pkgbuild --analyze --root root bundles.plist
           for i in 0 1 2; do plutil -replace $i.BundleIsRelocatable -bool NO bundles.plist; done
+          ! grep -A1 BundleIsRelocatable bundles.plist | grep -q '<true/>'
           pkgbuild --root root --component-plist bundles.plist --identifier com.yahia.livewdf --version "$VERSION" --install-location / livewdf.pkg
           sed "s/@ARCH@/${{ matrix.arch }}/" packaging/macos/distribution.xml > distribution.xml
           productbuild --distribution distribution.xml --resources resources --package-path . "$NAME.pkg"
