@@ -6,6 +6,7 @@
 #include <string>
 
 #include "devices/Triode.h"
+#include "devices/KTable.h"
 
 namespace wdf {
 
@@ -93,34 +94,22 @@ struct Pentode {
             c.dig_dvgk = ev * grid_is_over_vt;
         }
 
-        // Plate. The LEAKAGE_CONDUCTANCE floor (`leak`) keeps the plate
-        // unknown's derivative positive through every guard, as in pedalkernel.
-        constexpr double leak = 1e-12;
-        const double vp = (vpk > v_max) ? v_max : vpk;
-        if (vp > 0.0 && vg2 > 0.0) {
-            const double e1 = e1_0 + e1_g * vgk;
-            double sp, sg;
-            softplusSigmoid(e1, sp, sg);
-            const double base = vg2_over_kp * sp;
-            if (base > 0.0) {
-                const double ip_base = std::pow(base, ex);
-                const double r = vp * inv_kvb;
-                const double a = std::max(std::atan(r), 0.0);
-                const double ip_over_kg1 = ip_base * inv_kg1;
-                c.ip = ip_over_kg1 * a;
-                if (c.ip > 0.0) {
-                    const double d_pf = inv_kvb / (1.0 + r * r);
-                    const double dvpk = ip_over_kg1 * d_pf;
-                    c.dip_dvpk = (dvpk > leak) ? dvpk : leak;
-                    c.dip_dvgk = ex * c.ip * sg / base;
-                } else {
-                    c.dip_dvpk = leak;
-                }
+        // Plate. Evaluates via KTable2D when built, or via exact closed formula.
+        if (kTablePlate_.isReady()) {
+            constexpr double leak = 1e-12;
+            const double vp = (vpk > v_max) ? v_max : vpk;
+            if (vp > 0.0 && vg2 > 0.0 && vgk > -98.0) {
+                kTablePlate_.lookupWithDerivatives(vgk, vp, c.ip, c.dip_dvgk, c.dip_dvpk);
+                c.dip_dvpk = (c.dip_dvpk > leak) ? c.dip_dvpk : leak;
+                c.dip_dvgk = (c.dip_dvgk > 0.0) ? c.dip_dvgk : 0.0;
+                c.ip = (c.ip > 0.0) ? c.ip : 0.0;
             } else {
+                c.ip = 0.0;
                 c.dip_dvpk = leak;
+                c.dip_dvgk = 0.0;
             }
         } else {
-            c.dip_dvpk = leak;
+            evalPlateExact(vgk, vpk, c.ip, c.dip_dvgk, c.dip_dvpk);
         }
 
         if (count != 1.0) {
@@ -159,6 +148,56 @@ struct Pentode {
         }
         return vnew;
     }
+
+    /// Exact analytical formula for plate current and partial conductances.
+    void evalPlateExact(double vgk, double vpk, double& ip, double& dip_dvgk, double& dip_dvpk) const noexcept {
+        constexpr double leak = 1e-12;
+        const double vp = (vpk > v_max) ? v_max : vpk;
+        if (vp > 0.0 && vg2 > 0.0) {
+            const double e1 = e1_0 + e1_g * vgk;
+            double sp, sg;
+            softplusSigmoid(e1, sp, sg);
+            const double base = vg2_over_kp * sp;
+            if (base > 0.0) {
+                const double ip_base = std::pow(base, ex);
+                const double r = vp * inv_kvb;
+                const double a = std::max(std::atan(r), 0.0);
+                const double ip_over_kg1 = ip_base * inv_kg1;
+                ip = ip_over_kg1 * a;
+                if (ip > 0.0) {
+                    const double d_pf = inv_kvb / (1.0 + r * r);
+                    const double dvpk = ip_over_kg1 * d_pf;
+                    dip_dvpk = (dvpk > leak) ? dvpk : leak;
+                    dip_dvgk = ex * ip * sg / base;
+                } else {
+                    dip_dvpk = leak;
+                    dip_dvgk = 0.0;
+                }
+            } else {
+                ip = 0.0;
+                dip_dvpk = leak;
+                dip_dvgk = 0.0;
+            }
+        } else {
+            ip = 0.0;
+            dip_dvpk = leak;
+            dip_dvgk = 0.0;
+        }
+    }
+
+    /// Precomputes the 2D KTable for plate current across [Vgk, Vpk] space.
+    void ensureTable() const noexcept {
+        if (kTablePlate_.isReady())
+            return;
+        // Tabulate over Vgk in [-100.0, 15.0] (256 steps) and Vpk in [0.0, 550.0] (256 steps)
+        kTablePlate_.build(-100.0, 15.0, 256, 0.0, 550.0, 256, [this](double vg, double vp) -> double {
+            double ip = 0.0, dg = 0.0, dp = 0.0;
+            evalPlateExact(vg, vp, ip, dg, dp);
+            return ip;
+        });
+    }
+
+    mutable KTable2D kTablePlate_;
 };
 
 /// EL34: pedalkernel's row `MU=11 EX=1.35 KG1=650 KG2=4200 KP=60 KVB=24 KVB2=18

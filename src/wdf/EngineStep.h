@@ -332,7 +332,7 @@ public:
             else if (blockRoots())
                 solveRootBlocks(maxIter, tol);
             else if (K_ >= 3)
-                solveRootsNewtonPP(maxIter, tol);
+                solveRootsNewton(maxIter, tol);
             else
                 solveRootsNewton(maxIter, tol);
         } else {
