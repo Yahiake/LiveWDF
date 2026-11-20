@@ -98,7 +98,9 @@ jobs:
         run: |
           name=LiveWDF-${VERSION:-dev}-${{ matrix.os }}-${{ matrix.arch }}
           mkdir "$name"
-          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3 build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
+          mkdir "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3/LiveWDF.vst3 "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
           cp -R build/editor/LiveWDF_Editor_artefacts/Release "$name/Editor"
           cp LICENSE THIRD-PARTY-NOTICES.md "$name"
           # VST3 hosts look for the folder named after uname -m, which is armv6l or armv7l on a 32-bit Pi.
