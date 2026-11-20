@@ -108,7 +108,9 @@ jobs:
           name=LiveWDF-$VERSION-${{ matrix.os }}-${{ matrix.arch }}
           echo "NAME=$name" >> "$GITHUB_ENV"
           mkdir "$name"
-          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3 build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
+          mkdir "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3/LiveWDF.vst3 "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
           cp -R build/editor/LiveWDF_Editor_artefacts/Release "$name/Editor"
           cp LICENSE THIRD-PARTY-NOTICES.md "$name"
           if [ "${{ runner.os }}" = Linux ]; then cp packaging/linux/install.sh "$name"; fi
