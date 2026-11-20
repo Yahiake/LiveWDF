@@ -380,8 +380,30 @@ protected:
         if (!gridLag_.empty()) {
             auto lagCtx = makeBlockSolveContext();
             bool failed = false;
-            if (solver::RootBlockSolve::resolveMissedGrids(lagCtx, staticBlockView(), maxIter, tol, failed))
+            const bool resolved = solver::RootBlockSolve::resolveMissedGrids(
+                lagCtx, staticBlockView(), maxIter, tol, failed);
+            if (resolved) {
+                // The grid-current prediction makes the closed-form pass
+                // inexact. Verify the actual system before accepting it; if
+                // the prediction/resolve was not self-consistent, seed the
+                // joint Newton from the closed-form result and solve the
+                // original equations.
+                auto checkCtx = makeNewtonContext();
+                const bool pinChanged = solver::RootClosedForms::pinTriodeDomains(
+                    staticBlockView(), Z_.data(), vOc_.data(), ii_.data(),
+                    triodeDomainPin_.data(), comp_, rootDevices_.data(), K_);
+                solver::RootNewton::currentsOnlyInto(checkCtx, vv_, ii_);
+                solver::RootNewton::residualInto(
+                    checkCtx, vv_, vOc_, Z_, ii_, F_);
+                const double r = solver::RootNewton::maxAbs(F_, K_);
+                if (failed || pinChanged || !(r <= tol)) {
+                    solveRootsNewtonSeeded(maxIter, tol);
+                    return;
+                }
+                lastConverged_ = true;
+                lastResidual_ = r;
                 vvPrev_ = vv_;
+            }
         }
     }
 

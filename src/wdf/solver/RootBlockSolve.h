@@ -210,6 +210,11 @@ public:
         bool curValid = false;
         bool currentsStale = false;
         double maxF = 0.0;
+        double prevF = 0.0;
+        bool luValid = false;
+        int luReuseCount = 0;
+        alignas(32) double luFactors[64 * 64];
+        alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
         const int localMax = std::min(maxIter, 24);
         for (int it = 0; it < localMax; ++it) {
@@ -270,67 +275,119 @@ public:
             }
             curValid = false;
 
-            std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
-            std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+            const double kappa = (prevF > 1e-15) ? (maxF / prevF) : 1.0;
+            const bool canReuse = (n >= 3) && (n <= 64) && luValid && (luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05);
 
-            int row = 0;
-            int devPortBase = 0;
-            for (int di : block.devices) {
-                const RootDevice& dev = ctx.rootDevices[di];
-                const int o = dev.portBase;
-                const int nAct = activePortCount(dev);
-                for (int rr = 0; rr < nAct; ++rr) {
-                    const int rp = activePort(dev, rr);
-                    const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
-                    double rhs = 0.0;
-                    double* LIVEWDF_RESTRICT mRow = ctx.blockM.data() + static_cast<size_t>(row) * n;
-                    for (int q = o; q < o + dev.numPorts; ++q) {
-                        const double jq = jRow[q];
-                        if (jq == 0.0)
-                            continue;
-                        const int localQ = devPortBase + (q - o);
-                        if (!block.blockZ.empty()) {
-                            const double* LIVEWDF_RESTRICT zq = bz + static_cast<size_t>(localQ) * n;
-                            if (n == 1) {
-                                mRow[0] += jq * zq[0];
-                            } else if (n == 2) {
-                                mRow[0] += jq * zq[0];
-                                mRow[1] += jq * zq[1];
-                            } else {
-                                for (int j = 0; j < n; ++j)
-                                    mRow[j] += jq * zq[j];
-                            }
-                        } else {
-                            const double* zq = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
-                            for (int j = 0; j < n; ++j)
-                                mRow[j] += jq * zq[block.ports[static_cast<size_t>(j)]];
-                        }
-                        rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
-                    }
-                    mRow[row] += 1.0;
-                    ctx.blockRhs[static_cast<size_t>(row)] = rhs;
-                    ++row;
-                }
-                devPortBase += dev.numPorts;
-            }
-            if (row != n)
-                return false;
-            if (ctx.prof)
-                tock(ctx.prof->jacobian);
-
-            alignas(16) int piv[32];
             bool solveOk = false;
-            if (n < 3) {
-                solveOk = detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n);
+            if (canReuse) {
+                std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+                int row = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    const int o = dev.portBase;
+                    const int nAct = activePortCount(dev);
+                    for (int rr = 0; rr < nAct; ++rr) {
+                        const int rp = activePort(dev, rr);
+                        const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
+                        double rhs = 0.0;
+                        for (int q = o; q < o + dev.numPorts; ++q) {
+                            const double jq = jRow[q];
+                            if (jq != 0.0)
+                                rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
+                        }
+                        ctx.blockRhs[static_cast<size_t>(row)] = rhs;
+                        ++row;
+                    }
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->jacobian);
+
+                detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
+                solveOk = true;
+                if (ctx.prof)
+                    tock(ctx.prof->lu);
+                ++luReuseCount;
             } else {
-                solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
-                if (solveOk)
-                    detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
+                if (it > 0 && n >= 3) {
+                    for (int di : block.devices) {
+                        RootResidual::currentsForDevice(
+                            ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                            ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                            ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                    }
+                    if (ctx.prof)
+                        tock(ctx.prof->device);
+                }
+
+                std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
+                std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
+
+                int row = 0;
+                int devPortBase = 0;
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    const int o = dev.portBase;
+                    const int nAct = activePortCount(dev);
+                    for (int rr = 0; rr < nAct; ++rr) {
+                        const int rp = activePort(dev, rr);
+                        const double* LIVEWDF_RESTRICT jRow = ctx.blockJ.data() + static_cast<size_t>(rp) * ctx.K;
+                        double rhs = 0.0;
+                        double* LIVEWDF_RESTRICT mRow = ctx.blockM.data() + static_cast<size_t>(row) * n;
+                        for (int q = o; q < o + dev.numPorts; ++q) {
+                            const double jq = jRow[q];
+                            if (jq == 0.0)
+                                continue;
+                            const int localQ = devPortBase + (q - o);
+                            if (!block.blockZ.empty()) {
+                                const double* LIVEWDF_RESTRICT zq = bz + static_cast<size_t>(localQ) * n;
+                                if (n == 1) {
+                                    mRow[0] += jq * zq[0];
+                                } else if (n == 2) {
+                                    mRow[0] += jq * zq[0];
+                                    mRow[1] += jq * zq[1];
+                                } else {
+                                    for (int j = 0; j < n; ++j)
+                                        mRow[j] += jq * zq[j];
+                                }
+                            } else {
+                                const double* zq = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
+                                for (int j = 0; j < n; ++j)
+                                    mRow[j] += jq * zq[block.ports[static_cast<size_t>(j)]];
+                            }
+                            rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
+                        }
+                        mRow[row] += 1.0;
+                        ctx.blockRhs[static_cast<size_t>(row)] = rhs;
+                        ++row;
+                    }
+                    devPortBase += dev.numPorts;
+                }
+                if (row != n)
+                    return false;
+                if (ctx.prof)
+                    tock(ctx.prof->jacobian);
+
+                if (n < 3) {
+                    solveOk = detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n);
+                } else if (n <= 64) {
+                    std::memcpy(luFactors, ctx.blockM.data(), static_cast<size_t>(n) * n * sizeof(double));
+                    solveOk = detail::factorLUData(luFactors, piv, n);
+                    if (solveOk) {
+                        luValid = true;
+                        luReuseCount = 0;
+                        detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
+                    }
+                } else {
+                    solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
+                    if (solveOk)
+                        detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
+                }
+                if (ctx.prof)
+                    tock(ctx.prof->lu);
             }
             if (!solveOk)
                 return false;
-            if (ctx.prof)
-                tock(ctx.prof->lu);
 
             int localR = 0;
             const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
@@ -523,7 +580,7 @@ public:
                             ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
                             ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
                             ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
-                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
+                            ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                     }
 
                     for (int j = 0; j < nPorts; ++j)
@@ -581,6 +638,10 @@ public:
                     }
                 }
 
+                if (ftNorm > baseF) {
+                    luValid = false;
+                }
+                prevF = baseF;
                 maxF = ftNorm;
                 if (maxF < effTol) {
                     converged = true;
@@ -1249,12 +1310,18 @@ public:
         for (int s = 0; s < view.count && !failed; ++s)
             failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx);
 
-        // A predicted grid current leaves its upstream block's rows off by the
-        // prediction's error, so that residual is not checked, as in the closed form.
-        // Relaxed sweeps iterate the grids with the rest, so they keep the check.
-        const bool predicted = !failed && relaxSweeps == 0 && !ctx.gridLag.empty() &&
-                               resolveMissedGrids(ctx, view, maxIter, tol, failed);
-        if (!failed && !predicted) {
+        // A predicted grid current can warm-start later blocks and be resolved
+        // by resolveMissedGrids. Regardless of prediction, the full system residual
+        // must ALWAYS be evaluated to verify convergence.
+        if (!failed && relaxSweeps == 0 && !ctx.gridLag.empty())
+            resolveMissedGrids(ctx, view, maxIter, tol, failed);
+
+        if (!failed) {
+            // A later block re-solve can move the voltage of an earlier block.
+            // Re-evaluate every root law at the final voltages before the
+            // residual check: `ii` must describe the returned `vv`, not a
+            // pre-resolve iterate that happens to leave a small stale residual.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
@@ -1301,8 +1368,11 @@ public:
                     ctx.vv[static_cast<size_t>(r)] = v;
                 }
             }
-            RootNewton::currentsInto(newtonCtx, ctx.vv, ctx.iv, ctx.J);
-            RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.iv, ctx.F);
+            // Re-evaluate into the live current vector: the accepted sample
+            // reconstructs node voltages and updates reactive state from
+            // `ii`, not from the scratch `iv` buffer.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+            RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
@@ -1311,9 +1381,9 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && (predicted || ctx.lastBlockResidual <= effTol) && !pinChanged) {
+        if (!failed && ctx.lastBlockResidual <= effTol && !pinChanged) {
             ctx.lastConverged = true;
-            ctx.lastResidual = predicted ? std::numeric_limits<double>::quiet_NaN() : ctx.lastBlockResidual;
+            ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
             ctx.vvPrev = ctx.vv;
             return;
@@ -1369,6 +1439,11 @@ public:
         }
 
         if (!failed) {
+            // The forward sweep may leave earlier blocks solved against a
+            // predecessor current that a later block has since changed.
+            // Re-evaluate the complete root-current vector at the final
+            // voltages before certifying the residual.
+            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
@@ -1422,8 +1497,10 @@ public:
                         ctx.vv[static_cast<size_t>(r)] = v;
                     }
                 }
-                RootNewton::currentsInto(newtonCtx, ctx.vv, ctx.iv, ctx.J);
-                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.iv, ctx.F);
+                // Keep the live current vector consistent with the final
+                // voltages; `iv` is scratch and is not what `step()` commits.
+                RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
             }
         }

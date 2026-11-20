@@ -375,7 +375,7 @@ public:
             }
         }
 
-        bool stateOk = std::isnan(lastResidual_) || lastResidual_ <= 1e12;
+        bool stateOk = stateAcceptable();
         if (stateOk) {
             double maxVolts = 0.0;
             int maxIndex = -1;
@@ -501,6 +501,19 @@ public:
     }
 
 protected:
+    /// A sample may only commit reactive state after a verified solve.
+    /// `lastConverged_` is the solver's certification; a finite residual alone
+    /// is not proof that the original system was solved. The explicit
+    /// closed-form roots deliberately leave the residual unevaluated (NaN),
+    /// but their converged flag is still mandatory.
+    bool stateAcceptable() const {
+        if (!lastConverged_)
+            return false;
+        if (std::isnan(lastResidual_))
+            return explicitRootsActive_;
+        return std::isfinite(lastResidual_) && lastResidual_ <= 1e12;
+    }
+
     /// Forwards construction down the chain (see `EngineSolve`).
     using EngineCompile::EngineCompile;
 };
