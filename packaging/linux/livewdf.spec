@@ -3,6 +3,7 @@
 %global __os_install_post %{nil}
 
 Name:      livewdf
+Packager:  Yahia Kemari <64375557+Yahiake@users.noreply.github.com>
 Version:   %{ver}
 Release:   1
 Summary:   Real-time wave digital filter circuit simulator
@@ -15,13 +16,13 @@ Suggests:  pipewire-jack-audio-connection-kit
 The circuit editor, the standalone player and the VST3 plugin.
 
 %install
-PREFIX=%{_prefix} VST3DIR=%{_libdir}/vst3 DESTDIR=%{buildroot} sh %{zip}/install.sh
+LIVEWDF_PREFIX=%{_prefix} LIVEWDF_VST3DIR=%{_prefix}/lib/vst3 LIVEWDF_DESTDIR=%{buildroot} sh %{zip}/install.sh
 install -Dm644 %{zip}/LICENSE %{buildroot}%{_datadir}/licenses/%{name}/LICENSE
 
 %files
 %{_bindir}/livewdf
 %{_bindir}/livewdf-editor
-%{_libdir}/vst3/LiveWDF.vst3
+%{_prefix}/lib/vst3/LiveWDF.vst3
 %{_datadir}/applications/livewdf.desktop
 %{_datadir}/applications/livewdf-editor.desktop
 %license %{_datadir}/licenses/%{name}/LICENSE

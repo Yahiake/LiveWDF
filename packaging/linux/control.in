@@ -1,8 +1,8 @@
 Package: livewdf
 Version: @VERSION@
 Architecture: @ARCH@
-Maintainer: Yahia Kemari <https://github.com/Yahiake/LiveWDF>
-Depends: libc6 (>= 2.35), libstdc++6 (>= 12), libgcc-s1, libasound2, libfreetype6, libfontconfig1, libx11-6, libxext6, libxrandr2, libxinerama1, libxcursor1, libxrender1, libxi6
+Maintainer: Yahia Kemari <64375557+Yahiake@users.noreply.github.com>
+Depends: libc6 (>= 2.35), libstdc++6 (>= 12), libgcc-s1, libasound2 | libasound2t64, libfreetype6, libfontconfig1, libx11-6, libxext6, libxrandr2, libxinerama1, libxcursor1, libxrender1, libxi6
 Suggests: libjack-jackd2-0 | pipewire-jack
 Section: sound
 Priority: optional

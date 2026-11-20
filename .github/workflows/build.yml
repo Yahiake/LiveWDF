@@ -80,7 +80,7 @@ jobs:
           DEBIAN_FRONTEND: noninteractive
         run: |
           apt-get update
-          apt-get install -y git cmake g++-12 $LINUX_DEPS
+          apt-get install -y git cmake g++-12 pkg-config $LINUX_DEPS
           printf 'CC=gcc-12\nCXX=g++-12\n' >> "$GITHUB_ENV"
 
       - uses: actions/checkout@v7
@@ -126,10 +126,12 @@ jobs:
         shell: pwsh
         run: |
           iscc /DVersion=$env:VERSION /DPlatform=${{ matrix.arch }} "/DSource=$PWD\$env:NAME" "/O$PWD" packaging\windows\livewdf.iss
-          Start-Process -Wait "$env:NAME-setup.exe" '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+          $p = Start-Process -Wait -PassThru "$env:NAME-setup.exe" '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+          if ($p.ExitCode) { throw "setup exited with $($p.ExitCode)" }
           $files = "$env:ProgramFiles\LiveWDF\LiveWDF.exe", "$env:ProgramFiles\LiveWDF\LiveWDF Editor.exe", "$env:CommonProgramFiles\VST3\LiveWDF.vst3"
           if (($files | Test-Path) -contains $false) { throw "not installed: $files" }
-          Start-Process -Wait "$env:ProgramFiles\LiveWDF\unins000.exe" '/VERYSILENT /SUPPRESSMSGBOXES'
+          $p = Start-Process -Wait -PassThru "$env:ProgramFiles\LiveWDF\unins000.exe" '/VERYSILENT /SUPPRESSMSGBOXES'
+          if ($p.ExitCode) { throw "uninstaller exited with $($p.ExitCode)" }
           for ($i = 0; ($files | Test-Path) -contains $true; $i++) { if ($i -eq 30) { throw "not uninstalled" }; Start-Sleep 1 }
 
       - name: macOS installer
@@ -143,7 +145,8 @@ jobs:
           pkgbuild --analyze --root root bundles.plist
           for i in 0 1 2; do plutil -replace $i.BundleIsRelocatable -bool NO bundles.plist; done
           pkgbuild --root root --component-plist bundles.plist --identifier com.yahia.livewdf --version "$VERSION" --install-location / livewdf.pkg
-          productbuild --distribution packaging/macos/distribution.xml --resources resources --package-path . "$NAME.pkg"
+          sed "s/@ARCH@/${{ matrix.arch }}/" packaging/macos/distribution.xml > distribution.xml
+          productbuild --distribution distribution.xml --resources resources --package-path . "$NAME.pkg"
           sudo installer -pkg "$NAME.pkg" -target /
           ls -d /Applications/LiveWDF.app "/Applications/LiveWDF Editor.app" /Library/Audio/Plug-Ins/VST3/LiveWDF.vst3
           pkgutil --pkg-info com.yahia.livewdf
@@ -176,11 +179,12 @@ jobs:
 
       - name: Debian and RPM packages
         run: |
+          sudo apt-get update
           sudo apt-get install -y rpm
           for arch in x86_64:amd64 aarch64:arm64 armv6:armhf; do
             name=LiveWDF-$VERSION-linux-${arch%:*}
             unzip -q "$name.zip"
-            PREFIX=/usr VST3DIR=/usr/lib/vst3 DESTDIR="$PWD/deb" sh "$name/install.sh"
+            LIVEWDF_PREFIX=/usr LIVEWDF_VST3DIR=/usr/lib/vst3 LIVEWDF_DESTDIR="$PWD/deb" sh "$name/install.sh"
             install -Dm644 LICENSE deb/usr/share/doc/livewdf/copyright
             mkdir deb/DEBIAN
             sed "s/@VERSION@/$VERSION/; s/@ARCH@/${arch#*:}/" packaging/linux/control.in > deb/DEBIAN/control
@@ -204,6 +208,7 @@ jobs:
 
   arch-package:
     needs: build
+    continue-on-error: true
     runs-on: ubuntu-24.04
     container: archlinux:base-devel
     steps:
@@ -222,9 +227,9 @@ jobs:
         run: |
           useradd -m builder
           cp packaging/arch/PKGBUILD LiveWDF-*-linux-x86_64.zip /home/builder/
-          sed -i "s/^pkgver=.*/pkgver=$VERSION/" /home/builder/PKGBUILD
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/; s/^sha256sums_x86_64=.*/sha256sums_x86_64=('$(sha256sum LiveWDF-*-linux-x86_64.zip | cut -d' ' -f1)')/" /home/builder/PKGBUILD
           chown -R builder /home/builder
-          su builder -c 'cd && makepkg --nodeps --skipchecksums'
+          su builder -c 'cd && PACKAGER="Yahia Kemari <64375557+Yahiake@users.noreply.github.com>" makepkg --nodeps'
           pacman -Qip /home/builder/livewdf-bin-*.pkg.tar.zst && pacman -Qlp /home/builder/livewdf-bin-*.pkg.tar.zst
           cp /home/builder/livewdf-bin-*.pkg.tar.zst .
 

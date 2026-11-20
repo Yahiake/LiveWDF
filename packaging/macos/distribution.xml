@@ -2,7 +2,7 @@
 <installer-gui-script minSpecVersion="2">
     <title>LiveWDF</title>
     <license file="LICENSE.txt"/>
-    <options customize="never" require-scripts="false" hostArchitectures="x86_64,arm64"/>
+    <options customize="never" require-scripts="false" hostArchitectures="@ARCH@"/>
     <choices-outline>
         <line choice="default"/>
     </choices-outline>
