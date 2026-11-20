@@ -761,6 +761,9 @@ public:
                 const int o = dev.portBase;
                 const int rBase = dev.activeRowBase;
                 r[rBase] = -(jData[o * K + o] * fData[o] + jData[o * K + o + 2] * fData[o + 2]);
+                if (dev.numActiveRows == 2) {
+                    r[rBase + 1] = -(jData[(o + 2) * K + o + 2] * fData[o + 2]);
+                }
                 break;
             }
             case DeviceKind::Diode:

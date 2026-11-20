@@ -91,12 +91,46 @@ struct TriodeModel {
     double gridCurrent(double vgk, double& slope) const noexcept {
         double ig = 0.0;
         slope = 0.0;
+        if (!gridConducts || vgk <= kGridLines[0].on)
+            return 0.0;
         for (const GridLine& l : kGridLines)
             if (gridConducts && vgk - l.on > l.r * ig) {
                 ig = (vgk - l.on) / l.r;
                 slope = 1.0 / l.r;
             }
         return ig;
+    }
+
+    /// Beyond the forward grid conduction threshold `kGridLines[0].on` (-0.0745 V),
+    /// the grid conducts with steep piecewise-linear conductance.
+    /// The Newton solver taking raw steps from cutoff overshoots the knee by volts,
+    /// triggering massive current oscillations between cutoff and forward saturation.
+    /// This limiter compresses forward steps logarithmically (like SPICE pnjlim),
+    /// ensuring the iterate stays near the conduction knee so subsequent Newton iterations
+    /// receive accurate Jacobian slopes without oscillating.
+    double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (!gridConducts)
+            return vnew;
+        constexpr double on0 = kGridLines[0].on;
+        constexpr double vt = 0.05;
+        if (vold <= on0) {
+            // Crossing into forward conduction from cutoff:
+            // Damp large positive overshoot so Newton enters the conducting knee smoothly.
+            if (vnew > on0 && (vnew - on0) > 2.0 * vt) {
+                limited = true;
+                const double arg = 1.0 + (vnew - on0) / vt;
+                return on0 + vt * std::log(arg);
+            }
+        } else {
+            // Already conducting: piecewise-linear region has finite conductance.
+            // Only damp large runaway steps (> 0.5 V).
+            if (vnew > vold && (vnew - vold) > 0.5) {
+                limited = true;
+                const double arg = 1.0 + (vnew - vold) / 0.2;
+                return vold + 0.2 * std::log(arg);
+            }
+        }
+        return vnew;
     }
 
     Currents evaluate(double vgk, double vpk) const noexcept {

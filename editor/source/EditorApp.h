@@ -303,6 +303,7 @@ private:
                 say(failures_ == 0 ? juce::String("self-test passed")
                                    : juce::String("self-test FAILED: ")
                                          + juce::String(failures_) + " check(s)");
+                setApplicationReturnValue(failures_ == 0 ? 0 : 1);
                 quit();
                 break;
         }

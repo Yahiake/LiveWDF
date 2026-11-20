@@ -588,3 +588,62 @@ TEST_CASE("KTable1D: cubic Hermite interpolation accuracy and continuation", "[d
     CHECK(valUnder < table.lookup(-5.0));
     CHECK(valOver > table.lookup(5.0));
 }
+
+// --------------------------------------------------------------------------------------
+// 8. K-Method 2D Lookup Table (KTable2D)
+// --------------------------------------------------------------------------------------
+
+TEST_CASE("KTable2D: bilinear and bicubic interpolation with analytical derivatives", "[diode][ktable]") {
+    wdf::KTable2D table;
+    REQUIRE_FALSE(table.isReady());
+
+    // Tabulate f(x, y) = sin(x) * cos(y) on [-2.0, 2.0] x [-2.0, 2.0] with 65x65 points
+    auto exactFunc = [](double x, double y) { return std::sin(x) * std::cos(y); };
+    table.build(-2.0, 2.0, 65, -2.0, 2.0, 65, exactFunc);
+
+    REQUIRE(table.isReady());
+    REQUIRE(table.stepsX() == 65);
+    REQUIRE(table.stepsY() == 65);
+    REQUIRE(table.size() == 65 * 65);
+
+    // Exact at nodes for bilinear
+    for (int iy = 0; iy < 65; iy += 8) {
+        const double y = -2.0 + iy * (4.0 / 64.0);
+        for (int ix = 0; ix < 65; ix += 8) {
+            const double x = -2.0 + ix * (4.0 / 64.0);
+            CHECK(table.lookup(x, y) == Approx(exactFunc(x, y)).margin(1e-12));
+        }
+    }
+
+    // High fidelity between nodes: Bilinear error < 1e-3, Bicubic error < 1e-5
+    double maxErrBilinear = 0.0;
+    double maxErrBicubic = 0.0;
+    for (int iy = 0; iy < 20; ++iy) {
+        const double y = -1.8 + iy * (3.6 / 20.0);
+        for (int ix = 0; ix < 20; ++ix) {
+            const double x = -1.8 + ix * (3.6 / 20.0);
+            const double exact = exactFunc(x, y);
+            const double bil = table.lookup(x, y);
+            const double bic = table.lookupBicubic(x, y);
+            maxErrBilinear = std::max(maxErrBilinear, std::abs(bil - exact));
+            maxErrBicubic = std::max(maxErrBicubic, std::abs(bic - exact));
+        }
+    }
+    CHECK(maxErrBilinear < 1e-3);
+    CHECK(maxErrBicubic < 1e-5);
+
+    // Analytical partial derivatives test
+    const double testX = 0.35;
+    const double testY = 0.45;
+    double val = 0.0, dx = 0.0, dy = 0.0;
+    table.lookupWithDerivatives(testX, testY, val, dx, dy);
+
+    // Compare with central differences
+    const double h = 1e-5;
+    const double numDx = (table.lookup(testX + h, testY) - table.lookup(testX - h, testY)) / (2.0 * h);
+    const double numDy = (table.lookup(testX, testY + h) - table.lookup(testX, testY - h)) / (2.0 * h);
+
+    CHECK(val == Approx(table.lookup(testX, testY)).margin(1e-12));
+    CHECK(dx == Approx(numDx).margin(1e-4));
+    CHECK(dy == Approx(numDy).margin(1e-4));
+}
