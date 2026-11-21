@@ -134,9 +134,9 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     halfBandOversamplerR_.reset();
     engineLock.unlock();
 
-    // Scratch for the dry/wet copy. The engine source vectors are sized when a
-    // document is built, because their length is the circuit's source count.
-    dryBuffer_.setSize(2, samplesPerBlock, false, false, true);
+    // Scratch for the dry/wet copy. Pre-size larger than the announced host
+    // block so an oversized callback never has to allocate on the audio thread.
+    dryBuffer_.setSize(2, std::max(samplesPerBlock, 4096), false, false, true);
 
     // Rebuild engines with current sample rate and oversampling factor. This is
     // not a new document, so keep the user's pot positions. With no circuit
