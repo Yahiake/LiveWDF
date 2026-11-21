@@ -61,15 +61,20 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Push input audio into circular scope buffer
     inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
 
-    // Keep a dry copy if wetMix < 1.0f. The buffer is a member so this does not
-    // allocate on the audio thread; it is only resized when the host's block is
-    // larger than the one we prepared for.
+    // Keep a dry copy if wetMix < 1.0f. The buffer is a member prepared before
+    // playback so the audio thread only ever copies into existing storage.
     const bool needDry = dryMix > 0.001f;
+    bool dryAvailable = false;
     if (needDry) {
-        if (dryBuffer_.getNumChannels() < numChannels || dryBuffer_.getNumSamples() < numSamples)
-            dryBuffer_.setSize(numChannels, numSamples, false, false, true);
-        for (int ch = 0; ch < numChannels; ++ch)
-            dryBuffer_.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+        // Never resize from the audio thread. A host that exceeds the block it
+        // announced in prepareToPlay gets a fully wet block for this callback
+        // instead of a possible allocation glitch.
+        if (dryBuffer_.getNumChannels() >= numChannels &&
+            dryBuffer_.getNumSamples() >= numSamples) {
+            for (int ch = 0; ch < numChannels; ++ch)
+                dryBuffer_.copyFrom(ch, 0, buffer, ch, 0, numSamples);
+            dryAvailable = true;
+        }
     }
 
     // Try to acquire engine lock (never block audio thread)
@@ -253,7 +258,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Apply output master gain & dry/wet mix
     for (int ch = 0; ch < numChannels; ++ch) {
         float* channelData = buffer.getWritePointer(ch);
-        const float* dryData = needDry ? dryBuffer_.getReadPointer(ch) : nullptr;
+        const float* dryData = dryAvailable ? dryBuffer_.getReadPointer(ch) : nullptr;
 
         for (int i = 0; i < numSamples; ++i) {
             float outSample = channelData[i] * outputGain;
