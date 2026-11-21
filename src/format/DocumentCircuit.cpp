@@ -144,7 +144,27 @@ Circuit LiveWDFDocument::toCircuit() const {
                     c.addPentode(getPin("plate"), getPin("screen"), getPin("grid"), getPin("cathode"), pmModel, comp.id);
                 } else if (pm) {
                     // Recognized card, no edited values -- use card defaults.
-                    c.addPentode(getPin("plate"), getPin("screen"), getPin("grid"), getPin("cathode"), *pm, comp.id);
+                    wdf::Pentode model = *pm;
+                    const std::string kneeProp = getProp("knee", "");
+                    if (kneeProp == "derke" || kneeProp == "DerkE")
+                        model.reefman.knee = wdf::PentodeKneeType::DerkE;
+                    else if (kneeProp == "derkd" || kneeProp == "DerkD")
+                        model.reefman.knee = wdf::PentodeKneeType::DerkD;
+                    else if (kneeProp == "koren" || kneeProp == "Koren") {
+                        model.modelKind = wdf::PentodeModelKind::Koren;
+                        model.useReefman = false;
+                    }
+                    const std::string modelProp = getProp("pentode_model", getProp("pentodeModel", ""));
+                    if (modelProp == "koren" || modelProp == "Koren") {
+                        model.modelKind = wdf::PentodeModelKind::Koren;
+                        model.useReefman = false;
+                    }
+                    const std::string seProp = getProp("secondary_emission", getProp("se", ""));
+                    if (seProp == "true" || seProp == "1" || seProp == "on")
+                        model.reefman.secondaryEmission = true;
+                    else if (seProp == "false" || seProp == "0" || seProp == "off")
+                        model.reefman.secondaryEmission = false;
+                    c.addPentode(getPin("plate"), getPin("screen"), getPin("grid"), getPin("cathode"), model, comp.id);
                 } else if (isCustom && hasPentodeValues) {
                     // Custom model with its parameters provided.
                     wdf::Pentode pmModel;

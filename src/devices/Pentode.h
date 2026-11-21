@@ -11,13 +11,8 @@
 namespace wdf {
 
 /// Currents of one pentode (or a matched pair) and their derivatives with
-/// respect to the port voltages (control grid G1 = g-k, plate P = p-k).
-/// Currents flow into the grid and plate and out of the cathode.
-///
-/// The imported pedalkernel three-port law has no screen current: the
-/// screen voltage that enters E1 is the model-table constant `vg2`, not
-/// a live port voltage, so `is`, every `dis_*` and `dip_dvsk` are
-/// identically zero, and the second `eval` argument is unused.
+/// respect to the port voltages (control grid G1 = g-k, screen S = s-k, plate P = p-k).
+/// Currents flow into the grid, screen, and plate and out of the cathode.
 struct PentodeCurrents {
     double ig = 0.0, is = 0.0, ip = 0.0;
     double dig_dvgk = 0.0;                                    // dIg/dVsk = dIg/dVpk = 0
@@ -25,91 +20,542 @@ struct PentodeCurrents {
     double dip_dvgk = 0.0, dip_dvsk = 0.0, dip_dvpk = 0.0;
 };
 
-/// Koren pentode imported wholesale from pedalkernel's `PentodeThreePort`
-/// (`pedalkernel-rt/src/elements/nonlinear/pentode.rs`, parameters from
-/// `pedalkernel/models/pentodes.model`, GND-referenced variant with
-/// `v_offset = 0`):
+/// Knee formulation for the Reefman pentode model.
+enum class PentodeKneeType {
+    DerkD,  ///< Tier 2A: rational knee, kappa = 1 / (1 + beta * Vp)
+    DerkE   ///< Tier 2B: exponential knee, kappa = exp(-(beta * Vp)^1.5)
+};
+
+/// Clean, self-contained constitutive evaluator for the Reefman pentode model
+/// (incorporating Derk D and Derk E knees and optional secondary emission).
 ///
-///     E1    = kp*(1/mu + Vgk/vg2)  // vg2: the table's fixed screen constant
-///     base  = (vg2/kp)*softplus(E1)
-///     Ip    = ((base^ex)/kg1)*max(atan(Vp/kvb), 0)  // Vp = min(Vpk, v_max)
-///     Is    = 0
-///     Ig    = grid_is*(exp(clamp(Vgk/grid_vt, -500, 500)) - 1)
-///
-/// pedalkernel guards `vpk <= 0` / `vg2 <= 0` / `base <= 0` / `ip <= 0` with
-/// Ip = 0 and floors `dip_dvpk` at LEAKAGE_CONDUCTANCE (1e-12 S) on both the
-/// guarded and the normal path, so Newton always sees a positive diagonal
-/// there. `vp = min(Vpk, v_max)` carries pedalkernel's (0, v_max) plate-port
-/// clamp into the law; the lower bound is the `vpk <= 0` guard. `kvb2` and
-/// `rp` are carried as pedalkernel table constants; the three-port law
-/// never reads them.
-///
-/// The grid is pedalkernel's bare exponential -- no series resistance and no
-/// `Tubes.lib` junction. Its Newton guard is pedalkernel's own `pnjlim`
-/// (`pedalkernel-rt/src/elements/nonlinear/bjt.rs`), exposed as `limitGrid`
-/// and applied to this device's grid port by the engine. A limiter moves the
-/// iterate, not the law: converged, it is the same exponential root.
-///
-/// `count` scales every current and derivative (2 = a matched pair with
-/// identical drive, ampsim2 SPEC 4.2 B6).
-struct Pentode {
-    double mu = 11.0, ex = 1.35, kg1 = 650.0, kg2 = 4200.0, kp = 60.0, kvb = 24.0;
-    double kvb2 = 18.0;  // pedalkernel table constant; unused by the three-port law
-    double vg2 = 470.0;  // fixed screen voltage (Vg2k) that enters E1
-    double rp = 15000.0; // rated power (table metadata); unused by the law
-    double v_max = 500.0;
-    double count = 1.0;
-    // pedalkernel `PentodeThreePort::grid_iv` constants.
+/// Returns currents in Amperes and conductances in Siemens (A/V).
+/// Allocation-free and completely separated from solver matrices.
+struct ReefmanPentode {
+    PentodeKneeType knee = PentodeKneeType::DerkD;
+    bool secondaryEmission = false;
+
+    // Core tube parameters (default values seeded from 6L6GC reference)
+    double mu = 9.41;
+    double ex = 1.306;
+    double kg1 = 446.6;
+    double kg2 = 6672.5;
+    double kp = 45.2;
+    double kvb = 3205.1;
+    double beta = 0.069;
+    double alpha_s = 8.10;         // alS
+    double a = 0.11e-5 * 446.6;    // raw bracket coefficient (Aokg1 * kg1)
+
+    // Secondary emission parameters (active when secondaryEmission == true)
+    double sC = 0.031;
+    double ap = 0.017;
+    double lamv = 14.66;
+    double nu = 3.08;
+    double wv = -5.0;
+
+    // Control grid diode parameters (matching existing Pentode.h)
     double grid_is = 1e-9;
     double grid_vt = 0.025;
-    // `pnjlim`'s critical voltage, same expression as `limitGrid` computes but
-    // hoisted to construction: `grid_is`/`grid_vt` are table constants that no
-    // code mutates, so hoisting is exact and turns a per-Newton-iteration `log`
-    // into a load. It must stay the last member: the aggregate initializers
-    // (`kEL34Pair{...}`) end before these two, and an in-class initializer
-    // reads the members above it, so it sees the constructed values.
-    double grid_vcrit = grid_vt * std::log(grid_vt / (1.4142135623730950488 * (grid_is > 1e-30 ? grid_is : 1e-30)));
-    double e1_0 = (mu > 0.0) ? (kp / mu) : 0.0;
-    double e1_g = (vg2 > 0.0) ? (kp / vg2) : 0.0;
-    double vg2_over_kp = (kp > 0.0) ? (vg2 / kp) : 0.0;
-    double inv_kvb = (kvb > 0.0) ? (1.0 / kvb) : 0.0;
-    double inv_kg1 = (kg1 > 0.0) ? (1.0 / kg1) : 0.0;
-    double inv_grid_vt = (grid_vt > 0.0) ? (1.0 / grid_vt) : 0.0;
-    double grid_is_over_vt = (grid_vt > 0.0) ? (grid_is / grid_vt) : 0.0;
 
-    PentodeCurrents eval(double vgk, double /*vsk*/, double vpk) const noexcept {
-        PentodeCurrents c;
+    // Count / matched-pair scaling
+    double count = 1.0;
 
-        // Grid: pedalkernel's explicit exponential diode, exactly as in
-        // `grid_iv` (exponent clamped to +-500 there too). Below -37*vt
-        // (x < -37), exp(x) < 1e-16 is strictly zero in double precision.
+    static ReefmanPentode el34(double count = 1.0) noexcept {
+        ReefmanPentode r;
+        r.mu = 12.50;
+        r.ex = 1.363;
+        r.kg1 = 217.7;
+        r.kg2 = 1950.2;
+        r.kp = 50.5;
+        r.kvb = 1282.7;
+        r.beta = 0.105;
+        r.alpha_s = 6.09;
+        r.a = 0.16e-5 * 217.7;
+        r.sC = 0.022;
+        r.ap = 0.033;
+        r.lamv = 4.23;
+        r.nu = 2.91;
+        r.wv = 64.0;
+        r.knee = PentodeKneeType::DerkD;
+        r.secondaryEmission = false;
+        r.count = count;
+        return r;
+    }
+
+    static ReefmanPentode sixL6GC(double count = 1.0) noexcept {
+        ReefmanPentode r;
+        r.mu = 9.41;
+        r.ex = 1.306;
+        r.kg1 = 446.6;
+        r.kg2 = 6672.5;
+        r.kp = 45.2;
+        r.kvb = 3205.1;
+        r.beta = 0.069;
+        r.alpha_s = 8.10;
+        r.a = 0.11e-5 * 446.6;
+        r.sC = 0.031;
+        r.ap = 0.017;
+        r.lamv = 14.66;
+        r.nu = 3.08;
+        r.wv = -5.0;
+        r.knee = PentodeKneeType::DerkD;
+        r.secondaryEmission = false;
+        r.count = count;
+        return r;
+    }
+
+    static ReefmanPentode el84(double count = 1.0) noexcept {
+        ReefmanPentode r;
+        r.mu = 23.36;
+        r.ex = 1.138;
+        r.kg1 = 117.4;
+        r.kg2 = 1275.0;
+        r.kp = 152.4;
+        r.kvb = 4015.8;
+        r.beta = 0.148;
+        r.alpha_s = 7.66;
+        r.a = 0.37e-5 * 117.4;
+        r.sC = 0.038;
+        r.ap = 0.054;
+        r.lamv = 4.13;
+        r.nu = 1.56;
+        r.wv = 58.0;
+        r.knee = PentodeKneeType::DerkD;
+        r.secondaryEmission = false;
+        r.count = count;
+        return r;
+    }
+
+    static ReefmanPentode sixV6S(double count = 1.0) noexcept {
+        ReefmanPentode r;
+        r.mu = 10.56;
+        r.ex = 1.306;
+        r.kg1 = 609.8;
+        r.kg2 = 17267.3;
+        r.kp = 47.9;
+        r.kvb = 2171.5;
+        r.beta = 0.068;
+        r.alpha_s = 18.72;
+        r.a = 0.57e-6 * 609.8;
+        r.sC = 0.081;
+        r.ap = 0.013;
+        r.lamv = 5.7;
+        r.nu = 0.92;
+        r.wv = 18.0;
+        r.knee = PentodeKneeType::DerkD;
+        r.secondaryEmission = false;
+        r.count = count;
+        return r;
+    }
+
+    static ReefmanPentode kt66(double count = 1.0) noexcept {
+        return sixL6GC(count);
+    }
+
+    static ReefmanPentode kt77(double count = 1.0) noexcept {
+        return el34(count);
+    }
+
+    /// Checks whether the operating point lies within the mathematically and
+    /// physically supported domain of the constitutive equations.
+    bool isSupported(double vgk, double vsk, double vpk) const noexcept {
+        if (!std::isfinite(vgk) || !std::isfinite(vsk) || !std::isfinite(vpk))
+            return false;
+        if (vpk < 0.0)
+            return false;
+        if (vsk <= 0.0)
+            return false;
+        if (knee == PentodeKneeType::DerkD && (1.0 + beta * vpk) <= 0.0)
+            return false;
+        return true;
+    }
+
+    /// Evaluates control grid current and derivative using the established
+    /// exponential diode law.
+    void evalGrid(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        const double inv_grid_vt = (grid_vt > 0.0) ? (1.0 / grid_vt) : 0.0;
+        const double grid_is_over_vt = (grid_vt > 0.0) ? (grid_is / grid_vt) : 0.0;
         const double x = vgk * inv_grid_vt;
         if (x < -37.0) {
-            c.ig = -grid_is;
-            c.dig_dvgk = 0.0;
+            ig = -grid_is;
+            dig_dvgk = 0.0;
         } else {
             const double xClamped = (x > 500.0) ? 500.0 : x;
             const double ev = std::exp(xClamped);
-            c.ig = grid_is * (ev - 1.0);
-            c.dig_dvgk = ev * grid_is_over_vt;
+            ig = grid_is * (ev - 1.0);
+            dig_dvgk = (x <= 500.0) ? (ev * grid_is_over_vt) : 0.0;
+        }
+    }
+
+    /// Full evaluation returning plate, screen, and grid currents along with
+    /// all analytical partial derivatives (in Amperes and Siemens).
+    PentodeCurrents eval(double vgk, double vsk, double vpk) const noexcept {
+        PentodeCurrents c;
+        evalGrid(vgk, c.ig, c.dig_dvgk);
+
+        if (!isSupported(vgk, vsk, vpk)) {
+            if (count != 1.0) {
+                c.ig *= count;
+                c.dig_dvgk *= count;
+            }
+            return c;
         }
 
-        // Plate. Evaluates via KTable2D when built, or via exact closed formula.
-        if (kTablePlate_.isReady()) {
-            constexpr double leak = 1e-12;
-            const double vp = (vpk > v_max) ? v_max : vpk;
-            if (vp > 0.0 && vg2 > 0.0 && vgk > -98.0) {
-                kTablePlate_.lookupWithDerivatives(vgk, vp, c.ip, c.dip_dvgk, c.dip_dvpk);
-                c.dip_dvpk = (c.dip_dvpk > leak) ? c.dip_dvpk : leak;
-                c.dip_dvgk = (c.dip_dvgk > 0.0) ? c.dip_dvgk : 0.0;
-                c.ip = (c.ip > 0.0) ? c.ip : 0.0;
-            } else {
-                c.ip = 0.0;
-                c.dip_dvpk = leak;
-                c.dip_dvgk = 0.0;
+        // --- 1. Island calculation ---
+        const double S = std::sqrt(kvb + vsk * vsk);
+        const double inv_S = 1.0 / S;
+        const double u = (1.0 / mu) + vgk * inv_S;
+        const double w = kp * u;
+
+        double sp = 0.0, sg = 0.0;
+        softplusSigmoid(w, sp, sg);
+
+        const double e1 = (vsk / kp) * sp;
+        if (e1 <= 0.0) {
+            if (count != 1.0) {
+                c.ig *= count;
+                c.dig_dvgk *= count;
             }
+            return c;
+        }
+
+        const double i_space = std::pow(e1, ex);
+        const double de1_deg = vsk * sg * inv_S;
+        const double de1_des = (sp / kp) - (sg * vgk * vsk * vsk) * (inv_S * inv_S * inv_S);
+        const double di_over_e1 = ex * (i_space / e1);
+        const double di_deg = di_over_e1 * de1_deg;
+        const double di_des = di_over_e1 * de1_des;
+
+        // --- 2. Knee calculation ---
+        double kap = 0.0;
+        double dkap = 0.0;
+        if (knee == PentodeKneeType::DerkD) {
+            const double den = 1.0 + beta * vpk;
+            kap = 1.0 / den;
+            dkap = -beta / (den * den);
         } else {
-            evalPlateExact(vgk, vpk, c.ip, c.dip_dvgk, c.dip_dvpk);
+            const double z = beta * vpk;
+            const double sqrt_z = std::sqrt(z);
+            kap = std::exp(-z * sqrt_z);
+            dkap = -1.5 * beta * sqrt_z * kap;
+        }
+
+        // --- 3. Secondary emission calculation ---
+        double se = 0.0;
+        double dse_ep = 0.0;
+        double dse_eg = 0.0;
+        double dse_es = 0.0;
+        if (secondaryEmission) {
+            const double Vc = (vsk / lamv) - nu * vgk - wv;
+            const double q = -ap * (vpk - Vc);
+            if (q > 20.0) {
+                se = 2.0 * sC * vpk;
+                dse_ep = 2.0 * sC;
+            } else if (q < -20.0) {
+                se = 0.0;
+                dse_ep = 0.0;
+            } else {
+                const double th = std::tanh(q);
+                const double one_plus_th = 1.0 + th;
+                se = sC * vpk * one_plus_th;
+                const double d1 = 1.0 - th * th;
+                const double sC_vpk_d1 = sC * vpk * d1;
+                dse_ep = sC * one_plus_th - sC_vpk_d1 * ap;
+                dse_eg = -sC_vpk_d1 * (ap * nu);
+                dse_es = sC_vpk_d1 * (ap / lamv);
+            }
+        }
+
+        // --- 4. Brackets and currents ---
+        const double inv_kg1 = 1.0 / kg1;
+        const double inv_kg2 = 1.0 / kg2;
+        const double O = inv_kg1 - inv_kg2;
+        const double C = O;  // Algebraic identity C == O
+
+        const double B = O + (a * vpk) * inv_kg1 - se * inv_kg2 - C * kap;
+        const double Dk = 1.0 + alpha_s * kap + se;
+
+        c.ip = i_space * B;
+        c.is = i_space * Dk * inv_kg2;
+
+        // --- 5. Full analytical Jacobian conductances (A/V) ---
+        c.dip_dvpk = i_space * (a * inv_kg1 - dse_ep * inv_kg2 - C * dkap);
+        c.dip_dvgk = di_deg * B - i_space * (dse_eg * inv_kg2);
+        c.dip_dvsk = di_des * B - i_space * (dse_es * inv_kg2);
+
+        c.dis_dvpk = i_space * (alpha_s * dkap + dse_ep) * inv_kg2;
+        c.dis_dvgk = (di_deg * Dk + i_space * dse_eg) * inv_kg2;
+        c.dis_dvsk = (di_des * Dk + i_space * dse_es) * inv_kg2;
+
+        // --- 6. Matched pair scaling ---
+        if (count != 1.0) {
+            c.ig *= count;
+            c.is *= count;
+            c.ip *= count;
+            c.dig_dvgk *= count;
+            c.dis_dvgk *= count;
+            c.dis_dvsk *= count;
+            c.dis_dvpk *= count;
+            c.dip_dvgk *= count;
+            c.dip_dvsk *= count;
+            c.dip_dvpk *= count;
+        }
+
+        return c;
+    }
+
+    /// Value-only evaluation for currents (in Amperes).
+    void evalCurrents(double vgk, double vsk, double vpk,
+                      double& ig, double& is, double& ip) const noexcept {
+        double dummy_dig = 0.0;
+        evalGrid(vgk, ig, dummy_dig);
+
+        if (!isSupported(vgk, vsk, vpk)) {
+            is = 0.0;
+            ip = 0.0;
+            if (count != 1.0) {
+                ig *= count;
+            }
+            return;
+        }
+
+        const double S = std::sqrt(kvb + vsk * vsk);
+        const double inv_S = 1.0 / S;
+        const double u = (1.0 / mu) + vgk * inv_S;
+        const double w = kp * u;
+
+        double sp = 0.0, sg = 0.0;
+        softplusSigmoid(w, sp, sg);
+
+        const double e1 = (vsk / kp) * sp;
+        if (e1 <= 0.0) {
+            is = 0.0;
+            ip = 0.0;
+            if (count != 1.0) {
+                ig *= count;
+            }
+            return;
+        }
+
+        const double i_space = std::pow(e1, ex);
+
+        double kap = 0.0;
+        if (knee == PentodeKneeType::DerkD) {
+            kap = 1.0 / (1.0 + beta * vpk);
+        } else {
+            const double z = beta * vpk;
+            kap = std::exp(-z * std::sqrt(z));
+        }
+
+        double se = 0.0;
+        if (secondaryEmission) {
+            const double Vc = (vsk / lamv) - nu * vgk - wv;
+            const double q = -ap * (vpk - Vc);
+            if (q > 20.0) {
+                se = 2.0 * sC * vpk;
+            } else if (q >= -20.0) {
+                se = sC * vpk * (1.0 + std::tanh(q));
+            }
+        }
+
+        const double inv_kg1 = 1.0 / kg1;
+        const double inv_kg2 = 1.0 / kg2;
+        const double O = inv_kg1 - inv_kg2;
+        const double C = O;
+
+        const double B = O + (a * vpk) * inv_kg1 - se * inv_kg2 - C * kap;
+        const double Dk = 1.0 + alpha_s * kap + se;
+
+        ip = i_space * B;
+        is = i_space * Dk * inv_kg2;
+
+        if (count != 1.0) {
+            ig *= count;
+            is *= count;
+            ip *= count;
+        }
+    }
+
+    /// Grid junction limiter: beyond vcrit the exponential's conductance
+    /// outgrows any Newton step. The limiter moves the iterate in log space,
+    /// never the law: at convergence it leaves the same exponential root.
+    double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        const double vcrit = grid_vt * std::log(grid_vt / (1.4142135623730950488 * (grid_is > 1e-30 ? grid_is : 1e-30)));
+        if (vnew > vcrit && std::abs(vnew - vold) > 2.0 * grid_vt) {
+            limited = true;
+            if (vold > 0.0) {
+                const double arg = 1.0 + (vnew - vold) / grid_vt;
+                return arg > 0.0 ? vold + grid_vt * std::log(arg) : vcrit;
+            }
+            return grid_vt * std::log(std::max(vnew / grid_vt, 1e-30));
+        }
+        return vnew;
+    }
+};
+
+/// Authentic three-port Norman Koren (1996/2001) pentode model with active screen conduction:
+///
+///   Island potential:
+///     u  = 1/mu + Vgk/Vsk
+///     E1 = (Vsk/kp) * ln(1 + exp(kp * u)) = (Vsk/kp) * softplus(kp * u)
+///
+///   Plate current:
+///     Ip = (E1^ex / kg1) * atan(Vpk / kvb)  (for E1 > 0, Vpk > 0)
+///
+///   Screen current:
+///     b  = Vsk/mu + Vgk
+///     Is = (b^ex / kg2)                     (for b > 0)
+///
+///   Grid current:
+///     Ig = grid_is * (exp(clamp(Vgk/grid_vt, -500, 500)) - 1)
+///
+/// Complete 3x3 analytical Jacobian with exact partial derivatives:
+///   dIp/dVpk, dIp/dVgk, dIp/dVsk
+///   dIg/dVgk
+///   dIs/dVpk (= 0), dIs/dVgk, dIs/dVsk
+struct KorenPentode {
+    double mu = 11.0;
+    double ex = 1.35;
+    double kg1 = 650.0;
+    double kg2 = 4200.0;
+    double kp = 60.0;
+    double kvb = 24.0;
+    double count = 1.0;
+
+    double grid_is = 1e-9;
+    double grid_vt = 0.025;
+
+    static KorenPentode el34(double count = 1.0) noexcept {
+        KorenPentode k;
+        k.mu = 11.0;
+        k.ex = 1.35;
+        k.kg1 = 650.0;
+        k.kg2 = 4200.0;
+        k.kp = 60.0;
+        k.kvb = 24.0;
+        k.count = count;
+        return k;
+    }
+
+    static KorenPentode sixL6GC(double count = 1.0) noexcept {
+        KorenPentode k;
+        k.mu = 8.7;
+        k.ex = 1.35;
+        k.kg1 = 1460.0;
+        k.kg2 = 4500.0;
+        k.kp = 48.0;
+        k.kvb = 12.0;
+        k.count = count;
+        return k;
+    }
+
+    static KorenPentode el84(double count = 1.0) noexcept {
+        KorenPentode k;
+        k.mu = 19.0;
+        k.ex = 1.35;
+        k.kg1 = 500.0;
+        k.kg2 = 4200.0;
+        k.kp = 60.0;
+        k.kvb = 24.0;
+        k.count = count;
+        return k;
+    }
+
+    static KorenPentode sixV6S(double count = 1.0) noexcept {
+        KorenPentode k;
+        k.mu = 12.0;
+        k.ex = 1.30;
+        k.kg1 = 800.0;
+        k.kg2 = 4500.0;
+        k.kp = 50.0;
+        k.kvb = 25.0;
+        k.count = count;
+        return k;
+    }
+
+    static KorenPentode six550(double count = 1.0) noexcept {
+        KorenPentode k;
+        k.mu = 7.9;
+        k.ex = 1.35;
+        k.kg1 = 890.0;
+        k.kg2 = 4200.0;
+        k.kp = 60.0;
+        k.kvb = 24.0;
+        k.count = count;
+        return k;
+    }
+
+    void evalGrid(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        const double x = vgk / grid_vt;
+        if (x < -37.0) {
+            ig = -grid_is;
+            dig_dvgk = 0.0;
+        } else {
+            const double xClamped = (x > 500.0) ? 500.0 : x;
+            const double ev = std::exp(xClamped);
+            ig = grid_is * (ev - 1.0);
+            dig_dvgk = ev * (grid_is / grid_vt);
+        }
+    }
+
+    PentodeCurrents eval(double vgk, double vsk, double vpk) const noexcept {
+        constexpr double leak = 1e-12;
+        PentodeCurrents c;
+
+        evalGrid(vgk, c.ig, c.dig_dvgk);
+
+        // Screen voltage regularized to avoid singularity at Vsk <= 0
+        const double vsSafe = (vsk > 1e-6) ? vsk : 1e-6;
+        const double invVs = 1.0 / vsSafe;
+        const double u = (1.0 / mu) + vgk * invVs;
+        const double w = kp * u;
+
+        double sp = 0.0, lam = 0.0;
+        softplusSigmoid(w, sp, lam);
+
+        const double e1 = (vsSafe / kp) * sp;
+
+        // Plate current
+        if (e1 > 0.0 && vpk > 0.0 && vsk > 0.0) {
+            const double ip_base = std::pow(e1, ex);
+            const double inv_kvb = 1.0 / kvb;
+            const double r = vpk * inv_kvb;
+            const double at = std::atan(r);
+            const double ip_over_kg1 = ip_base / kg1;
+            c.ip = ip_over_kg1 * at;
+
+            const double d_pf = inv_kvb / (1.0 + r * r);
+            const double dvpk = ip_over_kg1 * d_pf;
+            c.dip_dvpk = (dvpk > leak) ? dvpk : leak;
+
+            const double de1_dvgk = lam;
+            const double de1_dvsk = (sp / kp) - lam * (vgk * invVs);
+
+            const double dip_de1 = (ex * ip_base / e1) * (at / kg1);
+            c.dip_dvgk = dip_de1 * de1_dvgk;
+            c.dip_dvsk = dip_de1 * de1_dvsk;
+        } else {
+            c.ip = 0.0;
+            c.dip_dvpk = leak;
+            c.dip_dvgk = 0.0;
+            c.dip_dvsk = 0.0;
+        }
+
+        // Screen current
+        const double b = (vsSafe / mu) + vgk;
+        if (b > 1e-12 && vsk > 0.0) {
+            const double b_pow_ex = std::pow(b, ex);
+            c.is = b_pow_ex / kg2;
+
+            const double dis_db = (ex * std::pow(b, ex - 1.0)) / kg2;
+            c.dis_dvgk = dis_db;
+            c.dis_dvsk = dis_db / mu;
+            c.dis_dvpk = 0.0;
+        } else {
+            c.is = 0.0;
+            c.dis_dvgk = 0.0;
+            c.dis_dvsk = 0.0;
+            c.dis_dvpk = 0.0;
         }
 
         if (count != 1.0) {
@@ -124,20 +570,19 @@ struct Pentode {
             c.dip_dvsk *= count;
             c.dip_dvpk *= count;
         }
+
         return c;
     }
 
-    /// pedalkernel's `pnjlim` for this pentode's control grid, ported verbatim
-    /// from `pedalkernel-rt/src/elements/nonlinear/bjt.rs`:
-    ///
-    ///     vcrit = vt*ln(vt / (sqrt(2)*is))
-    ///
-    /// Beyond `vcrit` the exponential's conductance outgrows any Newton step.
-    /// The limiter moves the *iterate* in log space (bounding the current
-    /// ratio), never the law: at convergence it leaves the same exponential
-    /// root. `limited` reports whether it fired, for the caller's diagnostics.
+    void eval(double vgk, double vsk, double vpk, double& ip, double& is, double& ig) const noexcept {
+        const auto c = eval(vgk, vsk, vpk);
+        ip = c.ip;
+        is = c.is;
+        ig = c.ig;
+    }
+
     double limitGrid(double vold, double vnew, bool& limited) const noexcept {
-        const double vcrit = grid_vcrit;
+        const double vcrit = grid_vt * std::log(grid_vt / (1.4142135623730950488 * (grid_is > 1e-30 ? grid_is : 1e-30)));
         if (vnew > vcrit && std::abs(vnew - vold) > 2.0 * grid_vt) {
             limited = true;
             if (vold > 0.0) {
@@ -148,87 +593,111 @@ struct Pentode {
         }
         return vnew;
     }
-
-    /// Exact analytical formula for plate current and partial conductances.
-    void evalPlateExact(double vgk, double vpk, double& ip, double& dip_dvgk, double& dip_dvpk) const noexcept {
-        constexpr double leak = 1e-12;
-        const double vp = (vpk > v_max) ? v_max : vpk;
-        if (vp > 0.0 && vg2 > 0.0) {
-            const double e1 = e1_0 + e1_g * vgk;
-            double sp, sg;
-            softplusSigmoid(e1, sp, sg);
-            const double base = vg2_over_kp * sp;
-            if (base > 0.0) {
-                const double ip_base = std::pow(base, ex);
-                const double r = vp * inv_kvb;
-                const double a = std::max(std::atan(r), 0.0);
-                const double ip_over_kg1 = ip_base * inv_kg1;
-                ip = ip_over_kg1 * a;
-                if (ip > 0.0) {
-                    const double d_pf = inv_kvb / (1.0 + r * r);
-                    const double dvpk = ip_over_kg1 * d_pf;
-                    dip_dvpk = (dvpk > leak) ? dvpk : leak;
-                    dip_dvgk = ex * ip * sg / base;
-                } else {
-                    dip_dvpk = leak;
-                    dip_dvgk = 0.0;
-                }
-            } else {
-                ip = 0.0;
-                dip_dvpk = leak;
-                dip_dvgk = 0.0;
-            }
-        } else {
-            ip = 0.0;
-            dip_dvpk = leak;
-            dip_dvgk = 0.0;
-        }
-    }
-
-    /// Precomputes the 2D KTable for plate current across [Vgk, Vpk] space.
-    void ensureTable() const noexcept {
-        if (kTablePlate_.isReady())
-            return;
-        // Tabulate over Vgk in [-100.0, 15.0] (256 steps) and Vpk in [0.0, 550.0] (256 steps)
-        kTablePlate_.build(-100.0, 15.0, 256, 0.0, 550.0, 256, [this](double vg, double vp) -> double {
-            double ip = 0.0, dg = 0.0, dp = 0.0;
-            evalPlateExact(vg, vp, ip, dg, dp);
-            return ip;
-        });
-    }
-
-    mutable KTable2D kTablePlate_;
 };
 
-/// EL34: pedalkernel's row `MU=11 EX=1.35 KG1=650 KG2=4200 KP=60 KVB=24 KVB2=18
-/// VG2=470 RP=15000`.
-inline const Pentode kEL34{};
-/// Matched EL34 pair with identical drive: every current doubled.
-inline const Pentode kEL34Pair{11.0, 1.35, 650.0, 4200.0, 60.0, 24.0, 18.0, 470.0, 15000.0, 500.0, 2.0};
+enum class PentodeModelKind {
+    Reefman,
+    Koren
+};
 
-/// 6L6GC: pedalkernel's row `MU=8.7 EX=1.35 KG1=1460 KG2=4500 KP=48 KVB=12
-/// KVB2=25 VG2=450 RP=33000`.
-inline const Pentode k6L6GC{8.7, 1.35, 1460.0, 4500.0, 48.0, 12.0, 25.0, 450.0, 33000.0, 500.0, 1.0};
+/// Composite pentode model: defaults to Reefman DerkD evaluator.
+/// An authentic 3-port Koren model remains selectable for comparison.
+struct Pentode {
+    PentodeModelKind modelKind = PentodeModelKind::Reefman;
+    bool useReefman = true;
+    ReefmanPentode reefman = ReefmanPentode::el34();
+    KorenPentode koren = KorenPentode::el34();
+    double count = 1.0;
+
+    // Metadata fields for document round-trip
+    double mu = 11.0, ex = 1.35, kg1 = 650.0, kg2 = 4200.0, kp = 60.0, kvb = 24.0;
+    double kvb2 = 18.0;
+    double vg2 = 470.0;
+    double rp = 15000.0;
+    double v_max = 500.0;
+    double grid_is = 1e-9;
+    double grid_vt = 0.025;
+
+    static Pentode makeReefman(const ReefmanPentode& r) {
+        Pentode p{};
+        p.modelKind = PentodeModelKind::Reefman;
+        p.useReefman = true;
+        p.reefman = r;
+        p.count = r.count;
+        return p;
+    }
+
+    static Pentode makeKoren(const KorenPentode& k) {
+        Pentode p{};
+        p.modelKind = PentodeModelKind::Koren;
+        p.useReefman = false;
+        p.koren = k;
+        p.count = k.count;
+        p.mu = k.mu; p.ex = k.ex; p.kg1 = k.kg1; p.kg2 = k.kg2; p.kp = k.kp; p.kvb = k.kvb;
+        return p;
+    }
+
+    static Pentode makeKorenFromParams(double mu, double ex, double kg1, double kg2, double kp,
+                              double kvb, double kvb2 = 18.0, double vg2 = 470.0, double rp = 15000.0,
+                              double v_max = 500.0, double count = 1.0) {
+        KorenPentode k;
+        k.mu = mu; k.ex = ex; k.kg1 = kg1; k.kg2 = kg2; k.kp = kp; k.kvb = kvb; k.count = count;
+        Pentode p = makeKoren(k);
+        p.kvb2 = kvb2; p.vg2 = vg2; p.rp = rp; p.v_max = v_max;
+        return p;
+    }
+
+    PentodeCurrents eval(double vgk, double vsk, double vpk) const noexcept {
+        if (modelKind == PentodeModelKind::Reefman && useReefman) {
+            return reefman.eval(vgk, vsk, vpk);
+        }
+        return koren.eval(vgk, vsk, vpk);
+    }
+
+    double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (modelKind == PentodeModelKind::Reefman && useReefman) {
+            return reefman.limitGrid(vold, vnew, limited);
+        }
+        return koren.limitGrid(vold, vnew, limited);
+    }
+
+    void ensureTable() const noexcept {}
+};
+
+/// EL34: Reefman DerkD power pentode model.
+inline const Pentode kEL34 = Pentode::makeReefman(ReefmanPentode::el34(1.0));
+/// Matched EL34 pair.
+inline const Pentode kEL34Pair = Pentode::makeReefman(ReefmanPentode::el34(2.0));
+
+/// 6L6GC: Reefman DerkD beam power tube model.
+inline const Pentode k6L6GC = Pentode::makeReefman(ReefmanPentode::sixL6GC(1.0));
 /// Matched 6L6GC pair.
-inline const Pentode k6L6GCPair{8.7, 1.35, 1460.0, 4500.0, 48.0, 12.0, 25.0, 450.0, 33000.0, 500.0, 2.0};
+inline const Pentode k6L6GCPair = Pentode::makeReefman(ReefmanPentode::sixL6GC(2.0));
 
-/// EL84: pedalkernel's row `MU=19 EX=1.35 KG1=650 KG2=4200 KP=600 KVB=300
-/// KVB2=20 VG2=250 RP=38000`.
-inline const Pentode kEL84{19.0, 1.35, 650.0, 4200.0, 600.0, 300.0, 20.0, 250.0, 38000.0, 500.0, 1.0};
+/// EL84: Reefman DerkD power pentode model.
+inline const Pentode kEL84 = Pentode::makeReefman(ReefmanPentode::el84(1.0));
 /// Matched EL84 pair.
-inline const Pentode kEL84Pair{19.0, 1.35, 650.0, 4200.0, 600.0, 300.0, 20.0, 250.0, 38000.0, 500.0, 2.0};
+inline const Pentode kEL84Pair = Pentode::makeReefman(ReefmanPentode::el84(2.0));
 
-/// 6V6S: pedalkernel's 6V6GT row `MU=12 EX=1.3 KG1=1100 KG2=4500 KP=300 KVB=150
-/// KVB2=18 VG2=315 RP=52000`.
-inline const Pentode k6V6S{12.0, 1.3, 1100.0, 4500.0, 300.0, 150.0, 18.0, 315.0, 52000.0, 500.0, 1.0};
+/// 6V6S: Reefman DerkD beam power tube model.
+inline const Pentode k6V6S = Pentode::makeReefman(ReefmanPentode::sixV6S(1.0));
 /// Matched 6V6S pair.
-inline const Pentode k6V6SPair{12.0, 1.3, 1100.0, 4500.0, 300.0, 150.0, 18.0, 315.0, 52000.0, 500.0, 2.0};
+inline const Pentode k6V6SPair = Pentode::makeReefman(ReefmanPentode::sixV6S(2.0));
 
-/// KT66: pedalkernel's 5881/KT66 alias row (the 6L6GC parameters).
-inline const Pentode kKT66{8.7, 1.35, 1460.0, 4500.0, 48.0, 12.0, 25.0, 450.0, 33000.0, 500.0, 1.0};
+/// KT66: Reefman DerkD beam power tube model (6L6GC parameters).
+inline const Pentode kKT66 = Pentode::makeReefman(ReefmanPentode::kt66(1.0));
 
-/// KT77: pedalkernel's KT77 alias row (the EL34 parameters).
-inline const Pentode kKT77{11.0, 1.35, 650.0, 4200.0, 60.0, 24.0, 18.0, 470.0, 15000.0, 500.0, 1.0};
+/// KT77: Reefman DerkD power pentode model (EL34 parameters).
+inline const Pentode kKT77 = Pentode::makeReefman(ReefmanPentode::kt77(1.0));
+
+/// Koren power pentodes (authentic 3-port model with active screen conduction)
+inline const Pentode kKorenEL34 = Pentode::makeKoren(KorenPentode::el34(1.0));
+inline const Pentode kKorenEL34Pair = Pentode::makeKoren(KorenPentode::el34(2.0));
+inline const Pentode kKoren6L6GC = Pentode::makeKoren(KorenPentode::sixL6GC(1.0));
+inline const Pentode kKoren6L6GCPair = Pentode::makeKoren(KorenPentode::sixL6GC(2.0));
+inline const Pentode kKorenEL84 = Pentode::makeKoren(KorenPentode::el84(1.0));
+inline const Pentode kKoren6V6S = Pentode::makeKoren(KorenPentode::sixV6S(1.0));
+inline const Pentode kKoren6550 = Pentode::makeKoren(KorenPentode::six550(1.0));
 
 /// Named entry in the pentode registry.
 struct NamedPentode {
@@ -249,6 +718,13 @@ inline const NamedPentode kPentodeTable[] = {
     {"6V6SPAIR", &k6V6SPair},
     {"KT66", &kKT66},
     {"KT77", &kKT77},
+    {"KOREN-EL34", &kKorenEL34},
+    {"KOREN-EL34PAIR", &kKorenEL34Pair},
+    {"KOREN-6L6GC", &kKoren6L6GC},
+    {"KOREN-6L6GCPAIR", &kKoren6L6GCPair},
+    {"KOREN-EL84", &kKorenEL84},
+    {"KOREN-6V6S", &kKoren6V6S},
+    {"KOREN-6550", &kKoren6550},
 };
 
 /// Lookup a pentode model by name (case-insensitive ASCII). Returns nullptr

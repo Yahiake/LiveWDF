@@ -115,13 +115,11 @@ inline RootLayout buildRootLayout(const Compiled& c) {
 
     for (int q = 0; q < static_cast<int>(c.pent.size()); ++q) {
         const auto& cp = c.pent[static_cast<size_t>(q)];
-        // The imported pedalkernel three-port law references the screen voltage
-        // through the model table (`vg2`), not through a port: its screen current
-        // and screen derivatives are identically zero, so the screen port is not
-        // an unknown. The active rows are the contiguous pair (plate, control
-        // grid), following the precedent of the triode's passive grid ports.
+        // The three-port pentode model contributes plate, grid and screen
+        // currents. All 3 ports (plate pk, control grid gk, screen sk) are
+        // active unknowns in the nonlinear equations.
         const Port ports[3] = {cp.pk, cp.gk, cp.sk};
-        add(RootKind::Pentode, q, ports, 3, 2, {0, 1, 0});
+        add(RootKind::Pentode, q, ports, 3, 3, {0, 1, 2});
     }
 
     for (int q = 0; q < static_cast<int>(c.jfet.size()); ++q) {

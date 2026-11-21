@@ -436,18 +436,17 @@ public:
                 stepUp_[static_cast<size_t>(base)] = lim_.stepPlateUp;
                 stepDown_[static_cast<size_t>(base)] = lim_.stepPlateDown;
 
-                // Grid port (position 1 under the imported pedalkernel layout).
+                // Grid port (position 1).
                 predUp_[static_cast<size_t>(base + 1)] = lim_.predGridUp;
                 predDown_[static_cast<size_t>(base + 1)] = lim_.predGridDown;
                 stepUp_[static_cast<size_t>(base + 1)] = lim_.stepGridUp;
                 stepDown_[static_cast<size_t>(base + 1)] = lim_.stepGridDown;
 
-                // Screen port: passive under the imported law, but it stays
-                // guarded with the same wide grid limits.
-                predUp_[static_cast<size_t>(base + 2)] = lim_.predGridUp;
-                predDown_[static_cast<size_t>(base + 2)] = lim_.predGridDown;
-                stepUp_[static_cast<size_t>(base + 2)] = lim_.stepGridUp;
-                stepDown_[static_cast<size_t>(base + 2)] = lim_.stepGridDown;
+                // Screen port (position 2): high-voltage electrode, like the plate.
+                predUp_[static_cast<size_t>(base + 2)] = lim_.predPlateUp;
+                predDown_[static_cast<size_t>(base + 2)] = lim_.predPlateDown;
+                stepUp_[static_cast<size_t>(base + 2)] = lim_.stepPlateUp;
+                stepDown_[static_cast<size_t>(base + 2)] = lim_.stepPlateDown;
                 break;
             }
             case DeviceKind::Jfet:
@@ -603,8 +602,8 @@ protected:
                     {dev.portBase, &comp_.diode[static_cast<size_t>(dev.compIndex)].second});
                 break;
             case RootKind::Pentode:
-                // pedalkernel's grid is a bare exponential; its owner is
-                // `Pentode::limitGrid`, pedalkernel's own `pnjlim`. The plate
+                // The pentode grid is a bare exponential; its owner is
+                // `Pentode::limitGrid`. The plate
                 // needs no junction limiter.
                 gridJunctionLimiters_.push_back(
                     {dev.portBase + 1, &pentodes_[static_cast<size_t>(dev.compIndex)], nullptr});
