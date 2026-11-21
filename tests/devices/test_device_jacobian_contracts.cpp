@@ -26,6 +26,27 @@ void checkDerivative(double analytic, double x, double h, F current, const char*
 }
 }  // namespace
 
+TEST_CASE("Dempwolf grid curve derivative matches central differences", "[devicejac]") {
+    const auto m = lwdf_test::gridlessQuadric();
+    REQUIRE(m.gridConducts);
+    // Stay inside each piecewise-linear segment; the segment boundaries have
+    // their own continuity contract and are not finite-differenceable.
+    for (double vgk : {-0.02, 0.2, 0.6, 1.4}) {
+        double slope = 0.0;
+        const double ig = m.gridCurrent(vgk, slope);
+        REQUIRE(std::isfinite(ig));
+        REQUIRE(slope > 0.0);
+        const double h = 1e-5;
+        auto current = [&](double v) {
+            double unused = 0.0;
+            return m.gridCurrent(v, unused);
+        };
+        const double fd = (current(vgk + h) - current(vgk - h)) / (2.0 * h);
+        INFO("vgk=" << vgk << " slope=" << slope << " fd=" << fd);
+        REQUIRE(std::abs(fd - slope) <= 1e-5 * (1.0 + slope));
+    }
+}
+
 TEST_CASE("triode quadric Jacobian matches central differences", "[devicejac]") {
     const auto m = lwdf_test::gridlessQuadric();
     for (double vgk : {-1.0, -0.3, 0.2}) {
