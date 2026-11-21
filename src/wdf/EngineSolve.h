@@ -191,7 +191,7 @@ protected:
         return solver::NewtonContext{
             vv_, ii_, J_, F_, vOc_, Z_, Zred_, vvPrev_, vvPrev2_,
             predUp_, predDown_, stepUp_, stepDown_, redCol_,
-            redToActive_, activeRedCol_, Mr_, rN_, ppPiv_, ppRhs_, ppJ_, ppFactored_, ppFactoredAge_, dv_, vt_, ft_, Jt_, iv_,
+            redToActive_, activeRedCol_, Mr_, rN_, dv_, vt_, ft_, Jt_, iv_,
             bestV_, bestI_, gridJunctionLimiters_, junctionLimiters_, rootLayout_,
             bjts_, rootDevices_, comp_, ctrlResValues_, pentodes_,
             opAmps_, opAmpVp_, opAmpAlpha_, opAmpMaxDv_, triodeDomainPin_,
@@ -699,12 +699,6 @@ protected:
     void solveRootsNewton(int maxIter, double tol) {
         auto ctx = makeNewtonContext();
         solver::RootNewton::solveRootsNewton(ctx, maxIter, tol, staticBlockView(), vvPrev_, vvPrev2_);
-    }
-
-    /// Potra-Pták two-step chord solver: 1 LU per super-iteration, 2 back-solves.
-    void solveRootsNewtonPP(int maxIter, double tol) {
-        auto ctx = makeNewtonContext();
-        solver::RootNewton::solveRootsNewtonPP(ctx, maxIter, tol, staticBlockView(), vvPrev_, vvPrev2_);
     }
 
     /// Multiport Newton seeded from the block solve's result.
