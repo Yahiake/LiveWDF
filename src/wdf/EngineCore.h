@@ -34,6 +34,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -500,6 +501,11 @@ protected:
     /// Compile the netlist into ports, element conductances and root ports.
     EngineCore(const Circuit& circuit, double fs, bool gridCurrent)
         : circuit_(circuit), fs_(fs), T_(1.0 / fs) {
+        // Diagnostic knob for A/B measurements of the block-fallback gate.
+        // Default 16 samples (measured A/B sweep 0/2/4/8/16/32); zero disables
+        // the cooldown entirely for control runs.
+        if (const char* cd = std::getenv("LIVEWDF_BLOCK_COOLDOWN"))
+            blockFallbackCooldownLimit_ = std::clamp(std::atoi(cd), 0, 64);
         comp_ = compile(circuit_, {});
         for (auto& t : comp_.tri)
             t.model.gridConducts = gridCurrent;
@@ -1076,6 +1082,7 @@ protected:
     int runtimeBlockCount_ = 0;
     int runtimeGateCooldown_ = 0;
     int blockFallbackCooldown_ = 0;  // joint samples after a static-block fallback
+    int blockFallbackCooldownLimit_ = 16;  // env-overridable A/B knob (0..64)
     /// Experimental relaxed stage partition: non-scalar SCC blocks are split by
     /// the directed signal-flow analysis and solved with residual-verified
     /// Gauss-Seidel sweeps. Off by default; the production SCC + Schur path is

@@ -348,7 +348,7 @@ public:
         // samples on the joint Newton reference before trying the partition
         // again; this is bounded and cannot disable the block path forever.
         if (blockFallbacks_ > fallbacksBefore)
-            blockFallbackCooldown_ = 8;
+            blockFallbackCooldown_ = blockFallbackCooldownLimit_;
         else if (blockFallbackCooldown_ > 0)
             --blockFallbackCooldown_;
 
