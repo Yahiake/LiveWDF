@@ -26,8 +26,11 @@
 #include <vector>
 
 #include "spice/Net.h"
+#include "devices/Bjt.h"
 #include "devices/Diode.h"
 #include "devices/Jfet.h"
+#include "devices/Mosfet.h"
+#include "devices/OpAmp.h"
 #include "devices/Pentode.h"
 #include "devices/Triode.h"
 
@@ -652,6 +655,278 @@ inline const std::vector<CircuitCase>& circuitCases() {
         {"asymmetric_diode_clipper", &asymmetricDiodeClipper, &sine1v},
         {"diode_bridge_rectifier", &diodeBridgeRectifier, &sine1v},
         {"push_pull_power_stage", &pushPullPowerStage, &sine1v},
+    };
+    return cases;
+}
+
+// ---------------------------------------------------------------------------
+// Extended permanent portfolio. Kept in a separate registry because the
+// original 23 fixtures are also the subject of root-group invariants that
+// count only triode/diode/pentode/JFET ports. These fixtures deliberately add
+// MOSFET, BJT, op-amp, mutual-inductor, pot-endpoint and ideal-source-loop
+// topologies; each one exists to exercise a different contract.
+// ---------------------------------------------------------------------------
+
+/// High-Q series RLC: reactive state, ringing and energy conservation.
+inline wdf::Circuit rlcHighQ() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "a", 100.0, "Rsource");
+    c.addInd("a", "b", 10e-3, "Lres");
+    c.addCap("b", "0", 100e-9, "Cres");
+    c.addRes("b", "out", 1e6, "Rprobe");
+    c.addRes("out", "0", 1e6, "Rout");
+    return c;
+}
+
+/// Two coupled windings: mutual-matrix conditioning and polarity.
+inline wdf::Circuit mutualInductorPair() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "p1", 1e3, "Rp");
+    c.addInd("p1", "0", 1.0, "Lp");
+    c.addInd("s1", "0", 1.0, "Ls");
+    c.addMutualInd("K1", {"Lp", "Ls"}, 0.9);
+    c.addRes("s1", "out", 1e3, "Rs");
+    c.addRes("out", "0", 1e3, "Rout");
+    return c;
+}
+
+/// MOSFET common source: semiconductor region logic, not tube laws.
+inline wdf::Circuit mosfetCommonSource() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vdd", "0", 9.0);
+    c.addRes("in", "g", 1e6, "Rg");
+    c.addRes("g", "0", 1e6, "Rg2");
+    c.addRes("vdd", "d", 1e3, "Rd");
+    c.addRes("s", "0", 100.0, "Rs");
+    c.addCap("d", "out", 100e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addMosfet("d", "g", "s", wdf::MosfetModel::fromK(0.02, 1.5, 0.01, false), "M1");
+    return c;
+}
+
+/// BJT common emitter: Ebers-Moll and junction compensation on a full stage.
+inline wdf::Circuit bjtCommonEmitter() {
+    const auto* card = wdf::findBjtByName("2N3904");
+    const wdf::BjtModel model = card ? card->model : wdf::kBjtTable[0].model;
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vcc", "0", 9.0);
+    c.addRes("in", "b", 10e3, "Rb");
+    c.addRes("b", "0", 100e3, "Rb2");
+    c.addRes("vcc", "c", 4.7e3, "Rc");
+    c.addRes("e", "0", 1e3, "Re");
+    c.addCap("c", "out", 100e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addBjt("c", "b", "e", model, "Q1");
+    return c;
+}
+
+/// Op-amp inverting stage: Schur/affine elimination plus the internal pole.
+inline wdf::Circuit opampInverting() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vpos", "0", 12.0);
+    c.addSrc("vneg", "0", -12.0);
+    c.addRes("in", "n", 10e3, "Rin");
+    c.addRes("out", "n", 100e3, "Rfb");
+    c.addRes("p", "0", 1e3, "Rbias");
+    c.addRes("out", "o", 100.0, "Rout");
+    c.addRes("o", "0", 1e3, "Rload");
+    c.addOpAmp("out", "n", "p", "vpos", "vneg",
+               wdf::OpAmpModel(wdf::OpAmpType::Tl072), "U1");
+    return c;
+}
+
+/// Potentiometer at its endpoint: epsilon clamp and near-short conductance.
+inline wdf::Circuit potEndpoint() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addPot("in", "w", "0", 100e3, 0.0, wdf::PotTaper::Linear, "P1");
+    c.addRes("w", "out", 1e3, "Rs");
+    c.addRes("out", "0", 1e3, "Rout");
+    return c;
+}
+
+/// Consistent ideal-source loop: affine potential union-find with two sources.
+inline wdf::Circuit idealSourceLoop() {
+    wdf::Circuit c;
+    c.addSrc("v1", "0", 2.0);
+    c.addSrc("v2", "0", 1.0);
+    c.addRes("v1", "v2", 1e3, "Rloop");
+    c.addRes("v1", "0", 10e3, "R1");
+    c.addRes("v2", "0", 10e3, "R2");
+    c.addRes("v2", "out", 1e3, "Rs");
+    c.addRes("out", "0", 1e3, "Rout");
+    return c;
+}
+
+/// Grid current forced on: the limiter and continuous grid port.
+inline wdf::Circuit gridConductionStage() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("gb", "0", 4.0);
+    c.addSrc("e", "0", 250.0);
+    c.addRes("in", "g", 1e3, "Rin");
+    c.addRes("gb", "g", 10e3, "Rgb");
+    c.addRes("e", "p", 100e3, "Rp");
+    c.addRes("k", "0", 1e3, "Rk");
+    c.addCap("p", "out", 10e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addTri("g", "p", "k", "g", gridlessQuadric());
+    return c;
+}
+
+/// Diode + reservoir: junction law with a large reactive DC state.
+inline wdf::Circuit diodeReservoir() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addDiode("in", "raw", wdf::DiodeModel(4e-9, 1.0, 0.56), "D1");
+    c.addCap("raw", "0", 100e-6, "Cbulk");
+    c.addRes("raw", "0", 10e3, "Rbleed");
+    c.addRes("raw", "out", 1e3, "Rs");
+    c.addRes("out", "0", 1e3, "Rout");
+    return c;
+}
+
+/// Pentode with a screen resistor: the third active port outside this suite.
+inline wdf::Circuit pentodeScreenResistor() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("e", "0", 300.0);
+    c.addRes("in", "g", 1e6, "Rg");
+    c.addRes("g", "0", 1e6, "Rg2");
+    c.addRes("e", "p", 100e3, "Rp");
+    c.addRes("e", "s", 47e3, "Rscreen");
+    c.addRes("k", "0", 1e3, "Rk");
+    c.addCap("k", "0", 10e-6, "Ck");
+    c.addCap("p", "out", 10e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addPentode("p", "s", "g", "k", wdf::kEL34, "XP1");
+    return c;
+}
+
+/// Anti-parallel pair with different diodes: asymmetry and exponent limits.
+inline wdf::Circuit antiParallelDiodePair() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "a", 1e3, "Rsource");
+    c.addDiode("a", "0", wdf::DiodeModel(4e-9, 1.0, 0.56), "Dfwd");
+    c.addDiode("0", "a", wdf::DiodeModel(1e-6, 1.0, 5.0), "Drev");
+    c.addCap("a", "out", 100e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    return c;
+}
+
+/// JFET source follower: region logic with local feedback instead of gain.
+inline wdf::Circuit jfetSourceFollower() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vdd", "0", 12.0);
+    c.addRes("in", "g", 1e6, "Rg");
+    c.addRes("vdd", "d", 2.2e3, "Rd");
+    c.addRes("s", "0", 1.5e3, "Rs");
+    c.addCap("s", "out", 100e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addJfet("d", "g", "s", wdf::k2N5952, "J1");
+    return c;
+}
+
+/// Non-inverting op-amp stage: the other feedback polarity and slew limit.
+inline wdf::Circuit opampNonInverting() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vpos", "0", 12.0);
+    c.addSrc("vneg", "0", -12.0);
+    c.addRes("in", "p", 1e6, "Rin");
+    c.addRes("p", "0", 1e6, "Rp");
+    c.addRes("n", "0", 10e3, "Rg");
+    c.addRes("out", "n", 47e3, "Rfb");
+    c.addRes("out", "o", 100.0, "Rout");
+    c.addRes("o", "0", 1e3, "Rload");
+    c.addOpAmp("out", "n", "p", "vpos", "vneg",
+               wdf::OpAmpModel(wdf::OpAmpType::Lm308), "U2");
+    return c;
+}
+
+/// VCVS stage: dependent-source stamping and affine elimination.
+inline wdf::Circuit vcvsStage() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "x", 10e3, "Rin");
+    c.addRes("x", "0", 10e3, "Rx");
+    c.addVCVS("y", "0", "x", "0", 3.0, 1e-3, "E1");
+    c.addRes("y", "out", 1e3, "Rs");
+    c.addRes("out", "0", 1e3, "Rout");
+    return c;
+}
+
+/// Negative fixture: a drawn resistor island with no reference. The engine
+/// must refuse the singular network rather than invent a hidden ground.
+inline wdf::Circuit floatingIsland() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "g", 1e6, "Rg");
+    c.addRes("g", "0", 1e6, "Rg2");
+    c.addRes("f1", "f2", 10e3, "Rfloating");
+    return c;
+}
+
+/// Three-section LC ladder: passivity and multi-reactive state on a tree.
+inline wdf::Circuit lcLadder3() {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "a", 50.0, "Rsource");
+    c.addInd("a", "b", 1e-3, "L1");
+    c.addCap("b", "0", 100e-9, "C1");
+    c.addInd("b", "c", 1e-3, "L2");
+    c.addCap("c", "0", 100e-9, "C2");
+    c.addRes("c", "out", 1e6, "Rprobe");
+    c.addRes("out", "0", 1e6, "Rout");
+    return c;
+}
+
+/// Differential BJT pair with a tail resistor: two coupled nonlinear roots.
+inline wdf::Circuit bjtDifferentialPair() {
+    const auto* card = wdf::findBjtByName("2N3904");
+    const wdf::BjtModel model = card ? card->model : wdf::kBjtTable[0].model;
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("vcc", "0", 9.0);
+    c.addSrc("vee", "0", -9.0);
+    c.addRes("in", "b1", 10e3, "Rb1");
+    c.addRes("b1", "0", 100e3, "Rb1g");
+    c.addRes("b2", "0", 100e3, "Rb2g");
+    c.addRes("vcc", "c1", 4.7e3, "Rc1");
+    c.addRes("vcc", "c2", 4.7e3, "Rc2");
+    c.addRes("e", "vee", 2e3, "Rtail");
+    c.addCap("c1", "out", 100e-9, "Co");
+    c.addRes("out", "0", 1e6, "Ro");
+    c.addBjt("c1", "b1", "e", model, "Q1");
+    c.addBjt("c2", "b2", "e", model, "Q2");
+    return c;
+}
+
+inline const std::vector<CircuitCase>& extendedCircuitCases() {
+    static const std::vector<CircuitCase> cases = {
+        {"rlc_high_q", &rlcHighQ, &sine220},
+        {"mutual_inductor_pair", &mutualInductorPair, &sine220},
+        {"mosfet_common_source", &mosfetCommonSource, &sine1v},
+        {"bjt_common_emitter", &bjtCommonEmitter, &sine1v},
+        {"opamp_inverting", &opampInverting, &sine1v},
+        {"pot_endpoint", &potEndpoint, &sine220},
+        {"ideal_source_loop", &idealSourceLoop, &sine220},
+        {"grid_conduction_stage", &gridConductionStage, &sine1v},
+        {"diode_reservoir", &diodeReservoir, &sine1v},
+        {"pentode_screen_resistor", &pentodeScreenResistor, &sine1v},
+        {"antiparallel_diode_pair", &antiParallelDiodePair, &sine1v},
+        {"jfet_source_follower", &jfetSourceFollower, &sine1v},
+        {"opamp_noninverting", &opampNonInverting, &sine1v},
+        {"vcvs_stage", &vcvsStage, &sine220},
+        {"lc_ladder_3section", &lcLadder3, &sine220},
+        {"bjt_differential_pair", &bjtDifferentialPair, &sine1v},
     };
     return cases;
 }
