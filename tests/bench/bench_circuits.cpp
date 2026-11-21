@@ -123,6 +123,8 @@ struct Result {
     int nonFinite = 0;  // samples whose output was NaN/inf; `peak` cannot see them
     int converged = 0;
     double itersPerSample = 0.0;
+    double lineTrialsPerSample = 0.0;
+    double deviceEvalsPerSample = 0.0;
     long long jfetFallbacks = 0;
     long long blockFallbacks = 0;
     double lastBlockResidual = 0.0;
@@ -464,6 +466,8 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
     const long long stateRejectsBefore = first.stateRejectCount();
     std::array<double, kRepeats> times{};
     long long iters = 0;
+    long long trials = 0;
+    long long devEvals = 0;
     const bool trace = std::getenv("LIVEWDF_TRACE") != nullptr;
     const auto& traceNames = first.nodeNames();
     double traceMax = 0.0;
@@ -538,6 +542,8 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
             if (first.lastConverged())
                 ++r.converged;
             iters += first.newtonIterations();
+            trials += first.lineSearchTrials();
+            devEvals += first.deviceEvaluations();
             if (first.lastRuntimeBlockUsed())
                 ++r.runtimeBlockSamples;
             if (first.rootBlockCount() > 0)
@@ -576,6 +582,8 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
     }
     summarizeTiming(times, r);
     r.itersPerSample = static_cast<double>(iters) / (samples * kRepeats);
+    r.lineTrialsPerSample = static_cast<double>(trials) / (samples * kRepeats);
+    r.deviceEvalsPerSample = static_cast<double>(devEvals) / (samples * kRepeats);
     r.jfetFallbacks = first.jfetFallbackCount() - fallbacksBefore;
     r.blockFallbacks = first.blockFallbackCount() - blockFallbacksBefore;
     r.lastBlockResidual = first.lastBlockResidual();
@@ -1062,9 +1070,10 @@ int main(int argc, char** argv) {
                                 r.lastBlockFallback ? " (last sample fell back)" : "");
                 }
                 if (profile && fs == 48000.0 && channels == 1) {
-                    std::printf("  paths: runtime-block %lld/%d, block-structured %lld/%d, state-rejects %lld, grid-limits %lld\n",
+                    std::printf("  paths: runtime-block %lld/%d, block-structured %lld/%d, state-rejects %lld, grid-limits %lld, line-trials %.2f, dev-evals %.2f\n",
                                 r.runtimeBlockSamples, static_cast<int>(fs), r.blockStructureSamples,
-                                static_cast<int>(fs), r.stateRejectSamples, r.gridLimitHitsTotal);
+                                static_cast<int>(fs), r.stateRejectSamples, r.gridLimitHitsTotal,
+                                r.lineTrialsPerSample, r.deviceEvalsPerSample);
                     std::printf("  root ports %d, static blocks %d [", r.roots, r.blocks);
                     for (int s = 0; s < r.blocks && s < 16; ++s)
                         std::printf("%s%d", s == 0 ? "" : " ", r.blockPorts[s]);
