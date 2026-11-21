@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
-project(LiveWDF VERSION 0.1.0 LANGUAGES C CXX)
+set(LIVEWDF_VERSION 0.1.0 CACHE STRING "Version stamped into the binaries")
+project(LiveWDF VERSION ${LIVEWDF_VERSION} LANGUAGES C CXX)
 
 # --- Language / toolchain -----------------------------------------------------
 set(CMAKE_CXX_STANDARD 20)
@@ -41,6 +42,7 @@ add_library(livewdf STATIC ${LIVEWDF_SOURCES})
 target_include_directories(livewdf PUBLIC
     "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_link_libraries(livewdf PRIVATE livewdf_options)
+target_compile_definitions(livewdf PRIVATE LIVEWDF_VERSION_STRING="${PROJECT_VERSION}")
 set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 # --- Symbol artwork -----------------------------------------------------------
