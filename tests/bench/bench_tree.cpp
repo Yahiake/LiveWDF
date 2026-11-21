@@ -14,6 +14,7 @@
 
 #include "circuit/tree/TreeExecutor.h"
 #include "spice/SpiceNet.h"
+#include "support/CircuitCases.h"
 #include "wdf/Engine.h"
 
 namespace {
@@ -159,6 +160,7 @@ int main() {
     benchCircuit("Pickup RLC (2P)", makeGuitarPickup(), "R_load", "jack");
     benchCircuit("LC Crossover (3P)", makeLcCrossover3(), "R_spk", "spk");
     benchCircuit("RC Ladder (4P)", makeRcLadder4(), "C4", "n4");
+    benchCircuit("LC Ladder (3-section)", lwdf_test::lcLadder3(), "C2", "c");
 
     std::printf("\n==================================================================================================\n");
     return 0;

@@ -74,8 +74,6 @@ public:
             vvPrev_ = rootV;
             vvPrev2_ = rootV;
         }
-        ppFactored_ = false;
-        ppFactoredAge_ = 0;
         if (powerSagEnabled_) {
             for (size_t i = 0; i < opAmpSagActive_.size(); ++i) {
                 if (opAmpSagActive_[i]) {
@@ -121,6 +119,7 @@ public:
         // A reset starts a new solve history: the runtime gate's evidence from
         // the old history would describe a different operating point.
         runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
+        blockFallbackCooldown_ = 0;
         jointLastIters_ = 0;
         jointLastTrials_ = 0;
         runtimeBlockUsed_ = false;
@@ -299,6 +298,7 @@ public:
         }
         tock(prof_.network);
 
+        const long long fallbacksBefore = blockFallbacks_;
         if (K_ > 0) {
             // The runtime partition is an experiment on top of the reference
             // path. It is built only when neither of the existing exact paths
@@ -329,7 +329,7 @@ public:
                 solveRootGroups(maxIter, tol);
             else if (useRuntime)
                 solveRootBlocksRuntime(maxIter, tol);
-            else if (blockRoots())
+            else if (blockRoots() && blockFallbackCooldown_ == 0)
                 solveRootBlocks(maxIter, tol);
             else if (K_ >= 3)
                 solveRootsNewton(maxIter, tol);
@@ -343,6 +343,14 @@ public:
             deviceEvals_ = 0;
         }
         tock(prof_.solve);
+
+        // A block that had to fall back is not paying for itself. Spend a few
+        // samples on the joint Newton reference before trying the partition
+        // again; this is bounded and cannot disable the block path forever.
+        if (blockFallbacks_ > fallbacksBefore)
+            blockFallbackCooldown_ = 8;
+        else if (blockFallbackCooldown_ > 0)
+            --blockFallbackCooldown_;
 
         // Reconstruct the nodes before committing any state. A solved state
         // that is not a voltage this circuit can hold is a failed solve, not

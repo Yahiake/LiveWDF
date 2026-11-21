@@ -8,6 +8,7 @@
 
 #include "circuit/tree/TreeExecutor.h"
 #include "spice/SpiceNet.h"
+#include "support/CircuitCases.h"
 #include "wdf/Engine.h"
 #include "oracle/rc_lowpass.h"
 
@@ -326,4 +327,46 @@ TEST_CASE("TreeExecutor: dynamic O(log N) parameter recomputation matches recomp
     }
 }
 
+TEST_CASE("TreeExecutor: extended high-Q RLC fixture matches dense Engine", "[extendedfixtures][tree]") {
+    const wdf::Circuit c = lwdf_test::rlcHighQ();
+    wdf::TreeExecutor tree(c, kFs, "Cres");
+    REQUIRE(tree.isPureTree());
 
+    wdf::Engine dense(c, kFs);
+    const int outIdx = dense.nodeIndex("b");  // capacitor is b-to-ground
+    REQUIRE(outIdx >= 0);
+
+    double worst = 0.0;
+    for (int n = 0; n < 4800; ++n) {
+        const double vin = lwdf_test::sine220(n);
+        const double vTree = tree.step(vin);
+        const double vDense = dense.step({vin})[static_cast<size_t>(outIdx)];
+        REQUIRE(std::isfinite(vTree));
+        REQUIRE(std::isfinite(vDense));
+        worst = std::max(worst, std::abs(vTree - vDense));
+    }
+    CAPTURE(worst);
+    REQUIRE(worst < 1e-10);
+}
+
+TEST_CASE("TreeExecutor: LC ladder permanent fixture matches dense Engine", "[extendedfixtures][tree]") {
+    const wdf::Circuit c = lwdf_test::lcLadder3();
+    wdf::TreeExecutor tree(c, kFs, "C2");
+    REQUIRE(tree.isPureTree());
+
+    wdf::Engine dense(c, kFs);
+    const int outIdx = dense.nodeIndex("c");
+    REQUIRE(outIdx >= 0);
+
+    double worst = 0.0;
+    for (int n = 0; n < 4800; ++n) {
+        const double vin = lwdf_test::sine220(n);
+        const double vTree = tree.step(vin);
+        const double vDense = dense.step({vin})[static_cast<size_t>(outIdx)];
+        REQUIRE(std::isfinite(vTree));
+        REQUIRE(std::isfinite(vDense));
+        worst = std::max(worst, std::abs(vTree - vDense));
+    }
+    CAPTURE(worst);
+    REQUIRE(worst < 1e-10);
+}

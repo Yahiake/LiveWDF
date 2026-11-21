@@ -34,6 +34,8 @@ add_executable(livewdf_tests
     engine/test_engine_smoke.cpp
     engine/test_accounting.cpp
     engine/test_block_solve.cpp
+    engine/test_core_contracts.cpp
+    engine/test_nan_sentinel.cpp
     engine/test_elements_l_i.cpp
     engine/test_newton_solver.cpp
     engine/test_root_groups.cpp
@@ -47,6 +49,7 @@ add_executable(livewdf_tests
     devices/test_jfet.cpp
     devices/test_mosfet.cpp
     devices/test_pentode.cpp
+    devices/test_pentode_contracts.cpp
     devices/test_pot_and_diodes.cpp
     devices/test_transformer.cpp
     devices/test_triode_grid.cpp
@@ -61,10 +64,12 @@ add_executable(livewdf_tests
     dsp/test_halfband_oversampler.cpp
 
     spice/test_spice_parser.cpp
+    spice/test_dense_diagnostics.cpp
 
     circuit/test_spqr_tree.cpp
     circuit/test_tree_executor.cpp
     circuit/test_signal_flow.cpp
+    circuit/test_pot_contracts.cpp
 
     compiler/test_compiler.cpp
     runtime/test_runtime_parity.cpp
@@ -81,6 +86,7 @@ add_executable(livewdf_tests
     format/test_terminals.cpp
 
     integration/test_circuits_extra.cpp
+    integration/test_extended_circuits.cpp
     # `test_fuzz_face.cpp` and `fuzz_face_fixture.{h,cpp}` deleted: the embedded
     # sheet is a v2 document -- it carries `pins` maps and wire `net` names and
     # draws nothing at its own pin points -- and legacy documents are refused, not

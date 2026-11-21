@@ -297,11 +297,10 @@ inline bool solveSmall(std::vector<double>& A, std::vector<double>& b, int n) {
 }
 
 // ---------------------------------------------------------------------------
-// Two-step LU Factorization and Solve for Chord Methods (Potra-Ptak / WDPP).
-//
-// Separates O(N^3) Gaussian elimination with partial pivoting from O(N^2)
-// forward/back substitution. Factoring once allows multiple residual
-// evaluations and chord corrections at negligible additional cost.
+// LU factorization and solve, separated so one factorization can serve
+// several right-hand sides (used by the static block solver and the reduced
+// Newton fast path). Gaussian elimination with partial pivoting followed by
+// O(N^2) forward/back substitution.
 // ---------------------------------------------------------------------------
 
 template <int N>

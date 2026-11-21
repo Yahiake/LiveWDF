@@ -53,4 +53,25 @@ inline bool solveInPlace(Dense& A, Dense& B) {
     return true;
 }
 
+/// Largest absolute residual |A*X - B| for an unfactored system and its
+/// solution. Diagnostic only (setup/tests), never called in the audio loop.
+/// A successful solve with zero pivot can still be inaccurate; this is the
+/// check that pivot finiteness alone cannot provide.
+inline double maxBackwardError(const Dense& A, const Dense& B, const Dense& X) {
+    const int n = static_cast<int>(A.size());
+    if (n == 0 || B.empty() || X.empty())
+        return 0.0;
+    const int m = static_cast<int>(B[0].size());
+    double worst = 0.0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            double s = 0.0;
+            for (int k = 0; k < n; ++k)
+                s += A[i][k] * X[k][j];
+            worst = std::max(worst, std::fabs(s - B[i][j]));
+        }
+    }
+    return worst;
+}
+
 } // namespace wdf

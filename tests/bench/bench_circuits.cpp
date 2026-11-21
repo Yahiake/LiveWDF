@@ -134,6 +134,10 @@ struct Result {
     int roots = 0;
     int blocks = 0;
     int blockPorts[16] = {};
+    long long runtimeBlockSamples = 0;
+    long long blockStructureSamples = 0;
+    long long stateRejectSamples = 0;
+    long long gridLimitHitsTotal = 0;
     int deadColumns = 0;
     wdf::Engine::PhaseProfile prof;
     std::vector<double> out;
@@ -240,6 +244,10 @@ Result run(const lwdf_test::CircuitCase& tc, bool allowExplicit, bool profile) {
         r.peak = 0.0;
         r.nonFinite = 0;
         r.converged = 0;
+        r.runtimeBlockSamples = 0;
+        r.blockStructureSamples = 0;
+        r.stateRejectSamples = 0;
+        r.gridLimitHitsTotal = 0;
 
         const auto t0 = std::chrono::steady_clock::now();
         for (int n = 0; n < kSamples; ++n) {
@@ -261,6 +269,13 @@ Result run(const lwdf_test::CircuitCase& tc, bool allowExplicit, bool profile) {
             // one sample's iterations and divides them by all of them, which is
             // how this column used to print 0.00 for every Newton circuit.
             iters += e.newtonIterations();
+            if (e.lastRuntimeBlockUsed())
+                ++r.runtimeBlockSamples;
+            if (e.rootBlockCount() > 0)
+                ++r.blockStructureSamples;
+            if (e.lastStateRejected())
+                ++r.stateRejectSamples;
+            r.gridLimitHitsTotal += e.gridLimitHits();
         }
         const auto t1 = std::chrono::steady_clock::now();
         times[static_cast<size_t>(rep)] =
@@ -464,6 +479,10 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
         r.peak = 0.0;
         r.nonFinite = 0;
         r.converged = 0;
+        r.runtimeBlockSamples = 0;
+        r.blockStructureSamples = 0;
+        r.stateRejectSamples = 0;
+        r.gridLimitHitsTotal = 0;
 
         const auto t0 = std::chrono::steady_clock::now();
         for (int n = 0; n < samples; ++n) {
@@ -519,6 +538,13 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
             if (first.lastConverged())
                 ++r.converged;
             iters += first.newtonIterations();
+            if (first.lastRuntimeBlockUsed())
+                ++r.runtimeBlockSamples;
+            if (first.rootBlockCount() > 0)
+                ++r.blockStructureSamples;
+            if (first.lastStateRejected())
+                ++r.stateRejectSamples;
+            r.gridLimitHitsTotal += first.gridLimitHits();
             if (trace && rep == 0) {
                 for (size_t i = 0; i < y.size(); ++i) {
                     if (!std::isfinite(y[i])) {
@@ -865,6 +891,14 @@ void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
 }  // namespace
 
 int main(int argc, char** argv) {
+    bool extra = false;
+    bool forceJoint = false;
+    for (int a = 1; a < argc; ++a) {
+        if (std::string(argv[a]) == "--extra")
+            extra = true;
+        if (std::string(argv[a]) == "--joint")
+            forceJoint = true;
+    }
     if (argc >= 2 && std::string(argv[1]) == "--file") {
         if (argc < 3) {
             std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst] [--pentode <koren|reefman-d|reefman-e|reefman-se|compare>]\n");
@@ -1028,6 +1062,9 @@ int main(int argc, char** argv) {
                                 r.lastBlockFallback ? " (last sample fell back)" : "");
                 }
                 if (profile && fs == 48000.0 && channels == 1) {
+                    std::printf("  paths: runtime-block %lld/%d, block-structured %lld/%d, state-rejects %lld, grid-limits %lld\n",
+                                r.runtimeBlockSamples, static_cast<int>(fs), r.blockStructureSamples,
+                                static_cast<int>(fs), r.stateRejectSamples, r.gridLimitHitsTotal);
                     std::printf("  root ports %d, static blocks %d [", r.roots, r.blocks);
                     for (int s = 0; s < r.blocks && s < 16; ++s)
                         std::printf("%s%d", s == 0 ? "" : " ", r.blockPorts[s]);
@@ -1050,14 +1087,19 @@ int main(int argc, char** argv) {
 
     std::printf("LiveWDF multi-circuit instrument\n");
     std::printf("=====================================================================\n");
-    std::printf("  circuit                     N    P   K  form      ns/sample  spread  nt-ns   it/smp  conv      fb fail\n");
+    std::printf("  circuit                     N    P   K  form      ns/sample   worst  spread  nt-ns   it/smp  conv      fb fail\n");
     std::printf("  ---------------------------------------------------------------------------------------------\n");
 
     std::vector<Result> fast;   // one row per fixture: the chosen formulation
+    const auto& cases = extra ? lwdf_test::extendedCircuitCases() : lwdf_test::circuitCases();
+    if (extra)
+        std::printf("Extended permanent portfolio\n");
 
-    for (const auto& tc : lwdf_test::circuitCases()) {
-        const Result a = run(tc, true, false);   // explicit root if eligible
-        const Result b = run(tc, false, false);  // forced Newton
+    if (forceJoint)
+        std::printf("Forced joint Newton (reference path)\n");
+    for (const auto& tc : cases) {
+        const Result a = run(tc, !forceJoint, false);  // explicit root if eligible
+        const Result b = run(tc, forceJoint ? true : false, false);  // opposite path
         const Result p = run(tc, true, true);    // profiled
         const double diff = maxDiff(a.out, b.out);
 
@@ -1069,11 +1111,15 @@ int main(int argc, char** argv) {
         else
             std::snprintf(ntBuf, sizeof ntBuf, "%8s", "-");
 
-        std::printf("  %-26s %4d %4d %4d  %-8s %8.1f %5.1f%% %s  %5.2f  %d/%d  %4lld %4d  |ex-nt| %.2e\n",
+        std::printf("  %-26s %4d %4d %4d  %-8s %8.1f %8.1f %5.1f%% %s  %5.2f  %d/%d  %4lld %4d  |ex-nt| %.2e\n",
                     tc.name, a.nodes, a.elements, a.roots,
-                    a.explicitActive ? "closed" : "newton", a.nsPerSample, spreadPercent(a),
+                    a.explicitActive ? "closed" : "newton", a.nsPerSample, a.nsMax, spreadPercent(a),
                     ntBuf, a.itersPerSample, a.converged, kSamples, a.jfetFallbacks,
                     kSamples - a.converged, diff);
+
+        std::printf("    %-26s paths: runtime-block %lld/%d, block-structured %lld/%d, state-rejects %lld, grid-limits %lld\n",
+                    tc.name, a.runtimeBlockSamples, kSamples, a.blockStructureSamples, kSamples,
+                    a.stateRejectSamples, a.gridLimitHitsTotal);
 
         printPhaseShares(tc.name, p.roots, p.prof);
 
@@ -1089,13 +1135,15 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < fast.size(); ++i) {
         const Result& r = fast[i];
         std::printf("    %-26s %2d of %2d columns dead  (%.0f%%)\n",
-                    lwdf_test::circuitCases()[i].name, r.deadColumns, r.elements,
+                    cases[i].name, r.deadColumns, r.elements,
                     r.elements > 0 ? 100.0 * r.deadColumns / r.elements : 0.0);
     }
     std::printf("---------------------------------------------------------------------\n");
     std::printf("  which root-port groups are independent (structure only)\n");
-    for (const auto& tc : lwdf_test::circuitCases())
-        printCoupling(tc, lwdf_test::rootGroupCoupling((*tc.build)(), tc, kFs));
+    if (!extra) {  // rootGroupCoupling's display assumes the original 23-fixture device mix
+        for (const auto& tc : cases)
+            printCoupling(tc, lwdf_test::rootGroupCoupling((*tc.build)(), tc, kFs));
+    }
     std::printf("---------------------------------------------------------------------\n");
     std::printf("  the engine only is timed here; `bench_stage.cpp` times its `std::sin`\n");
     std::printf("  input too, so its ns/sample sits about %.1f ns higher on the same stage.\n",
