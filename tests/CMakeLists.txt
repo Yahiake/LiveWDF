@@ -50,6 +50,7 @@ add_executable(livewdf_tests
     devices/test_mosfet.cpp
     devices/test_pentode.cpp
     devices/test_pentode_contracts.cpp
+    devices/test_device_jacobian_contracts.cpp
     devices/test_pot_and_diodes.cpp
     devices/test_transformer.cpp
     devices/test_triode_grid.cpp
@@ -65,6 +66,7 @@ add_executable(livewdf_tests
 
     spice/test_spice_parser.cpp
     spice/test_dense_diagnostics.cpp
+    spice/test_root_transfer_diagnostics.cpp
 
     circuit/test_spqr_tree.cpp
     circuit/test_tree_executor.cpp
