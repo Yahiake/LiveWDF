@@ -1,0 +1,60 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency: publish
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    if: github.ref == 'refs/heads/main' && github.repository == 'Yahiake/LiveWDF'
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Next patch version, unless main is unchanged since the last tag
+        id: next
+        run: |
+          if [ -z "$(git tag --points-at HEAD --list 'v[0-9]*')" ]; then
+            version=$(tools/next_version.sh patch)
+            echo "version=$version" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: version
+    if: needs.version.outputs.version
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Replace the nightly pre-release
+        working-directory: dist
+        run: |
+          sha256sum -- * > SHA256SUMS
+          previous=$(gh release list --json tagName,isPrerelease,name -q '.[] | select(.isPrerelease and (.name | startswith("Nightly"))) | .tagName')
+          gh release create "v$VERSION" * --prerelease --target "$GITHUB_SHA" --title "Nightly $VERSION" --notes "Unsigned nightly build of $GITHUB_SHA."
+          for tag in $previous; do gh release delete "$tag" --yes; done

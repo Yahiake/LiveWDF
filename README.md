@@ -1,5 +1,7 @@
 # LiveWDF
 
+[![Tests](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml) [![Nightly](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml)
+
 **An open-source, real-time Wave Digital Filter circuit simulator for audio.**
 
 LiveWDF is a C++ project focused on simulating analog audio circuits using Wave Digital Filters (WDFs). The goal is to make circuit-level simulation practical for real-time audio processing, with guitar amplifiers and effects as a primary application.

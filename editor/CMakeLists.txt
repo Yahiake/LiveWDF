@@ -107,7 +107,6 @@ if(LIVEWDF_BUILD_EDITOR)
     juce_add_gui_app(LiveWDF_Editor
         PRODUCT_NAME "LiveWDF Editor"
         COMPANY_NAME "LiveWDF"
-        VERSION "0.1.0"
     )
 
     target_sources(LiveWDF_Editor PRIVATE

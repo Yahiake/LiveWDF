@@ -1,0 +1,243 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - .github/workflows/build.yml
+      - "**/CMakeLists.txt"
+
+concurrency:
+  group: build-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  LINUX_DEPS: libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
+  MACOSX_DEPLOYMENT_TARGET: "10.15"
+
+jobs:
+  build:
+    name: ${{ matrix.os }}-${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Built on the oldest base we support (glibc 2.35, ALSA 1.2.6), since binaries need what they were built against.
+          - { os: linux, arch: x86_64, runner: ubuntu-24.04, container: "ubuntu:22.04" }
+          - { os: linux, arch: aarch64, runner: ubuntu-24.04-arm, container: "ubuntu:22.04" }
+          # Raspberry Pi OS 32-bit is ARMv6 hard-float, unlike Debian's armhf, so this builds against its own sysroot and runs on every Pi.
+          - os: linux
+            arch: armv6
+            runner: ubuntu-24.04
+            container: debian:trixie
+            cmake: >-
+              -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_SYSTEM_PROCESSOR=armv6l -DCMAKE_SYSROOT=/sysroot
+              -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_LINKER_TYPE=LLD
+              -DCMAKE_C_COMPILER_TARGET=arm-linux-gnueabihf -DCMAKE_CXX_COMPILER_TARGET=arm-linux-gnueabihf
+              "-DCMAKE_C_FLAGS=-mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -marm"
+              "-DCMAKE_CXX_FLAGS=-mcpu=arm1176jzf-s -mfpu=vfp -mfloat-abi=hard -marm"
+              -DJUCE_TARGET_ARCHITECTURE=armv6l -DLIVEWDF_VST3_MANIFEST=OFF -DLIVEWDF_BUILD_TESTS=ON
+          - { os: windows, arch: x64, runner: windows-2025, cmake: -A x64 }
+          - { os: windows, arch: arm64, runner: windows-11-arm, cmake: -A ARM64 }
+          - { os: macos, arch: x86_64, runner: macos-15-intel }
+          - { os: macos, arch: arm64, runner: macos-15 }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    container: ${{ matrix.container }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Set up the Raspberry Pi OS sysroot
+        if: matrix.arch == 'armv6'
+        run: |
+          apt-get update
+          apt-get install -y git cmake g++ clang lld llvm pkgconf mmdebstrap curl gpg qemu-user $LINUX_DEPS
+          curl -fsSL https://archive.raspbian.org/raspbian.public.key | gpg --dearmor > /raspbian.gpg
+          test "$(gpg --show-keys --with-colons /raspbian.gpg | grep -c '^pub:')" = 1
+          gpg --show-keys --with-colons /raspbian.gpg | grep '^fpr:::::::::A0DA38D0D76E8B5D638872819165938D90FDDD2E:$' > /dev/null
+          # The pinned key's self-signatures are SHA-1, which apt's Sequoia policy rejects since 2026-02-01.
+          mkdir -p /etc/crypto-policies/back-ends
+          sed 's/^sha1.second_preimage_resistance = .*/sha1.second_preimage_resistance = 2030-02-01/' /usr/share/apt/default-sequoia.config > /etc/crypto-policies/back-ends/apt-sequoia.config
+          mmdebstrap --variant=extract --architectures=armhf --include="libstdc++-12-dev $LINUX_DEPS" bookworm /sysroot "deb [signed-by=/raspbian.gpg] http://raspbian.raspberrypi.com/raspbian bookworm main"
+          # Bookworm's libraries use absolute symlinks such as libm.so -> /lib/..., which must point into the sysroot.
+          find /sysroot -type l -lname '/*' -exec sh -c 'ln -sfn "/sysroot$(readlink "$1")" "$1"' _ {} \;
+          printf '#!/bin/sh\nPKG_CONFIG_SYSROOT_DIR=/sysroot PKG_CONFIG_LIBDIR=/sysroot/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/usr/share/pkgconfig exec pkg-config "$@"\n' > /usr/local/bin/rpi-pkg-config
+          chmod +x /usr/local/bin/rpi-pkg-config
+          echo "PKG_CONFIG=rpi-pkg-config" >> "$GITHUB_ENV"
+
+      - name: Install Linux dependencies
+        if: matrix.container == 'ubuntu:22.04'
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          apt-get update
+          apt-get install -y git cmake g++-12 pkg-config $LINUX_DEPS
+          printf 'CC=gcc-12\nCXX=g++-12\n' >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF -DLIVEWDF_VERSION=$VERSION ${{ matrix.cmake }}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4 --target LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone LiveWDF_Editor
+
+      - name: Run the unit tests on an emulated Pi Zero
+        if: matrix.arch == 'armv6'
+        run: |
+          cmake --build build --parallel 4 --target livewdf_tests
+          # Bookworm keeps libc in /lib, which qemu's -L lookup misses, so run the sysroot's own loader.
+          qemu-arm -cpu arm1176 /sysroot/lib/ld-linux-armhf.so.3 --library-path /sysroot/lib/arm-linux-gnueabihf:/sysroot/usr/lib/arm-linux-gnueabihf build/tests/livewdf_tests
+
+      - name: Package
+        run: |
+          name=LiveWDF-$VERSION-${{ matrix.os }}-${{ matrix.arch }}
+          echo "NAME=$name" >> "$GITHUB_ENV"
+          mkdir "$name"
+          mkdir "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/VST3/LiveWDF.vst3 "$name/VST3"
+          cp -R build/plugin/LiveWDF_Plugin_artefacts/Release/Standalone "$name"
+          cp -R build/editor/LiveWDF_Editor_artefacts/Release "$name/Editor"
+          cp LICENSE THIRD-PARTY-NOTICES.md "$name"
+          if [ "${{ runner.os }}" = Linux ]; then cp packaging/linux/install.sh "$name"; fi
+          # VST3 hosts look for the folder named after uname -m, which is armv6l or armv7l on a 32-bit Pi.
+          if [ "${{ matrix.arch }}" = armv6 ]; then
+            cp -R "$name/VST3/LiveWDF.vst3/Contents/armv6l-linux" "$name/VST3/LiveWDF.vst3/Contents/armv7l-linux"
+          fi
+          cmake -E tar cf "$name.zip" --format=zip "$name"
+
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          iscc /DVersion=$env:VERSION /DPlatform=${{ matrix.arch }} "/DSource=$PWD\$env:NAME" "/O$PWD" packaging\windows\livewdf.iss
+          $p = Start-Process -Wait -PassThru "$env:NAME-setup.exe" '/VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+          if ($p.ExitCode) { throw "setup exited with $($p.ExitCode)" }
+          $files = "$env:ProgramFiles\LiveWDF\LiveWDF.exe", "$env:ProgramFiles\LiveWDF\LiveWDF Editor.exe", "$env:CommonProgramFiles\VST3\LiveWDF.vst3"
+          if (($files | Test-Path) -contains $false) { throw "not installed: $files" }
+          $p = Start-Process -Wait -PassThru "$env:ProgramFiles\LiveWDF\unins000.exe" '/VERYSILENT /SUPPRESSMSGBOXES'
+          if ($p.ExitCode) { throw "uninstaller exited with $($p.ExitCode)" }
+          for ($i = 0; ($files | Test-Path) -contains $true; $i++) { if ($i -eq 30) { throw "not uninstalled" }; Start-Sleep 1 }
+
+      - name: macOS installer
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p root/Applications root/Library/Audio/Plug-Ins/VST3 resources
+          cp -R "$NAME/Standalone/LiveWDF.app" "$NAME/Editor/LiveWDF Editor.app" root/Applications/
+          cp -R "$NAME/VST3/LiveWDF.vst3" root/Library/Audio/Plug-Ins/VST3/
+          cp LICENSE resources/LICENSE.txt
+          # Without this the installer updates a copy found anywhere on disk instead of /Applications.
+          pkgbuild --analyze --root root bundles.plist
+          for i in 0 1 2; do plutil -replace $i.BundleIsRelocatable -bool NO bundles.plist; done
+          ! grep -A1 BundleIsRelocatable bundles.plist | grep -q '<true/>'
+          pkgbuild --root root --component-plist bundles.plist --identifier com.yahia.livewdf --version "$VERSION" --install-location / livewdf.pkg
+          sed "s/@ARCH@/${{ matrix.arch }}/" packaging/macos/distribution.xml > distribution.xml
+          productbuild --distribution distribution.xml --resources resources --package-path . "$NAME.pkg"
+          sudo installer -pkg "$NAME.pkg" -target /
+          ls -d /Applications/LiveWDF.app "/Applications/LiveWDF Editor.app" /Library/Audio/Plug-Ins/VST3/LiveWDF.vst3
+          pkgutil --pkg-info com.yahia.livewdf
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.os }}-${{ matrix.arch }}
+          path: |
+            LiveWDF-*.zip
+            LiveWDF-*-setup.exe
+            LiveWDF-*.pkg
+          if-no-files-found: error
+          retention-days: 7
+
+  linux-packages:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: linux-*
+          merge-multiple: true
+
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Debian and RPM packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+          for arch in x86_64:amd64 aarch64:arm64 armv6:armhf; do
+            name=LiveWDF-$VERSION-linux-${arch%:*}
+            unzip -q "$name.zip"
+            LIVEWDF_PREFIX=/usr LIVEWDF_VST3DIR=/usr/lib/vst3 LIVEWDF_DESTDIR="$PWD/deb" sh "$name/install.sh"
+            install -Dm644 LICENSE deb/usr/share/doc/livewdf/copyright
+            mkdir deb/DEBIAN
+            sed "s/@VERSION@/$VERSION/; s/@ARCH@/${arch#*:}/" packaging/linux/control.in > deb/DEBIAN/control
+            dpkg-deb --root-owner-group --build deb "$name.deb"
+            dpkg-deb --info "$name.deb" && dpkg-deb --contents "$name.deb"
+            rm -rf deb
+            if [ "${arch%:*}" != armv6 ]; then
+              rpmbuild -bb --target "${arch%:*}" --define "ver $VERSION" --define "zip $PWD/$name" --define "_rpmdir $PWD" --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" packaging/linux/livewdf.spec
+              rpm -qip "livewdf-$VERSION-1.${arch%:*}.rpm" && rpm -qlp "livewdf-$VERSION-1.${arch%:*}.rpm" && rpm -qRp "livewdf-$VERSION-1.${arch%:*}.rpm"
+            fi
+          done
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-linux
+          path: |
+            LiveWDF-*.deb
+            livewdf-*.rpm
+          if-no-files-found: error
+          retention-days: 7
+
+  arch-package:
+    needs: build
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    container: archlinux:base-devel
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: linux-x86_64
+
+      - name: Version
+        env:
+          INPUT: ${{ inputs.version }}
+        run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Arch package
+        run: |
+          useradd -m builder
+          cp packaging/arch/PKGBUILD LiveWDF-*-linux-x86_64.zip /home/builder/
+          sed -i "s/^pkgver=.*/pkgver=$VERSION/; s/^sha256sums_x86_64=.*/sha256sums_x86_64=('$(sha256sum LiveWDF-*-linux-x86_64.zip | cut -d' ' -f1)')/" /home/builder/PKGBUILD
+          chown -R builder /home/builder
+          su builder -c 'cd && PACKAGER="Yahia Kemari <64375557+Yahiake@users.noreply.github.com>" makepkg --nodeps'
+          pacman -Qip /home/builder/livewdf-bin-*.pkg.tar.zst && pacman -Qlp /home/builder/livewdf-bin-*.pkg.tar.zst
+          cp /home/builder/livewdf-bin-*.pkg.tar.zst .
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: packages-arch
+          path: livewdf-bin-*.pkg.tar.zst
+          if-no-files-found: error
+          retention-days: 7
