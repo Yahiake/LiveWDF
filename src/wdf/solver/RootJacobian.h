@@ -79,25 +79,35 @@ public:
                 const int rBase = dev.activeRowBase;
                 const double dip_dvpk = jData[base * K + base];
                 const double dip_dvgk = jData[base * K + base + 1];
+                const double dip_dvsk = jData[base * K + base + 2];
 
                 const double dig_dvgk = jData[(base + 1) * K + base + 1];
 
+                const double dis_dvpk = jData[(base + 2) * K + base];
+                const double dis_dvgk = jData[(base + 2) * K + base + 1];
+                const double dis_dvsk = jData[(base + 2) * K + base + 2];
+
                 const double* LIVEWDF_RESTRICT zp = zData + base * K;
                 const double* LIVEWDF_RESTRICT zg = zData + (base + 1) * K;
+                const double* LIVEWDF_RESTRICT zs = zData + (base + 2) * K;
 
                 double* LIVEWDF_RESTRICT rowP = M + rBase * nN;
                 double* LIVEWDF_RESTRICT rowG = M + (rBase + 1) * nN;
+                double* LIVEWDF_RESTRICT rowS = M + (rBase + 2) * nN;
 
                 for (int j = 0; j < nN; ++j) {
                     const int c = colOf[j];
-                    rowP[j] = dip_dvpk * zp[c] + dip_dvgk * zg[c];
+                    rowP[j] = dip_dvpk * zp[c] + dip_dvgk * zg[c] + dip_dvsk * zs[c];
                     rowG[j] = dig_dvgk * zg[c];
+                    rowS[j] = dis_dvpk * zp[c] + dis_dvgk * zg[c] + dis_dvsk * zs[c];
                 }
                 rowP[rBase] += 1.0;
                 rowG[rBase + 1] += 1.0;
+                rowS[rBase + 2] += 1.0;
 
-                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1]);
+                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1] + dip_dvsk * fData[base + 2]);
                 r[rBase + 1] = -(dig_dvgk * fData[base + 1]);
+                r[rBase + 2] = -(dis_dvpk * fData[base] + dis_dvgk * fData[base + 1] + dis_dvsk * fData[base + 2]);
                 break;
             }
             case DeviceKind::Jfet:
@@ -230,27 +240,38 @@ public:
                 const int base = dev.portBase;
                 const int rowIdxP = redToActive[static_cast<size_t>(dev.activeRowBase)];
                 const int rowIdxG = redToActive[static_cast<size_t>(dev.activeRowBase + 1)];
+                const int rowIdxS = redToActive[static_cast<size_t>(dev.activeRowBase + 2)];
                 const double dip_dvpk = jData[base * K + base];
                 const double dip_dvgk = jData[base * K + base + 1];
+                const double dip_dvsk = jData[base * K + base + 2];
 
                 const double dig_dvgk = jData[(base + 1) * K + base + 1];
 
+                const double dis_dvpk = jData[(base + 2) * K + base];
+                const double dis_dvgk = jData[(base + 2) * K + base + 1];
+                const double dis_dvsk = jData[(base + 2) * K + base + 2];
+
                 const double* LIVEWDF_RESTRICT zp = zData + base * K;
                 const double* LIVEWDF_RESTRICT zg = zData + (base + 1) * K;
+                const double* LIVEWDF_RESTRICT zs = zData + (base + 2) * K;
 
                 double* LIVEWDF_RESTRICT rowP = M + rowIdxP * nN;
                 double* LIVEWDF_RESTRICT rowG = M + rowIdxG * nN;
+                double* LIVEWDF_RESTRICT rowS = M + rowIdxS * nN;
 
                 for (int j = 0; j < nN; ++j) {
                     const int c = colOf[j];
-                    rowP[j] = dip_dvpk * zp[c] + dip_dvgk * zg[c];
+                    rowP[j] = dip_dvpk * zp[c] + dip_dvgk * zg[c] + dip_dvsk * zs[c];
                     rowG[j] = dig_dvgk * zg[c];
+                    rowS[j] = dis_dvpk * zp[c] + dis_dvgk * zg[c] + dis_dvsk * zs[c];
                 }
                 rowP[rowIdxP] += 1.0;
                 rowG[rowIdxG] += 1.0;
+                rowS[rowIdxS] += 1.0;
 
-                r[rowIdxP] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1]);
+                r[rowIdxP] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1] + dip_dvsk * fData[base + 2]);
                 r[rowIdxG] = -(dig_dvgk * fData[base + 1]);
+                r[rowIdxS] = -(dis_dvpk * fData[base] + dis_dvgk * fData[base + 1] + dis_dvsk * fData[base + 2]);
                 break;
             }
             case DeviceKind::Jfet:
@@ -410,23 +431,32 @@ public:
                 const int rBase = dev.activeRowBase;
                 const double dip_dvpk = jData[base * K + base];
                 const double dip_dvgk = jData[base * K + base + 1];
+                const double dip_dvsk = jData[base * K + base + 2];
                 const double dig_dvgk = jData[(base + 1) * K + base + 1];
+                const double dis_dvpk = jData[(base + 2) * K + base];
+                const double dis_dvgk = jData[(base + 2) * K + base + 1];
+                const double dis_dvsk = jData[(base + 2) * K + base + 2];
 
                 const double* LIVEWDF_RESTRICT zp = zRed + base * N;
                 const double* LIVEWDF_RESTRICT zg = zRed + (base + 1) * N;
+                const double* LIVEWDF_RESTRICT zs = zRed + (base + 2) * N;
 
                 double* LIVEWDF_RESTRICT rowP = M + rBase * N;
                 double* LIVEWDF_RESTRICT rowG = M + (rBase + 1) * N;
+                double* LIVEWDF_RESTRICT rowS = M + (rBase + 2) * N;
 
                 for (int j = 0; j < N; ++j) {
-                    rowP[j] = dip_dvpk * zp[j] + dip_dvgk * zg[j];
+                    rowP[j] = dip_dvpk * zp[j] + dip_dvgk * zg[j] + dip_dvsk * zs[j];
                     rowG[j] = dig_dvgk * zg[j];
+                    rowS[j] = dis_dvpk * zp[j] + dis_dvgk * zg[j] + dis_dvsk * zs[j];
                 }
                 rowP[rBase] += 1.0;
                 rowG[rBase + 1] += 1.0;
+                rowS[rBase + 2] += 1.0;
 
-                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1]);
+                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1] + dip_dvsk * fData[base + 2]);
                 r[rBase + 1] = -(dig_dvgk * fData[base + 1]);
+                r[rBase + 2] = -(dis_dvpk * fData[base] + dis_dvgk * fData[base + 1] + dis_dvsk * fData[base + 2]);
                 break;
             }
             case DeviceKind::Jfet:
@@ -577,23 +607,32 @@ public:
                 const int rBase = dev.activeRowBase;
                 const double dip_dvpk = jData[base * K + base];
                 const double dip_dvgk = jData[base * K + base + 1];
+                const double dip_dvsk = jData[base * K + base + 2];
                 const double dig_dvgk = jData[(base + 1) * K + base + 1];
+                const double dis_dvpk = jData[(base + 2) * K + base];
+                const double dis_dvgk = jData[(base + 2) * K + base + 1];
+                const double dis_dvsk = jData[(base + 2) * K + base + 2];
 
                 const double* LIVEWDF_RESTRICT zp = zRed + base * nN;
                 const double* LIVEWDF_RESTRICT zg = zRed + (base + 1) * nN;
+                const double* LIVEWDF_RESTRICT zs = zRed + (base + 2) * nN;
 
                 double* LIVEWDF_RESTRICT rowP = M + rBase * nN;
                 double* LIVEWDF_RESTRICT rowG = M + (rBase + 1) * nN;
+                double* LIVEWDF_RESTRICT rowS = M + (rBase + 2) * nN;
 
                 for (int j = 0; j < nN; ++j) {
-                    rowP[j] = dip_dvpk * zp[j] + dip_dvgk * zg[j];
+                    rowP[j] = dip_dvpk * zp[j] + dip_dvgk * zg[j] + dip_dvsk * zs[j];
                     rowG[j] = dig_dvgk * zg[j];
+                    rowS[j] = dis_dvpk * zp[j] + dis_dvgk * zg[j] + dis_dvsk * zs[j];
                 }
                 rowP[rBase] += 1.0;
                 rowG[rBase + 1] += 1.0;
+                rowS[rBase + 2] += 1.0;
 
-                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1]);
+                r[rBase] = -(dip_dvpk * fData[base] + dip_dvgk * fData[base + 1] + dip_dvsk * fData[base + 2]);
                 r[rBase + 1] = -(dig_dvgk * fData[base + 1]);
+                r[rBase + 2] = -(dis_dvpk * fData[base] + dis_dvgk * fData[base + 1] + dis_dvsk * fData[base + 2]);
                 break;
             }
             case DeviceKind::Jfet:
@@ -776,8 +815,9 @@ public:
             case DeviceKind::Pentode: {
                 const int base = dev.portBase;
                 const int rBase = dev.activeRowBase;
-                r[rBase] = -(jData[base * K + base] * fData[base] + jData[base * K + base + 1] * fData[base + 1]);
+                r[rBase] = -(jData[base * K + base] * fData[base] + jData[base * K + base + 1] * fData[base + 1] + jData[base * K + base + 2] * fData[base + 2]);
                 r[rBase + 1] = -(jData[(base + 1) * K + base + 1] * fData[base + 1]);
+                r[rBase + 2] = -(jData[(base + 2) * K + base] * fData[base] + jData[(base + 2) * K + base + 1] * fData[base + 1] + jData[(base + 2) * K + base + 2] * fData[base + 2]);
                 break;
             }
             case DeviceKind::Jfet:

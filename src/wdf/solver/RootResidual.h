@@ -110,17 +110,17 @@ public:
                 ++deviceEvals;
                 iData[base] = cur.ip;
                 iData[base + 1] = cur.ig;
-                iData[base + 2] = 0.0;
+                iData[base + 2] = cur.is;
                 if (jData) {
                     jData[base * K + base] = cur.dip_dvpk;
                     jData[base * K + base + 1] = cur.dip_dvgk;
-                    jData[base * K + base + 2] = 0.0;
+                    jData[base * K + base + 2] = cur.dip_dvsk;
                     jData[(base + 1) * K + base] = 0.0;
                     jData[(base + 1) * K + base + 1] = cur.dig_dvgk;
                     jData[(base + 1) * K + base + 2] = 0.0;
-                    jData[(base + 2) * K + base] = 0.0;
-                    jData[(base + 2) * K + base + 1] = 0.0;
-                    jData[(base + 2) * K + base + 2] = 0.0;
+                    jData[(base + 2) * K + base] = cur.dis_dvpk;
+                    jData[(base + 2) * K + base + 1] = cur.dis_dvgk;
+                    jData[(base + 2) * K + base + 2] = cur.dis_dvsk;
                 }
                 break;
             }
@@ -364,8 +364,8 @@ public:
                 }
                 case DeviceKind::Pentode: {
                     const int o = dev.portBase;
-                    ar[o] += zr[o] * jData[o * K + o] + zr[o + 1] * jData[(o + 1) * K + o];
-                    ar[o + 1] += zr[o] * jData[o * K + o + 1] + zr[o + 1] * jData[(o + 1) * K + o + 1];
+                    ar[o]     += zr[o] * jData[o * K + o]     + zr[o + 1] * jData[(o + 1) * K + o]     + zr[o + 2] * jData[(o + 2) * K + o];
+                    ar[o + 1] += zr[o] * jData[o * K + o + 1] + zr[o + 1] * jData[(o + 1) * K + o + 1] + zr[o + 2] * jData[(o + 2) * K + o + 1];
                     ar[o + 2] += zr[o] * jData[o * K + o + 2] + zr[o + 1] * jData[(o + 1) * K + o + 2] + zr[o + 2] * jData[(o + 2) * K + o + 2];
                     break;
                 }

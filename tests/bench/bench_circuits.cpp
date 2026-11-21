@@ -78,6 +78,41 @@ static long long kSwitchPeriod = 0;
 static long long kSwitchCount = -1;
 static double kDriveVolts = 0.25;
 static bool kGridCurrent = true;
+static std::string kPentodeModel = "reefman-d";
+
+static void applyPentodeModel(wdf::Circuit& c) {
+    if (kPentodeModel == "koren") {
+        for (auto& pt : c.pent) {
+            pt.model.modelKind = wdf::PentodeModelKind::Koren;
+            pt.model.useReefman = false;
+        }
+        return;
+    }
+    if (kPentodeModel == "reefman-e" || kPentodeModel == "reefman-derke") {
+        for (auto& pt : c.pent) {
+            pt.model.modelKind = wdf::PentodeModelKind::Reefman;
+            pt.model.useReefman = true;
+            pt.model.reefman.knee = wdf::PentodeKneeType::DerkE;
+        }
+        return;
+    }
+    if (kPentodeModel == "reefman-se" || kPentodeModel == "reefman-d-se") {
+        for (auto& pt : c.pent) {
+            pt.model.modelKind = wdf::PentodeModelKind::Reefman;
+            pt.model.useReefman = true;
+            pt.model.reefman.knee = wdf::PentodeKneeType::DerkD;
+            pt.model.reefman.secondaryEmission = true;
+        }
+        return;
+    }
+    // Default: reefman-d
+    for (auto& pt : c.pent) {
+        pt.model.modelKind = wdf::PentodeModelKind::Reefman;
+        pt.model.useReefman = true;
+        pt.model.reefman.knee = wdf::PentodeKneeType::DerkD;
+        pt.model.reefman.secondaryEmission = false;
+    }
+}
 
 struct Result {
     double nsPerSample = 0.0;  // median over kRepeats
@@ -265,6 +300,7 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
                    bool allowExplicit, bool profile) {
     Result r;
     wdf::Circuit c = doc.toCircuit();
+    applyPentodeModel(c);
 
     if (const char* dn = std::getenv("LIVEWDF_DUMP_NODE")) {
         const std::string node = dn;
@@ -637,6 +673,7 @@ void printCoupling(const lwdf_test::CircuitCase& tc, const lwdf_test::RootGroupC
 /// fallback show up as dropped host blocks instead of hiding in a mean.
 void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double seconds) {
     wdf::Circuit c = doc.toCircuit();
+    applyPentodeModel(c);
     wdf::Engine e(c, fs, kGridCurrent);
     if (!kPotId.empty())
         e.setPotPosition(kPotId, kPotPos);
@@ -747,6 +784,7 @@ void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double 
 void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
              double silenceSeconds, double driveVolts) {
     wdf::Circuit c = doc.toCircuit();
+    applyPentodeModel(c);
     wdf::Engine e(c, fs, kGridCurrent);
     std::vector<double> node, rootV;
     if (!e.solveDc(node, rootV)) {
@@ -829,7 +867,7 @@ void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
 int main(int argc, char** argv) {
     if (argc >= 2 && std::string(argv[1]) == "--file") {
         if (argc < 3) {
-            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst]\n");
+            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst] [--pentode <koren|reefman-d|reefman-e|reefman-se|compare>]\n");
             return 2;
         }
         bool profile = false;
@@ -895,6 +933,8 @@ int main(int argc, char** argv) {
             }
             if (std::string(argv[a]) == "--switch-count" && a + 1 < argc)
                 kSwitchCount = std::stoll(argv[++a]);
+            if (std::string(argv[a]) == "--pentode" && a + 1 < argc)
+                kPentodeModel = argv[++a];
         }
 
         wdf::LiveWDFDocument doc;
@@ -922,6 +962,34 @@ int main(int argc, char** argv) {
             return 0;
         }
 
+        if (kPentodeModel == "compare") {
+            const double hostBlockUs = 1024.0 / 48000.0 * 1e6;
+            std::printf("LiveWDF Pentode Model Comparison\n");
+            std::printf("  file: %s\n", argv[2]);
+            std::printf("  model             rate   channels   form       ns/engine-sample   spread   it/sample   fb   fail  nonfinite   us/1024-host-block   %% of one core   peak\n");
+            std::printf("  -------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+            const std::vector<std::string> models = {"koren", "reefman-d", "reefman-e", "reefman-se"};
+            for (const auto& m : models) {
+                kPentodeModel = m;
+                for (double fs : {48000.0, 96000.0}) {
+                    for (int channels : {1, 2}) {
+                        const Result r = runDocument(doc, fs, channels, true, profile);
+                        if (r.nsPerSample <= 0.0) continue;
+                        const int engineBlock = static_cast<int>(1024.0 * fs / 48000.0);
+                        const double usPerBlock = r.nsPerSample * engineBlock / 1000.0;
+                        std::printf("  %-15s   %5.0f   %-8s   %-8s   %15.1f   %5.1f%%   %8.2f   %4lld   %4d  %9d   %18.1f   %13.2f%%   %10.6g\n",
+                                    m.c_str(), fs, channels == 1 ? "mono" : "stereo",
+                                    r.explicitActive ? "closed" : "newton", r.nsPerSample,
+                                    spreadPercent(r), r.itersPerSample, r.jfetFallbacks,
+                                    static_cast<int>(fs) - r.converged, r.nonFinite, usPerBlock,
+                                    100.0 * usPerBlock / hostBlockUs, r.peak);
+                    }
+                }
+            }
+            std::printf("\n(us/1024-host-block uses 1024 input samples; 2x uses 2048 engine samples. %% of one core = that time / 21.33 ms.)\n");
+            return 0;
+        }
+
         const auto circuit = doc.toCircuit();
         const std::string inputId = doc.inputId();
         std::printf("LiveWDF engine-only file benchmark\n");
@@ -929,6 +997,8 @@ int main(int argc, char** argv) {
             std::printf("  solve tol override: %.3e (engine default 1.000e-09; block path floors at 1e-9)\n", kBenchTol);
         if (kFineBlocks)
             std::printf("  fine block solver: on\n");
+        if (!kPentodeModel.empty() && kPentodeModel != "koren")
+            std::printf("  pentode model: %s\n", kPentodeModel.c_str());
         std::printf("  file: %s\n", argv[2]);
         std::printf("  circuit sources=%zu pots=%zu varres=%zu input='%s' output='%s'\n",
                     circuit.src.size(), circuit.pots.size(), circuit.varRes.size(),

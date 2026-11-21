@@ -56,8 +56,9 @@ inline int activePortCount(const RootDevice& dev) noexcept {
     case DeviceKind::OpAmp:
         return 1;
     case DeviceKind::Bjt:
-    case DeviceKind::Pentode:
         return 2;
+    case DeviceKind::Pentode:
+        return 3;
     default:
         return 0;
     }

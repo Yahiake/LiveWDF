@@ -127,7 +127,7 @@ TEST_CASE("Pentode device law compiles and conducts")
     const auto c = wdf::kEL34.eval(-2.0, 100.0, 100.0);
 
     REQUIRE(c.ip > 0.0);        // plate conducts
-    REQUIRE(c.is == 0.0);       // imported three-port law: no screen current
+    REQUIRE(c.is > 0.0);        // active 3-port screen conduction
     REQUIRE(c.dip_dvgk > 0.0);  // gm > 0
     REQUIRE(c.dip_dvpk > 0.0);  // plate conductance > 0
 
@@ -143,7 +143,7 @@ TEST_CASE("Pentode device law compiles and conducts")
     // is small but positive), so this is a magnitude check, not `== 0.0`.
     const auto off = wdf::kEL34.eval(-300.0, 100.0, 100.0);
     REQUIRE(off.ip < 1e-20);
-    REQUIRE(off.is == 0.0);
+    REQUIRE(off.is < 1e-20);
     REQUIRE(off.ig <= 0.0);
 
     // `count` scales every current and derivative (a matched pair).
