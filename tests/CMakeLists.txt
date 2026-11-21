@@ -66,6 +66,7 @@ add_executable(livewdf_tests
 
     spice/test_spice_parser.cpp
     spice/test_dense_diagnostics.cpp
+    spice/test_root_transfer_diagnostics.cpp
 
     circuit/test_spqr_tree.cpp
     circuit/test_tree_executor.cpp

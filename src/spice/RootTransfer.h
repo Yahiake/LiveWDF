@@ -55,7 +55,8 @@ inline bool rootTransferInto(const std::vector<ElemPort>& elements,
                              const std::vector<std::array<int, 2>>& roots, int N, Dense& Y,
                              Dense& rhs, Dense& Xe, Dense& Xr,
                              const std::vector<MutualPortPair>& mutual = {},
-                             const std::vector<VCVSTransconductance>& vcvs = {}) {
+                             const std::vector<VCVSTransconductance>& vcvs = {},
+                             double* backwardError = nullptr) {
     const int P = static_cast<int>(elements.size());
     const int K = static_cast<int>(roots.size());
 
@@ -126,8 +127,15 @@ inline bool rootTransferInto(const std::vector<ElemPort>& elements,
         }
     }
 
+    Dense yOriginal, rhsOriginal;
+    if (backwardError) {
+        yOriginal = Y;      // setup-only diagnostic: keep the unfactored system
+        rhsOriginal = rhs;
+    }
     if (!solveInPlace(Y, rhs))
         return false;
+    if (backwardError)
+        *backwardError = maxBackwardError(yOriginal, rhsOriginal, rhs);
 
     resetDense(Xe, N, P);
     resetDense(Xr, N, K);
@@ -145,11 +153,12 @@ inline bool rootTransferInto(const std::vector<ElemPort>& elements,
 /// reflected waves and `i` the root currents drawn into each root's node+.
 /// Capacitors enter with G = 0 (open, for a DC solve) or G = 2C/T for a step.
 inline bool rootTransfer(const std::vector<ElemPort>& elements,
-                         const std::vector<std::array<int, 2>>& roots, int N, Dense& Xe,
-                         Dense& Xr, const std::vector<MutualPortPair>& mutual = {},
-                         const std::vector<VCVSTransconductance>& vcvs = {}) {
+                         const std::vector<std::array<int, 2>>& roots, int N, Dense& Xe, Dense& Xr,
+                         const std::vector<MutualPortPair>& mutual = {},
+                         const std::vector<VCVSTransconductance>& vcvs = {},
+                         double* backwardError = nullptr) {
     Dense Y, rhs;
-    return rootTransferInto(elements, roots, N, Y, rhs, Xe, Xr, mutual, vcvs);
+    return rootTransferInto(elements, roots, N, Y, rhs, Xe, Xr, mutual, vcvs, backwardError);
 }
 
 } // namespace wdf
