@@ -410,27 +410,7 @@ public:
                                 flowReach[static_cast<size_t>(k) * nGroups + j];
         }
 
-        const auto coupled = [&](int g, int h) -> bool {
-            if (useSignalFlow) {
-                if (flowReach[static_cast<size_t>(h) * nGroups + g])
-                    return true;
-                if (flowReach[static_cast<size_t>(g) * nGroups + h])
-                    return false;
-                const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-                const int hAct = partitionPortCount(dh);
-                const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
-                const int row0 = dg.portBase;
-                const int nPorts = dg.numPorts;
-                for (int r = row0; r < row0 + nPorts; ++r) {
-                    for (int c = 0; c < hAct; ++c) {
-                        const int hp = activePort(dh, c);
-                        if (std::abs(z[static_cast<size_t>(r) * ctx.K + hp]) > 1e-9)
-                            return true;
-                    }
-                }
-                return false;
-            }
-
+        const auto zCoupled = [&](int g, int h) -> bool {
             const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
             const int hAct = partitionPortCount(dh);
             const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
@@ -444,6 +424,17 @@ public:
                 }
             }
             return false;
+        };
+
+        const auto coupled = [&](int g, int h) -> bool {
+            if (useSignalFlow) {
+                if (flowReach[static_cast<size_t>(h) * nGroups + g])
+                    return true;
+                if (flowReach[static_cast<size_t>(g) * nGroups + h])
+                    return false;
+                return zCoupled(g, h);
+            }
+            return zCoupled(g, h);
         };
 
         const size_t n2 = static_cast<size_t>(nGroups) * nGroups;
@@ -597,27 +588,13 @@ public:
         // port voltage; the full-residual check still guards the pass), but a
         // diode pair block couples both of its terminals through Z, so
         // solving it while an incoming coupling was cut solves a different
-        // system. Klon's pair with op-amps feeding back into the pair's node
-        // is exactly that shape: the pruned order solves the pair before the
-        // op-amps and misses the injected current. When that happens, rebuild
-        // without pruning so the devices merge into one block whose (reduced)
-        // solve sees the full coupling.
+        // system. A pair with op-amps feeding back into its node is exactly
+        // that shape (the Klon Centaur fixture pins it): the pruned order
+        // solves the pair before the op-amps and misses the injected current.
+        // When that happens, rebuild without pruning so the devices merge into
+        // one block whose (reduced) solve sees the full coupling.
         bool cutCouplingIntoPair = false;
         if (useSignalFlow && ctx.hasAntiParallelBlock) {
-            const auto rawCoupled = [&](int g, int h) -> bool {
-                const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-                const int hAct = partitionPortCount(dh);
-                const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
-                const int row0 = dg.portBase;
-                const int nPorts = dg.numPorts;
-                for (int r = row0; r < row0 + nPorts; ++r)
-                    for (int c = 0; c < hAct; ++c) {
-                        const int hp = activePort(dh, c);
-                        if (std::abs(z[static_cast<size_t>(r) * ctx.K + hp]) > 1e-9)
-                            return true;
-                    }
-                return false;
-            };
             std::vector<int> devBlock(static_cast<size_t>(nGroups), -1);
             for (int b = 0; b < nb; ++b)
                 for (int di : ctx.newtonBlocks[static_cast<size_t>(b)].devices)
@@ -630,7 +607,7 @@ public:
                     for (int h = 0; h < nGroups && !cutCouplingIntoPair; ++h) {
                         if (devBlock[h] == b)
                             continue;
-                        if (rawCoupled(di, h) && !coupled(di, h))
+                        if (zCoupled(di, h) && !coupled(di, h))
                             cutCouplingIntoPair = true;
                     }
                     if (cutCouplingIntoPair)

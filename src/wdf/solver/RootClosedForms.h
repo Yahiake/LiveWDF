@@ -321,10 +321,10 @@ public:
         iiData[e] = i;
     }
 
-    /// Anti-parallel diode pair in exact closed form: both branch laws are
-    /// exact, and the reversed ports collapse their two port equations into one
-    /// scalar solve, which Werner eqn (39) solves in closed form (see
-    /// AntiParallelDiodeModel).
+    /// Anti-parallel diode pair: both branch laws are exact, and the reversed
+    /// ports collapse their two port equations into one scalar solve. Werner
+    /// eqn (39) supplies that solve's closed-form start; the port equation's
+    /// inversion is finished on the exact laws (see AntiParallelDiodeModel).
     static inline void solveAntiParallelDiodeGroup(
         const BlockView& view,
         int b,

@@ -18,8 +18,8 @@
 // wdf's diode library runs its whole engine on.
 //
 // `wrightOmega` puts two cubic Halley refinements over the same seed, e ->
-// O(e^3) per step, for machine precision (residual < 1e-14); cold starts and
-// closed-form seeds use it, device hot paths call `detail::omega4` directly.
+// O(e^3) per step, for machine precision (residual < 1e-14); the diode law's
+// closed form uses it directly, since the engine's gates are 1e-12.
 // ==============================================================================
 
 #include <algorithm>
@@ -112,9 +112,8 @@ inline double omega4(double x) noexcept {
 }  // namespace detail
 
 /// Evaluates the Wright Omega function w(z) satisfying w + ln(w) = z to
-/// machine precision: the wdf seed plus two cubic Halley refinements. Cold
-/// paths (closed-form seeds, tests) use this; device hot paths call
-/// `detail::omega4` directly.
+/// machine precision: the wdf seed plus two cubic Halley refinements. The diode
+/// law's closed form is its one hot path.
 inline double wrightOmega(double z) noexcept {
     if (z < -36.0)
         return std::exp(z);

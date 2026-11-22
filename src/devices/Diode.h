@@ -192,13 +192,13 @@ struct DiodeModel {
 using GridDiode = DiodeModel;
 
 /// An anti-parallel diode pair (e.g. a clipping stage in a TS808, a Rat, a
-/// Distortion+): the pair solve is a closed form, so the branch models need not
-/// match for it to run -- symmetric branches make it exact, and the root's
-/// residual check is what keeps an asymmetric pair.
+/// Distortion+): the port solve keeps a closed-form start, so the branch models
+/// need not match for it to run -- symmetric branches make the start exact, and
+/// the finish on the exact laws is what keeps an asymmetric pair.
 ///
 /// Current law for a pair across terminal voltage v:
 ///     i_net = i1(v) - i2(-v)
-/// which for identical branches with `rs == 0` closes as
+/// which for identical branches with `rs == 0` is
 ///     i_net = 2*Is*sinh(v/nVt) + 2*v/Rp,   di = 2*Is*cosh(v/nVt)/nVt + 2/Rp,
 /// the pair conductance bounded by the parallel terms.
 ///
@@ -215,18 +215,15 @@ using GridDiode = DiodeModel;
 /// exponentials and admits no single-omega inversion. It is finished with a
 /// few guarded-Newton steps on the exact branch laws -- the residual's
 /// derivative is >= 1, so one bracket keeps the steps inside it and the
-/// convergence is global (1-3 evaluations from the eqn (39) start).
+/// convergence is global (1-4 evaluations from the eqn (39) start).
 struct AntiParallelDiodeModel {
     DiodeModel d1;
     DiodeModel d2;
     double isat = 1e-9;
-    double n = 1.0;
     double rs = 0.0;
-    double rp = 0.0;
     double nvt = 1.0;
     bool symmetrical = true;
     double inv_nvt = 1.0;
-    double two_isat_over_nvt = 2.0e-9;
     mutable double cachedRp = -1.0;
     mutable double cachedLogTerm = 0.0;
 
@@ -238,33 +235,9 @@ struct AntiParallelDiodeModel {
                       (std::abs(a.rs - b.rs) < 1e-6 * (a.rs + 1.0)) &&
                       (std::abs(a.rp - b.rp) <= 1e-9 * (a.rp + 1.0));
         isat = a.isat;
-        n = a.n;
         rs = a.rs;
-        rp = a.rp;
         nvt = a.nvt;
         inv_nvt = (nvt > 0.0) ? (1.0 / nvt) : 0.0;
-        two_isat_over_nvt = (nvt > 0.0) ? (2.0 * isat / nvt) : 0.0;
-    }
-
-    /// Evaluates net current i_net = i1 - i2 and total differential conductance.
-    void eval(double v, double& i_net, double& di) const noexcept {
-        if (symmetrical && rs == 0.0) {
-            const double x = v * inv_nvt;
-            const double clampedX =
-                std::clamp(x, -DiodeModel::kMaxExponent, DiodeModel::kMaxExponent);
-            i_net = 2.0 * isat * std::sinh(clampedX);
-            di = two_isat_over_nvt * std::cosh(clampedX);
-            if (rp > 0.0) {
-                i_net += 2.0 * v * (1.0 / rp);
-                di += 2.0 / rp;
-            }
-            return;
-        }
-        double i1 = 0.0, di1 = 0.0, i2 = 0.0, di2 = 0.0;
-        d1.eval(v, i1, di1);
-        d2.eval(-v, i2, di2);
-        i_net = i1 - i2;
-        di = di1 + di2;
     }
 
     /// Solves the port equation v = vo - Rp*i_net. The branch laws are exact;

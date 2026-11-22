@@ -1131,12 +1131,6 @@ protected:
     /// collapse to one scalar solve. `explicitRootsActive_` requires it, so the
     /// flag means "the whole solve is closed form", not "a partition exists".
     bool allClosedFormBlocks_ = false;
-    /// True when every Newton block is a scalar-capable singleton. Signal-flow
-    /// pruning is accepted only under this narrower condition: a pair block
-    /// carries cross-current coupling that a scalar singleton does not, and a
-    /// pruned partition that leans on pair blocks can fold a later block's
-    /// currents through the wrong side of the sequence.
-    bool allScalarBlocks_ = false;
     /// Number of scalar-capable singleton blocks. The block Newton only pays
     /// when it can mix at least two of these cheap closed forms with local
     /// non-scalar work; the measured two-block case (one scalar, one
