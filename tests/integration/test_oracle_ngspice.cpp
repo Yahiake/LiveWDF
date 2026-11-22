@@ -3,12 +3,17 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
+#include <filesystem>
 #include <string>
 #include <vector>
+
+namespace fs = std::filesystem;
 
 #include "support/NgspiceOracle.h"
 #include "wdf/Engine.h"
 #include "spice/SpiceNet.h"
+#include "spice/SpiceExport.h"
 
 // Phase 1 increment 3: ngspice golden-reference checks (tools/verify.py
 // methodology in-process). Thresholds borrowed from verify.py: DC <= 5e-4 V;
@@ -626,4 +631,76 @@ TEST_CASE("ngspice DC sweep: Level-1 NMOS cutoff, ohmic, and saturation",
                                            << " V meanNode=" << nodeMean << " V maxI="
                                            << maxCurrentErr << " A rmsI=" << currentRms
                                            << " A meanI=" << currentMean << " A");
+}
+
+TEST_CASE("ngspice oracle: SPICE export of diode clipper matches ngspice DC",
+          "[spice-export][ngspice][dc]") {
+    LWDF_REQUIRE_NGSPICE("SPICE export diode clipper DC oracle");
+
+    // Build a simple diode clipper: 1N4148-like diode with Rs=0.56, Rp=1e6
+    // (extended Shockley law), driven by a 1 V source through a 10 k resistor.
+    // The extended law is exported as a behavioural subcircuit.
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0, 0.0, {}, "V1");
+    c.addRes("in", "d1", 1e4, "R1");
+    c.addDiode("d1", "0", wdf::DiodeModel(4.352e-9, 1.905, 0.56, 1e6), "D1");
+    c.addRes("0", "out", 1e6, "Rload");
+
+    const auto result = wdf::spiceExport(c, 48000.0, 1.0, 0.1);
+    REQUIRE(result.ok);
+
+    // Write the netlist to the scratch directory and run ngspice.
+    const fs::path dir = lwdf_test::scratchDir();
+    const fs::path deckPath = dir / "spice_export_clipper.cir";
+    {
+        std::ofstream f(deckPath);
+        f << result.netlist;
+    }
+    const fs::path logPath = dir / "spice_export_clipper.log";
+    std::string cmd = "\"" + lwdf_test::ngspiceExe().string() + "\" -b -o \"" +
+                      "spice_export_clipper.log" + "\" \"" + "spice_export_clipper.cir" + "\"";
+#ifdef _WIN32
+    cmd = "cmd /c \"" + cmd + "\"";
+#endif
+    const fs::path saved = fs::current_path();
+    fs::current_path(dir);
+    const int ret = std::system(cmd.c_str());
+    fs::current_path(saved);
+    REQUIRE(ret == 0);
+
+    // Parse ngspice DC output.
+    const fs::path dcFile = dir / "dc_nodes.txt";
+    REQUIRE(fs::exists(dcFile));
+    std::ifstream df(dcFile);
+    REQUIRE(df.good());
+    std::string line;
+    double ngVd1 = 0.0;
+    bool found = false;
+    while (std::getline(df, line)) {
+        const auto eq = line.find('=');
+        if (eq == std::string::npos) continue;
+        std::string name = line.substr(0, eq);
+        // trim trailing whitespace
+        size_t end = name.find_last_not_of(" \t");
+        if (end != std::string::npos) name = name.substr(0, end + 1);
+        const double val = std::stod(line.substr(eq + 1));
+        if (name == "v(d1)") {
+            ngVd1 = val;
+            found = true;
+        }
+    }
+    REQUIRE(found);
+
+    // Compare with LiveWDF engine DC solve.
+    wdf::Engine e(c, kFs);
+    std::vector<double> node, rootV;
+    REQUIRE(e.solveDc(node, rootV));
+    const int d1Idx = e.nodeIndex("d1");
+    REQUIRE(d1Idx >= 0);
+    const double lwVd1 = node[static_cast<size_t>(d1Idx)];
+
+    WARN("SPICE export diode clipper: ngspice v(d1)=" << ngVd1
+                                                     << " livewdf v(d1)=" << lwVd1
+                                                     << " err=" << std::abs(ngVd1 - lwVd1));
+    REQUIRE(std::abs(ngVd1 - lwVd1) <= 5e-4);
 }

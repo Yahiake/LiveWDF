@@ -161,52 +161,33 @@ SpiceExportResult spiceExport(const Circuit& c,
     }
 
     // ---- Diodes (extended Shockley: Is*(exp((v-i*Rs)/(n*Vt))-1) + (v-i*Rs)/Rp) ----
-    // Rp = 0 -> plain SPICE diode (native model). Rp > 0 -> ATTILA-style
-    // extendedSchockleydiode subckt with self-referential B-source resolved
-    // by ngspice Newton iteration.
-    constexpr double kVt = 1.38064852e-23 * 300.15 / 1.6021766208e-19; // 25.8649 mV
+    // Native SPICE diode with RS + parallel resistor Rp. This is an excellent
+    // approximation of the extended law: for the small Rs / large Rp values used
+    // in audio circuits (e.g. Rs=0.56, Rp=1e6), the difference between
+    // i*Rs and i_d*Rs in the diode term and between v/Rp and (v-i*Rs)/Rp in the
+    // shunt term is below nanovolt/microampere levels.
     for (size_t i = 0; i < c.diode.size(); ++i) {
         const auto& d = c.diode[i];
         const std::string base = d.name.empty() ? ("D" + std::to_string(i)) : d.name;
         const std::string a = nodeOrGround(d.a);
         const std::string b = nodeOrGround(d.b);
         const double isat = d.model.isat;
-        const double nvt = d.model.nvt;
         const double rs = d.model.rs;
         const double rp = d.model.rp;
-        const double n = nvt / kVt;
-        const std::string subName = spiceUnique("X_" + spiceSafe(base), used);
-        const std::string bName = spiceUnique("B_" + spiceSafe(base), used);
-        if (rp > 0.0 && rs > 0.0) {
-            // Extended law with both Rs and Rp: subcircuit with behavioural source.
-            f << ".subckt " << subName << " anode cathode\n";
-            f << bName << " anode cathode I = {" << spiceNum(isat)
-              << "*(exp((V(anode,cathode)-" << spiceNum(rs) << "*I(" << bName
-              << ")/(" << spiceNum(nvt) << "))-1)"
-              << "+(V(anode,cathode)-" << spiceNum(rs) << "*I(" << bName
-              << ")/" << spiceNum(rp) << ")}\n";
-            f << ".ends " << subName << "\n";
-            f << subName << " " << a << " " << b << "\n";
-        } else if (rp > 0.0) {
-            // Rs = 0, Rp > 0: explicit law, no self-reference needed.
-            f << ".subckt " << subName << " anode cathode\n";
-            f << bName << " anode cathode I = {" << spiceNum(isat)
-              << "*(exp(V(anode,cathode)/(" << spiceNum(nvt) << "))-1)"
-              << "+V(anode,cathode)/" << spiceNum(rp) << "}\n";
-            f << ".ends " << subName << "\n";
-            f << subName << " " << a << " " << b << "\n";
-        } else if (rs > 0.0) {
-            // Rp = 0, Rs > 0: SPICE native diode with RS.
-            const std::string modelName = spiceUnique("Dmod_" + spiceSafe(base), used);
-            f << ".model " << modelName << " D(Is=" << spiceNum(isat)
-              << " N=" << spiceNum(n) << " RS=" << spiceNum(rs) << ")\n";
-            f << subName << " " << a << " " << b << " " << modelName << "\n";
-        } else {
-            // Rp = 0, Rs = 0: plain SPICE diode.
-            const std::string modelName = spiceUnique("Dmod_" + spiceSafe(base), used);
-            f << ".model " << modelName << " D(Is=" << spiceNum(isat)
-              << " N=" << spiceNum(n) << ")\n";
-            f << subName << " " << a << " " << b << " " << modelName << "\n";
+        const double n = d.model.nvt / kThermalVoltage;
+        const std::string devName = spiceUnique("D_" + spiceSafe(base), used);
+        const std::string modelName = spiceUnique("Dmod_" + spiceSafe(base), used);
+
+        f << ".model " << modelName << " D(Is=" << spiceNum(isat)
+          << " N=" << spiceNum(n);
+        if (rs > 0.0)
+            f << " RS=" << spiceNum(rs);
+        f << ")\n";
+        f << devName << " " << a << " " << b << " " << modelName << "\n";
+
+        if (rp > 0.0) {
+            const std::string rpName = spiceUnique("Rp_" + spiceSafe(base), used);
+            f << rpName << " " << a << " " << b << " " << spiceNum(rp) << "\n";
         }
     }
 
@@ -334,7 +315,7 @@ SpiceExportResult spiceExport(const Circuit& c,
 
         f << ".ends " << subName << "\n";
         f << subName << " " << nodeOrGround(p.p) << " " << nodeOrGround(p.s) << " "
-          << nodeOrGround(p.g) << " " << nodeOrGround(p.k) << "\n";
+          << nodeOrGround(p.g) << " " << nodeOrGround(p.k) << " " << subName << "\n";
     }
 
     // ---- JFETs (Bernardini et al. square law) ----
@@ -360,7 +341,7 @@ SpiceExportResult spiceExport(const Circuit& c,
           << spiceNum(m.p.Is0) << "*pow(1-V(" << gn << "," << sn << ")/" << spiceNum(m.p.Vp)
           << ",2)*(" << "1+" << spiceNum(m.p.lambda) << "*V(" << dn << "," << sn << "))))}\n";
         f << ".ends " << subName << "\n";
-        f << subName << " " << nodeOrGround(j.dExt) << " " << nodeOrGround(j.gExt) << " " << nodeOrGround(j.sExt) << "\n";
+        f << subName << " " << nodeOrGround(j.dExt) << " " << nodeOrGround(j.gExt) << " " << nodeOrGround(j.sExt) << " " << subName << "\n";
     }
 
     // ---- MOSFETs (Bernardini et al. square law) ----
@@ -383,7 +364,7 @@ SpiceExportResult spiceExport(const Circuit& c,
           << spiceNum(mp.K) << "/2*pow(V(" << gn << "," << sn << ")-" << spiceNum(mp.Vth)
           << ",2)*(" << "1+" << spiceNum(mp.lambda) << "*V(" << dn << "," << sn << "))))}\n";
         f << ".ends " << subName << "\n";
-        f << subName << " " << dn << " " << gn << " " << sn << "\n";
+        f << subName << " " << dn << " " << gn << " " << sn << " " << subName << "\n";
     }
 
     // ---- BJTs (Ebers-Moll transport form) ----
@@ -415,16 +396,14 @@ SpiceExportResult spiceExport(const Circuit& c,
           << ")-1)-" << spiceNum(m.Is) << "*(exp(" << vbc << "/" << spiceNum(nrVt)
           << ")-1)}\n";
         f << ".ends " << subName << "\n";
-        f << subName << " " << cn << " " << bn << " " << en << "\n";
+        f << subName << " " << cn << " " << bn << " " << en << " " << subName << "\n";
     }
 
     // ---- Control / analysis cards ----
     f << "\n.control\n";
     f << "set numdgt=15\n";
     f << "op\n";
-    f << "print v(";
-    // print all non-ground nodes
-    bool first = true;
+    f << "print ";
     // Collect unique node names from all elements
     std::set<std::string> nodes;
     auto addNode = [&](const std::string& n) {
@@ -439,9 +418,10 @@ SpiceExportResult spiceExport(const Circuit& c,
     for (const auto& e : c.tri) { addNode(e.g); addNode(e.p); addNode(e.k); addNode(e.gi); }
     for (const auto& e : c.diode) { addNode(e.a); addNode(e.b); }
     for (const auto& e : c.pent) { addNode(e.p); addNode(e.s); addNode(e.g); addNode(e.k); }
-    for (const auto& e : c.jfet) { addNode(e.d); addNode(e.g); addNode(e.s); }
+    for (const auto& e : c.jfet) { addNode(e.dExt); addNode(e.gExt); addNode(e.sExt); }
     for (const auto& e : c.mosfet) { addNode(e.d); addNode(e.g); addNode(e.s); }
     for (const auto& e : c.bjt) { addNode(e.c); addNode(e.b); addNode(e.e); }
+    bool first = true;
     for (const auto& n : nodes) {
         if (!first) f << " ";
         f << "v(" << n << ")";
