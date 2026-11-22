@@ -51,7 +51,6 @@ inline std::string nodeOrGround(const std::string& n) {
 
 SpiceExportResult spiceExport(const Circuit& c,
                               double fs,
-                              double driveVolts,
                               double durationSeconds) {
     SpiceExportResult r;
     std::ostringstream f;
@@ -67,10 +66,6 @@ SpiceExportResult spiceExport(const Circuit& c,
         f << ".tran " << std::setprecision(6) << tstep << " "
           << std::setprecision(6) << durationSeconds << " 0 " << tstep << "\n";
     }
-    (void)driveVolts; // reserved for input-source amplitude in a later increment
-
-    // ---- DC nodesets from a warm solve would go here; caller can prepend ----
-    // (kept minimal in core; plugin wrapper can inject engine DC values)
 
     // ---- Resistors ----
     for (size_t i = 0; i < c.res.size(); ++i) {
@@ -116,6 +111,19 @@ SpiceExportResult spiceExport(const Circuit& c,
         else
             f << " " << spiceNum(1.0);  // explicit matrix: k=1, entries in L
         f << "\n";
+    }
+
+    // ---- Controlled resistors ----
+    // The engine seeds each controlled resistor from its initial ohms
+    // (`Compiled::ctrlRes[].second`, read by `Engine::ctrlResValues_`), so a
+    // plain `R` at that ohmage reproduces the same DC state. The runtime
+    // controller has no SPICE equivalent and is reported in the diagnostics.
+    for (size_t i = 0; i < c.ctrlRes.size(); ++i) {
+        const auto& e = c.ctrlRes[i];
+        const std::string base = e.name.empty() ? ("CR" + std::to_string(i)) : e.name;
+        f << spiceUnique("R_" + spiceSafe(base), used) << " "
+          << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
+          << spiceNum(e.initialOhms) << "\n";
     }
 
     // ---- Voltage sources ----
@@ -481,8 +489,33 @@ SpiceExportResult spiceExport(const Circuit& c,
     }
     f << ".endc\n.end\n";
     r.netlist = f.str();
-    r.ok = true;
-    r.diagnostics = "core primitives exported; devices pending (see TODO below)";
+
+    // Export accounting: every circuit-IR element kind has a SPICE
+    // representation above (ControlledRes as a plain `R` at its seeded ohms,
+    // pots and variable resistors already folded into `Res` by
+    // Circuit::addPot / addVarRes), so the only way to lose an element is the
+    // malformed transformer counted here. A caller checks `ok` and reads this
+    // line rather than eyeballing the deck.
+    size_t shortMutual = 0;
+    for (const auto& m : c.mutual)
+        if (m.indNames.size() < 2)
+            ++shortMutual;
+    std::ostringstream d;
+    d << "exported " << c.res.size() << " Res, " << c.cap.size() << " Cap, "
+      << c.ind.size() << " Ind, " << (c.mutual.size() - shortMutual) << " K, "
+      << c.ctrlRes.size() << " ControlledRes, " << c.src.size() << " Src, "
+      << c.isrc.size() << " Isrc, " << c.vcvs.size() << " VCVS, "
+      << c.opamp.size() << " OpAmp (ideal VCVS: rail clamping not represented), "
+      << c.tri.size() << " Tri, " << c.diode.size() << " Diode, "
+      << c.pent.size() << " Pent, " << c.jfet.size() << " Jfet, "
+      << c.mosfet.size() << " Mosfet, " << c.bjt.size() << " Bjt; "
+      << c.pots.size() << " Pot and " << c.varRes.size()
+      << " VarRes are already folded into Res";
+    if (shortMutual)
+        d << "; NOT exported: " << shortMutual
+          << " MutualInd with fewer than two inductors";
+    r.diagnostics = d.str();
+    r.ok = (shortMutual == 0);
     return r;
 }
 

@@ -197,20 +197,34 @@ inline TranTable parseTranFile(const fs::path& p, size_t nNodesHint = 0) {
         // Banner/comment lines (`* title`, `Transient Analysis ...`) never parse
         // as a number. In a table, the row index came first, so the time is the
         // next cell; in wrdata output the time is the first cell.
-        double time = 0.0;
-        if (indexCol) {
-            if (!(ls >> time))
-                continue;
-        } else {
-            std::istringstream ts(first);
-            if (!(ts >> time))
-                continue;
+        // Collect every numeric cell of the row.
+        std::vector<double> cells;
+        {
+            double v = 0.0;
+            std::istringstream all(line);
+            while (all >> v)
+                cells.push_back(v);
         }
+        if (cells.empty())
+            continue;
 
+        double time = 0.0;
         std::vector<double> row;
-        double v = 0.0;
-        while (ls >> v)
-            row.push_back(v);
+        if (indexCol) {
+            // `Index time v1 v2 ...`: cell[0] is the row index, cell[1] is the
+            // grid time, the rest are the vector values.
+            if (cells.size() < 2)
+                continue;
+            time = cells[1];
+            row.assign(cells.begin() + 2, cells.end());
+        } else {
+            // wrdata: `time v1 time v2 ...` — the independent variable is
+            // interleaved with every vector value. Keep every cell as a column
+            // so the caller can index `cols[2*j]` (time, repeated) /
+            // `cols[2*j+1]` (value); tt.time is the grid (cell[0]).
+            time = cells[0];
+            row = cells;
+        }
 
         // Size the columns from the first row that has no header above it.
         if (hint != 0)

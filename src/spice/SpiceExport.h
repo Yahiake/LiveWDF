@@ -20,14 +20,16 @@
 // extendedSchockleydiode subckt does.
 //
 // Notes:
-//   * Pots / VarRes / ControlledRes are already expanded into Res at parse
-//     time by Circuit::addPot / addVarRes / addControlledRes, so nothing
-//     special is needed here.
+//   * Pots / VarRes are already expanded into Res at parse time by
+//     Circuit::addPot / addVarRes, so nothing special is needed here.
 //   * Centre-tapped transformers are already expanded into coupled inductors
 //     by Circuit::addCenterTapTransformerElement, so MutualInd export covers
 //     them.
-//   * Devices the exporter cannot represent silently get a comment line
-//     instead of a netlist entry; the caller can check the returned diagnostics.
+//   * A ControlledRes is exported as a plain R at the ohms the engine seeds
+//     it with (Circuit::addControlledRes's initial value); a text deck cannot
+//     express the runtime controller.
+//   * Nothing is dropped silently: ok says whether every element found a
+//     representation, and diagnostics counts what each kind became.
 // ============================================================================
 
 #include <string>
@@ -45,13 +47,13 @@ struct SpiceExportResult {
 
 /// Export a `wdf::Circuit` to a SPICE netlist string.
 ///
-/// `fs` is the sample rate used for the transient `.tran` card and for
+/// `fs` is the sample rate used for the transient `.tran` card and for the
 /// inductor DC resistance (`kIndDcR` from Circuit.h).
-/// `driveVolts` sets the input source amplitude for the transient.
-/// `durationSeconds` sets the transient stop time.
+/// The transient drive waveform is whatever the circuit's own sources carry
+/// (`Src::sin` becomes a SPICE `SIN(...)` card); pass `durationSeconds <= 0`
+/// for a DC-only deck.
 SpiceExportResult spiceExport(const Circuit& c,
                               double fs = 48000.0,
-                              double driveVolts = 0.25,
                               double durationSeconds = 0.2);
 
 }  // namespace wdf
