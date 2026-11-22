@@ -40,9 +40,6 @@ struct RootGroupSpec {
     /// singleton. This is a capability flag, not a promise: the runtime still
     /// checks `Z` before choosing the closed form.
     bool scalarClosedForm = false;
-    /// True when the group is a symmetric pair of anti-parallel diodes, which
-    /// the dense solver can also solve in closed form when `Z` says so.
-    bool antiParallelDiodePair = false;
 };
 
 class TopologyPlan {
@@ -57,13 +54,6 @@ public:
     std::span<const RootGroupSpec> candidateGroups() const noexcept { return candidates_; }
 
     bool hasCandidateStages() const noexcept { return !candidates_.empty(); }
-
-    bool hasAntiParallelDiodePair() const noexcept {
-        for (const auto& group : candidates_)
-            if (group.antiParallelDiodePair)
-                return true;
-        return false;
-    }
 
 private:
     RootLayout layout_;
@@ -91,15 +81,6 @@ inline bool hasScalarClosedForm(RootKind kind) noexcept {
     return false;
 }
 
-inline bool sameDiodeModel(const wdf::DiodeModel& a, const wdf::DiodeModel& b) noexcept {
-    // The same tolerances `EngineSolve::buildRootOrder` uses before it accepts
-    // an anti-parallel pair for its closed form. Kept identical so the plan and
-    // the solver cannot disagree about what "the same diode" means.
-    return std::abs(a.isat - b.isat) <= 1e-6 * a.isat &&
-           std::abs(a.n - b.n) <= 1e-4 &&
-           std::abs(a.rs - b.rs) <= 1e-3;
-}
-
 }  // namespace detail
 
 /// Build the candidate topology from the compiled netlist and its root layout.
@@ -108,7 +89,6 @@ inline bool sameDiodeModel(const wdf::DiodeModel& a, const wdf::DiodeModel& b) n
 /// contract, kept in `analyzeSignalFlow`), so a `FlowStage::devices` entry is
 /// also an index into `RootLayout::devices`.
 inline TopologyPlan buildTopologyPlan(const wdf::Circuit& circuit,
-                                      const wdf::Compiled& compiled,
                                       const RootLayout& layout) {
     const wdf::FlowGraph flow = wdf::analyzeSignalFlow(circuit);
     std::vector<RootGroupSpec> groups;
@@ -119,7 +99,6 @@ inline TopologyPlan buildTopologyPlan(const wdf::Circuit& circuit,
         RootGroupSpec group;
         bool first = true;
         bool allSameKind = true;
-        bool allDiodes = true;
         for (int deviceIndex : stage.devices) {
             if (deviceIndex < 0 || deviceIndex >= deviceCount)
                 continue;
@@ -130,8 +109,6 @@ inline TopologyPlan buildTopologyPlan(const wdf::Circuit& circuit,
             } else if (device.kind != group.kind) {
                 allSameKind = false;
             }
-            if (device.kind != RootKind::Diode)
-                allDiodes = false;
 
             group.deviceIndices.push_back(deviceIndex);
             for (int q = 0; q < device.numPorts; ++q)
@@ -143,14 +120,6 @@ inline TopologyPlan buildTopologyPlan(const wdf::Circuit& circuit,
 
         group.scalarClosedForm = allSameKind && group.deviceIndices.size() == 1 &&
                                  detail::hasScalarClosedForm(group.kind);
-
-        if (allDiodes && group.deviceIndices.size() == 2) {
-            const auto& d0 = layout.devices[static_cast<std::size_t>(group.deviceIndices[0])];
-            const auto& d1 = layout.devices[static_cast<std::size_t>(group.deviceIndices[1])];
-            const auto& m0 = compiled.diode[static_cast<std::size_t>(d0.compIndex)].second;
-            const auto& m1 = compiled.diode[static_cast<std::size_t>(d1.compIndex)].second;
-            group.antiParallelDiodePair = detail::sameDiodeModel(m0, m1);
-        }
 
         groups.push_back(std::move(group));
     }

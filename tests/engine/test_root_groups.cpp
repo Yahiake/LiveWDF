@@ -143,10 +143,11 @@ TEST_CASE("the split solves the same circuit as the joint Newton", "[rootgroups]
     // A single diode is the same statement one device kind over: its scalar closed
     // form is another way to solve the junction's equation, not an approximation.
     check({"diode_single", &lwdf_test::diodeSingle, &lwdf_test::sine1v}, true);
-    // The anti-parallel pair spans one node pair: both directions of its
-    // coupling are live, one two-device block, and the closed form stands
-    // down -- same joint Newton on both engines.
-    check({"diode_clipper", &lwdf_test::diodeClipper, &lwdf_test::sine1v}, false);
+    // The anti-parallel pair spans one node pair, but the reversed ports make
+    // its two port equations one scalar equation, so it is exact too. The
+    // comparison is still meaningful: the slow engine is forced onto the joint
+    // Newton on the same coupled topology.
+    check({"diode_clipper", &lwdf_test::diodeClipper, &lwdf_test::sine1v}, true);
 }
 
 TEST_CASE("with grid current the closed form solves the joint Newton's circuit", "[rootgroups]") {
@@ -271,10 +272,11 @@ TEST_CASE("wherever the closed form claims the split, it equals the joint Newton
         REQUIRE(worst < 1e-7);
     }
     // The linear fixtures have no root at all; the three cathode stages, the
-    // cascade, the four-stage preamp, the JFET stage and the single diode --
-    // seven all-scalar fixtures -- do. The coupled shapes (shared-cathode pair,
-    // anti-parallel pair, long-tailed pair, bridge, tube screamer) and the
-    // pentode stages claim the joint Newton instead. Pinned
-    // so a gate that started refusing everything could not pass by doing nothing.
-    REQUIRE(split == 7);
+    // cascade, the four-stage preamp, the JFET stage, the single diode, both
+    // diode clippers and the tube-screamer pair -- ten closed-form fixtures --
+    // do. The coupled triode shapes (shared-cathode pair, long-tailed pair), the
+    // four-diode bridge and the pentode stages claim the joint Newton instead.
+    // Pinned so a gate that started refusing everything could not pass by doing
+    // nothing.
+    REQUIRE(split == 10);
 }

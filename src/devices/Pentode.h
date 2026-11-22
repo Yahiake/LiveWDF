@@ -6,7 +6,6 @@
 #include <string>
 
 #include "devices/Triode.h"
-#include "devices/KTable.h"
 
 namespace wdf {
 

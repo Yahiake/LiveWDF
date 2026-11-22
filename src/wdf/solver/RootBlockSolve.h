@@ -1140,7 +1140,8 @@ public:
     ///
     /// N = 0: the block is linear; `K0` is the answer.
     /// N = 1 diode: one Wright omega call with `Z'` absorbed into `Rs`.
-    /// N = 2 anti-parallel diodes: the existing pair closed form on `Z'`.
+    /// N = 2 anti-parallel diodes: the scalar pair solve on `Z'` (equal or
+    /// unequal branch models).
     /// otherwise: a Newton loop on the reduced nonlinear ports.
     static inline bool solveReducedBlock(
         const BlockView& view,

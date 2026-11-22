@@ -321,7 +321,10 @@ public:
         iiData[e] = i;
     }
 
-    /// Symmetrical anti-parallel diode pair in exact closed form via dual Wright Omega.
+    /// Anti-parallel diode pair in exact closed form: both branch laws are
+    /// exact, and the reversed ports collapse their two port equations into one
+    /// scalar solve, which Werner eqn (39) solves in closed form (see
+    /// AntiParallelDiodeModel).
     static inline void solveAntiParallelDiodeGroup(
         const BlockView& view,
         int b,
@@ -342,6 +345,9 @@ public:
         const double vo1 = relaxed ? foldPortAll(view, block, 1, p1, b, zData, vOcData, iiData, K)
                                    : foldPort(view, block, 1, p1, s, zData, vOcData, iiData, K);
         const double Rp = zData[static_cast<size_t>(p0) * K + p0];
+        // Reversed ports: v1 = -v0 and Z10 = -Z00 in a reciprocal network, so
+        // the pair needs only its driving-point impedance and the common-mode
+        // open-circuit voltage.
         const double voDiff = 0.5 * (vo0 - vo1);
         double vOut = 0.0, i1 = 0.0, i2 = 0.0;
         block.diodePair.solvePort(voDiff, Rp, vOut, i1, i2);

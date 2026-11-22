@@ -1,26 +1,59 @@
 #pragma once
 
-// The Shockley diode, in closed form.
+// The Shockley diode and its extended form, in closed form.
 //
 // This is the project's one nonlinear two-terminal device law, used by the
-// netlist `D` element (`src/spice/Net.h`), where `rs` is the SPICE diode's own
-// `RS`. `GridDiode` -- the alias the pentode's grid diode of `Tubes.lib` used
-// to carry -- survives here as a name `test_diode.cpp` pins, but the imported
-// pedalkernel pentode models its grid as an explicit exponential diode instead,
-// so no device in the engine uses the alias anymore. The quadric triode carries
-// no grid current and has no such diode.
+// netlist `D` element (`src/spice/SpiceNet.h`), where `rs` is the SPICE diode's
+// own `RS`. The law is the extended Shockley model of "An Improved and
+// Generalized Diode Clipper Model for Wave Digital Filters" (Werner et al;
+// https://www.researchgate.net/publication/299514713 -- Jatin Chowdhury's
+// wdf_compiler implements it in `wdf_lib_diode.h`): the Shockley junction with
+// a parallel resistor on top,
 //
-// Both are one omega call and no iteration. The alternative -- the naive
-// `i = Is*(exp(v/nVt) - 1)` -- is what a WDF diode usually gets, and it is the
-// reason diode clippers are famous for diverging: the exponential's derivative
-// outgrows any Newton step. The omega form is the *exact* solution of the
-// series system, so there is nothing to diverge from.
+//     i = Is * (exp((v - i*Rs) / (n*Vt)) - 1) + (v - i*Rs) / Rp
+//
+// `Rp == 0` is the plain SPICE junction law, and the closed form degenerates
+// into it exactly; `Rp = 1e6` is the core default. The extension's whole point
+// is that it bounds the
+// conductance into [1/(Rp+Rs), 1/Rs]: the plain law's deep-reverse saturation
+// flushes its conductance to exactly zero and leaves Newton with a zero
+// gradient to ride, which is where the reference engines diverge and this one
+// stalls. With the floor in place that stall is structurally impossible.
+//
+// Absorbing the series drop turns it into the omega equation, so `eval` is one
+// omega seed plus two Halley refinements, and never an iteration to
+// convergence:
+//
+//     g1 = 1 + Rs/Rp,   c = n*Vt*g1,   s = Is*Rs/c,   z = s + ln(s)
+//     w  = wrightOmega(z + v/c)
+//     i  = (n*Vt/Rs)*w - Is*Rp/(Rp+Rs) + v/(Rp+Rs)
+//     di = (w/Rs + 1/Rp) * (Rp/(Rp+Rs)) / (1 + w)
+//
+// The seed is Stefano D'Angelo's fourth-order approximation (DAFx-19, see
+// devices/WrightOmega.h), which is what wdf's diode library runs. The paper's
+// omega4 is float-quality -- a ~5e-4 residual -- and this engine's Newton gates
+// are 1e-12, so the two Halley steps lift the same seed to machine precision.
+// wdf's pair library seeds its pair solve on `omega4` alone; this engine seeds
+// the same eqn (39) start with `wrightOmega` and finishes the port inversion
+// with a few guarded-Newton steps on the exact branch laws. Rp ->
+// infinity degenerates to the plain
+// Shockley formulas
+//
+//     w = omega(Is*Rs/nVt + ln(Is*Rs/nVt) + v/nVt),  i = (n*Vt/Rs)*w - Is,
+//     di = w / (Rs*(1 + w))
+//
+// term for term; the same omega path serves both laws.
+//
+// The alternative -- the naive `i = Is*(exp(v/nVt) - 1)` -- is what a WDF
+// diode usually gets, and it is the reason diode clippers are famous for
+// diverging: the exponential's derivative outgrows any Newton step. The omega
+// form is the *exact* solution of the series system, so there is nothing to
+// diverge from.
 
 #include <cmath>
 #include <string_view>
 
 #include "devices/WrightOmega.h"
-#include "devices/KTable.h"
 
 namespace wdf {
 
@@ -28,45 +61,48 @@ namespace wdf {
 /// by every Shockley-law device, which today is just the netlist diode.
 inline constexpr double kThermalVoltage = 1.38064852e-23 * 300.15 / 1.6021766208e-19;
 
-/// A Shockley diode with a series resistance -- SPICE's own junction law:
-///
-///     i = Is * (exp((v - i*Rs) / (n*Vt)) - 1)
-///
-/// which is implicit in `i`. Absorbing the series drop turns it into the omega
-/// equation, so `eval` costs one `wrightOmega` call:
-///
-///     w = omega(z0 + v/(n*Vt)),  z0 = ln(Is*Rs/(n*Vt)) + Is*Rs/(n*Vt)
-///     i   = (n*Vt/Rs)*w - Is
-///     di  = w / (Rs*(1 + w))
-///
-/// Both branches are exact: at v = 0 the two terms cancel and `i` is exactly
-/// zero; at large negative `v` the omega tail cancels `Is` and the current
-/// saturates at `-Is`, as an ideal junction does.
+/// A Shockley diode with a series resistance and the extended form's parallel
+/// resistor -- see the header for the law and its one-omega closed form.
 struct DiodeModel {
     double isat = 1e-9;  // IS, amperes
-    double n = 1.0;      // emission coefficient (ngspice's `N`)
-    double rs = 1.0;     // series resistance, ohms (ngspice's `RS`)
+    double n = 1.0;      // emission coefficient (SPICE's `N`, the paper's eta)
+    double rs = 1.0;     // series resistance, ohms (SPICE's `RS`, the paper's Rs)
+    double rp = 0.0;     // parallel resistance, ohms; 0 keeps the plain law
     double nvt = 1.0;    // n * Vt, derived
-    double z0 = 0.0;     // constant part of z; meaningless when rs == 0
+    double z0 = 0.0;     // plain-law (rp == 0) omega constant; meaningless when rs == 0
+    double zext = 0.0;   // extended-law omega constant: s + ln(s), s = Is*Rs/(nVt*(1+Rs/Rp))
     double vcrit = 0.0;  // the knee boundary `limit` works against (see there)
     double inv_nvt = (nvt > 0.0) ? (1.0 / nvt) : 0.0;
     double inv_rs = (rs > 0.0) ? (1.0 / rs) : 0.0;
     double nvt_over_rs = (rs > 0.0) ? (nvt / rs) : 0.0;
     double isat_over_nvt = (nvt > 0.0) ? (isat / nvt) : 0.0;
+    // Extended-law derived constants, zero on the plain law (rp == 0):
+    double inv_rp = 0.0;      // 1/Rp
+    double inv_c = 0.0;       // 1/(nVt*(1 + Rs/Rp))
+    double inv_g1 = 0.0;      // 1/(1 + Rs/Rp)
+    double isat_g1 = 0.0;     // Is*inv_g1 = Is*Rp/(Rp+Rs)
+    double inv_rple = 0.0;    // 1/(Rp + Rs)
 
     /// `exp` of this overflows a double. Clamping the exponent past it keeps the
     /// law finite instead of producing `inf`/`NaN` for the Newton to chew on.
     static constexpr double kMaxExponent = 700.0;
 
     DiodeModel() = default;
-    DiodeModel(double saturation, double emission, double series) noexcept
+    DiodeModel(double saturation, double emission, double series, double parallel = 0.0) noexcept
         : isat(saturation),
           n(emission),
           rs(series),
+          rp(parallel),
           nvt(emission * kThermalVoltage),
           z0(series > 0.0 ? std::log(saturation * series / (emission * kThermalVoltage)) +
                                saturation * series / (emission * kThermalVoltage)
                           : 0.0),
+          zext(parallel > 0.0 && series > 0.0
+                   ? saturation * series /
+                         (emission * kThermalVoltage * (1.0 + series / parallel)) +
+                         std::log(saturation * series /
+                                  (emission * kThermalVoltage * (1.0 + series / parallel)))
+                   : 0.0),
           vcrit(emission > 0.0 && saturation > 0.0
                     ? emission * kThermalVoltage *
                           std::log(emission * kThermalVoltage /
@@ -75,28 +111,47 @@ struct DiodeModel {
           inv_nvt(emission > 0.0 ? 1.0 / (emission * kThermalVoltage) : 0.0),
           inv_rs(series > 0.0 ? 1.0 / series : 0.0),
           nvt_over_rs(series > 0.0 ? (emission * kThermalVoltage) / series : 0.0),
-          isat_over_nvt(emission > 0.0 ? saturation / (emission * kThermalVoltage) : 0.0) {}
+          isat_over_nvt(emission > 0.0 ? saturation / (emission * kThermalVoltage) : 0.0),
+          inv_rp(parallel > 0.0 ? 1.0 / parallel : 0.0),
+          inv_c(parallel > 0.0 && series > 0.0
+                    ? 1.0 / (emission * kThermalVoltage * (1.0 + series / parallel))
+                    : 0.0),
+          inv_g1(parallel > 0.0 && series > 0.0 ? 1.0 / (1.0 + series / parallel) : 0.0),
+          isat_g1(parallel > 0.0 && series > 0.0
+                      ? saturation / (1.0 + series / parallel)
+                      : 0.0),
+          inv_rple(parallel + series > 0.0 ? 1.0 / (parallel + series) : 0.0) {}
 
     /// Current through the diode and its derivative, at the voltage across it
     /// (`v` positive = forward). Allocation-free and branch-predictable, so it
-    /// is what the audio loop calls.
+    /// is what the audio loop calls: one omega seed and two Halley refinements,
+    /// no iteration to convergence. (The bare `omega4` is float-quality --
+    /// residual ~5e-4 -- and this engine's Newton gates are 1e-12, so the
+    /// refinement is what makes the closed form usable as a truth function.)
     void eval(double v, double& i, double& di) const noexcept {
         if (rs > 0.0) {
-            const double w = wrightOmega(z0 + v * inv_nvt);
-            i = nvt_over_rs * w - isat;
-            di = (w * inv_rs) / (1.0 + w);
+            if (rp > 0.0) {
+                const double w = wrightOmega(zext + v * inv_c);
+                i = nvt_over_rs * w - isat_g1 + v * inv_rple;
+                di = (w * inv_rs + inv_rp) * inv_g1 / (1.0 + w);
+            } else {
+                const double w = wrightOmega(z0 + v * inv_nvt);
+                i = nvt_over_rs * w - isat;
+                di = (w * inv_rs) / (1.0 + w);
+            }
             return;
         }
         // Rs == 0: with no series resistance the law is explicit in `v`, and it
-        // is the one case the omega form cannot reach (`z0` diverges as Rs -> 0).
+        // is the one case the omega form cannot reach (`z` diverges as Rs -> 0).
         // The exponent is clamped at the overflow point and the law is continued
         // past it on its own tangent: still finite, still positive, still
         // Newton-stable. No reference diode comes near this -- it is a guard
-        // against a bad iterate, not a working regime.
+        // against a bad iterate, not a working regime. The Rp term keeps the
+        // conductance bounded here too (a plain law just adds nothing).
         const double x = v * inv_nvt;
         const double e = std::exp(x < kMaxExponent ? x : kMaxExponent);
-        i = isat * (e - 1.0);
-        di = isat_over_nvt * e;
+        i = isat * (e - 1.0) + v * inv_rp;
+        di = isat_over_nvt * e + inv_rp;
     }
 
     /// SPICE's `pnjlim`, as the junction's own predicate: move the terminal
@@ -109,20 +164,16 @@ struct DiodeModel {
     /// from out there is either enormous or (far more often, on a cold start)
     /// absurdly small -- and the iteration then makes no progress for its whole
     /// budget while reporting only "did not converge". Two distinct failures, so
-    /// two halves to the rule:
+    /// two halves to the rule.
     ///
-    ///   * from the reverse side (`vold <= 0`), aim at `nVt*ln(vnew/nVt)`: the
-    ///     voltage at which the exponential is O(1) in `vnew/nVt`. That is the
-    ///     cold-start case. `solveDc` begins at the open-circuit voltage, which
-    ///     on a plate supply is hundreds of volts; without this the first step
-    ///     is ~1e-3 V and the solve never arrives.
-    ///   * from the forward side, if the step would cross `vcrit` by more than
-    ///     two thermal voltages, land on `vold + nVt*ln(1 + (vnew-vold)/nVt)`.
-    ///     That is the same curve, logarithmically compressed -- the overshoot is
-    ///     given up, not the progress.
+    /// The extended law does not need this clamp at all: its conductance is
+    /// bounded on both sides by construction, so the iterate cannot outrun a
+    /// linearisation. Only the plain law takes it.
     ///
     /// `limited` reports whether either fired, for the caller's diagnostics.
     double limit(double vold, double vnew, bool& limited) const noexcept {
+        if (rp > 0.0)
+            return vnew;  // bounded conductance: nothing to guard
         // A non-physical model (no `vcrit`) disables the clamp rather than
         // producing `NaN` from it; the parser refuses such a model up front.
         if (!(vcrit > 0.0) || vnew <= vcrit || std::abs(vnew - vold) <= 2.0 * nvt)
@@ -136,52 +187,60 @@ struct DiodeModel {
     }
 };
 
-/// The alias `devices/Pentode.h` carried for the pentode grid diode of `Tubes.lib`
-/// -- the same Shockley law under a grid-flavoured name. The imported pedalkernel
-/// pentode no longer uses it; `test_diode.cpp` still pins the alias.
+/// The alias `devices/Pentode.h` carries for the pentode grid diode of `Tubes.lib`
+/// -- the same Shockley law under a grid-flavoured name; `test_diode.cpp` pins it.
 using GridDiode = DiodeModel;
 
-/// A symmetrical anti-parallel diode pair (e.g. clipping stage in TS808, Rat, Distortion+).
+/// An anti-parallel diode pair (e.g. a clipping stage in a TS808, a Rat, a
+/// Distortion+): the pair solve is a closed form, so the branch models need not
+/// match for it to run -- symmetric branches make it exact, and the root's
+/// residual check is what keeps an asymmetric pair.
 ///
-/// Current law for identical antiparallel junctions across terminal voltage v:
-///     i_net = 2 * Is * sinh(v / nVt)
+/// Current law for a pair across terminal voltage v:
+///     i_net = i1(v) - i2(-v)
+/// which for identical branches with `rs == 0` closes as
+///     i_net = 2*Is*sinh(v/nVt) + 2*v/Rp,   di = 2*Is*cosh(v/nVt)/nVt + 2/Rp,
+/// the pair conductance bounded by the parallel terms.
 ///
-/// Under Thévenin port constraint v = vo - Rp * i_net, Werner's dual Wright Omega
-/// estimate gives an excellent O(1) starting voltage:
-///     b = a - 2*nVt * sgn(a) * [ omega(ln(R_eff*Is/nVt) + |a|/nVt) - omega(ln(R_eff*Is/nVt) - |a|/nVt) ]
-/// where R_eff = Rp + Rs.
-///
-/// That estimate is asymptotic (it models both branches with a single shared Rs and
-/// ignores the off-branch series drop), so it is polished with a fixed three Newton
-/// corrections against the exact branch laws.  Like PedalKernel's explicit pair root
-/// this is O(1) with no convergence loop; the final voltage satisfies the port
-/// equation to machine precision, including unequal branch models.
+/// Under the Thevenin port constraint v = vo - Rp*i_net, eqn (39) of the Werner
+/// paper -- in wdf's pair library (`wdf_lib_diode_pair.h`, Jatin Chowdhury's
+/// wdf_compiler) -- supplies the closed-form dual-omega start for the port
+/// voltage:
+///     b = a - 2*nVt*sgn(a)*[omega(ln(R_eff*Is/nVt) + |a|/nVt)
+///                           - omega(ln(R_eff*Is/nVt) - |a|/nVt)]
+/// with R_eff = Rp + Rs, then i = (vo - b)/(2*R_eff) and v = vo - Rp*i. It
+/// assumes the two branches carry equal-and-opposite currents, which the
+/// extended law's constant term (-Is*Rp/(Rp+Rs)) breaks, so it is a start and
+/// not the root: the port equation v + Rp*(i1(v) - i2(-v)) = vo carries two
+/// exponentials and admits no single-omega inversion. It is finished with a
+/// few guarded-Newton steps on the exact branch laws -- the residual's
+/// derivative is >= 1, so one bracket keeps the steps inside it and the
+/// convergence is global (1-3 evaluations from the eqn (39) start).
 struct AntiParallelDiodeModel {
     DiodeModel d1;
     DiodeModel d2;
     double isat = 1e-9;
     double n = 1.0;
     double rs = 0.0;
+    double rp = 0.0;
     double nvt = 1.0;
     bool symmetrical = true;
     double inv_nvt = 1.0;
     double two_isat_over_nvt = 2.0e-9;
     mutable double cachedRp = -1.0;
     mutable double cachedLogTerm = 0.0;
-    mutable double cachedZ0Fast = 0.0;
-    mutable double cachedZ0FastNeg = 0.0;
-    mutable KTable1D kTable_;
-    mutable double kTableRp_ = -1.0;
 
     AntiParallelDiodeModel() = default;
     AntiParallelDiodeModel(const DiodeModel& a, const DiodeModel& b) noexcept
         : d1(a), d2(b) {
         symmetrical = (std::abs(a.isat - b.isat) < 1e-15 * a.isat) &&
                       (std::abs(a.n - b.n) < 1e-6) &&
-                      (std::abs(a.rs - b.rs) < 1e-6 * (a.rs + 1.0));
+                      (std::abs(a.rs - b.rs) < 1e-6 * (a.rs + 1.0)) &&
+                      (std::abs(a.rp - b.rp) <= 1e-9 * (a.rp + 1.0));
         isat = a.isat;
         n = a.n;
         rs = a.rs;
+        rp = a.rp;
         nvt = a.nvt;
         inv_nvt = (nvt > 0.0) ? (1.0 / nvt) : 0.0;
         two_isat_over_nvt = (nvt > 0.0) ? (2.0 * isat / nvt) : 0.0;
@@ -191,9 +250,14 @@ struct AntiParallelDiodeModel {
     void eval(double v, double& i_net, double& di) const noexcept {
         if (symmetrical && rs == 0.0) {
             const double x = v * inv_nvt;
-            const double clampedX = std::clamp(x, -DiodeModel::kMaxExponent, DiodeModel::kMaxExponent);
+            const double clampedX =
+                std::clamp(x, -DiodeModel::kMaxExponent, DiodeModel::kMaxExponent);
             i_net = 2.0 * isat * std::sinh(clampedX);
             di = two_isat_over_nvt * std::cosh(clampedX);
+            if (rp > 0.0) {
+                i_net += 2.0 * v * (1.0 / rp);
+                di += 2.0 / rp;
+            }
             return;
         }
         double i1 = 0.0, di1 = 0.0, i2 = 0.0, di2 = 0.0;
@@ -203,300 +267,138 @@ struct AntiParallelDiodeModel {
         di = di1 + di2;
     }
 
-    /// Solves the port equation v = vo - Rp * i_net to machine precision.
+    /// Solves the port equation v = vo - Rp*i_net. The branch laws are exact;
+    /// eqn (39) of the Werner paper (in wdf's pair library, `wdf_lib_diode_pair.h`,
+    /// Jatin Chowdhury's wdf_compiler) supplies the closed-form dual-omega
+    /// start:
     ///
-    /// Evaluates using precomputed K-Method cubic Hermite interpolation table
-    /// with an optional single Newton polish step to guarantee machine precision
-    /// (< 1e-12 V) in O(1) time without transcendentals or loops.
+    ///     z = ln(R_eff*Is/nVt),  R_eff = Rp + Rs
+    ///     b = vo - 2*nVt*sgn(vo)*[omega(z + |vo|/nVt) - omega(z - |vo|/nVt)]
+    ///     i = (vo - b) / (2*R_eff),   v = vo - Rp*i
     ///
-    /// Returns port voltage v and individual forward currents i1 (D1: A->B) and i2 (D2: B->A).
+    /// The start is asymptotic in the branch split: it assumes the two branches
+    /// carry equal-and-opposite currents, which the extended law's constant
+    /// (-Is*Rp/(Rp+Rs)) breaks, so the port equation itself
+    ///     v + Rp*(i1(v) - i2(-v)) = vo
+    /// still needs its inversion finished -- with two exponentials on each
+    /// branch there is no single-omega closed form for it. The residual
+    ///     f(v) = v - vo + Rp*(i1(v) - i2(-v))
+    /// is strictly increasing, f'(v) = 1 + Rp*(di1 + di2) >= 1, so the root is
+    /// unique and a bracket plus guarded Newton on the exact laws converges
+    /// globally. From the eqn (39) start that is 1-4 evaluations on audio
+    /// samples; no table and no scan are involved.
     void solvePort(double vo, double Rp, double& vOut, double& i1, double& i2) const noexcept {
-        if (symmetrical) {
-            if (vo == 0.0) {
-                vOut = 0.0;
-                i1 = 0.0;
-                i2 = 0.0;
-                return;
-            }
-            if (vo < 0.0) {
-                solvePort(-vo, Rp, vOut, i2, i1);
-                vOut = -vOut;
-                return;
-            }
-        }
-
-        if (Rp <= 0.0) {
-            solvePortOmega(vo, Rp, vOut, i1, i2);
-            return;
-        }
-
-        ensureTable(Rp);
-
-        double v = kTable_.lookup(vo);
-        double j1 = 0.0, dj1 = 0.0, j2 = 0.0, dj2 = 0.0;
-        bool converged = false;
-
-        // O(1) single/double scalar Newton polish to machine precision (< 1e-12 V).
-        for (int iter = 0; iter < 2; ++iter) {
-            d1.eval(v, j1, dj1);
-            d2.eval(-v, j2, dj2);
-            const double f = v - vo + Rp * (j1 - j2);
-            if (std::abs(f) <= 1e-12 * (1.0 + std::abs(v))) {
-                converged = true;
-                break;
-            }
-            const double df = 1.0 + Rp * (dj1 + dj2);
-            if (!(std::abs(df) > 1e-30) || !std::isfinite(df))
-                break;
-            v -= f / df;
-            if (!std::isfinite(v))
-                break;
-        }
-
-        if (converged) {
-            vOut = v;
-            i1 = j1;
-            i2 = j2;
-            return;
-        }
-
-        if (solvePortFast(vo, Rp, vOut, i1, i2))
-            return;
-        solvePortOmega(vo, Rp, vOut, i1, i2);
-    }
-
-private:
-    /// Lazily precompute the K-Method 1D lookup table for the fixed port resistance Rp.
-    void ensureTable(double Rp) const noexcept {
-        if (kTableRp_ == Rp && kTable_.isReady())
-            return;
-        kTableRp_ = Rp;
-        kTable_.build(-30.0, 30.0, 4097, [this, Rp](double vo) -> double {
-            double vOut = 0.0, i1 = 0.0, i2 = 0.0;
-            if (solvePortFast(vo, Rp, vOut, i1, i2))
-                return vOut;
-            solvePortOmega(vo, Rp, vOut, i1, i2);
-            return vOut;
-        });
-    }
-    /// Refresh the two single-forward-branch seeds used by the fast paths.
-    /// `cachedZ0Fast` is D1 with Rp + Rs1; `cachedZ0FastNeg` is D2 with Rp + Rs2.
-    /// Both are exact single-diode omega coordinates, so they are also valid
-    /// seeds when one of the two branches has Rs == 0.
-    void refreshFastCache(double Rp) const noexcept {
-        const double r1 = Rp + d1.rs;
-        cachedLogTerm = std::log(r1 * d1.isat / d1.nvt);
-        cachedZ0Fast = cachedLogTerm + r1 * d1.isat / d1.nvt;
-        const double r2 = Rp + d2.rs;
-        cachedZ0FastNeg = std::log(r2 * d2.isat / d2.nvt) + r2 * d2.isat / d2.nvt;
-        cachedRp = Rp;
-    }
-
-    /// Exact ideal/mixed-junction pair in one scalar Newton loop.
-    bool solvePortIdeal(double vo, double Rp, double& vOut, double& i1, double& i2) const noexcept {
-        double v;
         if (vo == 0.0) {
-            v = 0.0;
-        } else {
-            if (cachedRp != Rp)
-                refreshFastCache(Rp);
-            if (vo > 0.0) {
-                const double rEff = Rp + d1.rs;
-                const double w = detail::omega4_seed(cachedZ0Fast + vo * d1.inv_nvt);
-                if (std::isfinite(w) && w > 0.0) {
-                    const double iFwd = (d1.nvt / rEff) * w - d1.isat;
-                    v = vo - Rp * iFwd;
-                } else {
-                    v = vo;
-                }
-            } else {
-                const double rEff = Rp + d2.rs;
-                const double w =
-                    detail::omega4_seed(cachedZ0FastNeg + (-vo) * d2.inv_nvt);
-                if (std::isfinite(w) && w > 0.0) {
-                    const double iFwd = (d2.nvt / rEff) * w - d2.isat;
-                    v = vo + Rp * iFwd;
-                } else {
-                    v = vo;
-                }
-            }
+            // Both junctions sit at zero voltage, so both branch currents are
+            // exactly zero whatever the models are.
+            vOut = 0.0;
+            i1 = 0.0;
+            i2 = 0.0;
+            return;
         }
 
-        double j1 = 0.0, j2 = 0.0;
-        bool converged = false;
-        for (int iter = 0; iter < 8; ++iter) {
-            double dj1 = 0.0, dj2 = 0.0;
-            d1.eval(v, j1, dj1);
-            d2.eval(-v, j2, dj2);
-            const double f = v - vo + Rp * (j1 - j2);
-            if (std::abs(f) < 1e-12 * (1.0 + std::abs(v))) {
-                converged = true;
-                break;
-            }
-            const double df = 1.0 + Rp * (dj1 + dj2);
-            if (!(std::abs(df) > 1e-30) || !std::isfinite(f) || !std::isfinite(df))
-                return false;
-            double dv = f / df;
-            dv = std::clamp(dv, -0.5, 0.5);
-            v -= dv;
-            if (!std::isfinite(v))
-                return false;
-        }
-        if (!converged)
-            return false;
-
-        vOut = v;
-        i1 = j1;
-        i2 = j2;
-        return true;
-    }
-
-    /// Exact series-resistance pair in junction-voltage space.
-    ///
-    ///     i1 = Is1 (exp(u1/nVt1) - 1),  v  = u1 + Rs1 i1
-    ///     i2 = Is2 (exp(u2/nVt2) - 1), -v  = u2 + Rs2 i2
-    ///
-    /// Eliminating v gives two equations for u1 and u2.  A single omega seed
-    /// (no Halley refinement) puts the forward junction near its answer; the
-    /// loop then uses only exp.  The result is validated by both voltage
-    /// equations before it is accepted.
-    bool solvePortFast(double vo, double Rp, double& vOut, double& i1, double& i2) const noexcept {
-        if (!(d1.rs > 0.0 && d2.rs > 0.0))
-            return solvePortIdeal(vo, Rp, vOut, i1, i2);
-
-        double u1 = vo;
-        double u2 = -vo;
-        if (cachedRp != Rp)
-            refreshFastCache(Rp);
-        if (vo > 0.0) {
-            // Forward branch with the whole source behind Rp + Rs.  This is the
-            // exact single-diode solution when D2 is off, so it lands next to
-            // the pair root even at large drive; one omega seed is enough.
-            const double rEff = Rp + d1.rs;
-            const double w = detail::omega4_seed(cachedZ0Fast + vo * d1.inv_nvt);
-            if (std::isfinite(w) && w > 0.0) {
-                const double iFwd = (d1.nvt / rEff) * w - d1.isat;
-                const double vFwd = vo - Rp * iFwd;
-                u1 = vo - rEff * iFwd;
-                u2 = -vFwd;
-            }
-        } else if (vo < 0.0) {
-            const double rEff = Rp + d2.rs;
-            const double w = detail::omega4_seed(cachedZ0FastNeg + (-vo) * d2.inv_nvt);
-            if (std::isfinite(w) && w > 0.0) {
-                const double iFwd = (d2.nvt / rEff) * w - d2.isat;
-                const double vFwd = (-vo) - Rp * iFwd;
-                u2 = (-vo) - rEff * iFwd;
-                u1 = -vFwd;
-            }
-        } else {
-            u1 = 0.0;
-            u2 = 0.0;
-        }
-
-        double j1 = 0.0, j2 = 0.0;
-        double f1 = 0.0, f2 = 0.0;
-        bool converged = false;
-        for (int iter = 0; iter < 8; ++iter) {
-            const double x1 = std::clamp(u1 * d1.inv_nvt, -DiodeModel::kMaxExponent,
-                                         DiodeModel::kMaxExponent);
-            const double x2 = std::clamp(u2 * d2.inv_nvt, -DiodeModel::kMaxExponent,
-                                         DiodeModel::kMaxExponent);
-            const double e1 = std::exp(x1);
-            const double e2 = std::exp(x2);
-            j1 = d1.isat * (e1 - 1.0);
-            j2 = d2.isat * (e2 - 1.0);
-            const double g1 = d1.isat_over_nvt * e1;
-            const double g2 = d2.isat_over_nvt * e2;
-
-            const double v1 = u1 + d1.rs * j1;
-            f1 = v1 + u2 + d2.rs * j2;
-            f2 = v1 - vo + Rp * (j1 - j2);
-            if (std::max(std::abs(f1), std::abs(f2)) <
-                1e-12 * (1.0 + std::abs(vo) + std::abs(u1) + std::abs(u2))) {
-                converged = true;
-                break;
-            }
-
-            const double a = 1.0 + d1.rs * g1;
-            const double b = 1.0 + d2.rs * g2;
-            const double c = 1.0 + (d1.rs + Rp) * g1;
-            const double d = -Rp * g2;
-            const double det = a * d - b * c;
-            if (!(std::abs(det) > 1e-30) || !std::isfinite(det) ||
-                !std::isfinite(f1) || !std::isfinite(f2))
-                return false;
-
-            const double du1 = (-f1 * d + b * f2) / det;
-            const double du2 = (-a * f2 + c * f1) / det;
-            if (!std::isfinite(du1) || !std::isfinite(du2))
-                return false;
-
-            bool limited = false;
-            const double n1 = d1.limit(u1, u1 + du1, limited);
-            const double n2 = d2.limit(u2, u2 + du2, limited);
-            if (!std::isfinite(n1) || !std::isfinite(n2))
-                return false;
-            u1 = n1;
-            u2 = n2;
-        }
-        if (!converged)
-            return false;
-
-        vOut = u1 + d1.rs * j1;
-        i1 = j1;
-        i2 = j2;
-        return std::isfinite(vOut) && std::isfinite(i1) && std::isfinite(i2);
-    }
-
-    void solvePortOmega(double vo, double Rp, double& vOut, double& i1, double& i2) const noexcept {
         double v = vo;
 
-        // O(1) warm start: Werner dual Wright Omega estimate for a symmetrical pair.
+        // eqn (39): the paper's dual-omega start for the pair.
         if (symmetrical && Rp > 0.0) {
             const double rEff = Rp + rs;
-            const double sgn = (vo > 0.0) ? 1.0 : ((vo < 0.0) ? -1.0 : 0.0);
-            if (sgn != 0.0) {
-                const double absA = std::abs(vo);
-                double logTerm;
-                if (cachedRp == Rp) {
-                    logTerm = cachedLogTerm;
-                } else {
-                    logTerm = std::log(rEff * isat / nvt);
-                    cachedRp = Rp;
-                    cachedLogTerm = logTerm;
+            const double sgn = (vo > 0.0) ? 1.0 : -1.0;
+            const double absA = std::abs(vo);
+            double logTerm;
+            if (cachedRp == Rp) {
+                logTerm = cachedLogTerm;
+            } else {
+                logTerm = std::log(rEff * isat / nvt);
+                cachedRp = Rp;
+                cachedLogTerm = logTerm;
+            }
+            const double argPlus = logTerm + absA * inv_nvt;
+            const double argMinus = logTerm - absA * inv_nvt;
+            const double wPlus = wrightOmega(argPlus);
+            const double wMinus = (argMinus > -50.0) ? wrightOmega(argMinus) : 0.0;
+            const double b = vo - 2.0 * nvt * sgn * (wPlus - wMinus);
+            const double iNet = (vo - b) / (2.0 * rEff);
+            v = vo - Rp * iNet;
+        }
+
+        // Finish on the exact branch laws. f is strictly increasing, so a
+        // bracket around the root always exists and a Newton step kept inside
+        // it cannot leave it -- convergence is global, stiff ports included.
+        auto evalPort = [&](double x, double& j1, double& j2, double& df) noexcept {
+            double dp1 = 0.0, dp2 = 0.0;
+            d1.eval(x, j1, dp1);
+            d2.eval(-x, j2, dp2);
+            df = 1.0 + Rp * (dp1 + dp2);
+            return x - vo + Rp * (j1 - j2);
+        };
+
+        double j1 = 0.0, j2 = 0.0, df = 0.0;
+        double f = evalPort(v, j1, j2, df);
+        double lo = v, hi = v;
+        if (f > 0.0) {
+            // The root is below the start; walk down until the residual
+            // changes sign. The walk only needs signs, so its currents go
+            // to throw-aways and j1/j2 stay the seed's.
+            hi = v;
+            double w = v - (1.0 + std::abs(vo));
+            double tw1 = 0.0, tw2 = 0.0, twd = 0.0;
+            for (;;) {
+                const double fw = evalPort(w, tw1, tw2, twd);
+                if (fw < 0.0) {
+                    lo = w;
+                    break;
                 }
-                const double argPlus = logTerm + absA / nvt;
-                const double argMinus = logTerm - absA / nvt;
-                const double wPlus = wrightOmega(argPlus);
-                const double wMinus = (argMinus > -50.0) ? wrightOmega(argMinus) : 0.0;
-                const double b = vo - 2.0 * nvt * sgn * (wPlus - wMinus);
-                const double iNet = (vo - b) / (2.0 * rEff);
-                v = vo - Rp * iNet;
+                const double wn = w - (v - w);
+                if (!(wn < w))
+                    break;
+                w = wn;
+            }
+        } else if (f < 0.0) {
+            // The root is above the start; walk up until the residual changes
+            // sign.
+            lo = v;
+            double w = v + (1.0 + std::abs(vo));
+            double tw1 = 0.0, tw2 = 0.0, twd = 0.0;
+            for (;;) {
+                const double fw = evalPort(w, tw1, tw2, twd);
+                if (fw > 0.0) {
+                    hi = w;
+                    break;
+                }
+                const double wn = w + (w - v);
+                if (!(wn > w))
+                    break;
+                w = wn;
             }
         }
 
-        // Fixed Newton corrections on the exact branch equations.
-        for (int iter = 0; iter < 3; ++iter) {
-            double j1 = 0.0, dj1 = 0.0, j2 = 0.0, dj2 = 0.0;
-            d1.eval(v, j1, dj1);
-            d2.eval(-v, j2, dj2);
-            const double f = v - vo + Rp * (j1 - j2);
-            if (std::abs(f) < 1e-12 * (1.0 + std::abs(v)))
+        constexpr int kMaxSteps = 24;
+        for (int it = 0; it < kMaxSteps; ++it) {
+            if (f == 0.0)
                 break;
-            const double df = 1.0 + Rp * (dj1 + dj2);
-            if (!(std::abs(df) > 1e-30) || !std::isfinite(f) || !std::isfinite(df))
+            const double nvNewton = v - f / df;
+            if (nvNewton == v) {
+                // The step underflowed: v is the root to the last bit.
                 break;
-            const double dv = f / df;
-            v -= dv;
-            if (std::abs(dv) < 1e-15 * (1.0 + std::abs(v)))
+            }
+            double nv = nvNewton;
+            if (lo != hi && !(nv > lo && nv < hi))
+                nv = 0.5 * (lo + hi);
+            if (!(std::abs(nv - v) > 1e-12 * (1.0 + std::abs(v))))
+                break;
+            v = nv;
+            f = evalPort(v, j1, j2, df);
+            if (f > 0.0)
+                hi = v;
+            else if (f < 0.0)
+                lo = v;
+            else
                 break;
         }
 
         vOut = v;
-        double di1 = 0.0, di2 = 0.0;
-        d1.eval(vOut, i1, di1);
-        d2.eval(-vOut, i2, di2);
+        i1 = j1;
+        i2 = j2;
     }
 };
 
@@ -504,22 +406,27 @@ private:
 // Named diode device registry (Cathodyne table, DAFx / SPICE models)
 // --------------------------------------------------------------------------- //
 
-/// One selectable diode model: a display name and its Shockley parameters.
+/// One selectable diode model: a display name and its Shockley-law parameters.
 struct DiodeEntry {
     const char* name;
     double isat;
     double n;
     double rs;
+    double rp;
 };
 
-/// The 6 diode types Cathodyne offers (Cathodyne DiodeClipper.h / chowdsp_wdf).
+/// The 6 diode types Cathodyne offers (Cathodyne DiodeClipper.h / chowdsp_wdf),
+/// run at the extended law: the 1N4148/1N914 saturation and emission are the
+/// extended preset the reference engines ship (Is = 4.352n, eta = 1.905), the
+/// series values stay the Cathodyne hardware parts, and Rp = 1e6 carries the
+/// paper's extension on every named diode.
 inline constexpr DiodeEntry kDiodeTable[] = {
-    {"1N4148", 4.0e-9, 1.0, 0.56},
-    {"1N914",  4.0e-9, 1.0, 0.56},
-    {"1N4007", 1.0e-6, 1.0, 0.04},
-    {"1N34A",  1.0e-6, 1.0, 5.0},
-    {"1N5819", 1.0e-6, 1.0, 0.05},
-    {"GZ34",   2.52e-9, 1.0, 15.0},
+    {"1N4148", 4.352e-9, 1.905, 0.56, 1e6},
+    {"1N914",  4.352e-9, 1.905, 0.56, 1e6},
+    {"1N4007", 1.0e-6, 1.0, 0.04, 1e6},
+    {"1N34A",  1.0e-6, 1.0, 5.0, 1e6},
+    {"1N5819", 1.0e-6, 1.0, 0.05, 1e6},
+    {"GZ34",   2.52e-9, 1.0, 15.0, 1e6},
 };
 
 inline constexpr int kNumDiodes = 6;
@@ -555,4 +462,3 @@ inline const DiodeEntry* findDiodeByName(std::string_view name) noexcept {
 }
 
 }  // namespace wdf
-

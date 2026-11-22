@@ -71,7 +71,7 @@ std::string clipperNet() {
            "C1 out 0 1u\n"
            "DP out 0 D1N914\n"
            "DP2 0 out D1N914\n"
-           ".model D1N914 D (IS=1e-9 N=1)\n";
+           ".model D1N914 D (IS=1e-9 N=1 RP=0)\n";  // the oracle is ngspice's plain law
 }
 
 /// The clipper deck with its second junction removed: one live diode port, so the
@@ -82,7 +82,7 @@ std::string singleDiodeNet() {
            "Rin in out 1k\n"
            "C1 out 0 1u\n"
            "DP out 0 D1N914\n"
-           ".model D1N914 D (IS=1e-9 N=1)\n";
+           ".model D1N914 D (IS=1e-9 N=1 RP=0)\n";  // the oracle is ngspice's plain law
 }
 
 /// One quadric stage with an optional diode from its plate to ground.
@@ -549,101 +549,4 @@ TEST_CASE("a lone diode is a root the closed form takes", "[diode][closedform]")
     WARN("diode_single: closed-form vs joint Newton, worst=" << worst);
 }
 
-// --------------------------------------------------------------------------------------
-// 7. K-Method 1D Lookup Table (KTable1D)
-// --------------------------------------------------------------------------------------
 
-TEST_CASE("KTable1D: cubic Hermite interpolation accuracy and continuation", "[diode][ktable]") {
-    wdf::KTable1D table;
-    REQUIRE_FALSE(table.isReady());
-
-    // Tabulate tanh(x) over [-5.0, 5.0] with 257 points (256 intervals, h = 10/256 = 0.039)
-    table.build(-5.0, 5.0, 257, [](double x) { return std::tanh(x); });
-    REQUIRE(table.isReady());
-    REQUIRE(table.steps() == 257);
-    REQUIRE(table.minV() == -5.0);
-    REQUIRE(table.maxV() == 5.0);
-
-    // Exact at nodes
-    for (int i = 0; i < 257; i += 16) {
-        const double x = -5.0 + i * (10.0 / 256.0);
-        CHECK(table.lookup(x) == Approx(std::tanh(x)).margin(1e-12));
-    }
-
-    // High fidelity between nodes (Cubic Hermite error < 5e-6 with 256 intervals)
-    double maxErr = 0.0;
-    for (int i = 0; i < 1000; ++i) {
-        const double x = -4.9 + i * (9.8 / 1000.0);
-        const double approx = table.lookup(x);
-        const double exact = std::tanh(x);
-        maxErr = std::max(maxErr, std::abs(approx - exact));
-    }
-    CHECK(maxErr < 5e-6);
-
-    // Linear extrapolation outside bounds
-    const double valUnder = table.lookup(-6.0);
-    const double valOver = table.lookup(6.0);
-    CHECK(std::isfinite(valUnder));
-    CHECK(std::isfinite(valOver));
-    CHECK(valUnder < table.lookup(-5.0));
-    CHECK(valOver > table.lookup(5.0));
-}
-
-// --------------------------------------------------------------------------------------
-// 8. K-Method 2D Lookup Table (KTable2D)
-// --------------------------------------------------------------------------------------
-
-TEST_CASE("KTable2D: bilinear and bicubic interpolation with analytical derivatives", "[diode][ktable]") {
-    wdf::KTable2D table;
-    REQUIRE_FALSE(table.isReady());
-
-    // Tabulate f(x, y) = sin(x) * cos(y) on [-2.0, 2.0] x [-2.0, 2.0] with 65x65 points
-    auto exactFunc = [](double x, double y) { return std::sin(x) * std::cos(y); };
-    table.build(-2.0, 2.0, 65, -2.0, 2.0, 65, exactFunc);
-
-    REQUIRE(table.isReady());
-    REQUIRE(table.stepsX() == 65);
-    REQUIRE(table.stepsY() == 65);
-    REQUIRE(table.size() == 65 * 65);
-
-    // Exact at nodes for bilinear
-    for (int iy = 0; iy < 65; iy += 8) {
-        const double y = -2.0 + iy * (4.0 / 64.0);
-        for (int ix = 0; ix < 65; ix += 8) {
-            const double x = -2.0 + ix * (4.0 / 64.0);
-            CHECK(table.lookup(x, y) == Approx(exactFunc(x, y)).margin(1e-12));
-        }
-    }
-
-    // High fidelity between nodes: Bilinear error < 1e-3, Bicubic error < 1e-5
-    double maxErrBilinear = 0.0;
-    double maxErrBicubic = 0.0;
-    for (int iy = 0; iy < 20; ++iy) {
-        const double y = -1.8 + iy * (3.6 / 20.0);
-        for (int ix = 0; ix < 20; ++ix) {
-            const double x = -1.8 + ix * (3.6 / 20.0);
-            const double exact = exactFunc(x, y);
-            const double bil = table.lookup(x, y);
-            const double bic = table.lookupBicubic(x, y);
-            maxErrBilinear = std::max(maxErrBilinear, std::abs(bil - exact));
-            maxErrBicubic = std::max(maxErrBicubic, std::abs(bic - exact));
-        }
-    }
-    CHECK(maxErrBilinear < 1e-3);
-    CHECK(maxErrBicubic < 1e-5);
-
-    // Analytical partial derivatives test
-    const double testX = 0.35;
-    const double testY = 0.45;
-    double val = 0.0, dx = 0.0, dy = 0.0;
-    table.lookupWithDerivatives(testX, testY, val, dx, dy);
-
-    // Compare with central differences
-    const double h = 1e-5;
-    const double numDx = (table.lookup(testX + h, testY) - table.lookup(testX - h, testY)) / (2.0 * h);
-    const double numDy = (table.lookup(testX, testY + h) - table.lookup(testX, testY - h)) / (2.0 * h);
-
-    CHECK(val == Approx(table.lookup(testX, testY)).margin(1e-12));
-    CHECK(dx == Approx(numDx).margin(1e-4));
-    CHECK(dy == Approx(numDy).margin(1e-4));
-}

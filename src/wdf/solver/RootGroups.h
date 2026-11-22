@@ -33,7 +33,7 @@ struct RootGroupsContext {
     bool runtimeBlockEnabled;
     bool allowNonScalarSignalFlow;
     bool& explicitRootsActive;
-    bool& allScalarBlocks;
+    bool& allClosedFormBlocks;
     bool& hasAntiParallelBlock;
     int& blockCount;
     int& scalarBlockCount;
@@ -95,12 +95,12 @@ public:
         ctx.runtimeBlockCount = 0;
         ctx.runtimeBlockUsed = false;
         ctx.blockCount = 0;
-        ctx.allScalarBlocks = false;
+        ctx.allClosedFormBlocks = false;
         ctx.scalarBlockCount = 0;
         ctx.hasAntiParallelBlock = false;
         ctx.groupCount = buildRootOrder(ctx) ? ctx.blockCount : 0;
         ctx.explicitRootsActive =
-            ctx.explicitRootsAllowed && ctx.groupCount > 0 && ctx.allScalarBlocks &&
+            ctx.explicitRootsAllowed && ctx.groupCount > 0 && ctx.allClosedFormBlocks &&
             allowsExplicitRoot(ctx.groupCount, ctx.nPent, ctx.nBjt, ctx.nOpAmp);
         if (ctx.runtimeBlockEnabled)
             prepareRuntimePartitions(ctx);
@@ -246,25 +246,13 @@ public:
             if (block.devices.size() == 2 && block.ports.size() == 2) {
                 const RootDevice& d0 = ctx.rootDevices[static_cast<size_t>(block.devices[0])];
                 const RootDevice& d1 = ctx.rootDevices[static_cast<size_t>(block.devices[1])];
-                if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode) {
-                    const int p0 = block.ports[0];
-                    const int p1 = block.ports[1];
-                    const double z00 = ctx.Z[static_cast<size_t>(p0) * ctx.K + p0];
-                    const double z01 = ctx.Z[static_cast<size_t>(p0) * ctx.K + p1];
-                    const double z10 = ctx.Z[static_cast<size_t>(p1) * ctx.K + p0];
-                    const double z11 = ctx.Z[static_cast<size_t>(p1) * ctx.K + p1];
-                    if (z00 > 0.0 && z11 > 0.0 &&
-                        std::abs(z01 + z00) < 1e-4 * z00 &&
-                        std::abs(z10 + z11) < 1e-4 * z11) {
-                        const auto& m0 = ctx.comp.diode[d0.compIndex].second;
-                        const auto& m1 = ctx.comp.diode[d1.compIndex].second;
-                        if (std::abs(m0.isat - m1.isat) <= 1e-6 * m0.isat &&
-                            std::abs(m0.n - m1.n) <= 1e-4 &&
-                            std::abs(m0.rs - m1.rs) <= 1e-3) {
-                            block.isAntiParallelDiodePair = true;
-                            block.diodePair = AntiParallelDiodeModel(m0, m1);
-                        }
-                    }
+                if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode &&
+                    isAntiParallelDiodePair(ctx.comp, static_cast<int>(d0.compIndex),
+                                            static_cast<int>(d1.compIndex))) {
+                    block.isAntiParallelDiodePair = true;
+                    block.diodePair = AntiParallelDiodeModel(
+                        ctx.comp.diode[static_cast<size_t>(d0.compIndex)].second,
+                        ctx.comp.diode[static_cast<size_t>(d1.compIndex)].second);
                 }
             }
         }
@@ -359,7 +347,7 @@ public:
         ctx.hasAntiParallelBlock = false;
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
-        ctx.allScalarBlocks = false;
+        ctx.allClosedFormBlocks = false;
 
         const int nGroups = static_cast<int>(ctx.rootDevices.size());
         if (nGroups <= 0)
@@ -373,7 +361,7 @@ public:
             const double rtot = z[static_cast<size_t>(e) * ctx.K + e] + m.rs;
             if (!(rtot > 0.0))
                 return false;
-            ctx.grpDiode[static_cast<size_t>(q)] = DiodeModel(m.isat, m.n, rtot);
+            ctx.grpDiode[static_cast<size_t>(q)] = DiodeModel(m.isat, m.n, rtot, m.rp);
         }
         for (int c = 0; c < ctx.nCtrl; ++c) {
             const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(ctx.nTri + ctx.nD + c)];
@@ -576,41 +564,83 @@ public:
             if (block.devices.size() == 2 && block.ports.size() == 2) {
                 const RootDevice& d0 = ctx.rootDevices[static_cast<size_t>(block.devices[0])];
                 const RootDevice& d1 = ctx.rootDevices[static_cast<size_t>(block.devices[1])];
-                if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode) {
-                    const int p0 = block.ports[0];
-                    const int p1 = block.ports[1];
-                    const double z00 = ctx.Z[static_cast<size_t>(p0) * ctx.K + p0];
-                    const double z01 = ctx.Z[static_cast<size_t>(p0) * ctx.K + p1];
-                    const double z10 = ctx.Z[static_cast<size_t>(p1) * ctx.K + p0];
-                    const double z11 = ctx.Z[static_cast<size_t>(p1) * ctx.K + p1];
-                    if (z00 > 0.0 && z11 > 0.0 &&
-                        std::abs(z01 + z00) < 1e-4 * z00 &&
-                        std::abs(z10 + z11) < 1e-4 * z11) {
-                        const auto& m0 = ctx.comp.diode[d0.compIndex].second;
-                        const auto& m1 = ctx.comp.diode[d1.compIndex].second;
-                        if (std::abs(m0.isat - m1.isat) <= 1e-6 * m0.isat &&
-                            std::abs(m0.n - m1.n) <= 1e-4 &&
-                            std::abs(m0.rs - m1.rs) <= 1e-3) {
-                            block.isAntiParallelDiodePair = true;
-                            block.diodePair = AntiParallelDiodeModel(m0, m1);
-                            ctx.hasAntiParallelBlock = true;
-                        }
-                    }
+                if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode &&
+                    isAntiParallelDiodePair(ctx.comp, static_cast<int>(d0.compIndex),
+                                            static_cast<int>(d1.compIndex))) {
+                    block.isAntiParallelDiodePair = true;
+                    block.diodePair = AntiParallelDiodeModel(
+                        ctx.comp.diode[static_cast<size_t>(d0.compIndex)].second,
+                        ctx.comp.diode[static_cast<size_t>(d1.compIndex)].second);
+                    ctx.hasAntiParallelBlock = true;
                 }
             }
         }
 
         int scalarBlocks = 0;
+        int closedBlocks = 0;
         for (int b = 0; b < nb; ++b) {
             const NewtonBlock& block = ctx.newtonBlocks[static_cast<size_t>(b)];
-            if (isScalarBlock(block, ctx.rootDevices.data()))
+            const bool scalar = isScalarBlock(block, ctx.rootDevices.data());
+            if (scalar)
                 ++scalarBlocks;
+            if (scalar || block.isAntiParallelDiodePair)
+                ++closedBlocks;
         }
-        ctx.allScalarBlocks = (scalarBlocks == nb);
+        ctx.allClosedFormBlocks = (closedBlocks == nb);
         ctx.scalarBlockCount = scalarBlocks;
         ctx.blockCount = nb;
 
-        if (allowSignalFlowPruning && !ctx.allScalarBlocks &&
+        // A directed signal-flow order may drop a coupling edge that is
+        // physically present in Z: the flow graph claims the cycle cannot
+        // carry current across power rails (e.g. B+ -> VCC). Folding a scalar
+        // singleton under a cut edge is harmless (its law sees only its own
+        // port voltage; the full-residual check still guards the pass), but a
+        // diode pair block couples both of its terminals through Z, so
+        // solving it while an incoming coupling was cut solves a different
+        // system. Klon's pair with op-amps feeding back into the pair's node
+        // is exactly that shape: the pruned order solves the pair before the
+        // op-amps and misses the injected current. When that happens, rebuild
+        // without pruning so the devices merge into one block whose (reduced)
+        // solve sees the full coupling.
+        bool cutCouplingIntoPair = false;
+        if (useSignalFlow && ctx.hasAntiParallelBlock) {
+            const auto rawCoupled = [&](int g, int h) -> bool {
+                const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+                const int hAct = partitionPortCount(dh);
+                const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+                const int row0 = dg.portBase;
+                const int nPorts = dg.numPorts;
+                for (int r = row0; r < row0 + nPorts; ++r)
+                    for (int c = 0; c < hAct; ++c) {
+                        const int hp = activePort(dh, c);
+                        if (std::abs(z[static_cast<size_t>(r) * ctx.K + hp]) > 1e-9)
+                            return true;
+                    }
+                return false;
+            };
+            std::vector<int> devBlock(static_cast<size_t>(nGroups), -1);
+            for (int b = 0; b < nb; ++b)
+                for (int di : ctx.newtonBlocks[static_cast<size_t>(b)].devices)
+                    devBlock[static_cast<size_t>(di)] = b;
+            for (int b = 0; b < nb && !cutCouplingIntoPair; ++b) {
+                const NewtonBlock& blk = ctx.newtonBlocks[static_cast<size_t>(b)];
+                if (!blk.isAntiParallelDiodePair)
+                    continue;
+                for (int di : blk.devices) {
+                    for (int h = 0; h < nGroups && !cutCouplingIntoPair; ++h) {
+                        if (devBlock[h] == b)
+                            continue;
+                        if (rawCoupled(di, h) && !coupled(di, h))
+                            cutCouplingIntoPair = true;
+                    }
+                    if (cutCouplingIntoPair)
+                        break;
+                }
+            }
+        }
+
+        if (allowSignalFlowPruning &&
+            (!ctx.allClosedFormBlocks || cutCouplingIntoPair) &&
             !ctx.allowNonScalarSignalFlow)
             return buildRootOrder(ctx, false);
 
