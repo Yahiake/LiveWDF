@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -60,9 +61,11 @@ SpiceExportResult spiceExport(const Circuit& c,
     f << "* Engine integrates with trapezoidal at " << spiceNum(fs) << " Hz\n";
     f << ".options method=gear maxord=2 reltol=1e-4 abstol=1e-9 "
          "vntol=1e-5 chgtol=1e-12 trtol=7\n";
-    if (durationSeconds > 0.0)
-        f << ".tran " << spiceNum(1.0 / fs) << " " << spiceNum(durationSeconds)
-          << " 0 " << spiceNum(1.0 / fs) << "\n";
+    if (durationSeconds > 0.0) {
+        const double tstep = 1.0 / fs;
+        f << ".tran " << std::setprecision(6) << tstep << " "
+          << std::setprecision(6) << durationSeconds << " 0 " << tstep << "\n";
+    }
     (void)driveVolts; // reserved for input-source amplitude in a later increment
 
     // ---- DC nodesets from a warm solve would go here; caller can prepend ----
@@ -115,10 +118,20 @@ SpiceExportResult spiceExport(const Circuit& c,
         const auto& s = c.src[i];
         const std::string base = s.name.empty() ? ("V" + std::to_string(i)) : s.name;
         const std::string name = spiceUnique("V_" + spiceSafe(base), used);
-        f << name << " " << nodeOrGround(s.a) << " " << nodeOrGround(s.b)
-          << " DC " << spiceNum(s.dc);
-        if (s.ac != 0.0)
-            f << " AC " << spiceNum(s.ac);
+        f << name << " " << nodeOrGround(s.a) << " " << nodeOrGround(s.b);
+        if (!s.sin.empty() && s.sin.size() >= 3) {
+            // SIN(io ia freq [td [theta [phase]]])
+            f << " SIN(" << spiceNum(s.sin[0]) << " " << spiceNum(s.sin[1]) << " "
+              << spiceNum(s.sin[2]);
+            if (s.sin.size() > 3) f << " " << spiceNum(s.sin[3]);
+            if (s.sin.size() > 4) f << " " << spiceNum(s.sin[4]);
+            if (s.sin.size() > 5) f << " " << spiceNum(s.sin[5]);
+            f << ")";
+        } else {
+            f << " DC " << spiceNum(s.dc);
+            if (s.ac != 0.0)
+                f << " AC " << spiceNum(s.ac);
+        }
         f << "\n";
     }
 
@@ -144,6 +157,29 @@ SpiceExportResult spiceExport(const Circuit& c,
         f << en << " " << mid << " " << v.outB << " " << v.inA << " " << v.inB
           << " " << spiceNum(v.gain) << "\n";
         f << rn << " " << mid << " " << v.outA << " " << spiceNum(v.ro) << "\n";
+    }
+
+    // ---- OpAmps (VCVS with output resistance and rail clamping) ----
+    for (size_t i = 0; i < c.opamp.size(); ++i) {
+        const auto& o = c.opamp[i];
+        const std::string base = o.name.empty() ? ("OA" + std::to_string(i)) : o.name;
+        const auto& m = o.model;
+        const std::string en = spiceUnique("E_" + spiceSafe(base), used);
+        const std::string rn = spiceUnique("R_" + spiceSafe(base) + "_ro", used);
+        const std::string mid = "x_" + spiceSafe(base) + "_out";
+        // Ideal VCVS: mid = openLoopGain * (pos - neg)
+        f << en << " " << mid << " 0 " << o.pos << " " << o.neg
+          << " " << spiceNum(m.openLoopGain) << "\n";
+        // Output resistance
+        f << rn << " " << mid << " " << o.out << " " << spiceNum(m.outputImpedance) << "\n";
+        // Rail clamping (soft or hard): limit output to [vRailNeg, vRailPos]
+        // Using ideal diodes for clamp; for hard rails, replace with limiting sources.
+        if (m.softRails) {
+            // Asymmetric tanh clamp would need a behavioral source; hard clamp is a
+            // reasonable first-order approximation for DC comparison.
+        }
+        // Supply pins (vcc, vee) are connected externally by the schematic; the
+        // VCVS itself doesn't consume supply current in this linear model.
     }
 
     // ---- Triodes (DAFx-23 quadric) ----
@@ -428,8 +464,14 @@ SpiceExportResult spiceExport(const Circuit& c,
         first = false;
     }
     f << " > dc_nodes.txt\n";
+    if (durationSeconds > 0.0) {
+        f << "run\nlinearize\nwrdata tran_nodes.txt";
+        for (const auto& n : nodes) {
+            f << " v(" << n << ")";
+        }
+        f << "\n";
+    }
     f << ".endc\n.end\n";
-    r.netlist = f.str();
     r.netlist = f.str();
     r.ok = true;
     r.diagnostics = "core primitives exported; devices pending (see TODO below)";

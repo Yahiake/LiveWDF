@@ -162,17 +162,48 @@ struct TranTable {
     size_t nRows() const { return time.size(); }
 };
 
-inline TranTable parseTranFile(const fs::path& p, size_t nNodes) {
+inline TranTable parseTranFile(const fs::path& p, size_t nNodesHint = 0) {
     std::ifstream f(p);
     REQUIRE(f.good());
     TranTable t;
-    t.cols.resize(nNodes);
     std::string line;
-    bool data = false;
+    bool hasHeader = false;
+    bool nNodesAuto = (nNodesHint == 0);
     while (std::getline(f, line)) {
-        if (!data) {
-            if (line.rfind("Index", 0) == 0)
-                data = true;  // column header row; dashes are skipped below
+        if (!hasHeader) {
+            if (line.rfind("Index", 0) == 0) {
+                hasHeader = true;  // column header row from `linearize`
+                continue;
+            }
+            // wrdata output has no header: first token is time.
+            std::istringstream ls(line);
+            double time = 0.0;
+            if (!(ls >> time))
+                continue;  // skip blank or unparseable lines
+            t.time.push_back(time);
+            // Auto-detect column count from the first data row.
+            if (nNodesAuto && t.cols.empty()) {
+                double v = 0.0;
+                while (ls >> v)
+                    t.cols.push_back({});
+            }
+            if (nNodesAuto) {
+                // Re-parse the row now that cols is sized.
+                ls.clear();
+                ls.str(line);
+                ls >> time;  // skip time
+                for (size_t n = 0; n < t.cols.size(); ++n) {
+                    double val = 0.0;
+                    REQUIRE(ls >> val);
+                    t.cols[n].push_back(val);
+                }
+            } else {
+                for (size_t n = 0; n < nNodesHint; ++n) {
+                    double v = 0.0;
+                    REQUIRE(ls >> v);
+                    t.cols[n].push_back(v);
+                }
+            }
             continue;
         }
         if (line.empty() || line.rfind("---", 0) == 0)
@@ -183,7 +214,7 @@ inline TranTable parseTranFile(const fs::path& p, size_t nNodes) {
         if (!(ls >> idx >> time))
             continue;
         t.time.push_back(time);
-        for (size_t n = 0; n < nNodes; ++n) {
+        for (size_t n = 0; n < t.cols.size(); ++n) {
             double v = 0.0;
             REQUIRE(ls >> v);
             t.cols[n].push_back(v);
