@@ -10,7 +10,7 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 2,
+        "x": -3,
         "y": 10
       }
     },
@@ -38,7 +38,7 @@
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 7,
+        "x": 2,
         "y": 10
       }
     },
@@ -52,7 +52,7 @@
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 12,
+        "x": 7,
         "y": 10
       }
     },
@@ -841,6 +841,32 @@
         "x": 128,
         "y": 24
       }
+    },
+    {
+      "id": "R18",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
+        "y": 12
+      }
+    },
+    {
+      "id": "GND16",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
+        "y": 19
+      }
     }
   ],
   "description": "",
@@ -864,6 +890,18 @@
     {
       "points": [
         {
+          "x": 0,
+          "y": 10
+        },
+        {
+          "x": -1,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 5,
           "y": 10
         },
@@ -876,19 +914,7 @@
     {
       "points": [
         {
-          "x": 10,
-          "y": 10
-        },
-        {
           "x": 9,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 14,
           "y": 10
         },
         {
@@ -1866,6 +1892,18 @@
         {
           "x": 133,
           "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 14
+        },
+        {
+          "x": 13,
+          "y": 17
         }
       ]
     }
