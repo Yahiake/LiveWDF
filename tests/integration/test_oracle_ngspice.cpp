@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <fstream>
 #include <filesystem>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -14,6 +15,7 @@ namespace fs = std::filesystem;
 #include "wdf/Engine.h"
 #include "spice/SpiceNet.h"
 #include "spice/SpiceExport.h"
+#include "format/Document.h"
 
 // Phase 1 increment 3: ngspice golden-reference checks (tools/verify.py
 // methodology in-process). Thresholds borrowed from verify.py: DC <= 5e-4 V;
@@ -703,4 +705,78 @@ TEST_CASE("ngspice oracle: SPICE export of diode clipper matches ngspice DC",
                                                      << " livewdf v(d1)=" << lwVd1
                                                      << " err=" << std::abs(ngVd1 - lwVd1));
     REQUIRE(std::abs(ngVd1 - lwVd1) <= 5e-4);
+}
+
+TEST_CASE("ngspice oracle: SPICE export of Valvestate 8100 Boost preamp matches ngspice DC",
+          "[spice-export][ngspice][valvestate][dc]") {
+    LWDF_REQUIRE_NGSPICE("SPICE export Valvestate DC oracle");
+
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::loadFromFile(
+        "schematics/amps/Marshall Valvestate 8100 - Boost Channel (Preamp).livewdf",
+        doc, error));
+    REQUIRE(doc.loadWarnings.empty());
+    WARN("load warnings: " << error);
+
+    wdf::Circuit c = doc.toCircuit();
+    const auto result = wdf::spiceExport(c, 48000.0, 0.25, 0.1);
+    REQUIRE(result.ok);
+
+    const fs::path dir = lwdf_test::scratchDir();
+    const fs::path deckPath = dir / "spice_export_valvestate.cir";
+    {
+        std::ofstream f(deckPath);
+        f << result.netlist;
+    }
+    std::string cmd = "\"" + lwdf_test::ngspiceExe().string() + "\" -b -o \"" +
+                      "spice_export_valvestate.log" + "\" \"" + "spice_export_valvestate.cir" + "\"";
+#ifdef _WIN32
+    cmd = "cmd /c \"" + cmd + "\"";
+#endif
+    const fs::path saved = fs::current_path();
+    fs::current_path(dir);
+    const int ret = std::system(cmd.c_str());
+    fs::current_path(saved);
+    REQUIRE(ret == 0);
+
+    // Parse ngspice DC output and compare with LiveWDF engine.
+    const fs::path dcFile = dir / "dc_nodes.txt";
+    REQUIRE(fs::exists(dcFile));
+    std::ifstream df(dcFile);
+    REQUIRE(df.good());
+    std::map<std::string, double> ngValues;
+    std::string line;
+    while (std::getline(df, line)) {
+        const auto eq = line.find('=');
+        if (eq == std::string::npos) continue;
+        std::string name = line.substr(0, eq);
+        size_t end = name.find_last_not_of(" \t");
+        if (end != std::string::npos) name = name.substr(0, end + 1);
+        // strip "v(" prefix and ")" suffix: v(n1) -> n1
+        if (name.size() > 2 && name.front() == 'v' && name[1] == '(' && name.back() == ')')
+            name = name.substr(2, name.size() - 3);
+        const double val = std::stod(line.substr(eq + 1));
+        ngValues[name] = val;
+    }
+
+    wdf::Engine e(c, kFs);
+    std::vector<double> node, rootV;
+    REQUIRE(e.solveDc(node, rootV));
+
+    int compared = 0;
+    double maxErr = 0.0;
+    for (const auto& [ngName, ngVal] : ngValues) {
+        const int idx = e.nodeIndex(ngName);
+        if (idx < 0) continue;
+        const double lwVal = node[static_cast<size_t>(idx)];
+        const double err = std::abs(ngVal - lwVal);
+        maxErr = std::max(maxErr, err);
+        ++compared;
+        WARN("  " << ngName << ": ngspice=" << ngVal << " livewdf=" << lwVal
+                  << " err=" << err);
+    }
+    REQUIRE(compared > 0);
+    WARN("Valvestate preamp: compared " << compared << " nodes, maxErr=" << maxErr << " V");
+    REQUIRE(maxErr <= 5e-4);
 }
