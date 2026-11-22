@@ -88,27 +88,22 @@ public:
         return lastResidual_;
     }
 
-    /// Whether the exact closed-form root can drive this circuit: every group
-    /// (one device each) has a closed form and the coupling between groups is
-    /// acyclic, so the root splits into groups that can be solved in sequence.
-    /// A triode group is the quadratic surface `ip = kP2*q^2` in the
-    /// completed-square variable `q` with a piecewise-linear grid; a diode
-    /// group is the junction law over its port resistance, which is one
-    /// `wrightOmega` call. Each is exact for its own group.
-    /// Whether the root partition applied at all: the blocking succeeded. This
-    /// is eligibility, not runtime exactness -- coupled blocks (shared
-    /// cathodes, long-tailed pairs, anti-parallel diodes)
-    /// partition into one multi-device block, so they partition but have no
-    /// scalar closed form; `explicitRoots()` adds that second half.
+    /// Whether the exact closed-form root can drive this circuit: the root
+    /// partition exists and contains no device kind the closed forms cannot
+    /// express. Every block is then either a scalar singleton (triode with its
+    /// grid line, diode, controlled resistor, JFET, MOSFET) or an anti-parallel
+    /// diode pair reduced to one scalar port equation. Blocks that couple
+    /// several nonlinear devices are not exact; they stay on the block or joint
+    /// Newton.
     bool allowsExplicitRoot() const {
         return groupCount_ > 0 && nPent_ == 0 && nBjt_ == 0 && nOpAmp_ == 0;
     }
 
     /// Whether the exact closed-form root is currently driving the solve:
-    /// requested, the partition succeeded, and *every* block is a scalar-
-    /// capable singleton (`allScalarBlocks_`, from `buildRootOrder`). When
-    /// false, `blockRoots()` may still be driving a general block Newton; if
-    /// neither, the circuit runs the joint Newton.
+    /// requested, the partition succeeded, and *every* block is exact
+    /// (`allClosedFormBlocks_`, from `buildRootOrder`). When false,
+    /// `blockRoots()` may still be driving a general block Newton; if neither,
+    /// the circuit runs the joint Newton.
     bool explicitRoots() const { return explicitRootsActive_; }
 
     /// Whether the general block Newton is currently driving the solve.
@@ -225,7 +220,7 @@ protected:
             rootDevices_, circuit_, comp_, ctrlResValues_, Z_,
             K_, nTri_, nD_, nCtrl_, nPent_, nJfet_, nMosfet_, nBjt_, nOpAmp_,
             explicitRootsAllowed_, runtimeBlockEnabled_, fineBlockSolver_,
-            explicitRootsActive_, allScalarBlocks_, hasAntiParallelBlock_,
+            explicitRootsActive_, allClosedFormBlocks_, hasAntiParallelBlock_,
             blockCount_, scalarBlockCount_, groupCount_,
             runtimeBlockCount_, runtimeBlockUsed_,
             groupOrder_, grpIndeg_, grpQueue_, grpDiode_,
@@ -628,15 +623,19 @@ protected:
             groupOrder_[static_cast<size_t>(s)] = s;
 
         scalarBlockCount_ = 0;
+        int closedBlockCount = 0;
         hasAntiParallelBlock_ = false;
         for (int b = 0; b < nb; ++b) {
             const NewtonBlock& block = newtonBlocks_[static_cast<size_t>(b)];
-            if (isScalarBlock(block, rootDevices_.data()))
+            const bool scalar = isScalarBlock(block, rootDevices_.data());
+            if (scalar)
                 ++scalarBlockCount_;
+            if (scalar || block.isAntiParallelDiodePair)
+                ++closedBlockCount;
             if (block.isAntiParallelDiodePair)
                 hasAntiParallelBlock_ = true;
         }
-        allScalarBlocks_ = (scalarBlockCount_ == nb);
+        allClosedFormBlocks_ = (closedBlockCount == nb);
 
         solver::RootGroups::compileBlockZAndPredFold(
             newtonBlocks_, groupOrder_.data(), blockCount_, rootDevices_.data(),

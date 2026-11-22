@@ -84,8 +84,11 @@ Circuit LiveWDFDocument::toCircuit() const {
             } else if (comp.type == "diode") {
                 const std::string modelName = getProp("model", "1N4148");
                 const auto* entry = findDiodeByName(modelName);
-                DiodeModel dm = entry ? DiodeModel(entry->isat, entry->n, entry->rs)
-                                      : DiodeModel(getVal("isat", 1e-14), getVal("n", 1.0), getVal("rs", 0.0));
+                double rp = 1e6;
+                if (entry) rp = entry->rp;
+                DiodeModel dm = entry ? DiodeModel(entry->isat, entry->n, entry->rs, rp)
+                                      : DiodeModel(getVal("isat", 1e-14), getVal("n", 1.0),
+                                                   getVal("rs", 0.0), rp);
                 c.addDiode(getPin("anode"), getPin("cathode"), dm, comp.id);
             } else if (comp.type == "triode") {
                 const std::string modelName = getProp("model", "12AX7");

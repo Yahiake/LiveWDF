@@ -104,7 +104,7 @@ struct NewtonBlock {
     std::vector<int> devices;             ///< device-group indices, in root-device order
     std::vector<int> ports;               ///< live root ports, one per active row
     std::vector<int> portDevice;          ///< device group that owns each port
-    bool isAntiParallelDiodePair = false; ///< Symmetrical anti-parallel diode pair solved in closed form
+    bool isAntiParallelDiodePair = false; ///< two reversed diode ports solved as one scalar equation
     AntiParallelDiodeModel diodePair;
     std::vector<double> blockZ;           ///< Pre-gathered submatrix of Z: totalDevicePorts x n
     std::vector<std::vector<PredecessorPort>> predFold; ///< Per local device port: non-zero predecessor couplings
@@ -138,7 +138,7 @@ struct NewtonBlock {
     std::vector<int> reducedRowOfPort;   ///< root port -> reduced row, or -1
     std::vector<double> reducedZ;        ///< reducedRowPorts.size() x nN
 
-    bool reducedAntiParallel = false;    ///< two-diode reduced block with Z' pair symmetry
+    bool reducedAntiParallel = false;    ///< two reversed diode ports in the reduced core
     AntiParallelDiodeModel reducedPair;
     bool reducedScalarDiode = false;     ///< one-diode reduced block; absorb Z' into its Rs
     int reducedScalarPort = -1;

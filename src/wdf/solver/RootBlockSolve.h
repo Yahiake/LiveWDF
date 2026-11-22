@@ -208,7 +208,6 @@ public:
 
         bool converged = false;
         bool curValid = false;
-        bool currentsStale = false;
         double maxF = 0.0;
         double prevF = 0.0;
         bool luValid = false;
@@ -506,8 +505,11 @@ public:
                             ++ctx.limitHits;
                     }
                 }
-                if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV) && maxF < 1e-5) {
-                    converged = true;
+                if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV)) {
+                    // A collapsed step with a residual above the gate is not
+                    // convergence.  Let the caller try the exact full block /
+                    // joint solve instead of accepting a point the verifier
+                    // will reject.
                     break;
                 }
                 curValid = false;
@@ -647,8 +649,9 @@ public:
                     converged = true;
                     break;
                 }
-                if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV) && maxF < 1e-5) {
-                    converged = true;
+                if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV)) {
+                    // Same rule as the small-block path: a stalled step above
+                    // the gate is a failed solve, not a converged one.
                     break;
                 }
 
@@ -658,17 +661,6 @@ public:
         if (!converged)
             return false;
 
-        if (currentsStale) {
-            for (int di : block.devices) {
-                RootResidual::currentsForDevice(
-                    ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
-                    ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
-                    ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
-                    ctx.K, ctx.blockV.data(), ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
-            }
-            if (ctx.prof)
-                tock(ctx.prof->device);
-        }
 
         for (int di : block.devices) {
             const RootDevice& dev = ctx.rootDevices[di];
@@ -804,228 +796,6 @@ public:
         return true;
     }
 
-    /// Reduced Newton over the nonlinear active ports.  This is the same
-    /// device law and step limiter as `solveBlockNewton`, but the network is
-    /// the Schur-reduced `Z'` and the affine devices never become unknowns.
-    static inline bool solveReducedNewton(
-        const BlockView& view,
-        int b,
-        int s,
-        int maxIter,
-        double tol,
-        bool relaxed,
-        BlockSolveContext& ctx) noexcept
-    {
-        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        const int n = static_cast<int>(block.reducedPorts.size());
-        const int nRows = static_cast<int>(block.reducedRowPorts.size());
-        if (n <= 0 || n > 32 || nRows <= 0 || n > ctx.nRed)
-            return false;
-
-        (void)s;
-        (void)relaxed;
-        const double effTol = std::max(tol, 1e-9);
-        const double* LIVEWDF_RESTRICT rz0 = block.reducedZ.data();
-        const int* LIVEWDF_RESTRICT rp = block.reducedPorts.data();
-
-        alignas(32) double iPorts[32];
-        for (int r : block.reducedRowPorts)
-            ctx.blockI[static_cast<size_t>(r)] = 0.0;
-        for (int j = 0; j < n; ++j) {
-            const int p = rp[j];
-            const double prev = ctx.ii[static_cast<size_t>(p)];
-            const double v = std::isfinite(prev) ? prev : 0.0;
-            ctx.blockI[static_cast<size_t>(p)] = v;
-            iPorts[j] = v;
-        }
-        // A consistent start from the reduced network at the previous currents.
-        for (int r = 0; r < nRows; ++r) {
-            const int q = block.reducedRowPorts[static_cast<size_t>(r)];
-            double v = ctx.blockBase[static_cast<size_t>(q)];
-            const double* zr = rz0 + static_cast<size_t>(r) * n;
-            for (int j = 0; j < n; ++j)
-                v -= zr[j] * iPorts[j];
-            ctx.blockV[static_cast<size_t>(q)] = v;
-        }
-
-        for (int di : block.reducedDevices) {
-            RootResidual::currentsForDevice(
-                ctx.rootDevices[static_cast<size_t>(di)], ctx.comp, ctx.ctrlResValues.data(),
-                ctx.pentodes.data(), ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(),
-                ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(), ctx.staticMode,
-                ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K, ctx.blockV.data(),
-                ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
-        }
-
-        const auto residualMax = [&]() {
-            double maxF = 0.0;
-            for (int r = 0; r < nRows; ++r) {
-                const int q = block.reducedRowPorts[static_cast<size_t>(r)];
-                double f = ctx.blockV[static_cast<size_t>(q)] -
-                           ctx.blockBase[static_cast<size_t>(q)];
-                const double* zr = rz0 + static_cast<size_t>(r) * n;
-                for (int j = 0; j < n; ++j)
-                    f += zr[j] * ctx.blockI[static_cast<size_t>(rp[j])];
-                ctx.blockF[static_cast<size_t>(q)] = f;
-                maxF = std::max(maxF, std::abs(f));
-            }
-            return maxF;
-        };
-
-        if (residualMax() < effTol)
-            return true;
-
-        bool converged = false;
-        bool currentsStale = false;
-        double maxF = 0.0;
-        const int localMax = std::min(maxIter, 24);
-        for (int it = 0; it < localMax; ++it) {
-            ++ctx.newtonIters;
-            for (int di : block.reducedDevices) {
-                RootResidual::currentsForDevice(
-                    ctx.rootDevices[static_cast<size_t>(di)], ctx.comp, ctx.ctrlResValues.data(),
-                    ctx.pentodes.data(), ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(),
-                    ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(), ctx.staticMode,
-                    ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K, ctx.blockV.data(),
-                    ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
-            }
-
-            maxF = residualMax();
-            if (maxF < effTol) {
-                converged = true;
-                break;
-            }
-
-            std::fill_n(ctx.blockM.data(), static_cast<size_t>(n) * n, 0.0);
-            std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
-
-            int row = 0;
-            int devPortBase = 0;
-            for (int di : block.reducedDevices) {
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                const int o = dev.portBase;
-                const int nAct = activePortCount(dev);
-                for (int rr = 0; rr < nAct; ++rr) {
-                    const int active = activePort(dev, rr);
-                    const double* LIVEWDF_RESTRICT jRow =
-                        ctx.blockJ.data() + static_cast<size_t>(active) * ctx.K;
-                    double rhs = 0.0;
-                    double* LIVEWDF_RESTRICT mRow =
-                        ctx.blockM.data() + static_cast<size_t>(row) * n;
-                    for (int q = o; q < o + dev.numPorts; ++q) {
-                        const double jq = jRow[q];
-                        if (jq == 0.0)
-                            continue;
-                        const int localQ = devPortBase + (q - o);
-                        const double* LIVEWDF_RESTRICT zq = rz0 + static_cast<size_t>(localQ) * n;
-                        for (int j = 0; j < n; ++j)
-                            mRow[j] += jq * zq[j];
-                        rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
-                    }
-                    mRow[row] += 1.0;
-                    ctx.blockRhs[static_cast<size_t>(row)] = rhs;
-                    ++row;
-                }
-                devPortBase += dev.numPorts;
-            }
-            if (row != n)
-                return false;
-
-            if (!detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n))
-                return false;
-
-            const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
-            int localR = 0;
-            for (int di : block.reducedDevices) {
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR) {
-                    double d = -ctx.blockF[static_cast<size_t>(r)];
-                    const double* LIVEWDF_RESTRICT zr = rz0 + static_cast<size_t>(localR) * n;
-                    for (int j = 0; j < n; ++j)
-                        d -= zr[j] * rhsData[j];
-                    ctx.blockDv[static_cast<size_t>(r)] = d;
-                }
-            }
-
-            for (int di : block.reducedDevices) {
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                if (dev.kind == DeviceKind::Bjt) {
-                    const int o = dev.portBase;
-                    const auto& m = ctx.bjts[dev.compIndex];
-                    double nextCe = 0.0, nextBe = 0.0;
-                    m.applyMNRStep(ctx.blockV[static_cast<size_t>(o)],
-                                   ctx.blockV[static_cast<size_t>(o + 1)],
-                                   ctx.blockDv[static_cast<size_t>(o)],
-                                   ctx.blockDv[static_cast<size_t>(o + 1)],
-                                   nextCe, nextBe);
-                    ctx.blockDv[static_cast<size_t>(o)] =
-                        nextCe - ctx.blockV[static_cast<size_t>(o)];
-                    ctx.blockDv[static_cast<size_t>(o + 1)] =
-                        nextBe - ctx.blockV[static_cast<size_t>(o + 1)];
-                }
-            }
-
-            double scale = 1.0;
-            for (int di : block.reducedDevices) {
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
-                    const double d = ctx.blockDv[static_cast<size_t>(r)];
-                    const double lim = (d >= 0.0) ? ctx.stepUp[static_cast<size_t>(r)]
-                                                  : ctx.stepDown[static_cast<size_t>(r)];
-                    const double mag = std::abs(d);
-                    if (mag > 0.0 && mag * scale > lim)
-                        scale = lim / mag;
-                }
-            }
-            if (scale < 1.0) {
-                ++ctx.limitHits;
-                for (int di : block.reducedDevices) {
-                    const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
-                        ctx.blockDv[static_cast<size_t>(r)] *= scale;
-                }
-            }
-
-            double maxStep = 0.0, maxV = 0.0;
-            for (int di : block.reducedDevices) {
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
-                    const double old = ctx.blockV[static_cast<size_t>(r)];
-                    const double d = std::abs(ctx.blockDv[static_cast<size_t>(r)]);
-                    const double v = std::abs(old);
-                    maxStep = std::max(maxStep, d);
-                    maxV = std::max(maxV, v);
-                    ctx.blockVOld[static_cast<size_t>(r)] = old;
-                    ctx.blockV[static_cast<size_t>(r)] = old + ctx.blockDv[static_cast<size_t>(r)];
-                }
-            }
-
-            ctx.limitHits += RootResidual::limitDiodePorts(
-                ctx.blockV.data(), ctx.blockVOld.data(), ctx.junctionLimiters.data(),
-                ctx.junctionLimiters.size(), ctx.gridJunctionLimiters.data(),
-                ctx.gridJunctionLimiters.size(), ctx.gridLimitHits);
-            if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV) && maxF < 1e-5) {
-                converged = true;
-                currentsStale = true;
-                break;
-            }
-        }
-        if (!converged)
-            return false;
-
-        if (currentsStale) {
-            for (int di : block.reducedDevices) {
-                RootResidual::currentsForDevice(
-                    ctx.rootDevices[static_cast<size_t>(di)], ctx.comp, ctx.ctrlResValues.data(),
-                    ctx.pentodes.data(), ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(),
-                    ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(), ctx.staticMode,
-                    ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K, ctx.blockV.data(),
-                    ctx.blockI.data(), ctx.blockJ.data(), ctx.deviceEvals);
-            }
-        }
-        return true;
-    }
-
     /// Reconstruct the eliminated currents from `i_L = K0 + K i_N`, write the
     /// block's currents and voltages, then check that nothing went non-finite.
     /// The old values are kept in the block scratch so a failure leaves the
@@ -1140,13 +910,13 @@ public:
     ///
     /// N = 0: the block is linear; `K0` is the answer.
     /// N = 1 diode: one Wright omega call with `Z'` absorbed into `Rs`.
-    /// N = 2 anti-parallel diodes: the existing pair closed form on `Z'`.
+    /// N = 2 anti-parallel diodes: the scalar pair solve on `Z'` (equal or
+    /// unequal branch models).
     /// otherwise: a Newton loop on the reduced nonlinear ports.
     static inline bool solveReducedBlock(
         const BlockView& view,
         int b,
         int s,
-        int maxIter,
         double tol,
         bool relaxed,
         BlockSolveContext& ctx) noexcept
@@ -1197,8 +967,13 @@ public:
                 return false;
             ctx.blockI[static_cast<size_t>(p)] = i;
         } else {
-            if (!solveReducedNewton(view, b, s, maxIter, tol, relaxed, ctx))
-                return false;
+            // A mixed block with more than a scalar diode or an anti-parallel
+            // pair has no closed form on the Schur complement.  The reduced
+            // Newton iterates the nonlinear ports but holds the affine devices
+            // at a single linearisation, so its eliminated rows can miss the
+            // gate even when the reduced residual looks converged.  The full
+            // block Newton owns every device law and every row; use it.
+            return false;
         }
 
         return reconstructReducedBlock(view, b, s, relaxed, tol, ctx, k0);
@@ -1270,7 +1045,7 @@ public:
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
         if (block.linearReduction)
-            return solveReducedBlock(view, b, s, maxIter, tol, relaxed, ctx) ||
+            return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
                    solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
         if (block.isAntiParallelDiodePair) {
             RootClosedForms::solveAntiParallelDiodeGroup(
@@ -1376,6 +1151,7 @@ public:
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
+
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
@@ -1423,7 +1199,7 @@ public:
             const int b = (*view.order)[static_cast<size_t>(s)];
             const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
             if (block.linearReduction) {
-                if (!solveReducedBlock(view, b, s, maxIter, tol, false, ctx) &&
+                if (!solveReducedBlock(view, b, s, tol, false, ctx) &&
                     !solveBlockNewton(view, b, s, maxIter, tol, false, ctx)) {
                     failed = true;
                     break;
@@ -1455,7 +1231,7 @@ public:
                 const int b = (*view.order)[static_cast<size_t>(s)];
                 const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
                 if (block.linearReduction) {
-                    if (!solveReducedBlock(view, b, s, maxIter, tol, true, ctx) &&
+                    if (!solveReducedBlock(view, b, s, tol, true, ctx) &&
                         !solveBlockNewton(view, b, s, maxIter, tol, true, ctx)) {
                         failed = true;
                         break;

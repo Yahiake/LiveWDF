@@ -277,22 +277,20 @@ inline wdf::Circuit diodeClipper() {
 /// junctions removed, so the root is a *single* diode port and the group solve can
 /// take it.
 ///
-/// One diode is the shape the group solve *can* take, and its sibling
-/// `diodeClipper` is the control: two ports spanning the same node pair couple in
-/// both directions through the same `Z` entry, so no order exists and the joint
-/// Newton is required. The two together are what prices "a diode root" against "a
-/// diode root that can be split", which is the question a second device kind
-/// exists to answer.
-///
-/// The reference single-diode deck (`wdf_compiler/tests/diode_circuit/`) could not
-/// serve as this fixture: it couples a 1 nF cap through a 100 ohm resistor, a
-/// 100 ns corner, two orders of magnitude faster than a 48 kHz sample can resolve.
-/// At that step the cap is a wire and an ngspice reference is not a reference --
-/// which is why the *clipper* fixture, whose reference deck does have an
-/// audio-rate `C1`, is the one that carries the transient oracle. Reusing the
-/// clipper's own `Rin`/`C1` here keeps this fixture in the regime the engine is
-/// built for and makes the two differ in exactly one thing: the number of live
-/// junction ports.
+/// One diode is the shape the group solve takes directly, and its sibling
+/// `diodeClipper` is the control: two reversed ports across the same node pair
+/// collapse to one scalar equation, so both are exact closed forms and the
+/// difference is the pair solve against the single junction. The two together
+/// are what prices "a diode root" against "a pair root". The joint Newton stays
+/// available as the reference path. The reference single-diode deck
+/// (`wdf_compiler/tests/diode_circuit/`) could not serve as this fixture: it
+/// couples a 1 nF cap through a 100 ohm resistor, a 100 ns corner, two orders of
+/// magnitude faster than a 48 kHz sample can resolve. At that step the cap is a
+/// wire and an ngspice reference is not a reference -- which is why the *clipper*
+/// fixture, whose reference deck does have an audio-rate `C1`, is the one that
+/// carries the transient oracle. Reusing the clipper's own `Rin`/`C1` here keeps
+/// this fixture in the regime the engine is built for and makes the two differ in
+/// exactly one thing: the number of live junction ports.
 inline wdf::Circuit diodeSingle() {
     wdf::Circuit c;
     c.addSrc("in", "0", 0.0);
@@ -517,7 +515,8 @@ inline wdf::Circuit longTailedPair() {
 
 /// Classic asymmetric diode clipping stage (Klon Centaur / Boutique style):
 /// Silicon diode forward (1N4148, Vf ~ 0.65 V) in parallel with Germanium diode reverse (1N34A, Vf ~ 0.25 V).
-/// Multi-diode cyclic loop across the same output node, strictly requiring Newton (K = 2).
+/// The two reversed ports collapse to one scalar port equation even though the
+/// branch laws differ; the pair solve is exact for both.
 inline wdf::Circuit asymmetricDiodeClipper() {
     wdf::Circuit c;
     c.addSrc("in", "0", 0.0, 0.0, {}, "Vin");

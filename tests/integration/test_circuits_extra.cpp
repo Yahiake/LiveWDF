@@ -65,25 +65,24 @@ TEST_CASE("fixture shapes are what the note says they are", "[circuits]") {
         {"jfet_common_source", 5, 10, 2, true},
         // The clipper is the shape the note claims: `out` is the only unknown
         // node (`in` is driven), its two passive elements are the `P_` count, and
-        // the anti-parallel pair is two root ports. The explicit flag is `false`
-        // even though each diode has a closed form, because the two ports span the
-        // same node pair: each one's coupling to the other is the *same* `Z`
-        // entry, so both directions are live, no order exists, and the joint
-        // Newton has to run. `diode_single` below is the one-diode control.
-        {"diode_clipper", 1, 2, 2, false},
+        // the anti-parallel pair is two root ports. The explicit flag is `true`:
+        // the reversed ports make the two port equations one scalar equation in
+        // the shared terminal voltage, so the pair solve is exact. `diode_single`
+        // below is the one-diode control.
+        {"diode_clipper", 1, 2, 2, true},
         // One diode, so one root port and nothing to couple to: the group solve
         // takes it and the closed form is `true`.
         {"diode_single", 1, 2, 1, true},
         {"fender_tone_stack", 5, 11, 0, false},
         {"big_muff_tone_stack", 4, 8, 0, false},
         {"twin_t_notch_filter", 4, 9, 0, false},
-        {"tube_screamer_clipping", 3, 6, 2, false},
+        {"tube_screamer_clipping", 3, 6, 2, true},
         {"single_ended_el34", 4, 7, 3, false},
         {"guitar_pickup_cable", 4, 10, 0, false},
         {"baxandall_active_tone", 4, 10, 0, false},
         {"three_way_crossover", 4, 11, 0, false},
         {"long_tailed_pair", 8, 12, 6, false},
-        {"asymmetric_diode_clipper", 1, 3, 2, false},
+        {"asymmetric_diode_clipper", 1, 3, 2, true},
         {"diode_bridge_rectifier", 3, 6, 4, false},
         {"push_pull_power_stage", 8, 15, 6, false},
     };

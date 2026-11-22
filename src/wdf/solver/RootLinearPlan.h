@@ -212,28 +212,24 @@ public:
         if (nN == 2 && block.reducedDevices.size() == 2) {
             const RootDevice& d0 = rootDevices[block.reducedDevices[0]];
             const RootDevice& d1 = rootDevices[block.reducedDevices[1]];
-            if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode) {
+            if (d0.kind == DeviceKind::Diode && d1.kind == DeviceKind::Diode &&
+                isAntiParallelDiodePair(comp, static_cast<int>(d0.compIndex),
+                                        static_cast<int>(d1.compIndex))) {
                 const int p0 = block.reducedPorts[0];
                 const int p1 = block.reducedPorts[1];
                 const int r0 = block.reducedRowOfPort[static_cast<size_t>(p0)];
                 const int r1 = block.reducedRowOfPort[static_cast<size_t>(p1)];
-                if (r0 >= 0 && r1 >= 0) {
-                    const double z00 = block.reducedZ[static_cast<size_t>(r0) * nN + 0];
-                    const double z01 = block.reducedZ[static_cast<size_t>(r0) * nN + 1];
-                    const double z10 = block.reducedZ[static_cast<size_t>(r1) * nN + 0];
-                    const double z11 = block.reducedZ[static_cast<size_t>(r1) * nN + 1];
-                    if (z00 > 0.0 && z11 > 0.0 &&
-                        std::abs(z01 + z00) < 1e-4 * z00 &&
-                        std::abs(z10 + z11) < 1e-4 * z11) {
-                        const auto& m0 = comp.diode[d0.compIndex].second;
-                        const auto& m1 = comp.diode[d1.compIndex].second;
-                        if (std::abs(m0.isat - m1.isat) <= 1e-6 * m0.isat &&
-                            std::abs(m0.n - m1.n) <= 1e-4 &&
-                            std::abs(m0.rs - m1.rs) <= 1e-3) {
-                            block.reducedAntiParallel = true;
-                            block.reducedPair = AntiParallelDiodeModel(m0, m1);
-                        }
-                    }
+                const double z00 = r0 >= 0 ? block.reducedZ[static_cast<size_t>(r0) * nN] : 0.0;
+                // Two ports spanning the same node pair with opposite polarity
+                // have structurally antisymmetric cross impedance: the pair's
+                // two port equations are one scalar equation with Rp = z00,
+                // independently of the surrounding network. The branch models
+                // may differ.
+                if (r0 >= 0 && r1 >= 0 && z00 > 0.0 && std::isfinite(z00)) {
+                    block.reducedAntiParallel = true;
+                    block.reducedPair = AntiParallelDiodeModel(
+                        comp.diode[static_cast<size_t>(d0.compIndex)].second,
+                        comp.diode[static_cast<size_t>(d1.compIndex)].second);
                 }
             }
         } else if (nN == 1 && block.reducedDevices.size() == 1) {
@@ -247,7 +243,7 @@ public:
                     if (z > 0.0 && std::isfinite(z)) {
                         block.reducedScalarDiode = true;
                         block.reducedScalarPort = p;
-                        block.reducedScalarModel = DiodeModel(m.isat, m.n, z + m.rs);
+                        block.reducedScalarModel = DiodeModel(m.isat, m.n, z + m.rs, m.rp);
                     }
                 }
             }

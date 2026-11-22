@@ -56,17 +56,14 @@ TEST_CASE("Coupled circuits strictly engage and exercise the Newton solver", "[n
 
             // 1. Root structure check
             REQUIRE(e.rootCount() == tc.expectedRoots);
-            // The flag means "the whole solve is closed form", not "a
-            // partition exists": these are coupled circuits (one multi-device
-            // block each), and the two EL34 fixtures are pentode circuits the
-            // partition rejects outright -- no scalar closed form exists for
-            // either shape, so every sample has to run the joint Newton.
-            REQUIRE_FALSE(e.explicitRoots());
-
-            // If the circuit has a block-level closed-form root (e.g. antiparallel diode pair),
-            // disable explicit roots so that this test strictly engages and exercises the Newton solver.
-            if (e.blockRoots())
+            // A pair of reversed diodes is exact now, so a pair-only circuit
+            // claims `explicitRoots()`. The coupled triode/pentode shapes
+            // cannot. Force Newton either way: this test is about the joint
+            // solver, not about which formulation the engine picked.
+            if (e.explicitRoots() || e.blockRoots())
                 e.setExplicitRoots(false);
+            REQUIRE_FALSE(e.explicitRoots());
+            REQUIRE_FALSE(e.blockRoots());
 
             // 2. DC solve
             std::vector<double> node, rootV;

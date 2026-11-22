@@ -16,13 +16,14 @@ TEST_CASE("named diode registry provides Cathodyne's 6 presets", "[diode][regist
 
     const auto* d4148 = wdf::findDiodeByName("1N4148");
     REQUIRE(d4148 != nullptr);
-    REQUIRE(d4148->isat == Approx(4.0e-9));
-    REQUIRE(d4148->n == Approx(1.0));
+    REQUIRE(d4148->isat == Approx(4.352e-9));
+    REQUIRE(d4148->n == Approx(1.905));
     REQUIRE(d4148->rs == Approx(0.56));
+    REQUIRE(d4148->rp == Approx(1e6));
 
     const auto* d914 = wdf::findDiodeByName("1N914");
     REQUIRE(d914 != nullptr);
-    REQUIRE(d914->isat == Approx(4.0e-9));
+    REQUIRE(d914->isat == Approx(4.352e-9));
 
     const auto* d4007 = wdf::findDiodeByName("1N4007");
     REQUIRE(d4007 != nullptr);
@@ -60,8 +61,9 @@ TEST_CASE("SPICE parser resolves named diode presets without boilerplate .model"
         "R1 in out 1k\n"
         "D1 out 0 1N4148\n");
     REQUIRE(c.diode.size() == 1);
-    REQUIRE(c.diode[0].model.isat == Approx(4.0e-9));
+    REQUIRE(c.diode[0].model.isat == Approx(4.352e-9));
     REQUIRE(c.diode[0].model.rs == Approx(0.56));
+    REQUIRE(c.diode[0].model.rp == Approx(1e6));
 
     // 2. Leading 'D' variant in netlist
     const auto c2 = wdf::buildFromString(

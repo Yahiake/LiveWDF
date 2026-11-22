@@ -120,6 +120,22 @@ struct Compiled {
     }
 };
 
+/// True when two ports span the same two nodes with opposite polarity. Their
+/// port voltages are exact negatives; in a reciprocal network the cross
+/// impedance is the negated driving-point impedance, so the pair's two port
+/// equations collapse into one scalar equation in the shared terminal voltage.
+inline bool isAntiParallel(const Port& a, const Port& b) noexcept {
+    return a.a == b.b && a.b == b.a;
+}
+
+/// The same statement for two compiled diode branches. The root partitioners
+/// use it to choose the anti-parallel pair law instead of a coupled Newton
+/// block; the branch models may differ.
+inline bool isAntiParallelDiodePair(const Compiled& c, int i0, int i1) noexcept {
+    return isAntiParallel(c.diode[static_cast<size_t>(i0)].first,
+                          c.diode[static_cast<size_t>(i1)].first);
+}
+
 /// Offset of an element whose port is held by ideal sources, at source values `sv`.
 inline double evalOff(const std::vector<double>& off, const double* sv) {
     double s = off.empty() ? 0.0 : off[0];

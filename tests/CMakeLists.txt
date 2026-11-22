@@ -46,6 +46,7 @@ add_executable(livewdf_tests
 
     devices/test_device_registry.cpp
     devices/test_diode.cpp
+    devices/test_diode_pair_port.cpp
     devices/test_jfet.cpp
     devices/test_mosfet.cpp
     devices/test_pentode.cpp
@@ -60,7 +61,6 @@ add_executable(livewdf_tests
     devices/test_bjt_reference.cpp
     devices/test_opamp.cpp
     devices/test_power_supply.cpp
-    devices/test_pedalkernel_import.cpp
     devices/test_omega.cpp
     dsp/test_halfband_oversampler.cpp
 

@@ -352,7 +352,7 @@ CompileResult Compiler::compile(const wdf::Circuit& netlist,
     }
 
     const RootLayout layout = wdf::buildRootLayout(compiled);
-    TopologyPlan topology = buildTopologyPlan(netlist, compiled, layout);
+    TopologyPlan topology = buildTopologyPlan(netlist, layout);
     NodeTable nodes(compiled.nodes);
     std::vector<DeviceInstance> devices = buildDevices(netlist, layout);
 

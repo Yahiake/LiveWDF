@@ -433,7 +433,7 @@ TEST_CASE("ngspice transient oracle: blockwise JFET pair plus diode clippers",
     // partition or its WDF discretization.
     const std::string model =
         ".model J2N5952 NJF(Beta=1.314m Vto=-2.021 Lambda=4m Rd=0 Rs=0 Cgd=0 Cgs=0)\n"
-        ".model DTEST D(IS=1e-9 N=1 RS=0)\n";
+        ".model DTEST D(IS=1e-9 N=1 RS=0 RP=0)\n";  // ngspice's plain law explicitly
     const std::string net =
         "* livewdf blockwise transient oracle\n"
         "VDD vdd 0 DC 15\n"
