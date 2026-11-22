@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -90,11 +91,13 @@ SpiceExportResult spiceExport(const Circuit& c,
     }
 
     // ---- Inductors ----
+    std::map<std::string, std::string> indElementNames;
     for (size_t i = 0; i < c.ind.size(); ++i) {
         const auto& e = c.ind[i];
         const std::string base = e.name.empty() ? ("L" + std::to_string(i)) : e.name;
-        f << spiceUnique("L_" + spiceSafe(base), used) << " "
-          << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
+        const std::string name = spiceUnique("L_" + spiceSafe(base), used);
+        indElementNames[e.name] = name;
+        f << name << " " << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
           << spiceNum(e.value) << "\n";
     }
 
@@ -104,8 +107,10 @@ SpiceExportResult spiceExport(const Circuit& c,
         if (m.indNames.size() < 2) continue;
         const std::string kn = spiceUnique("K_" + spiceSafe(m.name.empty() ? "k" : m.name), used);
         f << kn;
-        for (const auto& n : m.indNames)
-            f << " " << spiceSafe(n);
+        for (const auto& n : m.indNames) {
+            auto it = indElementNames.find(n);
+            f << " " << (it != indElementNames.end() ? it->second : spiceSafe(n));
+        }
         if (m.L.empty())
             f << " " << spiceNum(m.k);
         else
@@ -443,7 +448,10 @@ SpiceExportResult spiceExport(const Circuit& c,
     // Collect unique node names from all elements
     std::set<std::string> nodes;
     auto addNode = [&](const std::string& n) {
-        if (!n.empty() && n != "0") nodes.insert(n);
+        // Skip internal/synthetic nodes created by transformer expansion
+        // (their names contain '$', which ngspice can't reference in v()).
+        if (!n.empty() && n != "0" && n.find('$') == std::string::npos)
+            nodes.insert(n);
     };
     for (const auto& e : c.res) { addNode(e.a); addNode(e.b); }
     for (const auto& e : c.cap) { addNode(e.a); addNode(e.b); }
