@@ -162,32 +162,81 @@ struct TranTable {
     size_t nRows() const { return time.size(); }
 };
 
-inline TranTable parseTranFile(const fs::path& p, size_t nNodes) {
+inline TranTable parseTranFile(const fs::path& p, size_t nNodesHint = 0) {
     std::ifstream f(p);
     REQUIRE(f.good());
     TranTable t;
-    t.cols.resize(nNodes);
     std::string line;
-    bool data = false;
+    const size_t hint = nNodesHint;  // 0: count the columns ourselves
+    bool indexCol = false;           // a leading index cell (seen the header)
     while (std::getline(f, line)) {
-        if (!data) {
-            if (line.rfind("Index", 0) == 0)
-                data = true;  // column header row; dashes are skipped below
-            continue;
-        }
         if (line.empty() || line.rfind("---", 0) == 0)
             continue;
         std::istringstream ls(line);
-        std::string idx;
-        double time = 0.0;
-        if (!(ls >> idx >> time))
+        std::string first;
+        if (!(ls >> first))
             continue;
-        t.time.push_back(time);
-        for (size_t n = 0; n < nNodes; ++n) {
-            double v = 0.0;
-            REQUIRE(ls >> v);
-            t.cols[n].push_back(v);
+
+        // Column header of `print`/`linearize` output: `Index  time  v(x)...`.
+        // Count the value cells (everything after `time`) when the caller did
+        // not pin the column count, then keep going: wrdata has no header at
+        // all, so its first data row supplies the count instead.
+        if (first == "Index") {
+            if (hint == 0 && t.cols.empty()) {
+                std::string tok;
+                size_t cells = 0;
+                while (ls >> tok)
+                    ++cells;  // `time` plus one cell per requested vector
+                if (cells > 0)
+                    t.cols.resize(cells - 1);
+            }
+            indexCol = true;
+            continue;
         }
+
+        // Banner/comment lines (`* title`, `Transient Analysis ...`) never parse
+        // as a number. In a table, the row index came first, so the time is the
+        // next cell; in wrdata output the time is the first cell.
+        // Collect every numeric cell of the row.
+        std::vector<double> cells;
+        {
+            double v = 0.0;
+            std::istringstream all(line);
+            while (all >> v)
+                cells.push_back(v);
+        }
+        if (cells.empty())
+            continue;
+
+        double time = 0.0;
+        std::vector<double> row;
+        if (indexCol) {
+            // `Index time v1 v2 ...`: cell[0] is the row index, cell[1] is the
+            // grid time, the rest are the vector values.
+            if (cells.size() < 2)
+                continue;
+            time = cells[1];
+            row.assign(cells.begin() + 2, cells.end());
+        } else {
+            // wrdata: `time v1 time v2 ...` — the independent variable is
+            // interleaved with every vector value. Keep every cell as a column
+            // so the caller can index `cols[2*j]` (time, repeated) /
+            // `cols[2*j+1]` (value); tt.time is the grid (cell[0]).
+            time = cells[0];
+            row = cells;
+        }
+
+        // Size the columns from the first row that has no header above it.
+        if (hint != 0)
+            t.cols.resize(hint);
+        if (t.cols.empty())
+            t.cols.resize(row.size());
+        // A row that does not fill every column means the table was truncated or
+        // re-wrapped mid-row; say so instead of silently misaligning columns.
+        REQUIRE(row.size() == t.cols.size());
+        t.time.push_back(time);
+        for (size_t n = 0; n < t.cols.size(); ++n)
+            t.cols[n].push_back(row[n]);
     }
     REQUIRE_FALSE(t.time.empty());
     return t;

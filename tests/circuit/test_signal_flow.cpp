@@ -350,31 +350,31 @@ static void runUserCircuitTest(const std::string& path, const std::string& name)
 }
 
 TEST_CASE("User Circuit: Fuzz Face (Germanium BJT)", "[user_circuits][fuzz_face]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/pedals_fx/Fuzz Face.livewdf", "Fuzz Face");
+    runUserCircuitTest("schematics/pedals_fx/Fuzz Face.livewdf", "Fuzz Face");
 }
 
 TEST_CASE("User Circuit: Dunlop Cry Baby GCB-95", "[user_circuits][cry_baby]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/pedals_fx/Dunlop Cry Baby GCB-95.livewdf", "Dunlop Cry Baby");
+    runUserCircuitTest("schematics/pedals_fx/Dunlop Cry Baby GCB-95.livewdf", "Dunlop Cry Baby");
 }
 
 TEST_CASE("User Circuit: Ibanez TS-808 Tube Screamer", "[user_circuits][ts808]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/pedals_fx/Ibanez TS_808.livewdf", "Ibanez TS-808");
+    runUserCircuitTest("schematics/pedals_fx/Ibanez TS_808.livewdf", "Ibanez TS-808");
 }
 
 TEST_CASE("User Circuit: Klon Centaur", "[user_circuits][klon]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/pedals_fx/Klon Centaur.livewdf", "Klon Centaur");
+    runUserCircuitTest("schematics/pedals_fx/Klon Centaur.livewdf", "Klon Centaur");
 }
 
 TEST_CASE("User Circuit: Orange Rockerverb 50w Clean", "[user_circuits][rockerverb_clean]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/amps/Orange Rockerverb 50w - Clean Channel (Preamp only).livewdf", "Orange Rockerverb Clean");
+    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Clean Channel (Preamp only).livewdf", "Orange Rockerverb Clean");
 }
 
 TEST_CASE("User Circuit: Orange Rockerverb 50w Dirty", "[user_circuits][rockerverb_dirty]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf", "Orange Rockerverb Dirty");
+    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf", "Orange Rockerverb Dirty");
 }
 
 TEST_CASE("User Circuit: Mesa Boogie Dual Rectifier", "[user_circuits][dual_rectifier]") {
-    runUserCircuitTest("C:/Users/PC/Documents/LiveWDF/amps/Mesa Boogie Dual Rectifier.livewdf", "Mesa Boogie Dual Rectifier");
+    runUserCircuitTest("schematics/amps/Mesa Boogie Dual Rectifier (Preamp Only).livewdf", "Mesa Boogie Dual Rectifier");
 }
 
 TEST_CASE("User Circuit: Mesa Boogie Mark IIC+ (++) GEQ", "[user_circuits][mark_iic_geq]") {
