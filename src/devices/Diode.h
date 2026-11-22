@@ -4,11 +4,13 @@
 //
 // This is the project's one nonlinear two-terminal device law, used by the
 // netlist `D` element (`src/spice/SpiceNet.h`), where `rs` is the SPICE diode's
-// own `RS`. The law is the extended Shockley model of "An Improved and
-// Generalized Diode Clipper Model for Wave Digital Filters" (Werner et al;
-// https://www.researchgate.net/publication/299514713 -- Jatin Chowdhury's
-// wdf_compiler implements it in `wdf_lib_diode.h`): the Shockley junction with
-// a parallel resistor on top,
+// own `RS`. With `rp > 0` this is the extended Shockley diode model of
+// Bernardini et al. (Bernardini, Werner, Maffezzoni, Sarti, 144th AES Conv.,
+// 2018; Bernardini, Maffezzoni, Sarti, IEEE/ACM TASLP 2019; and the closed-form
+// Wright-Omega inversion in Bernardini et al., IEEE/ACM TASLP 2021, Sec. IV.B,
+// eqns (43)-(55), as implemented in Giampiccolo/Ravasi/Bernardini's ATTILA,
+// `extendedSchockleyDiodeScat.m`): the Shockley junction with a parallel
+// resistor on top,
 //
 //     i = Is * (exp((v - i*Rs) / (n*Vt)) - 1) + (v - i*Rs) / Rp
 //
@@ -388,11 +390,10 @@ struct DiodeEntry {
     double rp;
 };
 
-/// The 6 diode types Cathodyne offers (Cathodyne DiodeClipper.h / chowdsp_wdf),
-/// run at the extended law: the 1N4148/1N914 saturation and emission are the
-/// extended preset the reference engines ship (Is = 4.352n, eta = 1.905), the
-/// series values stay the Cathodyne hardware parts, and Rp = 1e6 carries the
-/// paper's extension on every named diode.
+/// The 6 diode types Cathodyne offers (`Cathodyne/src/dsp/DiodeClipper.h`), with
+/// the 1N4148/1N914 saturation and emission from ATTILA's extended Shockley
+/// example (`Is = 4.352e-9, eta = 1.905, Rs = 0.56, Rp = 1e6`) and `Rp = 1e6`
+/// carrying the Bernardini et al extension on every named diode.
 inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N4148", 4.352e-9, 1.905, 0.56, 1e6},
     {"1N914",  4.352e-9, 1.905, 0.56, 1e6},

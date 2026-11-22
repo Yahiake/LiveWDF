@@ -440,8 +440,9 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
     /// parameter the engine does not model is an error, not something to drop:
     ///
     ///   * `IS`, `N`, `RS`, `RP` are the whole extended junction law the engine
-    ///     solves; `RP` is the Werner et al parallel resistor and defaults to
-    ///     1e6. `RP=0` asks for the plain SPICE junction law;
+    ///     solves; `RP` is the Bernardini et al extended-Shockley parallel
+    ///     resistor and defaults to 1e6. `RP=0` asks for the plain SPICE
+    ///     junction law;
     ///   * everything else (`CJO`, `TT`, `VJ`, `M`, ...) changes the circuit in
     ///     ways this engine cannot reproduce, so honouring the line by silently
     ///     ignoring them would be the increment-8 bug wearing a nicer name.
@@ -473,7 +474,7 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
         const double isat = num("is", 1e-14);
         const double emission = num("n", 1.0);
         const double series = num("rs", 0.0);
-        const double parallel = num("rp", 1e6);  // the paper's extension, carried
+        const double parallel = num("rp", 1e6);  // Bernardini et al extension, carried
         if (!(isat > 0.0) || !(emission > 0.0) || !(series >= 0.0) || !(parallel >= 0.0))
             throw std::runtime_error("diode model '" + name + "' in " + sourceName +
                                      " has a non-physical parameter (need IS>0, N>0, RS>=0, RP>=0)");
