@@ -1,0 +1,3 @@
+id,median_ns_frame,min_ns_frame,max_ns_frame,mean_iterations,mean_evaluations,fallbacks,rejected,unconverged,mean_abs_V,median_cpu_ns_frame,min_cpu_ns_frame,max_cpu_ns_frame
+1n4003,145.94229,136.94063,165.97085,0,1,0,0,0,0.83935727,145.97408,137.14904,166.00881
+1n4007,145.55685,136.46517,163.38769,0,1,0,0,0,0.65601657,145.59285,136.48629,163.42646

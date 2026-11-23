@@ -1,0 +1,5 @@
+sweep,id,card,kind,supply_V,meter_ohms,temperature_C,rejected,unconverged
+1n4003,1n4003,1N4003,diode,0,0.1,27,0,0
+1n4003-reverse,1n4003,1N4003,diode,0,0.1,27,0,0
+1n4007,1n4007,1N4007,diode,0,0.1,27,0,0
+1n4007-reverse,1n4007,1N4007,diode,0,0.1,27,0,0
