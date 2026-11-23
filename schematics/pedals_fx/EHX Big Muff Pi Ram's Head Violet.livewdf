@@ -826,7 +826,7 @@
       },
       "values": {
         "totalR": 100000.0,
-        "pos": 0.55
+        "pos": 0.35
       },
       "visual": {
         "x": 246,
@@ -852,7 +852,7 @@
       "type": "out",
       "properties": {},
       "values": {
-        "fullScaleVolts": 1.0
+        "fullScaleVolts": 3.0
       },
       "visual": {
         "x": 262,

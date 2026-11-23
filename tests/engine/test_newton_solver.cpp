@@ -1,5 +1,7 @@
 #include <catch2.hpp>
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <string>
 #include <vector>
@@ -9,6 +11,7 @@
 #endif
 #include <math.h>
 
+#include "format/Document.h"
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"
 
@@ -169,6 +172,37 @@ TEST_CASE("Newton solver survives extreme overdrive without divergence", "[newto
             REQUIRE(std::abs(v) < 20.0); // Bounded
         }
     }
+}
+
+TEST_CASE("Newton backtracks through the HM-2 clipping amplifier rail", "[newton][robustness]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf", error));
+    const auto circuit = document.toCircuit();
+    const auto input = std::find_if(circuit.src.begin(), circuit.src.end(), [&](const auto& source) {
+        return source.name == document.inputId();
+    });
+    REQUIRE(input != circuit.src.end());
+    const auto inputIndex = static_cast<size_t>(input - circuit.src.begin());
+    std::vector<double> sources;
+    for (const auto& source : circuit.src)
+        sources.push_back(source.dc);
+
+    const auto fs = GENERATE(48000.0, 96000.0);
+    wdf::Engine engine(circuit, fs);
+    for (int sample = 0; sample < static_cast<int>(fs * .12); ++sample)
+        engine.step(sources);
+
+    constexpr std::array<double, 4> frequencies{220, 997, 2100, 5900};
+    constexpr std::array<double, 4> weights{.34, .34, .20, .12};
+    for (int sample = 0; sample < static_cast<int>(fs * .05); ++sample) {
+        double stimulus = 0;
+        for (size_t tone = 0; tone < frequencies.size(); ++tone)
+            stimulus += weights[tone] * .12 * std::sin(2.0 * kPi * frequencies[tone] * sample / fs);
+        sources[inputIndex] = stimulus * std::min(1.0, sample / (fs * .008));
+        engine.step(sources);
+    }
+    REQUIRE(engine.stateRejectCount() == 0);
 }
 
 TEST_CASE("Long-Tailed Pair produces differential balanced phase outputs", "[newton][ltp]") {

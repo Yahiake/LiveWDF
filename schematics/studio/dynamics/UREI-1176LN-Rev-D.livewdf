@@ -3,7 +3,7 @@
   "name": "UREI 1176LN Rev D",
   "category": "Dynamics",
   "author": "LiveWDF",
-  "description": "UREI 1176LN Rev D, factory drawing for serials 1239\u20132331. The selected 2N5457, discrete preamp, dual-phase feedback rectifier, attack and release network, and transformer-loaded class-A line amplifier use the service topology. The modeled balanced connections are ground-referenced. SPICE transistor transport parameters, nominal linear transformer winding equivalents, stabilized bias, and an input pot substitute for selected parts, coupled iron, the factory trim, and the T attenuator. A Q5 emitter load stabilizes the discrete solve. The discrete detector senses the pre-makeup signal. Ratio continuously changes detector drive. The VU meter, linked unit, mains supply and mechanically ganged pushbutton assembly are outside the audio model.",
+  "description": "UREI 1176LN Rev D, factory drawing for serials 1239\u20132331. The selected 2N5457, discrete preamp, dual-phase feedback rectifier, attack and release network, and transformer-loaded class-A line amplifier use the service topology. The modeled balanced connections are ground-referenced. SPICE transistor transport parameters, nominal linear transformer winding equivalents, stabilized bias, and an input pot substitute for selected parts, coupled iron, a user-adjustable factory trim, and the T attenuator. R86 is fixed at 30 ohms in the factory R85/R86 series feedback path. A Q5 emitter load stabilizes the discrete solve. The discrete detector senses the pre-makeup signal. Ratio continuously changes detector drive. The VU meter, linked unit, mains supply and mechanically ganged pushbutton assembly are outside the audio model.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -1670,18 +1670,6 @@
       }
     },
     {
-      "id": "GND41",
-      "type": "gnd",
-      "properties": {},
-      "values": {},
-      "visual": {
-        "x": 102,
-        "y": 54,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
       "id": "GND42",
       "type": "gnd",
       "properties": {},
@@ -2003,11 +1991,15 @@
         },
         {
           "x": 79,
-          "y": 48
+          "y": 52
         },
         {
-          "x": 82,
-          "y": 48
+          "x": 102,
+          "y": 52
+        },
+        {
+          "x": 102,
+          "y": 50
         }
       ]
     },
@@ -2052,18 +2044,6 @@
         {
           "x": 78,
           "y": 21
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 102,
-          "y": 50
-        },
-        {
-          "x": 102,
-          "y": 52
         }
       ]
     },

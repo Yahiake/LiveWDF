@@ -190,6 +190,64 @@ TEST_CASE("class-AB opamp drives a heavy load only up to its source current",
     }
 }
 
+TEST_CASE("class-AB negative feedback follows the load line across output limits",
+          "[opamp][engine][class-ab]") {
+    constexpr double ri = 10000.0, rf = 100000.0;
+    const auto model = opamp(wdf::OpAmpType::Rc4558ClassAB, 13.1, 13.1);
+    for (const double load : {100.0, 2000.0}) {
+        auto circuit = inverting(ri, rf, model);
+        circuit.addRes("out", "0", load);
+        wdf::Engine engine(circuit, kFs);
+        const int out = engine.nodeIndex("out");
+        REQUIRE(out >= 0);
+        REQUIRE(engine.blockRoots());
+
+        double pole = 0.0;
+        const auto alpha = wdf::OpAmpEngineLaw::alpha(model, kFs);
+        const auto maxDv = wdf::OpAmpEngineLaw::maxDv(model, kFs);
+        const auto limit = model.outputCurrentLimit;
+        for (int n = 0; n < 480; ++n) {
+            const double input = 3.0 * std::sin(2.0 * kPi * 440.0 * n / kFs);
+            const auto loadVoltage = [load, input](double current) {
+                return (input / (ri + rf) - current) / (1.0 / load + 1.0 / (ri + rf));
+            };
+            const auto sourceVoltage = [&](double output) {
+                const double inputDiff = -(rf * input + ri * output) / (ri + rf);
+                return wdf::OpAmpEngineLaw::sourceVoltage(model, inputDiff, pole, alpha,
+                                                          maxDv, false, nullptr);
+            };
+            // Reference uses the resistive circuit's KCL in current space
+            // with plain bisection and no fast-path initial guess.
+            double lo = -limit, hi = limit;
+            for (int i = 0; i < 48; ++i) {
+                const double current = (lo + hi) * 0.5;
+                const double output = loadVoltage(current);
+                double conductance = 0.0;
+                if (current > model.outputCurrent(output - sourceVoltage(output), conductance))
+                    hi = current;
+                else
+                    lo = current;
+            }
+            const double reference = loadVoltage((lo + hi) * 0.5);
+            pole = sourceVoltage(reference);
+            const auto& nodes = engine.step({input});
+            REQUIRE(engine.lastConverged());
+            REQUIRE_FALSE(engine.lastStateRejected());
+            CHECK(engine.lastResidual() <= 1e-9);
+            CHECK(nodes[static_cast<size_t>(out)] == Approx(reference).margin(2e-9));
+        }
+
+        wdf::Engine fallback(circuit, kFs), joint(circuit, kFs);
+        joint.setExplicitRoots(false);
+        const auto& fallbackNodes = fallback.step({0.3}, 0);
+        const auto& jointNodes = joint.step({0.3}, 0);
+        CHECK(fallback.blockFallbackCount() == 1);
+        CHECK(fallback.lastConverged() == joint.lastConverged());
+        CHECK(fallback.lastStateRejected() == joint.lastStateRejected());
+        CHECK(fallbackNodes == jointNodes);
+    }
+}
+
 TEST_CASE("opamp engine inverting AC gain follows Rf/Ri", "[opamp][engine][tran]") {
     auto model = opamp(wdf::OpAmpType::Lm308);
     model.gbw = 1.0e9;  // keep the GBW pole well above the audio band
