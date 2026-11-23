@@ -89,7 +89,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"solve_quality", 1}, "Solve Quality",
-        juce::StringArray{"Accurate", "Fast Live"}, 0));
+        juce::StringArray{"Accurate", "Fast Live"}, 1));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"accurate_export", 1}, "Accurate export", true));
