@@ -192,7 +192,7 @@ private:
         void paint(juce::Graphics& g) override;
         void resized() override;
 
-        bool openFile(const juce::File& file);
+        bool openFile(const juce::File& file, bool replaceTab = false);
         bool saveFile(const juce::File& file);
 
         /// Open a new, empty tab.
@@ -308,10 +308,10 @@ private:
         /// Save the current tab under a name the user chooses.
         void saveAs();
 
-        /// Open a document in a fresh tab. The one path used by New, Open, the
-        /// starter sheet and the preset library, so a tab cannot be built one
-        /// way by one entry point and another way by the next.
-        void openDocumentTab(wdf::LiveWDFDocument document, const juce::File& file);
+        /// Open a document, optionally reusing the active tab for preset steps.
+        /// Modified tabs always keep their document.
+        void openDocumentTab(wdf::LiveWDFDocument document, const juce::File& file,
+                             bool replaceTab = false);
 
         /// Open the built-in RC lowpass that the canvas shows on first launch.
         void openStarterTab();
@@ -485,6 +485,7 @@ private:
         juce::TextButton messagesBtn_{"Messages"};
         juce::Label statusLabel_;
         juce::Label titleLabel_;
+        FactoryPresetStepper presetStepper_{*this, titleLabel_};
 
         std::unique_ptr<juce::FileChooser> chooser_;
         std::unique_ptr<juce::FileChooser> folderChooser_;
