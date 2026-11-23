@@ -62,13 +62,21 @@ The factory collection already packages nested directories. Place these circuits
 | 37 | BBE 482i Sonic Maximizer | [Schematic-derived Channel B model](https://guitar-gear.ru/forum/index.php?app=core&attach_id=29567&module=attach&section=attach) |
 | 38 | SPL Transient Designer 9842 | [SPL 9842 owner’s manual](https://spl.audio/wp-content/uploads/TransientDesigner4_9842_OM_E.pdf) |
 | 39 | Thermionic Culture Vulture | |
-| 40 | Empirical Labs FATSO EL7 | |
+| 40 | [Empirical Labs FATSO EL7](studio/dynamics/Empirical%20Labs%20FATSO%20EL7.livewdf) | [Original EL7 manual and block diagram](https://www.empiricallabs.com/wp-content/uploads/fatso_manual.pdf) |
 
 ## API 312 verification
 
 The VP312 Rev A model uses the signal path with pad off, normal polarity and full output. The API 2520 card is based on published typical gain, bandwidth and slew. Transformer ratios follow the chosen winding connections. Winding resistance, inductance and leakage are approximate linear parameters pending measurements.
 
 At the factory Gain position with a 150 Ω source and 600 Ω load, a 1 mV peak sine measured +42.77 dB at 1 kHz. The native overload sweep through 0.85 V peak at 48 kHz produced zero rejected steps on the direct op-amp path. No hardware response or saturation measurement was used.
+
+## Empirical Labs FATSO EL7
+
+The original EL7 manual shows a differential receiver, input gain, feedback VCA compressor, always-active soft clipper, dynamic Warmth filter, switchable buffered transformer and output gain. Both detectors sense the output of Warmth before Tranny. The model follows that order for one channel, with a host reference on the cold input and a relay-style bypass. The manual describes a gentle 2:1 Buss mode with a soft knee, a slower-releasing G.P. mode, an 1176-like Tracking mode and a stronger Spank limiter that can run alongside any primary mode. The [contemporary EL7 review](https://www.soundonsound.com/reviews/empirical-labs-el7-fatso-jr) also describes Warmth's seven threshold settings and its 15 dB range at 20 kHz.
+
+The public factory diagram specifies blocks and controls. The circuit values are a reconstruction. The split-band Warmth shelf uses a continuous threshold. The asymmetric diode clipper, log RMS mode detectors, two-slope Buss knee, bounded command stages and transformer model reproduce the identified behaviors using fitted curves and time constants. The transformer uses linear winding inductance, leakage and loss with a separate low-frequency saturation network. The model does not include stereo linking, an external sidechain insert, metering, transformer hysteresis or the original push-button sequence. Set Compressor on for Buss, then choose G.P. or Tracking as needed. Switching Spank on with Compressor off gives standalone Spank. Bypass switches the input directly to the output.
+
+Native 48 kHz sweeps exercised levels up to 1.5 V peak and all mode and control endpoints with zero rejected steps. With compression off, the highest Warmth setting attenuated a 1.5 V peak test tone by 6.9 dB at 8 kHz, 14.4 dB at 20 kHz and less than 0.02 dB at 200 Hz. At 440 Hz and 0.75 V peak, Buss, G.P., Tracking and Spank reduced the fundamental by 5.0, 7.2, 9.8 and 18.0 dB relative to compression off. Without compression or Warmth, the asymmetric clipper measured about 4.9% THD at that test level and about 9.3% at 1.5 V peak. Engaging Tranny increased the third harmonic's fraction of the 40 Hz fundamental from 8.7% to 11.5% at 1.5 V peak. These are model results. Native drum renders at 2 V per full scale produced zero rejected steps with the default Buss setting and with Tracking, Spank, Warmth and Tranny engaged.
 
 ## Parts references
 
