@@ -1,0 +1,45 @@
+{
+  "before": "21793e45974abc49d9c57d41a452e5987cd1037a",
+  "after": "a508050d7da70ad521f88783c95bf1f829c84b2e",
+  "fixture_credit": "Guitar-TECHS by Hegel Pedroza, Wallace Abreu, Ryan M. Corey and Iran R. Roman, CC BY 4.0, https://zenodo.org/records/14963133. PF300 major chords excerpt, edited and processed.",
+  "fixture_sha256": "fc5246d76c6541c9c1cc3fc0773330ab88617532f814ead764d0efe462708d1f",
+  "sample_rate": 48000,
+  "duration_s": 9.36,
+  "shared_output_gain_db": 0,
+  "offsets_s": {
+    "0.12_dry": 0.0,
+    "0.12_before": 1.56,
+    "0.12_after": 3.12,
+    "0.36_dry": 4.68,
+    "0.36_before": 6.24,
+    "0.36_after": 7.8
+  },
+  "waveform_stats": {
+    "before_0.12": {
+      "input_peak_v": 0.12,
+      "output_peak_dbfs": -7.187274417760846,
+      "wet_over_dry_db": 20.490827636997444,
+      "solver": "samples=108480 inputPeakV=0.12 outputPeakV=0.43716 outputRmsV=0.14776 nonconverged=0 rejected=0 audibleRejects=0"
+    },
+    "after_0.12": {
+      "input_peak_v": 0.12,
+      "output_peak_dbfs": -20.6555924150136,
+      "wet_over_dry_db": 7.022509639724629,
+      "solver": "samples=108480 inputPeakV=0.12 outputPeakV=0.27819 outputRmsV=0.094026 nonconverged=0 rejected=0 audibleRejects=0"
+    },
+    "rescaling_error_0.12": 7.942958812407657e-09,
+    "before_0.36": {
+      "input_peak_v": 0.36,
+      "output_peak_dbfs": -6.014892438087337,
+      "wet_over_dry_db": 11.90800417662265,
+      "solver": "samples=108480 inputPeakV=0.36 outputPeakV=0.50033 outputRmsV=0.16502 nonconverged=0 rejected=0 audibleRejects=0"
+    },
+    "after_0.36": {
+      "input_peak_v": 0.36,
+      "output_peak_dbfs": -19.48321043534225,
+      "wet_over_dry_db": -1.5603138206497724,
+      "solver": "samples=108480 inputPeakV=0.36 outputPeakV=0.31839 outputRmsV=0.10501 nonconverged=0 rejected=0 audibleRejects=0"
+    },
+    "rescaling_error_0.36": 6.264941613447553e-09
+  }
+}
