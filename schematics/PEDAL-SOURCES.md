@@ -3,7 +3,8 @@
 References for the 41-pedal LiveWDF backlog. The four earlier factory pedals
 are already in the [pedal directory](pedals_fx/). The entries below identify
 circuit revisions and flag where only a related circuit or a black-box
-reference is available.
+reference is available. The accompanying [studio equipment catalog](STUDIO-SOURCES.md)
+covers 40 recording devices.
 
 ## SPICE references
 
@@ -47,6 +48,7 @@ These five remain in the backlog.
 - Alternative documented early-version drawing (schematic and vero layout): https://turretboard.knucklehead.dk/wp-content/uploads/2012/05/powerboostearlyMonkeyxx.pdf. Early and later sourcing descriptions differ on capacitor values and output resistor, so do not combine values across sources without checking diagram. A reconstructed early parts list: https://akashic.cryptideffects.com/circuit/revolutiondeux-2012-02-colorsound-power-boost-overdriver-power-boost-early. Archive marks values read by eye; treat this as an aid, not verified ground truth. Historical discussion https://community.element14.com/members-area/personalblogs/b/blog/posts/colorsound-power-boost-18v-effects-pedal. The 9 V Overdriver is a distinct configuration, not the selected 18 V Power Boost.
 
 ### DOD Overdrive Preamp 250
+- Factory circuit: [Gray version](pedals_fx/DOD%20250%20Overdrive%20Preamp%20Gray.livewdf).
 - Recommended full '77 Gray replica schematic: https://generalguitargadgets.com/pdf/ggg_dist_g250_sc.pdf. Project identifies it as '77 Gray https://generalguitargadgets.com/effects-projects/distortion/dod-overdrive-250/. Copyright notice forbids rehosting; link rather than bundle. Standard variant also linked on project page, do not mix BOM values between variants.
 - Alternative original-style model 250 reproduction https://www.guitars-of-love.com/images/ADIP_audio_production_projects/DOD_OD-250/DOD_OD-250_schematic.pdf; 2009 third-party redrawing with 4558, explicitly notes copyright restrictions. Not necessarily same '77 gray revision.
 - Single op-amp noninverting drive; output coupling, symmetric silicon diode shunt clipping, and output volume; not feedback diode soft clipping. Include frequency shaping and finite supply/headroom, 9 V bias. Check values against chosen schematic's own labels, not the standard variant's BOM.
@@ -218,6 +220,7 @@ The bench pages provide interactive button-generated LTspice netlists rather tha
 ## Delay
 
 ### Boss DM-2
+- The NE570 approximation averages the full-wave rectifier current with the original 2.2 ms time constant. On a 440 Hz, 75 mV peak input, the first-repeat harmonic distortion dropped from 4.75% to 0.96% after matching this detector topology. The 44.1, 48 and 96 kHz burst tests kept the approximate 20.7–298.7 ms delay range and had no rejected steps.
 
 - Primary first-edition manufacturer service notes, complete schematic including bypass, switching, power, input/dry/feedback/wet paths and trims: https://civade.com/AudioPro/Boss/Boss_DM-2_Delay_Machine_Service_Manual.pdf. IC3 MN3005, IC4 MN3101, IC2 NE570. Single 4096-stage BBD; two output pins and clock cancel trim; compressor and expander, anti-alias and reconstruction filters. 
 - Second-edition service notes dated 25 August 1982, serial 182000 onward: https://manuals.plus/m/a5857b84879179dd0abce591b90261ee889e93c1c329e8d9c990986913f74ad3. MN3205/MN3102 replace MN3005/MN3101; not pin-compatible substitutions; PCB change ET5214-510 to -510A. 
