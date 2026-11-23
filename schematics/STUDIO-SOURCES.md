@@ -30,7 +30,7 @@ The factory collection already packages nested directories. Place these circuits
 | 15 | Gates Sta-Level | [Gates M5167 instructions](https://www.worldradiohistory.com/Archive-Catalogs/Gates-Harris/Gates-Sta-Level-Amplifier-M5167-1956.pdf) |
 | 16 | Altec 436C | [Altec Lansing 436C schematic](https://aboutprosound.com/wp-content/uploads/2022/10/Altec-436C.pdf) |
 | 17 | EMI RS124 | |
-| 18 | dbx 160 VU | [Model 160/161 factory manual](https://schematicsforfree.com/files/Audio/Products/Professional%20Audio/D/dbx/dbx%20160-161%20Compressor%20Limiter%20Manual.pdf) |
+| 18 | dbx 160 VU | [Model 160/161 factory manual](https://schematicsforfree.com/files/Audio/Products/Professional%20Audio/D/dbx/dbx%20160-161%20Compressor%20Limiter%20Manual.pdf)  · [Factory VCA 200 drawing 110557, page 1](https://proaudiodesignforum.com/images/pdf/dBx_200_202_202C_2001_2000T_202XT_Schematics_Merged.pdf) · [160/161 service calibration and module bill of materials](https://www.lost-manuals.com/pdf/dbx--160--service--ID11749.pdf) |
 | 19 | Manley Variable Mu | |
 | 20 | Pye 4060 | [Postfade technical analysis and basic schematic](https://postfade.co.uk/wp-content/uploads/2021/07/PYE-BROADCAST-AUDIO-CONSOLES-PART-FOUR-mini-.pdf) |
 | 21 | SSL 4000 G Bus Compressor | [SSL 4000G service manual](https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/SSL-4000G-Console-Service-Manual-v1_1.pdf) |
