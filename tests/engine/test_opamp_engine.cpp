@@ -160,10 +160,13 @@ TEST_CASE("AC-coupled opamp follower outputs keep their DC bias",
     wdf::Engine engine(c, kFs);
     std::vector<double> voltage, rootVoltage;
     REQUIRE(engine.solveDc(voltage, rootVoltage));
+    const double followerGain = model.openLoopGain / (1.0 + model.openLoopGain);
+    double expected = 4.5;
     for (size_t i = 1; i < nodes.size(); ++i) {
+        expected *= followerGain;
         const int output = engine.nodeIndex(nodes[i]);
         REQUIRE(output >= 0);
-        CHECK(voltage[static_cast<size_t>(output)] == Approx(4.5).margin(1e-4));
+        CHECK(voltage[static_cast<size_t>(output)] == Approx(expected).margin(1e-7));
     }
 }
 
