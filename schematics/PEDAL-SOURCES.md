@@ -1,6 +1,6 @@
 # Pedal schematic and SPICE sources
 
-References for the 41-pedal LiveWDF backlog. The four earlier factory pedals
+References for the 41-pedal LiveWDF factory expansion. The four earlier factory pedals
 are already in the [pedal directory](pedals_fx/). The entries below identify
 circuit revisions and flag where only a related circuit or a black-box
 reference is available. The accompanying [studio equipment catalog](STUDIO-SOURCES.md)
@@ -34,7 +34,7 @@ covers 40 recording devices.
 A complete schematic for the exact MXR M234 or the current Cali76 FET
 Compressor remains unverified. Available references for the M108S, Diamond
 CPR-1, and Decimator II G String include related or derivative circuits.
-These five remain in the backlog.
+The included presets document which revisions and circuit approximations they use.
 
 ## Boost and overdrive
 
