@@ -301,6 +301,7 @@ TEST_CASE("dbx 200 matched pairs follow the original transistor drawing and symm
     REQUIRE(referenceFile.good());
     std::ostringstream device;
     device << referenceFile.rdbuf();
+    std::vector<std::vector<std::string>> rows;
     int run = 0;
     for (const auto& [ec, trim] : std::vector<std::pair<double, double>>{
              {-0.060, 0.0}, {0.0, 0.0}, {0.060, 0.0}, {0.0, 0.003}, {0.030, 0.003}}) {
@@ -340,8 +341,13 @@ TEST_CASE("dbx 200 matched pairs follow the original transistor drawing and symm
             REQUIRE(lwdf_test::runDeck(exportNetwork(c) + exportedCommands + ".end\n", exportedTag).ok);
             const double exported = lwdf_test::parseOpFile(lwdf_test::vecFile(exportedTag, 0)).front();
             CHECK(actual == Approx(exported).margin(3e-7));
+            rows.push_back({lwdf_test::csvNumber(ec), lwdf_test::csvNumber(trim),
+                            lwdf_test::csvNumber(signal), lwdf_test::csvNumber(actual),
+                            lwdf_test::csvNumber(transistor), lwdf_test::csvNumber(exported)});
         }
     }
+    lwdf_test::writeCsv("parts_dbx200", {"control_V", "trim_V", "signal_V",
+                      "livewdf_V", "ngspice_transistor_V", "ngspice_export_V"}, rows);
 }
 
 TEST_CASE("dbx 209 power integration agrees with a log-capacitor ngspice reference",
@@ -367,6 +373,7 @@ TEST_CASE("dbx 209 power integration agrees with a log-capacitor ngspice referen
     wdf::RmsDetectorState detector(model, 1.0 / sampleRate);
     detector.reset(model.referenceVolts);
     double worst = 0.0;
+    std::vector<std::vector<std::string>> rows;
     for (size_t i = 0; i < trace.nRows(); ++i) {
         const double t = trace.time[i];
         const double normalized = t < .010 ? 1.0 : (t < .080 ? 10.0 : 0.0);
@@ -376,7 +383,10 @@ TEST_CASE("dbx 209 power integration agrees with a log-capacitor ngspice referen
         // up to one frame at the transition. Check the resolved envelope.
         if (t > .012 && std::abs(t - .080) > .001)
             worst = std::max(worst, std::abs(actual - trace.cols[0][i]));
+        rows.push_back({lwdf_test::csvNumber(t), lwdf_test::csvNumber(actual),
+                        lwdf_test::csvNumber(trace.cols[0][i])});
     }
     CAPTURE(worst);
     CHECK(worst < 0.00035); // <0.06 dB
+    lwdf_test::writeCsv("parts_dbx209", {"time_s", "livewdf_V", "ngspice_V"}, rows);
 }
