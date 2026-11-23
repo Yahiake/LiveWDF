@@ -103,8 +103,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // which is where the CPU saving comes from: one engine instead of two.
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
 
-    // Update grouped pots and switches
-    applyLiveControlsToEngines();
+    updateLivePots(numSamples);
 
     // Oversampling setup
     juce::dsp::Oversampling<float>* activeOversampler = nullptr;

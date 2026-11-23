@@ -4,6 +4,7 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace livewdf {
 
@@ -74,7 +75,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         const juce::String potName = "Pot " + juce::String(i + 1);
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID{potId, 1}, potName,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.005f), 0.5f));
+            juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
     }
 
     return { params.begin(), params.end() };
@@ -410,15 +411,16 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         }
 
         potTargets_.clear();
-        const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
-        for (int i = 0; i < potLimit; ++i) {
-            auto* knob = apvts_.getRawParameterValue("pot_" + juce::String(i));
+        potControlCount_ = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
+        for (int i = 0; i < potControlCount_; ++i) {
+            potControls_[static_cast<size_t>(i)].knob =
+                apvts_.getRawParameterValue("pot_" + juce::String(i));
             for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
                 const bool varRes = member.type == "varres";
                 const int index = varRes ? leftEngine_->varResIndexByName(member.id)
                                          : leftEngine_->potIndexByName(member.id);
                 if (index >= 0)
-                    potTargets_.push_back({knob, index, varRes});
+                    potTargets_.push_back({i, index, varRes});
             }
         }
         switchTargets_.clear();
@@ -441,10 +443,18 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         if (initializePotParameters)
             syncPotParametersFromDocument(doc);
 
-        // Apply under the same lock: the new engine is already visible to the
-        // audio thread, and touching its pots or switch resistors outside this
-        // lock would race a block that is just starting.
-        applyLiveControlsToEngines();
+        // Start at the saved knob positions. Measure ramp progress in host
+        // samples so oversampling does not change the feel of the controls.
+        potUpdateInterval_ = std::max(1, static_cast<int>(std::ceil(sampleRate_ * .0025)));
+        samplesUntilPotUpdate_ = 0;
+        previousPotBlockSize_ = 0;
+        for (int i = 0; i < potControlCount_; ++i) {
+            auto& control = potControls_[static_cast<size_t>(i)];
+            const float value = control.knob->load(std::memory_order_relaxed);
+            control.position.reset(sampleRate_, .015);
+            control.position.setCurrentAndTargetValue(std::isfinite(value) ? value : 0.5);
+        }
+        applyLiveControlsToEngines(true, true);
     }
 
     return true;
@@ -606,10 +616,30 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
 
-    applyLiveControlsToEngines();
+    applyLiveControlsToEngines(false, true);
 }
 
-void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
+void LiveWDFPluginProcessor::updateLivePots(int numSamples) {
+    bool changed = false;
+    for (int i = 0; i < potControlCount_; ++i) {
+        auto& control = potControls_[static_cast<size_t>(i)];
+        const double position = control.position.skip(previousPotBlockSize_);
+        changed |= !juce::exactlyEqual(position, control.applied);
+        const double value = control.knob->load(std::memory_order_relaxed);
+        if (std::isfinite(value))
+            control.position.setTargetValue(value);
+    }
+    // A conductance change re-derives the transfer. Batch the changed pots
+    // and allow at most one rebuild per callback and one per 2.5 ms.
+    if (changed && samplesUntilPotUpdate_ == 0) {
+        applyLiveControlsToEngines(true, false);
+        samplesUntilPotUpdate_ = potUpdateInterval_;
+    }
+    samplesUntilPotUpdate_ = std::max(0, samplesUntilPotUpdate_ - numSamples);
+    previousPotBlockSize_ = numSamples;
+}
+
+void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches) {
     if (!leftEngine_) return;
 
     // Every pot and switch member goes to the engine in one batch, so a moved
@@ -617,12 +647,19 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
     potMoves_.clear();
     varResMoves_.clear();
     resistorMoves_.clear();
-    for (const auto& t : potTargets_)
-        (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, static_cast<double>(t.knob->load()));
-    for (const auto& t : switchTargets_) {
-        const bool throwB = switchGroupStates_[t.group];
-        resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
-        resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+    if (pots) {
+        for (const auto& t : potTargets_) {
+            auto& control = potControls_[static_cast<size_t>(t.group)];
+            control.applied = control.position.getCurrentValue();
+            (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, control.applied);
+        }
+    }
+    if (switches) {
+        for (const auto& t : switchTargets_) {
+            const bool throwB = switchGroupStates_[t.group];
+            resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+            resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+        }
     }
 
     leftEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);

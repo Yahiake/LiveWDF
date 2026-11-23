@@ -7,6 +7,7 @@
 #include "format/LiveWDFFile.h"
 #include "gui/DualOscilloscope.h"
 
+#include <array>
 #include <mutex>
 #include <memory>
 #include <map>
@@ -205,8 +206,18 @@ private:
 
     /// Engine indices of every grouped member, resolved at load, and the
     /// per-block batch built from them (reserved at load, so no allocation).
-    struct PotTarget { std::atomic<float>* knob; int index; bool varRes; };
+    struct PotControl {
+        const std::atomic<float>* knob = nullptr;
+        juce::SmoothedValue<double> position;
+        double applied = 0.5;
+    };
+    struct PotTarget { int group; int index; bool varRes; };
     struct SwitchTarget { size_t group; int resA; int resB; };
+    std::array<PotControl, kMaxPotKnobs> potControls_;
+    int potControlCount_ = 0;
+    int potUpdateInterval_ = 1;
+    int samplesUntilPotUpdate_ = 0;
+    int previousPotBlockSize_ = 0;
     std::vector<PotTarget> potTargets_;
     std::vector<SwitchTarget> switchTargets_;
     std::vector<std::pair<int, double>> potMoves_, varResMoves_, resistorMoves_;
@@ -248,7 +259,8 @@ private:
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
-    void applyLiveControlsToEngines();
+    void updateLivePots(int numSamples);
+    void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
