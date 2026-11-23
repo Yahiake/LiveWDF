@@ -64,7 +64,6 @@ void Engine::MixedAffineSetup::build(std::optional<std::span<const unsigned>> ca
 
 std::vector<unsigned> Engine::MixedAffineSetup::slopeMasks() const {
     std::vector<unsigned> masks;
-    masks.reserve(patterns.size());
     masks.reserve(plans_.size());
     for (const auto& plan : plans_)
         masks.push_back(plan.linearSlopeMask);
