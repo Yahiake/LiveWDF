@@ -25,8 +25,17 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     if (numChannels == 0 || numSamples == 0) return;
 
     // An offline bounce applies an oversampling or grid current change now, not on the next timer tick.
-    if (isNonRealtime())
+    const bool offline = isNonRealtime();
+    if (offline)
         timerCallback();
+
+    // Fast Live saves Newton refinements while keeping the same device laws
+    // and oversampling. Switching precision at a block boundary preserves
+    // the circuit state. Host-declared offline bounces always use Accurate.
+    constexpr double kFastLiveTolerance = 1e-7;
+    const bool fastLive = !offline && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
+    const double solveTolerance = fastLive ? kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
+    constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
     // Read audio gain parameters
     const float inputTrimDb = *apvts_.getRawParameterValue("input_trim");
@@ -143,7 +152,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 }
                 if (inIdx >= 0 && inIdx < static_cast<int>(svLeft_.size()))
                     svLeft_[static_cast<size_t>(inIdx)] = osIn;
-                const auto& nodesL = leftEngine_->step(svLeft_);
+                const auto& nodesL = leftEngine_->step(svLeft_, maxIterations, solveTolerance);
                 lastNodesL = &nodesL;
                 return (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
                     ? nodesL[static_cast<size_t>(outIdx)] * outputScale
@@ -167,7 +176,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     }
                     if (inIdx >= 0 && inIdx < static_cast<int>(svRight_.size()))
                         svRight_[static_cast<size_t>(inIdx)] = osIn;
-                    const auto& nodesR = rightEngine_->step(svRight_);
+                    const auto& nodesR = rightEngine_->step(svRight_, maxIterations, solveTolerance);
                     return (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
                         ? nodesR[static_cast<size_t>(outIdx)] * outputScale
                         : 0.0;
@@ -210,7 +219,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
             if (inIdx >= 0 && inIdx < static_cast<int>(svLeft_.size())) {
                 svLeft_[static_cast<size_t>(inIdx)] = static_cast<double>(leftData[s]);
             }
-            const auto& nodesL = leftEngine_->step(svLeft_);
+            const auto& nodesL = leftEngine_->step(svLeft_, maxIterations, solveTolerance);
             lastNodesL = &nodesL;
             const float outL = (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
                                    ? static_cast<float>(nodesL[static_cast<size_t>(outIdx)]) * outputScale
@@ -222,7 +231,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 if (inIdx >= 0 && inIdx < static_cast<int>(svRight_.size())) {
                     svRight_[static_cast<size_t>(inIdx)] = static_cast<double>(rightData[s]);
                 }
-                const auto& nodesR = rightEngine_->step(svRight_);
+                const auto& nodesR = rightEngine_->step(svRight_, maxIterations, solveTolerance);
                 const float outR = (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
                                        ? static_cast<float>(nodesR[static_cast<size_t>(outIdx)]) * outputScale
                                        : 0.0f;

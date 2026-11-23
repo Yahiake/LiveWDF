@@ -164,16 +164,21 @@ public:
         runtimePartition_ = nullptr;
     }
 
+    static constexpr int kDefaultMaxIterations = 60;
+    static constexpr double kDefaultTolerance = 1e-9;
+
     /// Advance one sample. Returns the node voltages (indexed like `nodeNames()`).
-    const std::vector<double>& step(const std::vector<double>& sourceValues, int maxIter = 60,
-                                    double tol = 1e-9) {
+    const std::vector<double>& step(const std::vector<double>& sourceValues,
+                                    int maxIter = kDefaultMaxIterations,
+                                    double tol = kDefaultTolerance) {
         return step(sourceValues.data(), sourceValues.size(), maxIter, tol);
     }
 
     /// Same, for a caller that already holds the values as a pointer. The
     /// runtime facade uses this so its `step()` does not copy the source vector.
     const std::vector<double>& step(const double* sourceValues, std::size_t sourceCount,
-                                    int maxIter = 60, double tol = 1e-9) {
+                                    int maxIter = kDefaultMaxIterations,
+                                    double tol = kDefaultTolerance) {
         // The runtime pass pays a small fixed cost. On cheap low-frequency
         // samples the joint Newton is already one or two iterations, so use
         // the previous sample's work as a cheap gate: only take the block path

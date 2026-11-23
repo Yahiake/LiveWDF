@@ -77,6 +77,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
             juce::NormalisableRange<float>(0.0f, 1.0f, 0.005f), 0.5f));
     }
 
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"solve_quality", 1}, "Solve Quality",
+        juce::StringArray{"Accurate", "Fast Live"}, 0));
+
     return { params.begin(), params.end() };
 }
 

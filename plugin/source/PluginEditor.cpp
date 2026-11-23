@@ -84,6 +84,13 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
+    solveQualityCombo_.addItem("Accurate", 1);
+    solveQualityCombo_.addItem("Fast Live", 2);
+    solveQualityCombo_.setTooltip("Fast Live relaxes circuit solver precision during playback. Offline renders use Accurate.");
+    addAndMakeVisible(solveQualityCombo_);
+    solveQualityAttach_ = std::make_unique<ComboBoxAttachment>(
+        processor_.getAPVTS(), "solve_quality", solveQualityCombo_);
+
     // 4b. Mono / stereo. Off (mono) is the default; the processor runs one
     // engine and folds the input to mono. Turning it on runs the right-hand
     // engine as well, at roughly twice the CPU.
@@ -480,15 +487,15 @@ void LiveWDFPluginEditor::resized() {
 
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
-    titleLabel_.setBounds(16, 7, 240, 20);
-    statusLabel_.setBounds(16, 27, 280, 18);
-
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
     oversamplingCombo_.setBounds(topBar.removeFromRight(120).reduced(6, 10));
+    solveQualityCombo_.setBounds(topBar.removeFromRight(104).reduced(6, 10));
     stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
     reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
     loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
     factoryBtn_.setBounds(topBar.removeFromRight(92).reduced(6, 10));
+    titleLabel_.setBounds(16, 7, juce::jmax(0, topBar.getWidth() - 16), 20);
+    statusLabel_.setBounds(16, 27, juce::jmax(0, topBar.getWidth() - 16), 18);
 
     // 2. Bottom Oscilloscope (height 150px)
     auto bottomScope = bounds.removeFromBottom(150);

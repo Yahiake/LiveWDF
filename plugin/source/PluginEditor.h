@@ -54,6 +54,7 @@ private:
     juce::TextButton aboutBtn_ { "ABOUT" };
 
     juce::ComboBox oversamplingCombo_;
+    juce::ComboBox solveQualityCombo_;
 
     /// Mono is the default. One engine instead of two is the single largest
     /// saving on the plugin path, and a mono amp chain does not need a second
@@ -106,6 +107,7 @@ private:
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
     std::unique_ptr<ComboBoxAttachment> oversamplingAttach_;
+    std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 

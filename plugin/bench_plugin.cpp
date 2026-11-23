@@ -1862,7 +1862,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--grid-current on|off]\n");
+                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
         return 1;
     }
 
@@ -1872,6 +1872,7 @@ int main(int argc, char** argv) {
     bool wiring = false;
     bool sweep = false;
     bool runtimeCheck = false;
+    bool fastLive = false;
     std::string spiceDir;
     std::string probeCsv;
     std::string pluginProbeCsv;
@@ -1895,6 +1896,8 @@ int main(int argc, char** argv) {
             sweep = true;
         else if (arg == "--runtime-check")
             runtimeCheck = true;
+        else if (arg == "--fast-live")
+            fastLive = true;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)
@@ -1952,9 +1955,11 @@ int main(int argc, char** argv) {
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
+    if (fastLive)
+        processor.getAPVTS().getParameter("solve_quality")->setValueNotifyingHost(1.0f);
 
-    std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  circuit=%s\n",
-                kSampleRate, file.getFileName().toRawUTF8());
+    std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  quality=%s  circuit=%s\n",
+                kSampleRate, fastLive ? "Fast Live" : "Accurate", file.getFileName().toRawUTF8());
     std::printf("  block   OS   us/block   ns/in-sample   %% of one 48k core   groups(p/s)\n");
     std::printf("  --------------------------------------------------------------------------\n");
 
