@@ -67,6 +67,7 @@ enum class Asset {
     OpAmp,
     IdealOpAmp,
     Ca3080,
+    That2180,
     count,
 };
 
@@ -106,6 +107,7 @@ const char* const assetNames[] = {
     "opamp",
     "ideal-opamp",
     "ca3080",
+    "that2180",
 };
 
 static_assert(std::size(assetNames) == static_cast<size_t>(assetCount),
@@ -134,6 +136,7 @@ int assetForType(const std::string& type) {
     if (type == "vcvs")        return static_cast<int>(Asset::GainBlock);
     if (type == "bbd")         return static_cast<int>(Asset::BucketBrigade);
     if (type == "vca")         return static_cast<int>(Asset::Vca);
+    if (type == "that2180")     return static_cast<int>(Asset::That2180);
     if (type == "transformer") return static_cast<int>(Asset::Transformer);
     if (type == "transformer_ct") return static_cast<int>(Asset::CenterTapTransformer);
     if (type == "triode")      return static_cast<int>(Asset::Triode);

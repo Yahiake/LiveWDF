@@ -127,14 +127,29 @@ struct PhotoresistorControl {
     }
 };
 
-/// M5207L01-style linear control of an inverting current-output VCA.
+/// Differential control of an inverting current-output VCA.
 struct VcaControl {
     std::string control, reference;
     double fullGainVolts = 1.0;
+    bool blackmer = false;
+
     static constexpr double minimumGain = 1e-5;
     static constexpr double maximumGain = 1.6;
 
+    // THAT2180 datasheet equation 2 at 25 °C. Bound the exponential outside
+    // the characterized control range to keep out-of-range patches finite.
+    static constexpr double blackmerVoltsPerDb = 0.0061;
+    static constexpr double blackmerMinimumDb = -110.0;
+    static constexpr double blackmerMaximumDb = 40.0;
+
+    double initialGain() const noexcept { return blackmer ? 1.0 : minimumGain; }
+
     double normalizedGain(double volts) const noexcept {
+        if (blackmer) {
+            const double db = std::clamp(volts / blackmerVoltsPerDb,
+                                         blackmerMinimumDb, blackmerMaximumDb);
+            return std::exp2(db * 0.16609640474436812); // log2(10) / 20
+        }
         return std::clamp(volts / fullGainVolts, minimumGain, maximumGain);
     }
 };
@@ -668,25 +683,45 @@ struct Circuit {
         vcvs.push_back({outA, outB, inA, inB, gain, ro, vName});
     }
 
-    /// The external input resistor terminates into virtual common. Each full
-    /// gain output half-wave has half that input current, with opposite phase.
-    /// A buffered copy of the output bootstraps the controlled resistor so
-    /// its current is proportional to the input, independent of output load.
+    /// Bootstrapping the root port makes the output current proportional to
+    /// the input current independently of the output load.
+    void addCurrentVca(const std::string& input, const std::string& output,
+                       const std::string& signalReference, double inputOhms,
+                       double currentOhms, const VcaControl& control,
+                       const std::string& name) {
+        const double initialOhms = currentOhms / control.initialGain();
+        if (!std::isfinite(inputOhms) || inputOhms <= 0.0 ||
+            !std::isfinite(initialOhms) || initialOhms <= 0.0 ||
+            !std::isfinite(control.fullGainVolts) || control.fullGainVolts <= 0.0)
+            throw std::invalid_argument("Invalid VCA parameters: " + name);
+        const std::string copy = name + "$copy";
+        const std::string drive = name + "$drive";
+        addRes(input, signalReference, inputOhms, name + "$ri");
+        addVCVS(copy, signalReference, output, signalReference, 1.0, 1e-4, name + "$bootstrap");
+        addVCVS(drive, copy, input, signalReference, -1.0, 1e-4, name + "$input");
+        addControlledRes(drive, output, initialOhms, name);
+        ctrlRes.back().vca = control;
+    }
+
+    /// The linear cell mirrors half the input current at unity gain.
     void addLinearVca(const std::string& input, const std::string& output,
                       double inputOhms, const VcaControl& control,
                       const std::string& name) {
-        if (!std::isfinite(inputOhms) || inputOhms <= 0.0 ||
-            !std::isfinite(2.0 * inputOhms / VcaControl::minimumGain) ||
-            !std::isfinite(control.fullGainVolts) || control.fullGainVolts <= 0.0)
-            throw std::invalid_argument("Invalid VCA parameters: " + name);
-        const auto& ref = control.reference;
-        const std::string copy = name + "$copy";
-        const std::string drive = name + "$drive";
-        addRes(input, ref, inputOhms, name + "$ri");
-        addVCVS(copy, ref, output, ref, 1.0, 1e-4, name + "$bootstrap");
-        addVCVS(drive, copy, input, ref, -1.0, 1e-4, name + "$input");
-        addControlledRes(drive, output, 2.0 * inputOhms / VcaControl::minimumGain, name);
-        ctrlRes.back().vca = control;
+        addCurrentVca(input, output, control.reference, inputOhms, 2.0 * inputOhms,
+                      control, name);
+    }
+
+    /// Room-temperature THAT2180 macromodel.
+    /// https://thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf
+    /// A small finite input resistance
+    /// approximates the summing input's virtual ground. This models gain
+    /// within the normal bias range and omits chip noise and distortion.
+    void addThat2180(const std::string& input, const std::string& output,
+                     const std::string& ecPlus, const std::string& ecMinus,
+                     const std::string& signalReference, double inputOhms,
+                     const std::string& name) {
+        addCurrentVca(input, output, signalReference, inputOhms, inputOhms,
+                      {ecPlus, ecMinus, 1.0, true}, name);
     }
 
     /// Signal law of the matched NPN differential pair in MiSTer-Discrete's
