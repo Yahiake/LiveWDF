@@ -76,10 +76,26 @@ Case vca(bool blackmer) {
     return row;
 }
 
-Case rmsDetector() {
-    Case row{"Log RMS detector", {}};
+Case dbxVca() {
+    Case row{"dbx 200 linked controls", {}};
+    row.controlAmplitude = 0.06;
+    auto& c = row.circuit;
+    c.addSrc("in", "0");
+    c.addSrc("ctl", "0");
+    c.addRes("in", "sum", 20000.0);
+    c.addDbx200("sum", "out", "ctl", "0", "0", "ctl", "0", "M1");
+    c.addRes("out", "0", 20000.0);
+    return row;
+}
+
+Case rmsDetector(bool dbx = false) {
+    Case row{dbx ? "dbx 209 RMS detector" : "Log RMS detector", {}};
     row.circuit.addSrc("in", "0");
-    row.circuit.addRmsDetector("in", "out", "0", {}, "RMS1");
+    const auto model = dbx ? wdf::RmsDetectorModel::dbx209(23.34e-6, 22e-6)
+                           : wdf::RmsDetectorModel{};
+    if (dbx)
+        row.amplitude = model.referenceVolts * 2.0;
+    row.circuit.addRmsDetector("in", "out", "0", model, "RMS1");
     row.circuit.addRes("out", "0", 10000.0);
     return row;
 }
@@ -205,7 +221,7 @@ int main(int argc, char** argv) {
     try {
         std::vector<Case> cases{
             passive(), bbd(10000), bbd(100000), photoresistor(), vca(false), vca(true),
-            rmsDetector(), ota(0, true), ota(8, true), ota(8, false),
+            rmsDetector(), dbxVca(), rmsDetector(true), ota(0, true), ota(8, true), ota(8, false),
             amplifier("RC4558", wdf::OpAmpType::Rc4558),
             amplifier("RC4558 Class AB", wdf::OpAmpType::Rc4558ClassAB),
             amplifier("OP275", wdf::OpAmpType::Op275)
