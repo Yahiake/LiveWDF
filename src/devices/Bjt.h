@@ -58,6 +58,9 @@ struct BjtModel {
     double Var = 0.0;
     double Ise = 0.0;      // optional base-emitter recombination current
     double Ne = 1.5;
+    double Ikf = 0.0;      // zero disables forward high-injection gain roll-off
+    double cbe = 0.0;      // constant base-emitter capacitance (F)
+    double cbc = 0.0;      // constant base-collector capacitance (F)
 
     // --- Derived constants (computed in prepare()) ---
     double nfVt = 0.0;
@@ -98,6 +101,9 @@ struct BjtModel {
                std::isfinite(Var) && Var >= 0.0 &&
                std::isfinite(Ise) && Ise >= 0.0 &&
                std::isfinite(Ne) && Ne > 0.0 &&
+               std::isfinite(Ikf) && (Ikf == 0.0 || Ikf > 4.0 * Is) &&
+               std::isfinite(cbe) && cbe >= 0.0 &&
+               std::isfinite(cbc) && cbc >= 0.0 &&
                std::isfinite(Vt) && Vt > 0.0;
     }
 
@@ -223,7 +229,23 @@ struct BjtModel {
         // af*i_be - ar*i_bc is iBe - iBc in this transport convention.
         // Include the analytical voltage derivatives in the WDF Jacobian.
         // https://github.com/jopdorp/MiSTer-Discrete/commit/6393ca319f43a3b08e651bd5ca257020a66da90d
-        if (Vaf > 0.0 || Var > 0.0) {
+        if (Ikf > 0.0) {
+            // SPICE Gummel-Poon forward injection. Divide only the transport
+            // current by the normalized base charge. The reciprocal Early
+            // factor is already the multiplier used by the low-current law.
+            const double invVaf = Vaf > 0.0 ? 1.0 / Vaf : 0.0;
+            const double invVar = Var > 0.0 ? 1.0 / Var : 0.0;
+            const double earlyFactor = 1.0 - vbc * invVaf - vbe * invVar;
+            const double transport = iBe - iBc;
+            const double root = std::sqrt(1.0 + 4.0 * (iBe / Ikf));
+            const double injection = 0.5 * (1.0 + root);
+            const double injectionSlope = (gBe / Ikf) / root;
+            const double adjustedTransport = transport * earlyFactor / injection;
+            out.ic = adjustedTransport - iBc / Br;
+            out.dic_dvbe = (gBe * earlyFactor - transport * invVar
+                            - adjustedTransport * injectionSlope) / injection;
+            out.dic_dvbc = (-gBc * earlyFactor - transport * invVaf) / injection - gBc / Br;
+        } else if (Vaf > 0.0 || Var > 0.0) {
             const double invVaf = Vaf > 0.0 ? 1.0 / Vaf : 0.0;
             const double invVar = Var > 0.0 ? 1.0 / Var : 0.0;
             const double early = -vbc * invVaf - vbe * invVar;
@@ -303,6 +325,25 @@ inline BjtModel withLowCurrentCorrections(BjtModel model, double vaf, double ise
     return model;
 }
 
+inline BjtModel withForwardRolloff(BjtModel model, double ikf) {
+    model.Ikf = ikf;
+    return model;
+}
+
+// Fairchild/National cards from MiSTer-Discrete circuit-compiler@692e777,
+// circuits/parts/discretes.lib. Keep transport and recombination shared with
+// the earlier cards; the extra IKF variants opt in to forward roll-off.
+inline const BjtModel kMiSTer2N3904 = withLowCurrentCorrections(
+    makeEM(6.734e-15, 416.4, 0.7371, 1.0, 1.0), 74.03, 6.734e-15, 1.259);
+inline const BjtModel kMiSTer2N3906 = withLowCurrentCorrections(
+    makeEM(1.41e-15, 180.7, 4.977, 1.0, 1.0, true), 18.7, 0.0, 1.5);
+
+inline BjtModel withJunctionCaps(BjtModel model, double cbe, double cbc) noexcept {
+    model.cbe = cbe;
+    model.cbc = cbc;
+    return model;
+}
+
 // One registry for the engine and the picker.
 inline const BjtEntry kBjtTable[] = {
     // Silicon NPN (LTspice standard.bjt)
@@ -339,6 +380,11 @@ inline const BjtEntry kBjtTable[] = {
     {"AC128",   makeEM(20.66e-6,  229.6,  14.66, 1.133, 1.140, true)},
     {"OC44",    makeEM(1.423e-6,  307.0,  20.27, 1.022, 1.025, true)},
     {"NKT275",  makeEM(1.5e-6,    85.0,   8.0,   1.05,  1.05,  true)},
+    // Same static cards with the constant AC terms in DAFx-17 Table 1.
+    {"AC128-DAFx-Cap", withJunctionCaps(makeEM(20.66e-6, 229.6, 14.66, 1.133, 1.140, true),
+                                       0.0, 100e-12)},
+    {"OC44-DAFx-Cap", withJunctionCaps(makeEM(1.423e-6, 307.0, 20.27, 1.022, 1.025, true),
+                                      410e-12, 10e-12)},
 
     // Gert Willmann's 25 °C 2N270 fit, reproduced in Greg Whitehead's FZ-1 study:
     // https://github.com/grwhitehead/us3213181/blob/661e935/ngspice/fuzztone.mod
@@ -347,12 +393,10 @@ inline const BjtEntry kBjtTable[] = {
     {"2N270", withLowCurrentCorrections(makeEM(24.3e-6, 172.0, 17.2, 1.055, 1.055, true),
                                          25.0, 2.57e-6, 1.99, 25.0)},
 
-    // Fairchild/National transport + low-current corrections from
-    // jopdorp/MiSTer-Discrete circuit-compiler@692e777, circuits/parts/discretes.lib.
-    {"2N3904-MiSTer", withLowCurrentCorrections(makeEM(6.734e-15, 416.4, 0.7371, 1.0, 1.0),
-                                               74.03, 6.734e-15, 1.259)},
-    {"2N3906-MiSTer", withLowCurrentCorrections(makeEM(1.41e-15, 180.7, 4.977, 1.0, 1.0, true),
-                                               18.7, 0.0, 1.5)},
+    {"2N3904-MiSTer", kMiSTer2N3904},
+    {"2N3906-MiSTer", kMiSTer2N3906},
+    {"2N3904-MiSTer-IKF", withForwardRolloff(kMiSTer2N3904, 66.78e-3)},
+    {"2N3906-MiSTer-IKF", withForwardRolloff(kMiSTer2N3906, 80e-3)},
 };
 
 inline constexpr int kNumBjts =
