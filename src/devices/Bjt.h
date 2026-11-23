@@ -17,6 +17,8 @@
 
 namespace wdf {
 
+namespace solver { class RootResidual; }
+
 enum class BjtRegion {
     Invalid,
     Cutoff,
@@ -203,8 +205,13 @@ struct BjtModel {
     };
 
     CurrentsAndJacobian evaluateEM(double vbe, double vbc) const noexcept {
+        return valid() ? evaluateValidatedEM(vbe, vbc) : CurrentsAndJacobian{};
+    }
+
+private:
+    CurrentsAndJacobian evaluateValidatedEM(double vbe, double vbc) const noexcept {
         CurrentsAndJacobian out{};
-        if (!valid() || !std::isfinite(vbe) || !std::isfinite(vbc))
+        if (!std::isfinite(vbe) || !std::isfinite(vbc))
             return out;
         if (!(nfVt > 0.0) || !(nrVt > 0.0))
             return out;
@@ -267,6 +274,7 @@ struct BjtModel {
         return out;
     }
 
+public:
     // -------------------------------------------------------------------------
     // Terminal evaluation at the circuit's port voltages (vce, vbe), with
     // the polarity mirror and the chain rule from (vbe, vbc) to (vce, vbe):
@@ -281,12 +289,18 @@ struct BjtModel {
     };
 
     BjtCurrents evaluateTerminals(double vce, double vbe) const noexcept {
-        BjtCurrents out{};
-        if (!valid() || !std::isfinite(vce) || !std::isfinite(vbe))
-            return out;
+        return valid() ? evaluateValidatedTerminals(vce, vbe) : BjtCurrents{};
+    }
 
+private:
+    friend class solver::RootResidual;
+
+    /// The compiled engine validates the fixed model once. Trial voltages
+    /// and computed currents still receive the same checks on every solve.
+    BjtCurrents evaluateValidatedTerminals(double vce, double vbe) const noexcept {
+        BjtCurrents out{};
         const double p = pnp ? -1.0 : 1.0;
-        const auto em = evaluateEM(p * vbe, p * (vbe - vce));
+        const auto em = evaluateValidatedEM(p * vbe, p * (vbe - vce));
         if (!em.valid) return out;
 
         out.iC = p * em.ic;

@@ -167,7 +167,9 @@ public:
             case DeviceKind::Bjt: {
                 const double vce = vData[o];
                 const double vbe = vData[o + 1];
-                const auto cur = bjts[dev.compIndex].evaluateTerminals(vce, vbe);
+                const auto cur = comp.bjt[dev.compIndex].validModel
+                    ? bjts[dev.compIndex].evaluateValidatedTerminals(vce, vbe)
+                    : BjtModel::BjtCurrents{};
                 ++deviceEvals;
                 iData[o] = cur.valid ? cur.iC : 0.0;
                 iData[o + 1] = cur.valid ? cur.iB : 0.0;
