@@ -38,6 +38,18 @@ public:
         allocateBuffers();
         reset();
     }
+
+    /// Prepare at most five affine slope patterns for a coupled root. Call
+    /// outside the audio callback. A separate engine measures the patterns,
+    /// so preparing a plan never changes this engine's audio state. A change
+    /// to the linear network discards the plans along with the root partition.
+    size_t prepareMixedAffineReduction(size_t inputSource, double peakVolts = 0.36);
+
+    long long mixedAffineAttempts() const { return mixedAffineAttempts_; }
+    long long mixedAffineAccepted() const { return mixedAffineAccepted_; }
+
+private:
+    std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
 };
 
 }  // namespace wdf
