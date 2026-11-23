@@ -1713,20 +1713,6 @@
       }
     },
     {
-      "id": "C049",
-      "properties": {},
-      "type": "cap",
-      "values": {
-        "value": 3.3e-07
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 432,
-        "y": 86
-      }
-    },
-    {
       "id": "C045",
       "properties": {},
       "type": "cap",
@@ -1963,7 +1949,7 @@
       "properties": {},
       "type": "vca",
       "values": {
-        "fullGainVolts": 2.5,
+        "fullGainVolts": 0.8,
         "inputOhms": 10000
       },
       "visual": {
@@ -3010,7 +2996,7 @@
       }
     }
   ],
-  "description": "Engaged MXR M169, based on the March 2009 revision D3 board trace. Four 2048-stage BL3208A lines retain the series coupling, individual bias and combined tap loads. Includes the original pre-emphasis, reconstruction and de-emphasis, SA571 feedback compression and feedforward expansion with full-wave current averaging, and the switchable RC modulation with speed and width trims. Existing MC33179 and TL061 cards represent the equivalent audio and LFO channels of MC33178 and TL062C. The CD4047 and varactor network use a calibrated period drive. A single-channel RC relaxation network approximates the TL062C triangle oscillator. The SA571 wet gain is calibrated to permit self-oscillation at high Regen. The balance trims use centered equivalents. Bypass muting, protection, lamp and clock feedthrough are outside the effect model.",
+  "description": "Engaged MXR M169, based on the March 2009 revision D3 board trace. Four 2048-stage BL3208A lines retain the series coupling, individual bias and combined tap loads. Includes the original pre-emphasis, reconstruction and de-emphasis, SA571 feedback compression and feedforward expansion with full-wave current averaging, and the switchable RC modulation with speed and width trims. Existing MC33179 and TL061 cards represent the equivalent audio and LFO channels of MC33178 and TL062C. The CD4047 and varactor network use a calibrated period drive. A single-channel RC relaxation network approximates the TL062C triangle oscillator. The engaged reconstruction keeps C45 Q14 feedback and excludes the bypass-only C49/Q13 muting leg. The SA571 equivalent wet gain is calibrated for a sustained repeat near the clockwise Regen endpoint. The balance trims use centered equivalents. Bypass muting, protection, lamp and clock feedthrough are outside the effect model.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -3546,6 +3532,14 @@
         {
           "x": 486,
           "y": 83
+        },
+        {
+          "x": 481,
+          "y": 83
+        },
+        {
+          "x": 481,
+          "y": 87
         },
         {
           "x": 486,
@@ -4253,6 +4247,30 @@
         },
         {
           "x": 160,
+          "y": 68
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 429,
+          "y": 68
+        },
+        {
+          "x": 422,
+          "y": 68
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 422,
+          "y": 77
+        },
+        {
+          "x": 422,
           "y": 68
         }
       ]
@@ -4984,46 +5002,6 @@
     {
       "points": [
         {
-          "x": 429,
-          "y": 68
-        },
-        {
-          "x": 422,
-          "y": 68
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 422,
-          "y": 77
-        },
-        {
-          "x": 422,
-          "y": 68
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 432,
-          "y": 84
-        },
-        {
-          "x": 432,
-          "y": 77
-        },
-        {
-          "x": 422,
-          "y": 77
-        }
-      ]
-    },
-    {
-      "points": [
-        {
           "x": 548,
           "y": 69
         },
@@ -5428,20 +5406,68 @@
     {
       "points": [
         {
+          "x": 458,
+          "y": 78
+        },
+        {
+          "x": 444,
+          "y": 78
+        },
+        {
+          "x": 444,
+          "y": 79
+        },
+        {
+          "x": 442,
+          "y": 79
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 458,
+          "y": 71
+        },
+        {
+          "x": 458,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 468,
+          "y": 68
+        },
+        {
+          "x": 468,
+          "y": 71
+        },
+        {
+          "x": 458,
+          "y": 71
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 495,
           "y": 80
         },
         {
-          "x": 488,
-          "y": 80
+          "x": 495,
+          "y": 78
         },
         {
-          "x": 488,
-          "y": 84
+          "x": 475,
+          "y": 78
         },
         {
-          "x": 473,
-          "y": 84
+          "x": 475,
+          "y": 83
         },
         {
           "x": 473,
@@ -5457,11 +5483,11 @@
         },
         {
           "x": 497,
-          "y": 80
+          "y": 78
         },
         {
           "x": 495,
-          "y": 80
+          "y": 78
         }
       ]
     },
@@ -5476,7 +5502,7 @@
           "y": 80
         },
         {
-          "x": 497,
+          "x": 495,
           "y": 80
         }
       ]
@@ -5966,70 +5992,6 @@
         {
           "x": 223,
           "y": 146
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 442,
-          "y": 79
-        },
-        {
-          "x": 442,
-          "y": 88
-        },
-        {
-          "x": 432,
-          "y": 88
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 458,
-          "y": 78
-        },
-        {
-          "x": 444,
-          "y": 78
-        },
-        {
-          "x": 444,
-          "y": 79
-        },
-        {
-          "x": 442,
-          "y": 79
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 458,
-          "y": 71
-        },
-        {
-          "x": 458,
-          "y": 78
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 468,
-          "y": 68
-        },
-        {
-          "x": 468,
-          "y": 71
-        },
-        {
-          "x": 458,
-          "y": 71
         }
       ]
     },
