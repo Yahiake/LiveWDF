@@ -576,6 +576,10 @@ protected:
             ctrlResValues_[photo.index] = circuit_.ctrlRes[photo.index].initialOhms;
         for (const auto& vca : vcas_)
             ctrlResValues_[vca.index] = circuit_.ctrlRes[vca.index].initialOhms;
+        for (const auto& bias : dbx200Biases_) {
+            comp_.dbx200Crossover[bias.pnp] = circuit_.ctrlRes[bias.pnp].dbx200Crossover;
+            comp_.dbx200Crossover[bias.npn] = circuit_.ctrlRes[bias.npn].dbx200Crossover;
+        }
         for (const auto& ota : otas_)
             ctrlResValues_[ota.index] = circuit_.ctrlRes[ota.index].initialOhms;
     }
@@ -601,6 +605,12 @@ protected:
             const auto& ctrl = circuit_.ctrlRes[vca.index];
             ctrlResValues_[vca.index] = ctrl.initialOhms * ctrl.vca->initialGain() /
                                        ctrl.vca->normalizedGain(control);
+        }
+        for (const auto& bias : dbx200Biases_) {
+            const double v = bias.bases.voltage(nodes, sources, sourceCount);
+            const double scale = std::exp(std::clamp(v / Dbx200Bias::twiceThermalVolts, -20.0, 20.0));
+            comp_.dbx200Crossover[bias.pnp] = circuit_.ctrlRes[bias.pnp].dbx200Crossover * scale;
+            comp_.dbx200Crossover[bias.npn] = circuit_.ctrlRes[bias.npn].dbx200Crossover * scale;
         }
     }
 

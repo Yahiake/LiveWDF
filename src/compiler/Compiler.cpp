@@ -141,11 +141,19 @@ std::string fingerprint(const wdf::Circuit& c) {
             mixString(hash, e.vca->reference);
             mixDouble(hash, e.vca->fullGainVolts);
             mixDouble(hash, e.vca->blackmer ? 1.0 : 0.0);
+            mixDouble(hash, e.vca->logVoltsPerDb);
+            mixDouble(hash, e.dbx200Crossover);
         }
         if (e.ota) {
             mixString(hash, e.ota->bias);
             mixString(hash, e.ota->biasDiode);
         }
+    }
+    for (const auto& pair : c.dbx200Biases) {
+        mixString(hash, pair.ni);
+        mixString(hash, pair.pi);
+        mixBytes(hash, &pair.pnp, sizeof(pair.pnp));
+        mixBytes(hash, &pair.npn, sizeof(pair.npn));
     }
     for (const auto& e : c.diode) mixElement(hash, e.a, e.b, 0.0, e.name);
     for (const auto& e : c.bucketBrigades) {
@@ -169,6 +177,7 @@ std::string fingerprint(const wdf::Circuit& c) {
         mixDouble(hash, e.model.referenceVolts);
         mixDouble(hash, e.model.timeConstantSeconds);
         mixDouble(hash, e.model.voltsPerDb);
+        mixBytes(hash, &e.model.negativeOutput, sizeof(e.model.negativeOutput));
         mixDouble(hash, e.model.inputOhms);
         mixDouble(hash, e.model.outputOhms);
         mixBytes(hash, &e.outputCurrentIndex, sizeof(e.outputCurrentIndex));

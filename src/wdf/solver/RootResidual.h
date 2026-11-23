@@ -101,6 +101,13 @@ public:
                     iData[e] = G * OtaControl::pairVolts * t;
                     if (jData)
                         jData[e * K + e] = G * (1.0 - t * t);
+                } else if (const double crossover = comp.dbx200Crossover[dev.compIndex];
+                           crossover != 0.0) {
+                    const double v = vData[e];
+                    const double split = std::copysign(std::hypot(v, crossover), crossover);
+                    iData[e] = 0.5 * G * (v + split);
+                    if (jData)
+                        jData[e * K + e] = 0.5 * G * (1.0 + v / split);
                 } else {
                     iData[e] = vData[e] * G;
                     if (jData)

@@ -29,6 +29,7 @@ struct Part {
     double supply, start, stop, step;
     double audioBias, audioAmplitude;
     double reverseStop = 0;
+    bool testClipper = false;
 };
 
 const std::vector<Part> parts{
@@ -41,12 +42,15 @@ const std::vector<Part> parts{
     {"2n270", "2N270", Kind::bjt, -1, -.02, -.21, -.001, -.10, .055},
     {"2sk184-gr", "2SK184-GR", Kind::jfet, 10, -1.55, 0, .005, -.233, .23},
     {"2n5458", "2N5458", Kind::jfet, 15, -7, 0, .025, -1.35, 1.05},
-    {"1n914-nexperia", "1N914-Nexperia", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -20},
+    {"1n914-nexperia", "1N914-Nexperia", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -20, true},
+    {"1n914-nexperia-lowleakage", "1N914-Nexperia-LowLeakage", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -20, true},
     {"1s1588-proxy", "1S1588-Proxy", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -20},
     {"ma150-proxy", "MA150-Proxy", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -20},
-    {"1s2075", "1S2075", Kind::diode, 0, 0, 1.05, .005, 0, 1.8, -30},
+    {"1s2075", "1S2075", Kind::diode, 0, 0, 1.05, .005, 0, 1.8, -30, true},
+    {"1s2075-lowleakage", "1S2075-LowLeakage", Kind::diode, 0, 0, 1.05, .005, 0, 1.8, -30, true},
     {"1n34a-mister", "1N34A-MiSTer", Kind::diode, 0, 0, .6, .003, 0, 1.8, -50},
-    {"1n4002", "1N4002", Kind::diode, 0, 0, 1.2, .005, 0, 1.8, -100},
+    {"1n4002", "1N4002", Kind::diode, 0, 0, 1.2, .005, 0, 1.8, -100, true},
+    {"1n4002-lowleakage", "1N4002-LowLeakage", Kind::diode, 0, 0, 1.2, .005, 0, 1.8, -100, true},
     {"1ss133", "1SS133", Kind::diode, 0, 0, 1.1, .005, 0, 1.8, -80},
 };
 
@@ -66,7 +70,7 @@ std::string kindName(Kind kind) {
     throw std::logic_error("invalid fixture kind");
 }
 
-Fixture makeFixture(const Part& part, bool timing) {
+Fixture makeFixture(const Part& part, bool timing, bool clipper = false) {
     Fixture fixture;
     auto& circuit = fixture.circuit;
     circuit.addSrc("drive", "0", part.audioBias, 0, {}, "input");
@@ -76,6 +80,10 @@ Fixture makeFixture(const Part& part, bool timing) {
         if (timing) fixture.meter = 1000;
         circuit.addRes("drive", fixture.observed, fixture.meter, "meter");
         circuit.addDiode(fixture.observed, "0", card->model(), "device");
+        if (clipper) {
+            circuit.addDiode("0", fixture.observed, card->model(), "opposite");
+            circuit.addRes(fixture.observed, "0", 100e3, "load");
+        }
         return fixture;
     }
     const double supply = timing ? std::copysign(9.0, part.supply) : part.supply;
@@ -157,8 +165,8 @@ struct Timing {
     double checksum = 0;
 };
 
-void measure(const Part& part, Timing& result, int pass) {
-    const auto fixture = makeFixture(part, true);
+void measure(const Part& part, Timing& result, int pass, bool clipper) {
+    const auto fixture = makeFixture(part, true, clipper);
     wdf::Engine engine(fixture.circuit, sampleRate);
     const int output = engine.nodeIndex(fixture.observed);
     if (output < 0) throw std::runtime_error("missing timing output for " + part.id);
@@ -194,6 +202,26 @@ void measure(const Part& part, Timing& result, int pass) {
     result.fallback = engine.blockFallbackCount() - initialFallbacks;
 }
 
+void writeTiming(const std::vector<Part>& parts, const char* filename, bool clipper) {
+    std::vector<Timing> results(parts.size());
+    for (int pass = 0; pass < passes; ++pass)
+        for (size_t i = 0; i < parts.size(); ++i)
+            measure(parts[i], results[i], pass, clipper);
+
+    std::ofstream timing(filename);
+    timing << "id,median_ns_frame,min_ns_frame,max_ns_frame,mean_iterations,"
+              "mean_evaluations,fallbacks,rejected,unconverged,mean_abs_V\n" << std::setprecision(8);
+    for (size_t i = 0; i < parts.size(); ++i) {
+        auto& m = results[i];
+        std::sort(m.time.begin(), m.time.end());
+        timing << parts[i].id << ',' << m.time[passes / 2] << ',' << m.time.front() << ','
+               << m.time.back() << ',' << static_cast<double>(m.iterations) / frames << ','
+               << static_cast<double>(m.evaluations) / frames << ',' << m.fallback << ','
+               << m.rejected << ',' << m.unconverged << ',' << m.checksum << '\n';
+    }
+    if (!timing) throw std::runtime_error(std::string("failed to write ") + filename);
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -212,22 +240,12 @@ int main(int argc, char** argv) {
             if (part.reverseStop != 0)
                 sweep(part, fixture, index, part.id + "-reverse", 0, part.reverseStop, -.1);
         }
-        std::vector<Timing> results(selected.size());
-        for (int pass = 0; pass < passes; ++pass)
-            for (size_t i = 0; i < selected.size(); ++i)
-                measure(selected[i], results[i], pass);
-        std::ofstream timing("timing.csv");
-        timing << "id,median_ns_frame,min_ns_frame,max_ns_frame,mean_iterations,"
-                  "mean_evaluations,fallbacks,rejected,unconverged,mean_abs_V\n" << std::setprecision(8);
-        for (size_t i = 0; i < selected.size(); ++i) {
-            auto& m = results[i];
-            std::sort(m.time.begin(), m.time.end());
-            timing << selected[i].id << ',' << m.time[passes / 2] << ',' << m.time.front() << ','
-                   << m.time.back() << ',' << static_cast<double>(m.iterations) / frames << ','
-                   << static_cast<double>(m.evaluations) / frames << ',' << m.fallback << ','
-                   << m.rejected << ',' << m.unconverged << ',' << m.checksum << '\n';
-        }
-        if (!index || !timing) throw std::runtime_error("failed to write benchmark results");
+        if (!index) throw std::runtime_error("failed to write sweep index");
+        writeTiming(selected, "timing.csv", false);
+        std::vector<Part> clippers;
+        for (const auto& part : selected)
+            if (part.testClipper) clippers.push_back(part);
+        if (!clippers.empty()) writeTiming(clippers, "clipping-timing.csv", true);
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         return 1;

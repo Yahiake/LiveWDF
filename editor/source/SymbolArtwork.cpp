@@ -69,6 +69,7 @@ enum class Asset {
     Ca3080,
     That2180,
     RmsDetector,
+    Dbx200,
     count,
 };
 
@@ -110,6 +111,7 @@ const char* const assetNames[] = {
     "ca3080",
     "that2180",
     "rms-detector",
+    "dbx200",
 };
 
 static_assert(std::size(assetNames) == static_cast<size_t>(assetCount),
@@ -136,9 +138,10 @@ int assetForType(const std::string& type) {
     if (type == "src")         return static_cast<int>(Asset::VoltageSource);
     if (type == "isrc")        return static_cast<int>(Asset::CurrentSource);
     if (type == "vcvs")        return static_cast<int>(Asset::GainBlock);
-    if (type == "rmsdet")      return static_cast<int>(Asset::RmsDetector);
+    if (type == "rmsdet" || type == "dbx209") return static_cast<int>(Asset::RmsDetector);
     if (type == "bbd")         return static_cast<int>(Asset::BucketBrigade);
     if (type == "vca")         return static_cast<int>(Asset::Vca);
+    if (type == "dbx200")      return static_cast<int>(Asset::Dbx200);
     if (type == "that2180")     return static_cast<int>(Asset::That2180);
     if (type == "transformer") return static_cast<int>(Asset::Transformer);
     if (type == "transformer_ct") return static_cast<int>(Asset::CenterTapTransformer);
@@ -545,7 +548,7 @@ std::vector<std::string> artworkTypes() {
     // listing the asset names again -- so the list cannot drift from the map, and
     // a type added to one but not the other is a test failure, not a blank part.
     for (const auto* name : {"res", "cap", "ind", "diode", "ground", "gnd",
-                             "pot", "varres", "src", "isrc", "vcvs", "bbd", "rmsdet",
+                             "pot", "varres", "src", "isrc", "vcvs", "bbd", "rmsdet", "dbx209", "dbx200",
                              "transformer", "triode", "pentode", "ctrlres", "photores",
                              "switch_res", "bjt", "jfet", "mosfet",
                              "in", "out", "opamp", "ca3080"})

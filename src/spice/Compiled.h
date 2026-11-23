@@ -62,6 +62,9 @@ struct Compiled {
     std::vector<std::pair<size_t, Port>> vcaSensePorts;
     std::vector<std::pair<size_t, Port>> otaSensePorts;
     std::vector<bool> otaCurrentLaw;
+    std::vector<double> dbx200Crossover;
+    struct Dbx200BiasPort { size_t pnp, npn; Port port; };
+    std::vector<Dbx200BiasPort> dbx200BiasPorts;
     /// Voltage-controlled voltage sources (SPICE `E` element).
     struct CompiledVCVS {
         Port outPort;
@@ -250,8 +253,11 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
             out.otaSensePorts.emplace_back(out.ctrlRes.size(),
                                             port(cr.ota->bias, cr.ota->biasDiode));
         out.otaCurrentLaw.push_back(cr.ota.has_value());
+        out.dbx200Crossover.push_back(cr.dbx200Crossover);
         out.ctrlRes.emplace_back(port(cr.a, cr.b), cr.initialOhms);
     }
+    for (const auto& bias : c.dbx200Biases)
+        out.dbx200BiasPorts.push_back({bias.pnp, bias.npn, port(bias.ni, bias.pi)});
     for (const auto& v : c.vcvs) {
         if (v.ro <= 0.0)
             throw std::runtime_error("VCVS output resistance Ro must be strictly positive: " + v.name);

@@ -290,3 +290,93 @@ TEST_CASE("Measure OP275 closed-loop response against an external SPICE model",
                       "factory_dB", "phase_error_deg", "rms_error_V", "peak_error_V"}, rows);
     lwdf_test::writeCsv("parts_op275_wave", {"time_s", "livewdf_V", "ngspice_V"}, wave);
 }
+
+TEST_CASE("dbx 200 matched pairs follow the original transistor drawing and symmetry port",
+          "[parts-validation][dbx200][ngspice]") {
+    if (!lwdf_test::requireNgspice("dbx 200 module drawing 110557"))
+        return;
+    const auto fixture = std::filesystem::path(__FILE__).parent_path().parent_path()
+                         / "fixtures/parts/dbx200-110557.lib";
+    std::ifstream referenceFile(fixture);
+    REQUIRE(referenceFile.good());
+    std::ostringstream device;
+    device << referenceFile.rdbuf();
+    int run = 0;
+    for (const auto& [ec, trim] : std::vector<std::pair<double, double>>{
+             {-0.060, 0.0}, {0.0, 0.0}, {0.060, 0.0}, {0.0, 0.003}, {0.030, 0.003}}) {
+        for (double signal : {-2.0, 0.0, 2.0}) {
+            CAPTURE(ec, trim, signal);
+            wdf::Circuit c;
+            c.addSrc("in", "0", signal);
+            c.addSrc("ec", "0", ec);
+            if (trim != 0.0) c.addSrc("trim", "0", trim);
+            const std::string po = trim == 0.0 ? "0" : "trim";
+            c.addRes("in", "summing", 100e3);
+            c.addDbx200("summing", "sink", "ec", "0", po, "ec", "0", "M1");
+            c.addVCVS("out", "0", "0", "sink", 1e6, 1);
+            c.addRes("out", "sink", 1000.0);
+            wdf::Engine engine(c, sampleRate);
+            engine.reset();
+            std::vector<double> sources;
+            for (const auto& src : c.src) sources.push_back(src.dc);
+            for (int k = 0; k < 8; ++k) engine.step(sources);
+            const double actual = engine.step(sources)[engine.nodeIndex("out")];
+            REQUIRE(engine.lastConverged());
+            CHECK(engine.stateRejectCount() == 0);
+            const auto tag = "dbx200_ref_" + std::to_string(run++);
+            const auto commands = lwdf_test::controlBlock({"op"}, {"v(out)"}, tag);
+            std::ostringstream ref;
+            ref << "dbx 200 original reference\n.temp 25\n" << device.str()
+                << "\nVp vp 0 7.5\nVm vm 0 -15\nVec ec 0 " << ec
+                << "\nVtrim trim 0 " << trim << "\nVin in 0 " << signal
+                << "\nRin in s 100k\nX200 s sink ec 0 trim ec vp vm 0 DBX200_REF"
+                   "\nEout out 0 0 sink 1e6\nRfb out sink 1k\n" << commands << ".end\n";
+            REQUIRE(lwdf_test::runDeck(ref.str(), tag).ok);
+            const double transistor = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 0)).front();
+            CHECK(std::abs(actual - transistor) < 0.015 * std::abs(transistor) + 0.00008);
+
+            const auto exportedTag = tag + "_export";
+            const auto exportedCommands = lwdf_test::controlBlock({"op"}, {"v(out)"}, exportedTag);
+            REQUIRE(lwdf_test::runDeck(exportNetwork(c) + exportedCommands + ".end\n", exportedTag).ok);
+            const double exported = lwdf_test::parseOpFile(lwdf_test::vecFile(exportedTag, 0)).front();
+            CHECK(actual == Approx(exported).margin(3e-7));
+        }
+    }
+}
+
+TEST_CASE("dbx 209 power integration agrees with a log-capacitor ngspice reference",
+          "[parts-validation][dbx209][ngspice]") {
+    if (!lwdf_test::requireNgspice("dbx 209 terminal ballistics"))
+        return;
+    // Blackmer US 3,681,618: rectified, doubled-log input feeds an antilog
+    // current into a storage capacitor opposed by a fixed discharge current.
+    // Use normalized input RMS so this tests the charge equation independently
+    // of the implementation's linear power integration.
+    const std::string tag = "dbx209_log_cap";
+    const auto command = lwdf_test::controlBlock({"tran 20.833333333u 150m 0 5u uic", "linearize"},
+                                                  {"time v(env)"}, tag);
+    const std::string deck =
+        "dbx 209 terminal timing reference\n"
+        "Vin in 0 PWL(0 1 10m 1 10.00001m 10 80m 10 80.00001m 0)\n"
+        "C15 env 0 22u IC=0\n"
+        "Bcharge 0 env I=15.84u*(1-V(in)^2*exp(min(V(env)/0.026057669,40)))\n";
+    REQUIRE(lwdf_test::runDeck(deck + command + ".end\n", tag).ok);
+    const auto trace = lwdf_test::parseTranFile(lwdf_test::vecFile(tag, 0), 1);
+    const auto model = wdf::RmsDetectorModel::dbx209(23.34e-6, 22e-6);
+    REQUIRE(trace.nRows() >= 7200);
+    wdf::RmsDetectorState detector(model, 1.0 / sampleRate);
+    detector.reset(model.referenceVolts);
+    double worst = 0.0;
+    for (size_t i = 0; i < trace.nRows(); ++i) {
+        const double t = trace.time[i];
+        const double normalized = t < .010 ? 1.0 : (t < .080 ? 10.0 : 0.0);
+        if (i != 0) detector.step(normalized * model.referenceVolts);
+        const double actual = detector.outputCurrent() * model.outputOhms;
+        // A continuous ngspice transition and a sample-held step differ by
+        // up to one frame at the transition. Check the resolved envelope.
+        if (t > .012 && std::abs(t - .080) > .001)
+            worst = std::max(worst, std::abs(actual - trace.cols[0][i]));
+    }
+    CAPTURE(worst);
+    CHECK(worst < 0.00035); // <0.06 dB
+}
