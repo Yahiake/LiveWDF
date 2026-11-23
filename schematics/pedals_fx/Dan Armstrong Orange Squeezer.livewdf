@@ -11,7 +11,7 @@
         "flipped": false,
         "rotation": 0,
         "x": 4,
-        "y": 20
+        "y": 22
       }
     },
     {
@@ -19,13 +19,13 @@
       "properties": {},
       "type": "cap",
       "values": {
-        "value": 2.2e-07
+        "value": 4.7e-08
       },
       "visual": {
         "flipped": false,
         "rotation": 90,
         "x": 12,
-        "y": 20
+        "y": 22
       }
     },
     {
@@ -38,36 +38,22 @@
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 21,
-        "y": 20
+        "x": 22,
+        "y": 22
       }
     },
     {
-      "id": "C2",
+      "id": "C4",
       "properties": {},
       "type": "cap",
       "values": {
-        "value": 2.2e-07
+        "value": 4.7e-08
       },
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 38,
-        "y": 20
-      }
-    },
-    {
-      "id": "R1",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 220000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 28,
-        "y": 36
+        "x": 62,
+        "y": 22
       }
     },
     {
@@ -75,13 +61,27 @@
       "properties": {},
       "type": "res",
       "values": {
-        "value": 220000.0
+        "value": 390000.0
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 45,
-        "y": 29
+        "x": 73,
+        "y": 11
+      }
+    },
+    {
+      "id": "R8",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 73,
+        "y": 35
       }
     },
     {
@@ -94,26 +94,12 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 57,
-        "y": 19
+        "x": 84,
+        "y": 21
       }
     },
     {
-      "id": "R6",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 10000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 90,
-        "x": 49,
-        "y": 11
-      }
-    },
-    {
-      "id": "R7",
+      "id": "R9",
       "properties": {},
       "type": "res",
       "values": {
@@ -122,34 +108,50 @@
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 62,
-        "y": 10
+        "x": 88,
+        "y": 8
       }
     },
     {
-      "id": "GND1",
+      "id": "R10",
       "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 57,
-        "y": 25
-      }
-    },
-    {
-      "id": "C3",
-      "properties": {},
-      "type": "cap",
+      "type": "res",
       "values": {
-        "value": 1e-05
+        "value": 10000.0
       },
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 74,
-        "y": 19
+        "x": 68,
+        "y": 16
+      }
+    },
+    {
+      "id": "C5",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 59,
+        "y": 16
+      }
+    },
+    {
+      "id": "C6",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 101,
+        "y": 21
       }
     },
     {
@@ -161,13 +163,13 @@
       "type": "pot",
       "values": {
         "pos": 0.38,
-        "totalR": 100000.0
+        "totalR": 10000.0
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 82,
-        "y": 26
+        "x": 128,
+        "y": 34
       }
     },
     {
@@ -180,8 +182,20 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 98,
-        "y": 26
+        "x": 144,
+        "y": 34
+      }
+    },
+    {
+      "id": "GND1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 51,
+        "y": 18
       }
     },
     {
@@ -192,8 +206,60 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 82,
-        "y": 32
+        "x": 73,
+        "y": 43
+      }
+    },
+    {
+      "id": "GND3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 84,
+        "y": 31
+      }
+    },
+    {
+      "id": "GND4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 128,
+        "y": 43
+      }
+    },
+    {
+      "id": "VCC1",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 9.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 84,
+        "y": 4
+      }
+    },
+    {
+      "id": "Q1",
+      "properties": {
+        "model": "2N5457"
+      },
+      "type": "jfet",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 15,
+        "y": 38
       }
     },
     {
@@ -213,10 +279,10 @@
         "vto": -0.93
       },
       "visual": {
-        "flipped": false,
+        "flipped": true,
         "rotation": 0,
         "x": 32,
-        "y": 28
+        "y": 38
       }
     },
     {
@@ -224,13 +290,27 @@
       "properties": {},
       "type": "res",
       "values": {
-        "value": 1500000.0
+        "value": 2400.0
       },
       "visual": {
         "flipped": false,
-        "rotation": 90,
-        "x": 24,
-        "y": 28
+        "rotation": 0,
+        "x": 15,
+        "y": 46
+      }
+    },
+    {
+      "id": "C3",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 43,
+        "y": 59
       }
     },
     {
@@ -241,28 +321,28 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.16,
+        "pos": 0.72,
         "totalR": 10000.0
       },
       "visual": {
         "flipped": false,
-        "rotation": 270,
-        "x": 20,
-        "y": 40
+        "rotation": 0,
+        "x": 32,
+        "y": 61
       }
     },
     {
-      "id": "Q1",
-      "properties": {
-        "model": "2N5457"
+      "id": "C2",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-09
       },
-      "type": "jfet",
-      "values": {},
       "visual": {
         "flipped": false,
-        "rotation": 0,
-        "x": 23,
-        "y": 54
+        "rotation": 90,
+        "x": 41,
+        "y": 31
       }
     },
     {
@@ -270,27 +350,65 @@
       "properties": {},
       "type": "res",
       "values": {
-        "value": 1000.0
+        "value": 470000.0
       },
       "visual": {
         "flipped": false,
-        "rotation": 0,
-        "x": 23,
-        "y": 62
+        "rotation": 90,
+        "x": 51,
+        "y": 31
       }
     },
     {
-      "id": "C5",
+      "id": "R6",
       "properties": {},
-      "type": "cap",
+      "type": "res",
       "values": {
-        "value": 4.7e-06
+        "value": 470000.0
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 12,
-        "y": 35
+        "x": 56,
+        "y": 46
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 32,
+        "y": 69
+      }
+    },
+    {
+      "id": "GND6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 43,
+        "y": 66
+      }
+    },
+    {
+      "id": "R11",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1500.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 108,
+        "y": 32
       }
     },
     {
@@ -302,155 +420,37 @@
       "values": {},
       "visual": {
         "flipped": false,
-        "rotation": 90,
-        "x": 42,
-        "y": 69
+        "rotation": 0,
+        "x": 108,
+        "y": 43
       }
     },
     {
-      "id": "R10",
+      "id": "R12",
       "properties": {},
       "type": "res",
       "values": {
-        "value": 1500.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 90,
-        "x": 55,
-        "y": 69
-      }
-    },
-    {
-      "id": "GND3",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 12,
-        "y": 41
-      }
-    },
-    {
-      "id": "GND4",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 17,
-        "y": 59
-      }
-    },
-    {
-      "id": "GND5",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 23,
-        "y": 68
-      }
-    },
-    {
-      "id": "VCC1",
-      "properties": {},
-      "type": "rail",
-      "values": {
-        "dc": 9.0
+        "value": 100000.0
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 57,
-        "y": 4
+        "x": 104,
+        "y": 57
       }
     },
     {
-      "id": "R9",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 10000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 80,
-        "y": 38
-      }
-    },
-    {
-      "id": "R8",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 10000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 80,
-        "y": 49
-      }
-    },
-    {
-      "id": "C6",
+      "id": "C7",
       "properties": {},
       "type": "cap",
       "values": {
-        "value": 4.7e-05
+        "value": 4.7e-06
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 88,
-        "y": 49
-      }
-    },
-    {
-      "id": "C4",
-      "properties": {},
-      "type": "cap",
-      "values": {
-        "value": 4.7e-05
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 96,
-        "y": 49
-      }
-    },
-    {
-      "id": "D2",
-      "properties": {
-        "model": "1N4007"
-      },
-      "type": "diode",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 180,
-        "x": 106,
-        "y": 49
-      }
-    },
-    {
-      "id": "GND6",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 80,
-        "y": 55
+        "x": 117,
+        "y": 57
       }
     },
     {
@@ -461,8 +461,8 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 88,
-        "y": 55
+        "x": 104,
+        "y": 66
       }
     },
     {
@@ -473,29 +473,14 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 96,
-        "y": 55
-      }
-    },
-    {
-      "id": "GND9",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 106,
-        "y": 55
+        "x": 117,
+        "y": 66
       }
     }
   ],
-  "description": "Engaged Orange Squeezer feedback compressor, based on the General Guitar Gadgets original-reference redraw dated 2012-01-12. Bias sets the JFET operating point. Q2 is a selected 2N5457 with -0.93 V cutoff. The 1N34A and 1N4007 model cards represent the 1N100 detector and 1N4001 supply protection diodes. Source: https://generalguitargadgets.com/pdf/ggg_osq_sc_original.pdf",
-  "io": {
-    "groundNode": "0",
-    "inputNode": "in",
-    "outputNode": "out"
-  },
+  "description": "Engaged Orange Squeezer feedback compressor, reconstructed from the 2012-01-12 General Guitar Gadgets original-reference drawing and cross-checked with DryBell DM1044. Bias sets the Q2 source voltage. The model uses a selected 2N5457 gain-control JFET and a 1N34A as the 1N100 detector. Source: https://generalguitargadgets.com/pdf/ggg_osq_sc_original.pdf",
+  "groundNode": "0",
+  "inputNode": "in",
   "layout": {
     "pots": [
       "Volume",
@@ -503,17 +488,18 @@
     ]
   },
   "name": "Dan Armstrong Orange Squeezer",
+  "outputNode": "out",
   "version": 3,
   "wires": [
     {
       "points": [
         {
           "x": 6,
-          "y": 20
+          "y": 22
         },
         {
           "x": 10,
-          "y": 20
+          "y": 22
         }
       ]
     },
@@ -521,119 +507,23 @@
       "points": [
         {
           "x": 14,
-          "y": 20
-        },
-        {
-          "x": 19,
-          "y": 20
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 23,
-          "y": 20
-        },
-        {
-          "x": 36,
-          "y": 20
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 28,
-          "y": 20
-        },
-        {
-          "x": 28,
-          "y": 34
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 40,
-          "y": 20
-        },
-        {
-          "x": 54,
-          "y": 20
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 45,
-          "y": 20
-        },
-        {
-          "x": 45,
-          "y": 27
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 57,
           "y": 22
         },
         {
-          "x": 57,
-          "y": 23
+          "x": 20,
+          "y": 22
         }
       ]
     },
     {
       "points": [
         {
-          "x": 54,
-          "y": 18
-        },
-        {
-          "x": 52,
-          "y": 18
-        },
-        {
-          "x": 52,
-          "y": 10
+          "x": 24,
+          "y": 22
         },
         {
           "x": 60,
-          "y": 10
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 51,
-          "y": 11
-        },
-        {
-          "x": 52,
-          "y": 11
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 47,
-          "y": 11
-        },
-        {
-          "x": 42,
-          "y": 11
-        },
-        {
-          "x": 42,
-          "y": 45
+          "y": 22
         }
       ]
     },
@@ -641,302 +531,130 @@
       "points": [
         {
           "x": 64,
-          "y": 10
+          "y": 22
         },
         {
-          "x": 66,
-          "y": 10
-        },
-        {
-          "x": 66,
-          "y": 19
+          "x": 81,
+          "y": 22
         }
       ]
     },
     {
       "points": [
         {
-          "x": 60,
-          "y": 19
+          "x": 73,
+          "y": 13
         },
         {
-          "x": 72,
-          "y": 19
+          "x": 73,
+          "y": 22
+        },
+        {
+          "x": 73,
+          "y": 33
         }
       ]
     },
     {
       "points": [
         {
-          "x": 76,
-          "y": 19
+          "x": 73,
+          "y": 37
         },
         {
-          "x": 82,
-          "y": 19
-        },
+          "x": 73,
+          "y": 41
+        }
+      ]
+    },
+    {
+      "points": [
         {
-          "x": 82,
+          "x": 84,
           "y": 24
+        },
+        {
+          "x": 84,
+          "y": 29
         }
       ]
     },
     {
       "points": [
         {
-          "x": 85,
-          "y": 26
-        },
-        {
-          "x": 96,
-          "y": 26
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 82,
-          "y": 28
-        },
-        {
-          "x": 82,
-          "y": 30
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 32,
-          "y": 20
-        },
-        {
-          "x": 32,
-          "y": 25
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 26,
-          "y": 28
-        },
-        {
-          "x": 29,
-          "y": 28
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 32,
-          "y": 31
-        },
-        {
-          "x": 32,
-          "y": 45
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 28,
-          "y": 38
-        },
-        {
-          "x": 28,
-          "y": 45
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 45,
-          "y": 31
-        },
-        {
-          "x": 45,
-          "y": 45
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 22,
-          "y": 28
-        },
-        {
-          "x": 20,
-          "y": 28
-        },
-        {
-          "x": 20,
-          "y": 37
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 12,
-          "y": 33
-        },
-        {
-          "x": 20,
-          "y": 33
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 12,
-          "y": 37
-        },
-        {
-          "x": 12,
-          "y": 39
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 18,
-          "y": 40
-        },
-        {
-          "x": 15,
-          "y": 40
-        },
-        {
-          "x": 15,
-          "y": 45
-        },
-        {
-          "x": 88,
-          "y": 45
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 22,
-          "y": 40
-        },
-        {
-          "x": 23,
-          "y": 40
-        },
-        {
-          "x": 23,
-          "y": 51
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 20,
-          "y": 54
-        },
-        {
-          "x": 17,
-          "y": 54
-        },
-        {
-          "x": 17,
-          "y": 57
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 23,
-          "y": 57
-        },
-        {
-          "x": 23,
-          "y": 60
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 23,
-          "y": 64
-        },
-        {
-          "x": 23,
-          "y": 66
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 12,
-          "y": 33
-        },
-        {
-          "x": 8,
-          "y": 33
-        },
-        {
-          "x": 8,
-          "y": 69
-        },
-        {
-          "x": 40,
-          "y": 69
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 44,
-          "y": 69
-        },
-        {
-          "x": 53,
-          "y": 69
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 57,
-          "y": 69
-        },
-        {
-          "x": 66,
-          "y": 69
-        },
-        {
-          "x": 66,
-          "y": 19
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 57,
+          "x": 84,
           "y": 4
         },
         {
-          "x": 57,
+          "x": 84,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 4
+        },
+        {
+          "x": 17,
+          "y": 4
+        },
+        {
+          "x": 17,
+          "y": 29
+        },
+        {
+          "x": 15,
+          "y": 29
+        },
+        {
+          "x": 15,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 9
+        },
+        {
+          "x": 73,
+          "y": 4
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 20
+        },
+        {
+          "x": 78,
+          "y": 20
+        },
+        {
+          "x": 78,
+          "y": 8
+        },
+        {
+          "x": 86,
+          "y": 8
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 16
+        },
+        {
+          "x": 78,
           "y": 16
         }
       ]
@@ -945,30 +663,90 @@
       "points": [
         {
           "x": 57,
-          "y": 4
+          "y": 16
         },
         {
-          "x": 106,
-          "y": 4
-        },
-        {
-          "x": 106,
-          "y": 47
+          "x": 51,
+          "y": 16
         }
       ]
     },
     {
       "points": [
         {
-          "x": 80,
+          "x": 61,
+          "y": 16
+        },
+        {
+          "x": 66,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 8
+        },
+        {
+          "x": 93,
+          "y": 8
+        },
+        {
+          "x": 93,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 87,
+          "y": 21
+        },
+        {
+          "x": 99,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 103,
+          "y": 21
+        },
+        {
+          "x": 128,
+          "y": 21
+        },
+        {
+          "x": 128,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 128,
           "y": 36
         },
         {
-          "x": 80,
+          "x": 128,
+          "y": 41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 131,
           "y": 34
         },
         {
-          "x": 106,
+          "x": 142,
           "y": 34
         }
       ]
@@ -976,11 +754,111 @@
     {
       "points": [
         {
-          "x": 96,
-          "y": 34
+          "x": 32,
+          "y": 22
         },
         {
-          "x": 96,
+          "x": 32,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 31
+        },
+        {
+          "x": 39,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 43,
+          "y": 31
+        },
+        {
+          "x": 49,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 53,
+          "y": 31
+        },
+        {
+          "x": 56,
+          "y": 31
+        },
+        {
+          "x": 56,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 38
+        },
+        {
+          "x": 56,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 15,
+          "y": 41
+        },
+        {
+          "x": 15,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 15,
+          "y": 48
+        },
+        {
+          "x": 15,
+          "y": 53
+        },
+        {
+          "x": 32,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 18,
+          "y": 38
+        },
+        {
+          "x": 23,
+          "y": 38
+        },
+        {
+          "x": 23,
+          "y": 47
+        },
+        {
+          "x": 32,
           "y": 47
         }
       ]
@@ -988,76 +866,168 @@
     {
       "points": [
         {
-          "x": 80,
-          "y": 40
+          "x": 32,
+          "y": 41
         },
         {
-          "x": 80,
+          "x": 32,
+          "y": 59
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 53
+        },
+        {
+          "x": 43,
+          "y": 53
+        },
+        {
+          "x": 43,
+          "y": 57
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 43,
+          "y": 61
+        },
+        {
+          "x": 43,
+          "y": 64
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 63
+        },
+        {
+          "x": 32,
+          "y": 67
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 61
+        },
+        {
+          "x": 37,
+          "y": 61
+        },
+        {
+          "x": 37,
+          "y": 66
+        },
+        {
+          "x": 32,
+          "y": 66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
+          "y": 21
+        },
+        {
+          "x": 108,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
+          "y": 34
+        },
+        {
+          "x": 108,
+          "y": 41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
           "y": 45
         },
         {
-          "x": 80,
-          "y": 47
+          "x": 108,
+          "y": 49
+        },
+        {
+          "x": 117,
+          "y": 49
+        },
+        {
+          "x": 117,
+          "y": 55
         }
       ]
     },
     {
       "points": [
         {
-          "x": 88,
-          "y": 45
+          "x": 56,
+          "y": 48
         },
         {
-          "x": 88,
-          "y": 47
+          "x": 56,
+          "y": 49
+        },
+        {
+          "x": 108,
+          "y": 49
         }
       ]
     },
     {
       "points": [
         {
-          "x": 80,
-          "y": 51
+          "x": 104,
+          "y": 49
         },
         {
-          "x": 80,
-          "y": 53
+          "x": 104,
+          "y": 55
         }
       ]
     },
     {
       "points": [
         {
-          "x": 88,
-          "y": 51
+          "x": 104,
+          "y": 59
         },
         {
-          "x": 88,
-          "y": 53
+          "x": 104,
+          "y": 64
         }
       ]
     },
     {
       "points": [
         {
-          "x": 96,
-          "y": 51
+          "x": 117,
+          "y": 59
         },
         {
-          "x": 96,
-          "y": 53
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 106,
-          "y": 51
-        },
-        {
-          "x": 106,
-          "y": 53
+          "x": 117,
+          "y": 64
         }
       ]
     }
