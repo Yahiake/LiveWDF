@@ -1,7 +1,11 @@
 #include <catch2.hpp>
 #include "devices/Bjt.h"
 #include "format/LiveWDFFile.h"
+#include "spice/SpiceExport.h"
+#include "support/NgspiceOracle.h"
 #include <cmath>
+#include <iomanip>
+#include <sstream>
 
 using namespace wdf;
 
@@ -49,6 +53,86 @@ TEST_CASE("MiSTer BJT corrections affect gain and retain an exact Jacobian", "[b
     CHECK(atFiveVolts.diC_dVce == Approx((collectorPlus.iC - collectorMinus.iC) / (2.0 * h))
                                      .epsilon(1e-7));
     CHECK_FALSE(findBjtByName("2N3904")->model.hasLowCurrentCorrections());
+}
+
+TEST_CASE("Opt-in MiSTer BJT forward roll-off retains exact terminal derivatives",
+          "[bjt][ikf]") {
+    struct Card {
+        const char* unchanged;
+        const char* corrected;
+        double ikf;
+        double forwardDrive;
+    };
+    for (const Card card : {Card{"2N3904-MiSTer", "2N3904-MiSTer-IKF", 66.78e-3, .78},
+                            Card{"2N3906-MiSTer", "2N3906-MiSTer-IKF", 80e-3, .82}}) {
+        INFO(card.corrected);
+        const auto* original = findBjtByName(card.unchanged);
+        const auto* rolled = findBjtByName(card.corrected);
+        REQUIRE(original != nullptr);
+        REQUIRE(rolled != nullptr);
+        CHECK(original->model.Ikf == 0.0);
+        CHECK(rolled->model.Ikf == card.ikf);
+        const auto& model = rolled->model;
+        const double sign = model.pnp ? -1.0 : 1.0;
+        const double lightDrive = model.pnp ? .61 : .57;
+        const auto light = model.evaluateTerminals(sign, sign * lightDrive);
+        const auto originalLight = original->model.evaluateTerminals(sign, sign * lightDrive);
+        REQUIRE(light.valid);
+        CHECK(light.iC == Approx(originalLight.iC).epsilon(0.001));
+        const auto strong = model.evaluateTerminals(sign, sign * card.forwardDrive);
+        const auto originalStrong = original->model.evaluateTerminals(sign, sign * card.forwardDrive);
+        REQUIRE(strong.valid);
+        CHECK(std::abs(strong.iC) < 0.7 * std::abs(originalStrong.iC));
+        CHECK(strong.iB == originalStrong.iB);
+
+        constexpr double h = 1e-6;
+        for (double vce : {sign, sign * .2}) {
+            const double vbe = sign * card.forwardDrive;
+            const auto center = model.evaluateTerminals(vce, vbe);
+            auto derivative = [&](double dVce, double dVbe, bool baseCurrent) {
+                const auto left = model.evaluateTerminals(vce - dVce, vbe - dVbe);
+                const auto right = model.evaluateTerminals(vce + dVce, vbe + dVbe);
+                return (baseCurrent ? right.iB - left.iB : right.iC - left.iC) / (2 * h);
+            };
+            CHECK(center.diC_dVce == Approx(derivative(h, 0, false)).epsilon(1e-6).margin(1e-9));
+            CHECK(center.diC_dVbe == Approx(derivative(0, h, false)).epsilon(1e-7));
+            CHECK(center.diB_dVce == Approx(derivative(h, 0, true)).epsilon(1e-6).margin(1e-9));
+            CHECK(center.diB_dVbe == Approx(derivative(0, h, true)).epsilon(1e-7));
+        }
+    }
+}
+
+TEST_CASE("Exported IKF BJT matches native transport at elevated current",
+          "[bjt][ikf][ngspice]") {
+    if (!lwdf_test::requireNgspice("IKF BJT transport")) return;
+
+    for (const char* name : {"2N3904-MiSTer-IKF", "2N3906-MiSTer-IKF"}) {
+        INFO(name);
+        const auto& model = findBjtByName(name)->model;
+        const double sign = model.pnp ? -1.0 : 1.0;
+        const double bias = sign * (model.pnp ? .82 : .78);
+        Circuit circuit;
+        circuit.addSrc("c", "0", sign, 0, {}, "fixture");
+        circuit.addSrc("b", "0", bias, 0, {}, "drive");
+        circuit.addBjt("c", "b", "0", model, "tested");
+        const auto exported = spiceExport(circuit, 48000, 0);
+        REQUIRE(exported.ok);
+        REQUIRE(exported.netlist.find("IKF=") != std::string::npos);
+        const auto control = exported.netlist.find("\n.control\n");
+        REQUIRE(control != std::string::npos);
+
+        const double temperature = model.Vt / 8.617333262e-5 - 273.15;
+        const std::string tag = model.pnp ? "wdf_ikf_pnp" : "wdf_ikf_npn";
+        std::ostringstream deck;
+        deck << exported.netlist.substr(0, control) << '\n' << std::setprecision(15)
+             << ".options tnom=" << temperature << " temp=" << temperature
+             << " abstol=1e-15 reltol=1e-10 gmin=1e-15\n"
+             << lwdf_test::controlBlock({"op"}, {"-i(V_fixture)"}, tag) << ".end\n";
+        REQUIRE(lwdf_test::runDeck(deck.str(), tag).ok);
+        const auto result = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 0));
+        REQUIRE(result.size() == 1);
+        CHECK(result.front() == Approx(model.evaluateTerminals(sign, bias).iC).epsilon(.0005));
+    }
 }
 
 TEST_CASE("a PNP BJT is the exact mirror of the NPN Ebers-Moll law",

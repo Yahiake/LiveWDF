@@ -504,6 +504,8 @@ SpiceExportResult spiceExport(const Circuit& c,
             f << " VAR=" << spiceNum(m.Var);
         if (m.Ise > 0.0)
             f << " ISE=" << spiceNum(m.Ise) << " NE=" << spiceNum(m.Ne);
+        if (m.Ikf > 0.0)
+            f << " IKF=" << spiceNum(m.Ikf);
         f << ")\n";
         f << deviceName << " " << nodeOrGround(b.c) << " " << nodeOrGround(b.b)
           << " " << nodeOrGround(b.e) << " " << modelName << "\n";
