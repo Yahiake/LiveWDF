@@ -81,6 +81,8 @@ TEST_CASE("Every part we place that Céline draws is held to Céline's geometry"
         "rail",    // our own addition
         "in",      // circular port, not Céline's flag
         "out",     // circular port, not Céline's flag
+        // LiveWDF's own dynamics, optoelectronic and delay device symbols.
+        "photores", "dbx209", "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080",
     };
 
     std::set<std::string> covered;

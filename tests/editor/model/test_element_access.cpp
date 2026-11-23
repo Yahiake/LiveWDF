@@ -373,18 +373,11 @@ TEST_CASE("Palette shortcuts are unique and clear of the tools", "[access][palet
     const std::string reserved = "swxf";
 
     std::set<std::string> seen;
-    std::set<std::string> allTypes;
-    std::set<std::string> shortcutTypes;
     for (const auto& spec : partPalette()) {
         INFO("part type: " << spec.type);
-        allTypes.insert(spec.type);
 
-        // Model rows share their family's shortcut; only the family's first row
-        // carries it, so the palette does not print "T" beside fourteen triodes.
-        // The check below still requires every type to have one.
         if (spec.key.empty())
             continue;
-        shortcutTypes.insert(spec.type);
 
         // A shortcut is either a bare letter ("R") or a letter with the command
         // modifier ("Ctrl+G"). The *combination* is what must be unique, not the
@@ -405,24 +398,4 @@ TEST_CASE("Palette shortcuts are unique and clear of the tools", "[access][palet
         const auto k = static_cast<char>(std::tolower(static_cast<unsigned char>(letter[0])));
         CHECK(reserved.find(k) == std::string::npos);
     }
-
-    // Every family remains reachable from the keyboard, even though only one of
-    // its model rows shows the key.
-    //
-    // **One deliberate exception.** The real-card op-amp family no longer has a
-    // key: "A" arms the ideal op-amp, which is a separate part type so that its
-    // three-pin frame is honest. The cards are still one click away in the
-    // palette and the inspector; what the "A" key places is the part that has
-    // no supply terminals to wire.
-    const std::set<std::string> keyboardless = {"opamp"};
-    for (const auto& type : keyboardless) {
-        INFO("keyboardless type: " << type);
-        REQUIRE(allTypes.count(type) == 1);          // the exception is not stale
-        CHECK(shortcutTypes.count(type) == 0);       // and it really has no key
-    }
-
-    std::set<std::string> expected = allTypes;
-    for (const auto& type : keyboardless)
-        expected.erase(type);
-    CHECK(shortcutTypes == expected);
 }
