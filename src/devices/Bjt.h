@@ -59,6 +59,8 @@ struct BjtModel {
     double Ise = 0.0;      // optional base-emitter recombination current
     double Ne = 1.5;
     double Ikf = 0.0;      // zero disables forward high-injection gain roll-off
+    double cbe = 0.0;      // constant base-emitter capacitance (F)
+    double cbc = 0.0;      // constant base-collector capacitance (F)
 
     // --- Derived constants (computed in prepare()) ---
     double nfVt = 0.0;
@@ -100,6 +102,8 @@ struct BjtModel {
                std::isfinite(Ise) && Ise >= 0.0 &&
                std::isfinite(Ne) && Ne > 0.0 &&
                std::isfinite(Ikf) && (Ikf == 0.0 || Ikf > 4.0 * Is) &&
+               std::isfinite(cbe) && cbe >= 0.0 &&
+               std::isfinite(cbc) && cbc >= 0.0 &&
                std::isfinite(Vt) && Vt > 0.0;
     }
 
@@ -334,6 +338,12 @@ inline const BjtModel kMiSTer2N3904 = withLowCurrentCorrections(
 inline const BjtModel kMiSTer2N3906 = withLowCurrentCorrections(
     makeEM(1.41e-15, 180.7, 4.977, 1.0, 1.0, true), 18.7, 0.0, 1.5);
 
+inline BjtModel withJunctionCaps(BjtModel model, double cbe, double cbc) noexcept {
+    model.cbe = cbe;
+    model.cbc = cbc;
+    return model;
+}
+
 // One registry for the engine and the picker.
 inline const BjtEntry kBjtTable[] = {
     // Silicon NPN (LTspice standard.bjt)
@@ -370,6 +380,11 @@ inline const BjtEntry kBjtTable[] = {
     {"AC128",   makeEM(20.66e-6,  229.6,  14.66, 1.133, 1.140, true)},
     {"OC44",    makeEM(1.423e-6,  307.0,  20.27, 1.022, 1.025, true)},
     {"NKT275",  makeEM(1.5e-6,    85.0,   8.0,   1.05,  1.05,  true)},
+    // Same static cards with the constant AC terms in DAFx-17 Table 1.
+    {"AC128-DAFx-Cap", withJunctionCaps(makeEM(20.66e-6, 229.6, 14.66, 1.133, 1.140, true),
+                                       0.0, 100e-12)},
+    {"OC44-DAFx-Cap", withJunctionCaps(makeEM(1.423e-6, 307.0, 20.27, 1.022, 1.025, true),
+                                      410e-12, 10e-12)},
 
     // Gert Willmann's 25 °C 2N270 fit, reproduced in Greg Whitehead's FZ-1 study:
     // https://github.com/grwhitehead/us3213181/blob/661e935/ngspice/fuzztone.mod

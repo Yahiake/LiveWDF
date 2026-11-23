@@ -834,13 +834,17 @@ struct Circuit {
 
     /// Add a three-terminal BjtDevice with Ebers-Moll model.
     /// Terminals: collector (c), base (b), emitter (e).
-    /// Model includes Ebers-Moll parameters with Early effect.
+    /// Constant junction capacitances stamp into the linear network.
     void addBjt(const std::string& collector, const std::string& base, const std::string& emitter,
                 const BjtModel& model, const std::string& name = {}) {
         if (!model.valid())
             throw std::invalid_argument("invalid BjtDevice model parameters");
         const std::string bName = name.empty() ? ("Q" + std::to_string(bjt.size() + 1)) : name;
         bjt.push_back({collector, base, emitter, model, bName});
+        if (model.cbe > 0.0)
+            addCap(base, emitter, model.cbe, bName + "$cbe");
+        if (model.cbc > 0.0)
+            addCap(base, collector, model.cbc, bName + "$cbc");
     }
 
     /// Add an operational amplifier.

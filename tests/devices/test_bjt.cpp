@@ -1,5 +1,6 @@
 #include <catch2.hpp>
 #include "devices/Bjt.h"
+#include "spice/Circuit.h"
 #include "format/LiveWDFFile.h"
 #include "spice/SpiceExport.h"
 #include "support/NgspiceOracle.h"
@@ -30,6 +31,31 @@ TEST_CASE("BJT presets valid and evaluate at representative points", "[bjt][pres
         CHECK(std::isfinite(res.iB));
         CHECK(std::isfinite(res.iE));
     }
+}
+
+TEST_CASE("Germanium junction caps add linear stamps without changing transport",
+          "[bjt][presets]") {
+    using namespace wdf;
+    const auto* oc44 = findBjtByName("OC44");
+    const auto* withCaps = findBjtByName("OC44-DAFx-Cap");
+    REQUIRE(oc44 != nullptr);
+    REQUIRE(withCaps != nullptr);
+    const auto original = oc44->model.evaluateTerminals(-2.0, -0.15);
+    const auto revised = withCaps->model.evaluateTerminals(-2.0, -0.15);
+    REQUIRE(original.valid);
+    REQUIRE(revised.valid);
+    CHECK(original.iC == revised.iC);
+    CHECK(original.iB == revised.iB);
+
+    Circuit circuit;
+    circuit.addBjt("c", "b", "e", withCaps->model, "Q1");
+    REQUIRE(circuit.cap.size() == 2);
+    CHECK(circuit.cap[0].a == "b");
+    CHECK(circuit.cap[0].b == "e");
+    CHECK(circuit.cap[0].value == Approx(410e-12).epsilon(1e-12));
+    CHECK(circuit.cap[1].a == "b");
+    CHECK(circuit.cap[1].b == "c");
+    CHECK(circuit.cap[1].value == Approx(10e-12).epsilon(1e-12));
 }
 
 TEST_CASE("MiSTer BJT corrections affect gain and retain an exact Jacobian", "[bjt][presets]") {
