@@ -57,6 +57,7 @@ EditorWindow::Content::Content() {
                         .getChildFile("LiveWDF");
     presetLibrary_.setFactoryFolder(FactorySchematics::folder());
     presetLibrary_.setFolder(presetFolder_);
+    presetStepper_.setFactoryFolder(FactorySchematics::folder());
 
     // --- Canvas callbacks -------------------------------------------------
     editor_.onChanged = [this] {
@@ -249,8 +250,10 @@ EditorWindow::Content::Content() {
     };
     presetLibrary_.onPresetChosen = [this](const juce::File& file) {
         closePresetLibrary();
-        openFile(file);
+        if (openFile(file))
+            presetStepper_.setBrowseOrder(presetLibrary_.visibleFactoryOrder());
     };
+    presetStepper_.onPresetChosen = [this](const juce::File& file) { openFile(file, true); };
     presetLibrary_.onChooseFolder = [this] { choosePresetFolder(); };
     presetLibrary_.onSaveCurrent = [this] {
         closePresetLibrary();

@@ -8,6 +8,7 @@
 #include "PresetLibraryPanel.h"
 
 using livewdf::FactorySchematics;
+using livewdf::editor::FactoryPresetStepper;
 using livewdf::editor::PresetLibraryPanel;
 
 namespace {
@@ -63,6 +64,14 @@ void selectCollection(PresetLibraryPanel& panel, const juce::String& label) {
             return;
         }
     FAIL("Could not find collection " + label.toStdString());
+}
+
+juce::TextButton* buttonWithTitle(juce::Component& parent, const juce::String& title) {
+    for (auto* child : parent.getChildren())
+        if (auto* button = dynamic_cast<juce::TextButton*>(child);
+            button != nullptr && button->getTitle() == title)
+            return button;
+    return nullptr;
 }
 
 }  // namespace
@@ -183,4 +192,79 @@ TEST_CASE("Factory browsing filters a separate user folder by collection and eff
     selectCollection(plugin, "Featured");
     REQUIRE(plugin.getRowCount() == 1);
     CHECK(plugin.getRowText(0) == "Boss CE-2 Chorus");
+}
+
+TEST_CASE("Factory preset chevrons follow the visible factory rows") {
+    TempFolder temp;
+    const auto factory = temp.root.getChildFile("Factory");
+    const auto first = factory.getChildFile("studio/eq/EQ 2.livewdf");
+    const auto middle = factory.getChildFile("studio/eq/EQ 10.livewdf");
+    const auto last = factory.getChildFile("studio/eq/EQ 11.livewdf");
+    const auto other = factory.getChildFile("amps/Amp.livewdf");
+    const auto custom = temp.root.getChildFile("User EQ.livewdf");
+    for (const auto& file : {first, middle, last, other, custom}) {
+        REQUIRE(file.getParentDirectory().createDirectory().wasOk());
+        REQUIRE(file.replaceWithText("{}"));
+    }
+
+    PresetLibraryPanel browser;
+    browser.setFolder(temp.root);
+    CHECK(browser.visibleFactoryOrder().size() == 4);
+    selectCollection(browser, "Studio");
+    selectFilter(browser, "Effect type", "EQ");
+    browser.setSearchText("eq");
+    const auto order = browser.visibleFactoryOrder();
+    CHECK(order == FactoryPresetStepper::Order{first, middle, last});
+
+    PresetLibraryPanel reopened(PresetLibraryPanel::Mode::Factory);
+    reopened.setFactoryFolder(factory);
+    reopened.setView(browser.view());
+    CHECK(reopened.visibleFactoryOrder() == order);
+    CHECK(reopened.view().effect == "EQ");
+    CHECK(reopened.view().search == "eq");
+
+    juce::Component parent;
+    juce::Label label;
+    parent.addAndMakeVisible(label);
+    FactoryPresetStepper stepper(parent, label);
+    stepper.setBounds({0, 0, 260, 24});
+    stepper.setFactoryFolder(factory);
+    auto* previous = buttonWithTitle(parent, "Previous factory preset");
+    auto* next = buttonWithTitle(parent, "Next factory preset");
+    REQUIRE(previous != nullptr);
+    REQUIRE(next != nullptr);
+
+    juce::File chosen;
+    stepper.onPresetChosen = [&](const juce::File& file) {
+        chosen = file;
+        stepper.setCurrentFile(file);
+    };
+    stepper.setCurrentFile(first);
+    REQUIRE(previous->isEnabled());
+    previous->onClick();
+    CHECK(chosen == other);
+
+    stepper.setBrowseOrder(order);
+    stepper.setCurrentFile(first);
+    stepper.setName("EQ 2");
+    CHECK(previous->isVisible());
+    CHECK(next->getBounds().getRight() < parent.getX() + 260);
+    CHECK(previous->getBounds().getRight() <= label.getBounds().getX());
+    CHECK(next->getBounds().getX() >= label.getBounds().getRight());
+    CHECK_FALSE(previous->isEnabled());
+    CHECK(next->isEnabled());
+    next->onClick();
+    CHECK(chosen == middle);
+    next->onClick();
+    CHECK(chosen == last);
+    CHECK_FALSE(next->isEnabled());
+    CHECK(previous->isEnabled());
+    REQUIRE(middle.deleteFile());
+    previous->onClick();
+    CHECK(chosen == first);
+
+    stepper.setCurrentFile(custom);
+    CHECK_FALSE(previous->isVisible());
+    CHECK_FALSE(next->isVisible());
+    CHECK(label.getBounds().getWidth() == 260);
 }

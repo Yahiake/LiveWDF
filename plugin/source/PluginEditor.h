@@ -6,6 +6,7 @@
 #include "PluginProcessor.h"
 #include "gui/VintageKnob.h"
 #include "gui/DualOscilloscope.h"
+#include "PresetLibraryPanel.h"
 #include "SchematicEditor.h"
 #include "UiLookAndFeel.h"
 
@@ -68,6 +69,7 @@ private:
     /// plugin is playing *the thing I just saved*", which is the whole question
     /// when the editor and the plugin are both open.
     juce::Label statusLabel_;
+    editor::FactoryPresetStepper presetStepper_{*this, statusLabel_};
 
     // Central schematic. This is the editor's own canvas, embedded read-only:
     // the plugin plays a circuit, the editor draws it, and both use the same
@@ -111,6 +113,7 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 
     void rebuildDynamicControls();

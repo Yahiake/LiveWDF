@@ -1,7 +1,6 @@
 #include "PluginEditor.h"
 #include "FactorySchematics.h"
 #include "Fonts.h"
-#include "PresetLibraryPanel.h"
 #include "gui/AboutDialog.h"
 
 namespace livewdf {
@@ -40,6 +39,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // this a cheap no-op after the first binary has done it.
     if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed())
         juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
+    presetStepper_.setFactoryFolder(FactorySchematics::folder());
+    presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
+    presetStepper_.onPresetChosen = [this](const juce::File& file) { loadCircuitFile(file); };
 
     // 2. Factory and Load File Buttons
     factoryBtn_.onClick = [this] { showFactoryBrowser(); };
@@ -55,16 +57,14 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
             schematicCanvas_.setDocument(processor_.getCurrentDocument());
             syncSchematicLiveState();
             rebuildDynamicControls();
-            statusLabel_.setText("Reloaded" + loadNoteSuffix(processor_.getCurrentDocument()),
-                                 juce::dontSendNotification);
+            presetStepper_.setName(currentCircuitDescription() + " · Reloaded");
         } else {
             // **A reload that went dead says why**, because the usual reason
             // now is a file the format refuses outright, and the fix is in the
             // reason's words.
             const juce::String reason = processor_.lastError();
-            statusLabel_.setText(reason.isEmpty() ? juce::String("Reload failed")
-                                                 : "Reload failed -- " + reason,
-                                 juce::dontSendNotification);
+            presetStepper_.setName(reason.isEmpty() ? juce::String("Reload failed")
+                                                    : "Reload failed -- " + reason);
         }
     };
     addAndMakeVisible(reloadBtn_);
@@ -145,9 +145,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     startTimerHz(30);
 
     // The status line says what is playing, so the plugin is never a mystery.
-    statusLabel_.setText(currentCircuitDescription(), juce::dontSendNotification);
     statusLabel_.setColour(juce::Label::textColourId, juce::Colour(0xFF94A3B8));
     statusLabel_.setFont(editor::Fonts::monoSemiBold(12.0f));
+    presetStepper_.setName(currentCircuitDescription());
     addAndMakeVisible(statusLabel_);
 }
 
@@ -279,16 +279,16 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
         // or which legacy sheet the format refuses outright -- and not the
         // engine's.
         const juce::String reason = processor_.lastError();
-        statusLabel_.setText(reason.isEmpty() ? juce::String("Could not open circuit")
-                                             : "Could not open circuit -- " + reason,
-                             juce::dontSendNotification);
+        presetStepper_.setName(reason.isEmpty() ? juce::String("Could not open circuit")
+                                                : "Could not open circuit -- " + reason);
         return false;
     }
 
     schematicCanvas_.setDocument(processor_.getCurrentDocument());
     syncSchematicLiveState();
     rebuildDynamicControls();
-    statusLabel_.setText(currentCircuitDescription(), juce::dontSendNotification);
+    presetStepper_.setName(currentCircuitDescription());
+    presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
     return true;
 }
 
@@ -297,8 +297,7 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
         return;
 
     if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed()) {
-        statusLabel_.setText("Factory circuits unavailable -- " + factory.getErrorMessage(),
-                             juce::dontSendNotification);
+        presetStepper_.setName("Factory circuits unavailable -- " + factory.getErrorMessage());
         return;
     }
 
@@ -307,6 +306,7 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
     browser->setSize(500, juce::jmax(320, juce::jmin(480, getHeight() - 100)));
     browser->setFactoryFolder(FactorySchematics::folder());
     browser->setCurrentFile(processor_.getCurrentCircuitFile());
+    browser->setView(factoryView_);
 
     const juce::Component::SafePointer<Browser> panel(browser.get());
     auto& callout = juce::CallOutBox::launchAsynchronously(std::move(browser),
@@ -318,11 +318,13 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
             popup->dismiss();
     };
     panel->onPresetChosen = [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this),
-                             popup = factoryBrowser_](const juce::File& file) {
+                             popup = factoryBrowser_, panel](const juce::File& file) {
+        if (safe != nullptr && panel != nullptr && safe->loadCircuitFile(file)) {
+            safe->factoryView_ = panel->view();
+            safe->presetStepper_.setBrowseOrder(panel->visibleFactoryOrder());
+        }
         if (popup != nullptr)
             popup->dismiss();
-        if (safe != nullptr)
-            safe->loadCircuitFile(file);
     };
     juce::MessageManager::callAsync([panel] {
         if (panel != nullptr)
@@ -398,6 +400,7 @@ void LiveWDFPluginEditor::timerCallback() {
     //    why in its tooltip, rather than being a grey rectangle with no
     //    explanation.
     const bool canReload = processor_.canReload();
+    presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
     if (reloadBtn_.isEnabled() != canReload)
         reloadBtn_.setEnabled(canReload);
 
@@ -460,15 +463,15 @@ void LiveWDFPluginEditor::resized() {
 
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
-    titleLabel_.setBounds(16, 7, 240, 20);
-    statusLabel_.setBounds(16, 27, 280, 18);
-
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
     oversamplingCombo_.setBounds(topBar.removeFromRight(120).reduced(6, 10));
     stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
     reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
     loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
     factoryBtn_.setBounds(topBar.removeFromRight(92).reduced(6, 10));
+    const int nameWidth = juce::jmax(0, topBar.getWidth() - 22);
+    titleLabel_.setBounds(16, 7, juce::jmin(240, nameWidth), 20);
+    presetStepper_.setBounds({16, 27, nameWidth, 18});
 
     // 2. Bottom Oscilloscope (height 150px)
     auto bottomScope = bounds.removeFromBottom(150);

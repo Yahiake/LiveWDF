@@ -27,6 +27,108 @@ void sortFiles(juce::Array<juce::File>& files, const juce::File& root) {
 }
 }  // namespace
 
+FactoryPresetStepper::FactoryPresetStepper(juce::Component& parent, juce::Label& name)
+    : name_(name) {
+    previous_.setTitle("Previous factory preset");
+    next_.setTitle("Next factory preset");
+    previous_.setTooltip(previous_.getTitle());
+    next_.setTooltip(next_.getTitle());
+    previous_.onClick = [this] { step(-1); };
+    next_.onClick = [this] { step(1); };
+    parent.addChildComponent(previous_);
+    parent.addChildComponent(next_);
+}
+
+void FactoryPresetStepper::setFactoryFolder(const juce::File& folder) {
+    factoryFolder_ = folder;
+    browseOrder_.clear();
+    defaultOrder_.clear();
+    defaultOrderLoaded_ = false;
+    updateButtons();
+}
+
+void FactoryPresetStepper::setCurrentFile(const juce::File& file) {
+    if (currentFile_ == file)
+        return;
+    currentFile_ = file;
+    updateButtons();
+}
+
+void FactoryPresetStepper::setBrowseOrder(Order order) {
+    browseOrder_ = std::move(order);
+    updateButtons();
+}
+
+void FactoryPresetStepper::setName(const juce::String& name) {
+    name_.setText(name, juce::dontSendNotification);
+    setBounds(bounds_);
+}
+
+void FactoryPresetStepper::setBounds(juce::Rectangle<int> bounds) {
+    bounds_ = bounds;
+    if (previous_.isVisible()) {
+        const int buttonWidth = juce::jmin(24, bounds.getWidth() / 4);
+        const auto nameWidth = juce::roundToInt(
+            juce::GlyphArrangement::getStringWidth(name_.getFont(), name_.getText()))
+                             + name_.getBorderSize().getLeftAndRight() + 4;
+        const int width = juce::jmin(bounds.getWidth(), nameWidth + 2 * buttonWidth);
+        bounds = name_.getJustificationType().testFlags(juce::Justification::right)
+                   ? bounds.removeFromRight(width) : bounds.removeFromLeft(width);
+        previous_.setBounds(bounds.removeFromLeft(buttonWidth).reduced(1, 0));
+        next_.setBounds(bounds.removeFromRight(buttonWidth).reduced(1, 0));
+    }
+    name_.setBounds(bounds);
+}
+
+void FactoryPresetStepper::updateButtons() {
+    const bool inFactory = factoryFolder_ != juce::File() && currentFile_ != juce::File()
+                        && currentFile_.isAChildOf(factoryFolder_);
+    if (inFactory && !defaultOrderLoaded_
+        && std::find(browseOrder_.begin(), browseOrder_.end(), currentFile_) == browseOrder_.end()) {
+        auto presets = FactorySchematics::list(factoryFolder_);
+        std::stable_partition(presets.begin(), presets.end(),
+                              [](const auto& preset) { return preset.featured; });
+        for (const auto& preset : presets)
+            defaultOrder_.push_back(preset.file);
+        defaultOrderLoaded_ = true;
+    }
+    const auto containsCurrent = [this](const Order& order) {
+        return std::find(order.begin(), order.end(), currentFile_) != order.end();
+    };
+    const bool visible = inFactory && (containsCurrent(browseOrder_) || containsCurrent(defaultOrder_));
+    previous_.setVisible(visible);
+    next_.setVisible(visible);
+    previous_.setEnabled(visible && adjacent(-1) != juce::File());
+    next_.setEnabled(visible && adjacent(1) != juce::File());
+    setBounds(bounds_);
+}
+
+juce::File FactoryPresetStepper::adjacent(int offset) const {
+    const auto browsePosition = std::find(browseOrder_.begin(), browseOrder_.end(), currentFile_);
+    const bool inView = browsePosition != browseOrder_.end();
+    const auto& order = inView ? browseOrder_ : defaultOrder_;
+    const auto current = inView ? browsePosition : std::find(order.begin(), order.end(), currentFile_);
+    if (current == order.end())
+        return {};
+    for (auto index = current - order.begin() + offset;
+         index >= 0 && index < order.end() - order.begin(); index += offset) {
+        const auto& file = order[static_cast<size_t>(index)];
+        if (file.existsAsFile())
+            return file;
+    }
+    return {};
+}
+
+void FactoryPresetStepper::step(int offset) {
+    if (!previous_.isVisible())
+        return;
+    const auto file = adjacent(offset);
+    if (file != juce::File() && onPresetChosen)
+        onPresetChosen(file);
+    else
+        updateButtons();
+}
+
 PresetLibraryPanel::PresetLibraryPanel(Mode mode) : mode_(mode) {
     setOpaque(false);
     setInterceptsMouseClicks(true, true);
@@ -108,6 +210,34 @@ juce::File PresetLibraryPanel::factoryFolder() const {
 void PresetLibraryPanel::setCurrentFile(const juce::File& file) {
     currentFile_ = file;
     list_.repaint();
+}
+
+FactoryPresetStepper::Order PresetLibraryPanel::visibleFactoryOrder() const {
+    FactoryPresetStepper::Order files;
+    for (const auto& entry : shown_)
+        if (entry.kind == Kind::File && entry.scope != Scope::User)
+            files.push_back(entry.file);
+    return files;
+}
+
+PresetLibraryPanel::View PresetLibraryPanel::view() const {
+    return {scope_, effectSelector_.getText(), searchText_};
+}
+
+void PresetLibraryPanel::setView(const View& view) {
+    const auto scope = std::find(kScopes.begin(), kScopes.end(), view.scope);
+    if (scope != kScopes.end()) {
+        const auto& button = scopeButtons_[static_cast<size_t>(scope - kScopes.begin())];
+        if (button.isVisible() && button.isEnabled())
+            selectScope(view.scope);
+    }
+    for (int i = 0; i < effectSelector_.getNumItems(); ++i) {
+        if (effectSelector_.getItemText(i) == view.effect) {
+            effectSelector_.setSelectedItemIndex(i, juce::dontSendNotification);
+            break;
+        }
+    }
+    setSearchText(view.search);
 }
 
 void PresetLibraryPanel::rescan() {

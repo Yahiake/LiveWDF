@@ -105,7 +105,6 @@ void EditorWindow::Content::placePresetLibrary() {
 void EditorWindow::Content::showPresetLibrary() {
     presetLibrary_.setFolder(presetFolder_);
     presetLibrary_.setCurrentFile(currentFile());
-    presetLibrary_.setSearchText({});
     placePresetLibrary();
 
     presetDismisser_.setVisible(true);

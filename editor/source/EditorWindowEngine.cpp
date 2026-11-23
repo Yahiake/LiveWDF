@@ -353,7 +353,7 @@ void EditorWindow::Content::resized() {
     toolbar.removeFromLeft(4);
     keysBtn_.setBounds(toolbar.removeFromLeft(52));
 
-    titleLabel_.setBounds(toolbar);
+    presetStepper_.setBounds(toolbar);
 
     auto status = area.removeFromBottom(kStatusH).reduced(6, 0);
     messagesBtn_.setBounds(status.removeFromRight(96).reduced(0, 2));

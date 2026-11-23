@@ -41,10 +41,11 @@ void EditorWindow::Content::refreshTitle() {
     // **The current tab's name**, and its modified mark. The title is the
     // window's answer to "which circuit am I in", and the answer is the *tab's*
     // -- so it changes when the tab does.
-    titleLabel_.setText(currentTabName(), juce::dontSendNotification);
+    presetStepper_.setName(currentTabName());
+    presetStepper_.setCurrentFile(currentFile());
 }
 
-bool EditorWindow::Content::openFile(const juce::File& file) {
+bool EditorWindow::Content::openFile(const juce::File& file, bool replaceTab) {
     wdf::LiveWDFDocument doc;
     std::string err;
     if (!doc.loadFromFile(file.getFullPathName().toStdString(), err)) {
@@ -63,28 +64,27 @@ bool EditorWindow::Content::openFile(const juce::File& file) {
     for (const auto& warning : doc.loadWarnings)
         diagLog("load warning: " + warning);
 
-    openDocumentTab(std::move(doc), file);
+    openDocumentTab(std::move(doc), file, replaceTab);
     return true;
 }
 
 void EditorWindow::Content::openDocumentTab(wdf::LiveWDFDocument document,
-                                            const juce::File& file) {
-    // **A document opens in a tab of its own**, so the circuit being edited
-    // stays where it was -- the way a browser opens a link in a new tab rather
-    // than throwing away what you had. New, Open, the starter sheet and the
-    // preset library all arrive here, so a tab cannot be assembled one way by
-    // one entry point and another way by the next.
+                                            const juce::File& file, bool replaceTab) {
     Tab tab;
     tab.document = std::move(document);
     tab.file = file;
     tab.view = editor_.viewState();
 
-    saveCurrentTab();
+    if (replaceTab && !editor_.isDirty()
+        && currentTab_ >= 0 && currentTab_ < static_cast<int>(tabs_.size())) {
+        tabs_[static_cast<size_t>(currentTab_)] = std::move(tab);
+    } else {
+        saveCurrentTab();
+        tabs_.push_back(std::move(tab));
+        currentTab_ = static_cast<int>(tabs_.size()) - 1;
+    }
 
-    tabs_.push_back(std::move(tab));
-    currentTab_ = static_cast<int>(tabs_.size()) - 1;
-
-    editor_.setDocument(tabs_.back().document);
+    editor_.setDocument(tabs_[static_cast<size_t>(currentTab_)].document);
     history_.reset(editor_.schematic());   // a different document: no undo across it
 
     session_.clear();
