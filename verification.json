@@ -1,7 +1,7 @@
 {
-  "reel_samples": 13634400,
+  "reel_samples": 18325920,
   "sample_rate": 48000,
-  "rejected_total": 112,
+  "rejected_total": 0,
   "rejected_playback": 0,
   "clips": [
     {
@@ -21,7 +21,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "0563f42bea7e9e41fd5d7e2d95e17de8f864fb72d6b2065df3b13a0abea9e32b",
-      "playback_gain": 1.673072027640682,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.673072027640368,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -30,8 +35,8 @@
         0.019011970057371597
       ],
       "wet_peak_rms_v": [
-        0.3520621059444005,
-        0.07080765405230784
+        0.35206210595283716,
+        0.07080765405232038
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -79,7 +84,12 @@
       "drive_v_per_fs": 2,
       "knobs": {},
       "circuit_sha256": "0d4096b334fd6a817781eb6a6fed8a2c8df025468a43ccc83550c277b5e4a159",
-      "playback_gain": 1.9685866132152827,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.9685866132151986,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -88,8 +98,8 @@
         0.027942914523633545
       ],
       "wet_peak_rms_v": [
-        0.18395157259261646,
-        0.06064035270790648
+        0.1839515725871808,
+        0.06064035270790552
       ],
       "dry_samples": 201600,
       "pair_samples": 419040,
@@ -139,7 +149,12 @@
         "Volume": 0.52
       },
       "circuit_sha256": "d9501a49c81696762ccf28ae313bb2bf75a47c30c86a7732842f19ca1cb70fcc",
-      "playback_gain": 1.2223225720738748,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.2223225720738804,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -148,8 +163,8 @@
         0.027942914523633545
       ],
       "wet_peak_rms_v": [
-        0.18527499696555683,
-        0.09694094733385805
+        0.18527499696585092,
+        0.09694094733385723
       ],
       "dry_samples": 201600,
       "pair_samples": 419040,
@@ -199,7 +214,12 @@
         "Level": 0.48
       },
       "circuit_sha256": "6c9dcfcb2a585e53ce990aeceebc1611345a45fb1eb739a9437c3f19042aa054",
-      "playback_gain": 1.1374724020981204,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.1374724020975409,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -208,8 +228,8 @@
         0.027942914523633545
       ],
       "wet_peak_rms_v": [
-        0.2665178855973072,
-        0.10446127057854741
+        0.26651788464327064,
+        0.10446127057738423
       ],
       "dry_samples": 201600,
       "pair_samples": 419040,
@@ -239,7 +259,12 @@
         "Level": 0.42
       },
       "circuit_sha256": "dc37ad622e9399d0e82a9aecf0af63dff7e79ebe04983274d31db1046b2bc253",
-      "playback_gain": 1.119198708823854,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.119198708823002,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -248,8 +273,8 @@
         0.01929472259905394
       ],
       "wet_peak_rms_v": [
-        0.2598281498881208,
-        0.10603165790283244
+        0.25982814989151914,
+        0.10603165790292444
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -279,7 +304,12 @@
         "Volume": 0.4
       },
       "circuit_sha256": "ae3d4d155c5bfb49b2747d175d19a003c73994fb980873113435f2f832d2af33",
-      "playback_gain": 0.7520781725513168,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 0.7520781725513233,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -288,8 +318,8 @@
         0.03382710966624732
       ],
       "wet_peak_rms_v": [
-        0.3100983558718312,
-        0.1570843703641109
+        0.3100983558710763,
+        0.15708437036410722
       ],
       "dry_samples": 199680,
       "pair_samples": 415200,
@@ -317,7 +347,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "2d142de59a611c9f95956c8c40b8f62ea76c05ef096538393504390c581adf71",
-      "playback_gain": 1.0116841874886933,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.011684187488743,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -326,8 +361,8 @@
         0.03382710966624732
       ],
       "wet_peak_rms_v": [
-        0.23559304841157885,
-        0.11679049325354739
+        0.23559304841400652,
+        0.11679049325354107
       ],
       "dry_samples": 199680,
       "pair_samples": 415200,
@@ -355,7 +390,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "b619015b723e31d6eb1c2a08c990bb7c85fb2a2ec0fdcfacf998fec258066cbb",
-      "playback_gain": 1.5085971553429682,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.5085971553428896,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -364,8 +404,8 @@
         0.03695321727484512
       ],
       "wet_peak_rms_v": [
-        0.29297814150478685,
-        0.07828265954535112
+        0.29297814151365276,
+        0.07828265954535446
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -397,8 +437,13 @@
         "1.6 kHz": 0.25
       },
       "circuit_sha256": "fd37dfbbe277d6806618d9aee97263038918d5bfc83dc4128bda753eb4e869e1",
-      "playback_gain": 6.109914739428497,
-      "wet_trim_db": 6.334907078573313,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 6.10991473953372,
+      "wet_trim_db": 6.33490707860067,
       "sweep": null,
       "playback_rejected": 0,
       "dry_peak_rms_v": [
@@ -406,8 +451,8 @@
         0.009505985028685798
       ],
       "wet_peak_rms_v": [
-        0.06489471405343096,
-        0.004584035833695802
+        0.06489471404599664,
+        0.004584035833680817
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -417,47 +462,6 @@
       "render_log": "samples=272640 inputPeakV=0.12868 outputPeakV=0.064895 outputRmsV=0.004161 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
       "mp3_decoded_peak": 0.7797904014587402
-    },
-    {
-      "index": 10,
-      "name": "Boss PQ-4 Parametric EQ",
-      "file": "10-boss-pq-4-parametric-eq.mp3",
-      "fixture": "PF300 major chords",
-      "fixture_file": "pf300-major-chords",
-      "fixture_bounds": [
-        [
-          5.0,
-          9.68
-        ]
-      ],
-      "fixture_tail_sec": 0.0,
-      "test_hum": false,
-      "drive_v_per_fs": 0.244,
-      "knobs": {
-        "Middle Frequency": 0.1,
-        "Middle Gain": 0.87
-      },
-      "circuit_sha256": "2ad71c4f0e4b967129df5d26daab78c994b01980e9a7cac76b6e9c505066ce5c",
-      "playback_gain": 13.080597449324484,
-      "wet_trim_db": -4.3995071033995625,
-      "sweep": "Middle Frequency 0.10 \u2192 0.90 \u2192 0.10",
-      "playback_rejected": 0,
-      "dry_peak_rms_v": [
-        0.0627981333732605,
-        0.003919436001010797
-      ],
-      "wet_peak_rms_v": [
-        0.09168014701805087,
-        0.00650340549120314
-      ],
-      "dry_samples": 224640,
-      "pair_samples": 465120,
-      "note": "The boosted band sweeps from roughly 125 Hz to 1 kHz and back.",
-      "nonconverged": 112,
-      "rejected": 112,
-      "render_log": "samples=272640 inputPeakV=0.062798 outputPeakV=0.09168 outputRmsV=0.0059032 nonconverged=112 rejected=112 audibleRejects=0",
-      "warmup_rejected": 112,
-      "mp3_decoded_peak": 0.7787988185882568
     },
     {
       "index": 11,
@@ -476,7 +480,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "a05a16b1560a6f0b9a76398e80683f0b0572b85f225faa8b8e4037eadd1317bb",
-      "playback_gain": 1.291914902368093,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.2919149023682384,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -485,8 +494,8 @@
         0.01929472259905394
       ],
       "wet_peak_rms_v": [
-        0.6352260989960113,
-        0.07816149382069985
+        0.6352260989987684,
+        0.07816149382126283
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -514,7 +523,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "9121182e4c7f1d5fb12028d63b0ead2d66095e7bd12632943920ff0752ef3f3c",
-      "playback_gain": 1.2279998597656372,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.2279998597664064,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -523,8 +537,8 @@
         0.01929472259905394
       ],
       "wet_peak_rms_v": [
-        0.6680728642369358,
-        0.07903096929656292
+        0.6680728642366125,
+        0.07903096929656925
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -552,6 +566,11 @@
       "drive_v_per_fs": 2,
       "knobs": {},
       "circuit_sha256": "e9a3c9d11a7c67c811334a97fcbbdeb0002760ca2991f5b0f0b060e20bf51dd8",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
       "playback_gain": 2.8236926311683916,
       "wet_trim_db": 0.0,
       "sweep": null,
@@ -561,8 +580,8 @@
         0.018833613877843474
       ],
       "wet_peak_rms_v": [
-        0.25539065223654406,
-        0.017715418032490375
+        0.255390652242954,
+        0.017715418032592117
       ],
       "dry_samples": 220800,
       "pair_samples": 457440,
@@ -590,7 +609,12 @@
       "drive_v_per_fs": 1.5,
       "knobs": {},
       "circuit_sha256": "b4c548a48a60d6741fa08068b5a059da682f6ac48b67b9dbd028786f8046eb55",
-      "playback_gain": 1.4128768951180748,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.412876895118003,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -599,8 +623,8 @@
         0.028942083898580908
       ],
       "wet_peak_rms_v": [
-        0.5705742087901338,
-        0.08358567319818408
+        0.5705742087912243,
+        0.08358567319818559
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -628,7 +652,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "cfe338836abd582b98e2c88daab48f28e5899af4f4d8067d7899e3a22dbd2732",
-      "playback_gain": 2.6055907840187706,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 2.6055907840473447,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -637,8 +666,8 @@
         0.019011970057371597
       ],
       "wet_peak_rms_v": [
-        0.316070274698264,
-        0.023869459796043168
+        0.3160702746947197,
+        0.023869459796005795
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -666,6 +695,11 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "ff8cee746eb5e985c439d30d4b337e27eb01a125cb854fc420a755084f348899",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
       "playback_gain": 3.1916657776352406,
       "wet_trim_db": 0.0,
       "sweep": null,
@@ -675,8 +709,8 @@
         0.019011970057371597
       ],
       "wet_peak_rms_v": [
-        0.16860470685853257,
-        0.015608563452408297
+        0.16860470688426132,
+        0.015608563452325279
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -704,6 +738,11 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "4ed6521aab5524f70bd5fc21b446f6d83de427d8a0f8d7ed2762c3ec7500eb2e",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
       "playback_gain": 3.1916657776352406,
       "wet_trim_db": 0.0,
       "sweep": null,
@@ -713,8 +752,8 @@
         0.019011970057371597
       ],
       "wet_peak_rms_v": [
-        0.1808652053855931,
-        0.014476268415408432
+        0.18086507695923892,
+        0.01447626784958777
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -742,7 +781,12 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "9881b838821c7456ff635bee5aaadcf2c6111b4818d8f002a66adbf60f6d001b",
-      "playback_gain": 2.9102361141001687,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 2.910233829984923,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -751,8 +795,8 @@
         0.019011970057371597
       ],
       "wet_peak_rms_v": [
-        0.28169601542299616,
-        0.02240665508346565
+        0.2816962325256278,
+        0.022406658798695776
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -780,6 +824,11 @@
       "drive_v_per_fs": 0.6,
       "knobs": {},
       "circuit_sha256": "935df810211402242988e17182ef8cec9638a3406fb1edc078287545a9a8bc25",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
       "playback_gain": 5.3194429627247,
       "wet_trim_db": 0.0,
       "sweep": null,
@@ -789,8 +838,8 @@
         0.01140718203442296
       ],
       "wet_peak_rms_v": [
-        0.13167058966691236,
-        0.011237438828497497
+        0.1316749615739814,
+        0.011237369964978476
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -818,7 +867,12 @@
       "drive_v_per_fs": 0.75,
       "knobs": {},
       "circuit_sha256": "f86454b529e9e59248abbd717aa67f14ea735c94f348d6ead98fa6104e2bb7aa",
-      "playback_gain": 8.921660060937665,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 8.921660041371979,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -827,8 +881,8 @@
         0.012065692778939655
       ],
       "wet_peak_rms_v": [
-        0.09253236839237106,
-        0.012047595717822197
+        0.09253236856027452,
+        0.012047595713058041
       ],
       "dry_samples": 228480,
       "pair_samples": 472800,
@@ -856,7 +910,12 @@
       "drive_v_per_fs": 1.0,
       "knobs": {},
       "circuit_sha256": "fe4e4cc2665772e8cb4a596ef5f2ddc3010af449cc1c5a1c11c5b9f7689a044f",
-      "playback_gain": 3.179597276187076,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 3.1795972760629354,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -865,8 +924,8 @@
         0.009283146062807014
       ],
       "wet_peak_rms_v": [
-        0.24205173421346976,
-        0.036919598655574565
+        0.24205173421527973,
+        0.03691959865682587
       ],
       "dry_samples": 220800,
       "pair_samples": 457440,
@@ -875,7 +934,7 @@
       "rejected": 0,
       "render_log": "samples=268800 inputPeakV=0.14575 outputPeakV=0.24205 outputRmsV=0.033461 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
-      "mp3_decoded_peak": 0.779268741607666
+      "mp3_decoded_peak": 0.7792682647705078
     },
     {
       "index": 22,
@@ -894,7 +953,12 @@
       "drive_v_per_fs": 1.0,
       "knobs": {},
       "circuit_sha256": "01d2a2b43803f2b8b15046e0db6b3c92a75f8ab68830963310c79ffecdf77225",
-      "playback_gain": 3.2581892726982256,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 3.2581892726957573,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -903,8 +967,8 @@
         0.01929472259905394
       ],
       "wet_peak_rms_v": [
-        0.19740633090612975,
-        0.03630365383112667
+        0.19740633092170437,
+        0.03630365383114132
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -932,7 +996,12 @@
       "drive_v_per_fs": 0.65,
       "knobs": {},
       "circuit_sha256": "53d4f95b565de5ee9ecce2a3a222977eda916e2d934b7161102ca7aef43769b5",
-      "playback_gain": 4.087324192753742,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 4.08732421071033,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -941,8 +1010,8 @@
         0.012357780537291538
       ],
       "wet_peak_rms_v": [
-        0.20069992301147266,
-        0.01542018541944139
+        0.20069992212998722,
+        0.015420185422502695
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -951,7 +1020,7 @@
       "rejected": 0,
       "render_log": "samples=272640 inputPeakV=0.16729 outputPeakV=0.2007 outputRmsV=0.013997 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
-      "mp3_decoded_peak": 0.7786981463432312
+      "mp3_decoded_peak": 0.7786997556686401
     },
     {
       "index": 24,
@@ -970,7 +1039,12 @@
       "drive_v_per_fs": 0.9,
       "knobs": {},
       "circuit_sha256": "d61eba68c60e78ae076179fce30b72b11a7bd73bc7d2a51dd6e2bdc698af04fb",
-      "playback_gain": 0.2542193765674094,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 0.25421937656587196,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -979,8 +1053,8 @@
         0.017365250339148545
       ],
       "wet_peak_rms_v": [
-        1.4026016929365812,
-        0.4653014223041445
+        1.4026017208022648,
+        0.46530142231267174
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -1008,7 +1082,12 @@
       "drive_v_per_fs": 1.0,
       "knobs": {},
       "circuit_sha256": "6c510807a1583f1f492f52094c3472f519d5e7f5992142d323eb80d0878150d4",
-      "playback_gain": 0.8283430808017797,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 0.8283430808019868,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -1017,8 +1096,8 @@
         0.01929472259905394
       ],
       "wet_peak_rms_v": [
-        0.9967586348715658,
-        0.14048874477515358
+        0.9967586347976756,
+        0.14048874477514078
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -1046,7 +1125,12 @@
       "drive_v_per_fs": 0.85,
       "knobs": {},
       "circuit_sha256": "f72f22cbd9dc768676ef7d8db4888e3fca511cf0354e1be136484007a5d480ef",
-      "playback_gain": 1.0610042094906043,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.061004209503564,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -1055,8 +1139,8 @@
         0.01616017454876586
       ],
       "wet_peak_rms_v": [
-        0.436205765970918,
-        0.11180992270975927
+        0.4362057661059211,
+        0.11180992270834357
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -1065,7 +1149,7 @@
       "rejected": 0,
       "render_log": "samples=272640 inputPeakV=0.21876 outputPeakV=0.43621 outputRmsV=0.10149 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
-      "mp3_decoded_peak": 0.44220998883247375
+      "mp3_decoded_peak": 0.4421987533569336
     },
     {
       "index": 27,
@@ -1084,6 +1168,11 @@
       "drive_v_per_fs": 0.65,
       "knobs": {},
       "circuit_sha256": "2c02351dd1f041c702bb043ffd5ad29470cb78379ee00ae87001484e50f4fb46",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
       "playback_gain": 4.9102550425161695,
       "wet_trim_db": 0.0,
       "sweep": null,
@@ -1093,8 +1182,8 @@
         0.012357780537291538
       ],
       "wet_peak_rms_v": [
-        0.04370158832706428,
-        0.0036554637963727163
+        0.04370158874619959,
+        0.0036554637527901205
       ],
       "dry_samples": 224640,
       "pair_samples": 465120,
@@ -1142,7 +1231,12 @@
       "drive_v_per_fs": 0.3,
       "knobs": {},
       "circuit_sha256": "14be48ca8555be89b8d2a9395403187cee11c7248ac6ea89a545f63d89e72ac2",
-      "playback_gain": 2.1211086480480494,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 2.121108648049056,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -1151,8 +1245,8 @@
         0.004191437178545032
       ],
       "wet_peak_rms_v": [
-        0.17031729208006877,
-        0.055717900419523826
+        0.1703172920856004,
+        0.05571790041949905
       ],
       "dry_samples": 201600,
       "pair_samples": 419040,
@@ -1180,7 +1274,12 @@
       "drive_v_per_fs": 0.85,
       "knobs": {},
       "circuit_sha256": "2ac0d02f7124efc7c3cb3aa198dc8822eb838d441e2bc24027b584bcf1671525",
-      "playback_gain": 1.4567890935296937,
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.456789093499267,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -1189,8 +1288,8 @@
         0.02875304321631022
       ],
       "wet_peak_rms_v": [
-        0.4243799356514324,
-        0.0810900856206638
+        0.4243799356495912,
+        0.08109008562235533
       ],
       "dry_samples": 199680,
       "pair_samples": 415200,
@@ -1200,6 +1299,530 @@
       "render_log": "samples=247680 inputPeakV=0.16798 outputPeakV=0.42438 outputRmsV=0.07281 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
       "mp3_decoded_peak": 0.5512018799781799
+    },
+    {
+      "index": 30,
+      "name": "MXR M108S Ten Band EQ (Rev E Reference)",
+      "file": "30-mxr-m108s-ten-band-eq-rev-e-reference.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.5,
+      "knobs": {
+        "250 Hz": 0.7,
+        "500 Hz": 0.68,
+        "2 kHz": 0.25,
+        "4 kHz": 0.3
+      },
+      "circuit_sha256": "9f52fd38ae315106758397214087b1f6f915d5e8f85a2be4493b5d35384b79b1",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 6.383331555270481,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12868469953536987,
+        0.009505985028685798
+      ],
+      "wet_peak_rms_v": [
+        0.12750499217734165,
+        0.009538363759878673
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Listen for the lower mids growing around the chord while the upper mids recede.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.12868 outputPeakV=0.1275 outputRmsV=0.0086581 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 31,
+      "name": "Mosrite Fuzzrite Silicon",
+      "file": "31-mosrite-fuzzrite-silicon.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.55,
+      "knobs": {},
+      "circuit_sha256": "250ed3bde61b153b9599f08b80f0827ab00fe2e6ee398b71502483d123d5fc95",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 2.738432102061643,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.06614758968353272,
+        0.010612097429479666
+      ],
+      "wet_peak_rms_v": [
+        0.29943796083038166,
+        0.024897898059811914
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "The two transistor stages and depth blend give a bright, abrupt breakup.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.066148 outputPeakV=0.29944 outputRmsV=0.022426 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7466313242912292
+    },
+    {
+      "index": 32,
+      "name": "Maestro FZ-1 Fuzz-Tone 1962",
+      "file": "32-maestro-fz-1-fuzz-tone-1962.mp3",
+      "fixture": "PF300 high-string bends",
+      "fixture_file": "pf300-high-bends",
+      "fixture_bounds": [
+        [
+          1.06,
+          5.22
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.35,
+      "knobs": {},
+      "circuit_sha256": "b6c005252a3862021164b837037af0e0f2085f35f5a8d2529ff182ae0e97320d",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 0.3762134102233497,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.06916984915733337,
+        0.011839488383186561
+      ],
+      "wet_peak_rms_v": [
+        1.9193567875774664,
+        0.3137193080445287
+      ],
+      "dry_samples": 199680,
+      "pair_samples": 415200,
+      "note": "Listen for the gated decay and the way sustained bends break up.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=247680 inputPeakV=0.06917 outputPeakV=1.9194 outputRmsV=0.28168 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.6729542016983032
+    },
+    {
+      "index": 33,
+      "name": "EHX Deluxe Memory Man",
+      "file": "33-ehx-deluxe-memory-man.mp3",
+      "fixture": "Sire T7 performance 11 with echo tail",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.04
+        ]
+      ],
+      "fixture_tail_sec": 1.25,
+      "test_hum": false,
+      "drive_v_per_fs": 0.55,
+      "knobs": {},
+      "circuit_sha256": "1f6a64e8bb0774783997b6a0a2a885f583e35659752f579ffdbfe9280c48bbae",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 12.21928840962726,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.06614758968353272,
+        0.008848174704555749
+      ],
+      "wet_peak_rms_v": [
+        0.05074423710114845,
+        0.00787659762816834
+      ],
+      "dry_samples": 228480,
+      "pair_samples": 472800,
+      "note": "Listen for the moving repeats and the decay after the last note.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=276480 inputPeakV=0.066148 outputPeakV=0.050744 outputRmsV=0.0071603 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779649555683136
+    },
+    {
+      "index": 34,
+      "name": "MXR Carbon Copy Analog Delay",
+      "file": "34-mxr-carbon-copy-analog-delay.mp3",
+      "fixture": "Sire T7 performance 11 with echo tail",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.04
+        ]
+      ],
+      "fixture_tail_sec": 1.25,
+      "test_hum": false,
+      "drive_v_per_fs": 0.55,
+      "knobs": {},
+      "circuit_sha256": "daa42e26bac63b0e0363aee8e56742c5836485b253dae9c639749fdae554e05b",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 11.195984033533053,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.06614758968353272,
+        0.008848174704555749
+      ],
+      "wet_peak_rms_v": [
+        0.07364648424845094,
+        0.010064882229428406
+      ],
+      "dry_samples": 228480,
+      "pair_samples": 472800,
+      "note": "The space after the guitar makes the darker repeats audible.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=276480 inputPeakV=0.066148 outputPeakV=0.073646 outputRmsV=0.0091496 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7783457040786743
+    },
+    {
+      "index": 35,
+      "name": "ZVEX Fuzz Factory",
+      "file": "35-zvex-fuzz-factory.mp3",
+      "fixture": "PF300 high-string bends",
+      "fixture_file": "pf300-high-bends",
+      "fixture_bounds": [
+        [
+          1.06,
+          5.22
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.4,
+      "knobs": {},
+      "circuit_sha256": "33ae30ab7abc6a2d673a9e20fa5518452955224cf3e961788e85716c8b6ade50",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 0.2181768691850352,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.07905125617980957,
+        0.013530843866498929
+      ],
+      "wet_peak_rms_v": [
+        1.9321958204521708,
+        0.6951413386249481
+      ],
+      "dry_samples": 199680,
+      "pair_samples": 415200,
+      "note": "Sustained bends show how the transistor feedback changes the decay.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=247680 inputPeakV=0.079051 outputPeakV=1.9322 outputRmsV=0.62416 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.28150424361228943
+    },
+    {
+      "index": 36,
+      "name": "Boss CS-3 Compression Sustainer (August 1986)",
+      "file": "36-boss-cs-3-compression-sustainer-august-1986.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.7,
+      "knobs": {},
+      "circuit_sha256": "b7920fe2fabf6dd77f998f9c9f8feba4d4f61177359c9e6934a3b3d879f3c6e2",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.4480680964812822,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.08418784141540527,
+        0.013506305819337755
+      ],
+      "wet_peak_rms_v": [
+        0.5673651357002959,
+        0.07576453114179221
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Compare the initial pick attack and the amount of held sustain.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.084188 outputPeakV=0.56737 outputRmsV=0.068244 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7792072296142578
+    },
+    {
+      "index": 37,
+      "name": "EHX Small Stone Issue J",
+      "file": "37-ehx-small-stone-issue-j.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.24,
+      "knobs": {},
+      "circuit_sha256": "5d967298233a0957e84e01245b9a6f442a6788a4a4e9691657fd78f0afe3f0ab",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 13.298607406813487,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.06176865577697754,
+        0.004562872813769184
+      ],
+      "wet_peak_rms_v": [
+        0.017471173517654925,
+        0.001537224270985596
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Hold the chords through the sweep to hear the moving notches.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.061769 outputPeakV=0.017471 outputRmsV=0.0014137 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 38,
+      "name": "Origin Effects Cali76 FET Compressor (Circuit Approximation)",
+      "file": "38-origin-effects-cali76-fet-compressor-circuit-approximation.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.65,
+      "knobs": {},
+      "circuit_sha256": "2a0187a1f080fa446c5df258ae5e1fcd65f69d2fb803e7d1aee1ac544d22b6a5",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 5.131592323008816,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.07817442417144775,
+        0.012541569689385062
+      ],
+      "wet_peak_rms_v": [
+        0.14825286424354106,
+        0.023293812669031404
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the peak reduction and the blend with the dry signal.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.078174 outputPeakV=0.14825 outputRmsV=0.020982 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7203605771064758
+    },
+    {
+      "index": 39,
+      "name": "ISP Decimator II G String (Noise Terminator Reference)",
+      "file": "39-isp-decimator-ii-g-string-noise-terminator-reference.mp3",
+      "fixture": "PF300 palm mutes with test hum",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          15.67,
+          20.27
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": true,
+      "drive_v_per_fs": 1.2,
+      "knobs": {},
+      "circuit_sha256": "42b0a0aead4d2c3d06f4e8b4600469448705b5c27fb231a25eb0b0a9a3c1da8f",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 4.706154385281139,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.17533712804633075,
+        0.011300168326706083
+      ],
+      "wet_peak_rms_v": [
+        0.1745484387091555,
+        0.011084421613733499
+      ],
+      "dry_samples": 220800,
+      "pair_samples": 457440,
+      "note": "The single-input demo monitors the same signal that it gates. Listen between muted hits.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=268800 inputPeakV=0.17534 outputPeakV=0.17455 outputRmsV=0.010046 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7791634798049927
+    },
+    {
+      "index": 40,
+      "name": "Diamond CPR-1 (Quartz Reference)",
+      "file": "40-diamond-cpr-1-quartz-reference.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.7,
+      "knobs": {},
+      "circuit_sha256": "044037592f86de9fc38db9b30ac440ebe4e370c355c9ac24d6f3818e3491ad82",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 1.6294168090241596,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.08418784141540527,
+        0.013506305819337755
+      ],
+      "wet_peak_rms_v": [
+        0.5040370571058175,
+        0.06673167630701864
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Hear the attack change and gradual recovery of the optical stage.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.084188 outputPeakV=0.50404 outputRmsV=0.060107 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7792226076126099
+    }
+  ],
+  "failed": [
+    {
+      "index": 10,
+      "name": "Boss PQ-4 Parametric EQ",
+      "file": "10-boss-pq-4-parametric-eq.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          5.0,
+          9.68
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.244,
+      "knobs": {
+        "Middle Frequency": 0.1,
+        "Middle Gain": 0.87
+      },
+      "circuit_sha256": "2ad71c4f0e4b967129df5d26daab78c994b01980e9a7cac76b6e9c505066ce5c",
+      "renderer": {
+        "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+        "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+        "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+      },
+      "playback_gain": 13.080597449324484,
+      "wet_trim_db": -4.4000918666913265,
+      "sweep": "Middle Frequency 0.10 \u2192 0.90 \u2192 0.10",
+      "playback_rejected": 5,
+      "dry_peak_rms_v": [
+        0.0627981333732605,
+        0.003919436001010797
+      ],
+      "wet_peak_rms_v": [
+        0.09166914371614543,
+        0.0065038432250296655
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "The boosted band sweeps from roughly 125 Hz to 1 kHz and back.",
+      "nonconverged": 4869,
+      "rejected": 4869,
+      "render_log": "samples=272640 inputPeakV=0.062798 outputPeakV=0.091669 outputRmsV=0.0059036 nonconverged=4869 rejected=4869 audibleRejects=5"
     }
   ]
 }
