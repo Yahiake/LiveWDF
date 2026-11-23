@@ -390,3 +390,47 @@ TEST_CASE("dbx 209 power integration agrees with a log-capacitor ngspice referen
     CHECK(worst < 0.00035); // <0.06 dB
     lwdf_test::writeCsv("parts_dbx209", {"time_s", "livewdf_V", "ngspice_V"}, rows);
 }
+
+TEST_CASE("Fairchild 2N4403 input pair agrees with the full transistor card and gain limits",
+          "[parts-validation][2n4403][ngspice]") {
+    if (!lwdf_test::requireNgspice("Soundcraft 2N4403 input pair")) return;
+    const auto* part = wdf::findBjtByName("2N4403");
+    REQUIRE(part != nullptr);
+    REQUIRE(part->model.pnp);
+    // Fairchild card from LTspice standard.bjt. The vendor fixture retains
+    // the ohmic and charge terms that the native static transport omits.
+    const std::string device =
+        ".model full PNP(Is=650.6e-18 Xti=3 Eg=1.11 Vaf=115.7 Bf=216.2 Ne=1.829 Ise=58.72f "
+        "Ikf=1.079 Xtb=1.5 Br=3.578 Nc=2 Isc=0 Ikr=0 Rc=.715 Cjc=14.76p Mjc=.5383 "
+        "Vjc=.75 Fc=.5 Cje=19.82p Mje=.3357 Vje=.75 Tr=111.6n Tf=603.7p Itf=.65 "
+        "Vtf=5 Xtf=1.7 Rb=10)\n";
+    struct Point { double amps, vce, minBeta, maxBeta; };
+    int i = 0;
+    for (const Point pt : {Point{0.1e-3, 1, 30, 1e6}, Point{1e-3, 1, 60, 1e6},
+                           Point{10e-3, 1, 100, 1e6}, Point{150e-3, 2, 100, 300}}) {
+        CAPTURE(pt.amps);
+        const auto tag = "parts_2n4403_" + std::to_string(i++);
+        std::ostringstream ref;
+        ref << "2N4403 25.85mV thermal voltage\n.options tnom=26.83\n.temp 26.83\n" << device
+            << "Vref ref 0 " << -pt.vce << "\nIload c 0 " << pt.amps
+            << "\nEbase b 0 c ref 1e6\nQ1 c b 0 full\n"
+            << lwdf_test::controlBlock({"op"}, {"i(Ebase)", "v(b)"}, tag) << ".end\n";
+        REQUIRE(lwdf_test::runDeck(ref.str(), tag).ok);
+        const double baseAmps = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 0)).front();
+        const double baseVolts = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 1)).front();
+        wdf::Circuit c;
+        c.addSrc("rail", "0", -pt.vce);
+        c.addRes("out", "rail", 1.0);
+        c.addRes("base", "0", 1e6);
+        c.addIsrc("base", "0", baseAmps - baseVolts / 1e6);
+        c.addBjt("out", "base", "0", part->model, "Q1");
+        wdf::Engine engine(c, sampleRate);
+        std::vector<double> nodes, roots;
+        REQUIRE(engine.solveDc(nodes, roots));
+        const double actual = nodes[engine.nodeIndex("out")] + pt.vce;
+        CHECK(actual == Approx(pt.amps).epsilon(0.02));
+        CHECK(nodes[engine.nodeIndex("base")] == Approx(baseVolts).margin(0.012));
+        CHECK(actual / baseAmps >= pt.minBeta);
+        CHECK(actual / baseAmps <= pt.maxBeta);
+    }
+}
