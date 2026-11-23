@@ -1,0 +1,4 @@
+rate_multiplier,total_steps,rejected_steps,fallbacks
+1,288000,7116,0
+2,576000,8313,0
+4,1152000,0,0
