@@ -1,0 +1,881 @@
+{
+  "reel_samples": 9896160,
+  "sample_rate": 48000,
+  "rejected_total": 112,
+  "rejected_playback": 0,
+  "clips": [
+    {
+      "index": 1,
+      "name": "Boss SD-1 Super OverDrive",
+      "file": "01-boss-sd-1-super-overdrive.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "0563f42bea7e9e41fd5d7e2d95e17de8f864fb72d6b2065df3b13a0abea9e32b",
+      "playback_gain": 1.673072027640682,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.25736939907073975,
+        0.019011970057371597
+      ],
+      "wet_peak_rms_v": [
+        0.3520621059444005,
+        0.07080765405230784
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Check the mids and pick attack.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.25737 outputPeakV=0.35206 outputRmsV=0.064273 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.5505386590957642
+    },
+    {
+      "index": 2,
+      "name": "Boss DS-1A Distortion",
+      "file": "02-boss-ds-1a-distortion.mp3",
+      "fixture": "PF300 palm mutes, six shortened takes",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          0,
+          0.7
+        ],
+        [
+          3.77,
+          4.47
+        ],
+        [
+          7.77,
+          8.469999999999999
+        ],
+        [
+          11.77,
+          12.469999999999999
+        ],
+        [
+          15.77,
+          16.47
+        ],
+        [
+          19.77,
+          20.47
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 2,
+      "knobs": {},
+      "circuit_sha256": "0d4096b334fd6a817781eb6a6fed8a2c8df025468a43ccc83550c277b5e4a159",
+      "playback_gain": 1.9685866132152827,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.2915000915527344,
+        0.027942914523633545
+      ],
+      "wet_peak_rms_v": [
+        0.18395157259261646,
+        0.06064035270790648
+      ],
+      "dry_samples": 201600,
+      "pair_samples": 419040,
+      "note": "Listen for the harder edge on short hits.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=249600 inputPeakV=0.2915 outputPeakV=0.18395 outputRmsV=0.054499 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.5416634678840637
+    },
+    {
+      "index": 3,
+      "name": "Pro Co RAT LM308",
+      "file": "03-pro-co-rat-lm308.mp3",
+      "fixture": "PF300 palm mutes, six shortened takes",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          0,
+          0.7
+        ],
+        [
+          3.77,
+          4.47
+        ],
+        [
+          7.77,
+          8.469999999999999
+        ],
+        [
+          11.77,
+          12.469999999999999
+        ],
+        [
+          15.77,
+          16.47
+        ],
+        [
+          19.77,
+          20.47
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 2,
+      "knobs": {
+        "Volume": 0.52
+      },
+      "circuit_sha256": "d9501a49c81696762ccf28ae313bb2bf75a47c30c86a7732842f19ca1cb70fcc",
+      "playback_gain": 1.2223225720738748,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.2915000915527344,
+        0.027942914523633545
+      ],
+      "wet_peak_rms_v": [
+        0.18527499696555683,
+        0.09694094733385805
+      ],
+      "dry_samples": 201600,
+      "pair_samples": 419040,
+      "note": "Listen for the heavier clipping and high-end rolloff.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=249600 inputPeakV=0.2915 outputPeakV=0.18527 outputRmsV=0.087122 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.3364163637161255
+    },
+    {
+      "index": 4,
+      "name": "Boss MT-2 Metal Zone",
+      "file": "04-boss-mt-2-metal-zone.mp3",
+      "fixture": "PF300 palm mutes, six shortened takes",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          0,
+          0.7
+        ],
+        [
+          3.77,
+          4.47
+        ],
+        [
+          7.77,
+          8.469999999999999
+        ],
+        [
+          11.77,
+          12.469999999999999
+        ],
+        [
+          15.77,
+          16.47
+        ],
+        [
+          19.77,
+          20.47
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 2,
+      "knobs": {
+        "Level": 0.48
+      },
+      "circuit_sha256": "6c9dcfcb2a585e53ce990aeceebc1611345a45fb1eb739a9437c3f19042aa054",
+      "playback_gain": 1.1374724020981204,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.2915000915527344,
+        0.027942914523633545
+      ],
+      "wet_peak_rms_v": [
+        0.2665178855973072,
+        0.10446127057854741
+      ],
+      "dry_samples": 201600,
+      "pair_samples": 419040,
+      "note": "Listen for the strong filtering and sustain between attacks.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=249600 inputPeakV=0.2915 outputPeakV=0.26652 outputRmsV=0.093881 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.3130371570587158
+    },
+    {
+      "index": 5,
+      "name": "Marshall Guv'nor",
+      "file": "05-marshall-guv-nor.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {
+        "Level": 0.42
+      },
+      "circuit_sha256": "dc37ad622e9399d0e82a9aecf0af63dff7e79ebe04983274d31db1046b2bc253",
+      "playback_gain": 1.119198708823854,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12026834487915039,
+        0.01929472259905394
+      ],
+      "wet_peak_rms_v": [
+        0.2598281498881208,
+        0.10603165790283244
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the difference in gain between hard and soft picking.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.25983 outputRmsV=0.095506 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.27019762992858887
+    },
+    {
+      "index": 6,
+      "name": "EHX Big Muff Pi Ram's Head Violet",
+      "file": "06-ehx-big-muff-pi-ram-s-head-violet.mp3",
+      "fixture": "PF300 high-string bends",
+      "fixture_file": "pf300-high-bends",
+      "fixture_bounds": [
+        [
+          1.06,
+          5.22
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {
+        "Volume": 0.4
+      },
+      "circuit_sha256": "ae3d4d155c5bfb49b2747d175d19a003c73994fb980873113435f2f832d2af33",
+      "playback_gain": 0.7520781725513168,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.19762814044952393,
+        0.03382710966624732
+      ],
+      "wet_peak_rms_v": [
+        0.3100983558718312,
+        0.1570843703641109
+      ],
+      "dry_samples": 199680,
+      "pair_samples": 415200,
+      "note": "Listen for sustain through the bends.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=247680 inputPeakV=0.19763 outputPeakV=0.3101 outputRmsV=0.14104 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.226030170917511
+    },
+    {
+      "index": 7,
+      "name": "Sola Sound Tone Bender Professional Mk II",
+      "file": "07-sola-sound-tone-bender-professional-mk-ii.mp3",
+      "fixture": "PF300 high-string bends",
+      "fixture_file": "pf300-high-bends",
+      "fixture_bounds": [
+        [
+          1.06,
+          5.22
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "2d142de59a611c9f95956c8c40b8f62ea76c05ef096538393504390c581adf71",
+      "playback_gain": 1.0116841874886933,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.19762814044952393,
+        0.03382710966624732
+      ],
+      "wet_peak_rms_v": [
+        0.23559304841157885,
+        0.11679049325354739
+      ],
+      "dry_samples": 199680,
+      "pair_samples": 415200,
+      "note": "Listen for the harder decay and texture as notes trail off.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=247680 inputPeakV=0.19763 outputPeakV=0.23559 outputRmsV=0.10486 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.24068310856819153
+    },
+    {
+      "index": 8,
+      "name": "MXR Micro Amp",
+      "file": "08-mxr-micro-amp.mp3",
+      "fixture": "GuitarJam 026",
+      "fixture_file": "guitarjam-026-48k",
+      "fixture_bounds": [
+        [
+          0.0,
+          4.3
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "b619015b723e31d6eb1c2a08c990bb7c85fb2a2ec0fdcfacf998fec258066cbb",
+      "playback_gain": 1.5085971553425317,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.13812854886054993,
+        0.03695321727484512
+      ],
+      "wet_peak_rms_v": [
+        0.29297814151386603,
+        0.07828265954537363
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "The same playback gain lets the level boost come through.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.13813 outputPeakV=0.29298 outputRmsV=0.070512 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.41846856474876404
+    },
+    {
+      "index": 9,
+      "name": "Boss GE-7 Equalizer",
+      "file": "09-boss-ge-7-equalizer.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.5,
+      "knobs": {
+        "400 Hz": 0.22,
+        "800 Hz": 0.08,
+        "1.6 kHz": 0.25
+      },
+      "circuit_sha256": "fd37dfbbe277d6806618d9aee97263038918d5bfc83dc4128bda753eb4e869e1",
+      "playback_gain": 6.109914739428497,
+      "wet_trim_db": 6.334907078573313,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12868469953536987,
+        0.009505985028685798
+      ],
+      "wet_peak_rms_v": [
+        0.06489471405343096,
+        0.004584035833695802
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "A broad mid scoop, deepest at 800 Hz.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.12868 outputPeakV=0.064895 outputRmsV=0.004161 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7797904014587402
+    },
+    {
+      "index": 10,
+      "name": "Boss PQ-4 Parametric EQ",
+      "file": "10-boss-pq-4-parametric-eq.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          5.0,
+          9.68
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.244,
+      "knobs": {
+        "Middle Frequency": 0.1,
+        "Middle Gain": 0.87
+      },
+      "circuit_sha256": "2ad71c4f0e4b967129df5d26daab78c994b01980e9a7cac76b6e9c505066ce5c",
+      "playback_gain": 13.080597449324484,
+      "wet_trim_db": -4.3995071033995625,
+      "sweep": "Middle Frequency 0.10 \u2192 0.90 \u2192 0.10",
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.0627981333732605,
+        0.003919436001010797
+      ],
+      "wet_peak_rms_v": [
+        0.09168014701805087,
+        0.00650340549120314
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "The boosted band sweeps from roughly 125 Hz to 1 kHz and back.",
+      "nonconverged": 112,
+      "rejected": 112,
+      "render_log": "samples=272640 inputPeakV=0.062798 outputPeakV=0.09168 outputRmsV=0.0059032 nonconverged=112 rejected=112 audibleRejects=0",
+      "warmup_rejected": 112,
+      "mp3_decoded_peak": 0.7787988185882568
+    },
+    {
+      "index": 11,
+      "name": "Dan Armstrong Orange Squeezer",
+      "file": "11-dan-armstrong-orange-squeezer.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "a05a16b1560a6f0b9a76398e80683f0b0572b85f225faa8b8e4037eadd1317bb",
+      "playback_gain": 1.291914902368093,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12026834487915039,
+        0.01929472259905394
+      ],
+      "wet_peak_rms_v": [
+        0.6352260989960113,
+        0.07816149382069985
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for restrained peaks and the lift on quieter notes.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.63523 outputRmsV=0.070403 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7792753577232361
+    },
+    {
+      "index": 12,
+      "name": "MXR Dyna Comp CA3080",
+      "file": "12-mxr-dyna-comp-ca3080.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "9121182e4c7f1d5fb12028d63b0ead2d66095e7bd12632943920ff0752ef3f3c",
+      "playback_gain": 1.2279998597656372,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12026834487915039,
+        0.01929472259905394
+      ],
+      "wet_peak_rms_v": [
+        0.6680728642369358,
+        0.07903096929656292
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the change in attack and the held level.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.66807 outputRmsV=0.071186 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7779855728149414
+    },
+    {
+      "index": 13,
+      "name": "Boss NS-2 Noise Suppressor",
+      "file": "13-boss-ns-2-noise-suppressor.mp3",
+      "fixture": "PF300 palm mutes with test hum",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          15.67,
+          20.27
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": true,
+      "drive_v_per_fs": 2,
+      "knobs": {},
+      "circuit_sha256": "e9a3c9d11a7c67c811334a97fcbbdeb0002760ca2991f5b0f0b060e20bf51dd8",
+      "playback_gain": 2.8236926311683916,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.2922285467438846,
+        0.018833613877843474
+      ],
+      "wet_peak_rms_v": [
+        0.25539065223654406,
+        0.017715418032490375
+      ],
+      "dry_samples": 220800,
+      "pair_samples": 457440,
+      "note": "Listen between the muted hits for the test hum being closed down.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=268800 inputPeakV=0.29223 outputPeakV=0.25539 outputRmsV=0.016056 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7791634798049927
+    },
+    {
+      "index": 14,
+      "name": "Musitronics Mu-Tron III",
+      "file": "14-musitronics-mu-tron-iii.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1.5,
+      "knobs": {},
+      "circuit_sha256": "b4c548a48a60d6741fa08068b5a059da682f6ac48b67b9dbd028786f8046eb55",
+      "playback_gain": 1.4128768951180748,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.18040251731872559,
+        0.028942083898580908
+      ],
+      "wet_peak_rms_v": [
+        0.5705742087901338,
+        0.08358567319818408
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the filter sweep responding to pick strength.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.1804 outputPeakV=0.57057 outputRmsV=0.075288 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7649856805801392
+    },
+    {
+      "index": 15,
+      "name": "MXR Phase 90 Script",
+      "file": "15-mxr-phase-90-script.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "cfe338836abd582b98e2c88daab48f28e5899af4f4d8067d7899e3a22dbd2732",
+      "playback_gain": 2.6055907840187706,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.25736939907073975,
+        0.019011970057371597
+      ],
+      "wet_peak_rms_v": [
+        0.316070274698264,
+        0.023869459796043168
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "The held chord makes the moving notches easier to hear.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.25737 outputPeakV=0.31607 outputRmsV=0.021667 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.778777003288269
+    },
+    {
+      "index": 16,
+      "name": "Shin-ei Univox Uni-Vibe 915",
+      "file": "16-shin-ei-univox-uni-vibe-915.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "ff8cee746eb5e985c439d30d4b337e27eb01a125cb854fc420a755084f348899",
+      "playback_gain": 3.1916657776352406,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.25736939907073975,
+        0.019011970057371597
+      ],
+      "wet_peak_rms_v": [
+        0.16860470685853257,
+        0.015608563452408297
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Listen for the pulsing phase shift under the chords.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.25737 outputPeakV=0.1686 outputRmsV=0.014168 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 17,
+      "name": "Boss TR-2 Tremolo",
+      "file": "17-boss-tr-2-tremolo.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "4ed6521aab5524f70bd5fc21b446f6d83de427d8a0f8d7ed2762c3ec7500eb2e",
+      "playback_gain": 3.1916657776352406,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.25736939907073975,
+        0.019011970057371597
+      ],
+      "wet_peak_rms_v": [
+        0.1808652053855931,
+        0.014476268415408432
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "The held notes expose the steady amplitude modulation.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.25737 outputPeakV=0.18087 outputRmsV=0.01314 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 18,
+      "name": "Boss CE-2 Chorus",
+      "file": "18-boss-ce-2-chorus.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1,
+      "knobs": {},
+      "circuit_sha256": "9881b838821c7456ff635bee5aaadcf2c6111b4818d8f002a66adbf60f6d001b",
+      "playback_gain": 2.9102361141001687,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.25736939907073975,
+        0.019011970057371597
+      ],
+      "wet_peak_rms_v": [
+        0.28169601542299616,
+        0.02240665508346565
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Listen to the pitch movement in the sustained portion of the chords.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.25737 outputPeakV=0.2817 outputRmsV=0.020339 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7800401449203491
+    },
+    {
+      "index": 19,
+      "name": "EHX Small Clone MN3007",
+      "file": "19-ehx-small-clone-mn3007.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.6,
+      "knobs": {},
+      "circuit_sha256": "935df810211402242988e17182ef8cec9638a3406fb1edc078287545a9a8bc25",
+      "playback_gain": 5.3194429627247,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.15442163944244383,
+        0.01140718203442296
+      ],
+      "wet_peak_rms_v": [
+        0.13167058966691236,
+        0.011237438828497497
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Listen for the more pronounced pitch motion.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.15442 outputPeakV=0.13167 outputRmsV=0.0102 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 20,
+      "name": "Boss DM-2 Analog Delay",
+      "file": "20-boss-dm-2-analog-delay.mp3",
+      "fixture": "Sire T7 performance 11 with echo tail",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.04
+        ]
+      ],
+      "fixture_tail_sec": 1.25,
+      "test_hum": false,
+      "drive_v_per_fs": 0.75,
+      "knobs": {},
+      "circuit_sha256": "f86454b529e9e59248abbd717aa67f14ea735c94f348d6ead98fa6104e2bb7aa",
+      "playback_gain": 8.921660060937665,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.09020125865936279,
+        0.012065692778939655
+      ],
+      "wet_peak_rms_v": [
+        0.09253236839237106,
+        0.012047595717822197
+      ],
+      "dry_samples": 228480,
+      "pair_samples": 472800,
+      "note": "The revised compander lets the repeats decay with less distortion.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=276480 inputPeakV=0.090201 outputPeakV=0.092532 outputRmsV=0.010952 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7792856693267822
+    },
+    {
+      "index": 21,
+      "name": "DOD 250 Overdrive Preamp Gray",
+      "file": "21-dod-250-overdrive-preamp-gray.mp3",
+      "fixture": "PF300 palm mutes",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          15.67,
+          20.27
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1.0,
+      "knobs": {},
+      "circuit_sha256": "fe4e4cc2665772e8cb4a596ef5f2ddc3010af449cc1c5a1c11c5b9f7689a044f",
+      "playback_gain": 3.179597276187076,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.1457500457763672,
+        0.009283146062807014
+      ],
+      "wet_peak_rms_v": [
+        0.24205173421346976,
+        0.036919598655574565
+      ],
+      "dry_samples": 220800,
+      "pair_samples": 457440,
+      "note": "Listen for the LM741 and silicon clipping on hard attacks.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=268800 inputPeakV=0.14575 outputPeakV=0.24205 outputRmsV=0.033461 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779268741607666
+    }
+  ]
+}
