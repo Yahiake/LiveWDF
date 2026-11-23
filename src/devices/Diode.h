@@ -444,6 +444,9 @@ inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N4148", 4.352e-9, 1.905, 0.56, 1e6},
     {"1N914",  4.352e-9, 1.905, 0.56, 1e6},
     {"1N4007", 1.0e-6, 1.0, 0.04, 1e6},
+    // Diodes Inc. 1N4003 static SPICE parameters. CJO and TT are not used here.
+    // https://www.diodes.com/spice/download/337/1N4003.spice.txt
+    {"1N4003", 76.9e-12, 1.45, 0.042, 0.0, 200.0, 5.0e-6},
     {"1N34A",  1.0e-6, 1.0, 5.0, 1e6},
     {"1N5819", 1.0e-6, 1.0, 0.05, 1e6},
     {"GZ34",   2.52e-9, 1.0, 15.0, 1e6},
