@@ -5,7 +5,7 @@
 
 namespace wdf {
 
-/// Functional equivalent of the THAT 2252 detector. Rectification, doubling
+/// Log-domain RMS detection. Rectification, doubling
 /// in the log domain, filtering, and square root reduce to a one-pole filter
 /// on normalized input power followed by a logarithm. It includes no noise,
 /// input overload recovery, or temperature drift.
@@ -17,6 +17,24 @@ struct RmsDetectorModel {
     double voltsPerDb = 0.0061;
     double inputOhms = 1.0e6;
     double outputOhms = 10.0;
+    bool negativeOutput = false;
+
+    // dbx 160/161, M2: calibrated current-input equivalent at 25 C.
+    // C15 is the externally selected 22 uF timing capacitor. An exponential
+    // decay of mean power at tau gives 10 / (ln(10) * tau) dB/s in silence.
+    static RmsDetectorModel dbx209(double referenceAmps, double timingFarads) {
+        RmsDetectorModel model;
+        model.inputOhms = 10.0; // virtual-ground input sensing impedance
+        model.referenceVolts = referenceAmps * model.inputOhms;
+        model.timeConstantSeconds = (10.0 / (std::log(10.0) * 120.0)) * (timingFarads / 22e-6);
+        model.voltsPerDb = 0.006;
+        model.negativeOutput = true;
+        return model;
+    }
+
+    double signedVoltsPerDb() const noexcept {
+        return negativeOutput ? -voltsPerDb : voltsPerDb;
+    }
 
     static constexpr double minimumPower = 1.0e-10; // −100 dB relative to reference
     static constexpr double maximumPower = 1.0e4;   // +40 dB clipping at the output
@@ -40,7 +58,7 @@ struct RmsDetectorModel {
 
     double current(double meanPower) const noexcept {
         const double db = 10.0 * std::log10(std::clamp(meanPower, minimumPower, maximumPower));
-        return (voltsPerDb * db) / outputOhms;
+        return (signedVoltsPerDb() * db) / outputOhms;
     }
 
     double dcOutputCurrent(double input) const noexcept {

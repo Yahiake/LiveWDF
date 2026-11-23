@@ -1,0 +1,31 @@
+* dbx gain module 200, drawing 110557 rev 01, dated 3-27-75.
+* Independent transistor reference for the calibrated application. Rails +7.5/-15 V.
+* R1 || R10 is selected until input DC offset vanishes. R2/R13 factory selection
+* and optional R11 injection are omitted for matched pairs with driven control bases.
+* Philips BC109C / BC179B cards, NSC 2N3687 (Siliconix cross-reference KE3687),
+* generic 1N914. See tests/bench/DBX-160-MODULES.md for provenance and limits.
+.subckt DBX200_REF in out pi ni po no plus minus common
+R1trim plus q1b 27071.178
+C1 q1b q1c 560p
+J3 q1b in common JN
+Q1 q1c q1b q1e N109
+D1 q1e common D914
+R3 plus q1c 2.2k
+R4 plus q2e 390
+R5 q1c q2e 220
+Q2 ep q1c q2e P179
+Q4 in pi ep P179
+Q5 out bp ep P179
+R12 bp po 22
+Q7 in bn en N109
+Q8 out no en N109
+R9 ni bn 22
+Q6 ep q6b en N109
+R6 ep q6b 390
+R7 q6b en 1k
+R8 en minus 4.7k
+.ends
+.model N109 NPN(Is=7.049f Xti=3 Eg=1.11 Vaf=28.14 Bf=677 Ise=7.049f Ne=1.38 Ikf=96.23 Xtb=1.5 Br=2.209 Isc=250.3p Nc=2.002 Ikr=10.73 Rc=1.433 Cjc=5.38p Mjc=.329 Vjc=.6218 Fc=.5 Cje=11.5p Mje=.2717 Vje=.5 Tr=10n Tf=437.8p Itf=3.097 Xtf=12.85 Vtf=10)
+.model P179 PNP(Is=336.7f Xti=3 Eg=1.11 Vaf=30.75 Bf=271.9 Ise=2.821p Ne=1.925 Ikf=.2462 Xtb=1.5 Br=3.009 Isc=1.753n Nc=2.075 Ikr=8.143 Rc=1.803 Cjc=11p Mjc=.2223 Vjc=.5 Fc=.5 Cje=33p Mje=.3333 Vje=.5 Tr=10n Tf=846p Itf=1.546 Xtf=18.27 Vtf=10)
+.model JN NJF(VTO=-.5102 BETA=840u LAMBDA=1.167m RD=1 RS=1 CGS=2.083p CGD=2p IS=114.5f)
+.model D914 D(IS=4.352n N=1.905 RS=.56)

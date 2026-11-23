@@ -133,10 +133,24 @@ SpiceExportResult spiceExport(const Circuit& c,
             const auto sense = "V(" + nodeOrGround(vca.control) + "," +
                                nodeOrGround(vca.reference) + ")";
             f << spiceUnique("B_" + spiceSafe(base), used) << " " << a << " " << b
-              << " I=V(" << a << "," << b << ")*";
+              << " I=";
+            const std::string voltage = "V(" + a + "," + b + ")";
+            if (e.dbx200Crossover != 0.0) {
+                const auto bias = std::find_if(c.dbx200Biases.begin(), c.dbx200Biases.end(),
+                    [i](const auto& pair) { return pair.pnp == i || pair.npn == i; });
+                f << "(0.5*(" << voltage << (e.dbx200Crossover > 0.0 ? "+" : "-")
+                  << "sqrt(" << voltage << "^2+" << spiceNum(e.dbx200Crossover * e.dbx200Crossover);
+                if (bias != c.dbx200Biases.end()) {
+                    f << "*exp(2*min(max(V(" << nodeOrGround(bias->ni) << "," << nodeOrGround(bias->pi)
+                      << ")/" << spiceNum(Dbx200Bias::twiceThermalVolts) << ",-20),20))";
+                }
+                f << ")))*";
+            } else {
+                f << voltage << "*";
+            }
             if (vca.blackmer) {
                 f << "exp(" << spiceNum(std::log(10.0) / 20.0) << "*min(max("
-                  << sense << "/" << spiceNum(VcaControl::blackmerVoltsPerDb) << ","
+                  << sense << "/" << spiceNum(vca.logVoltsPerDb) << ","
                   << spiceNum(VcaControl::blackmerMinimumDb) << "),"
                   << spiceNum(VcaControl::blackmerMaximumDb) << "))";
             } else {
@@ -206,7 +220,7 @@ SpiceExportResult spiceExport(const Circuit& c,
               << spiceNum(m.timeConstantSeconds) << "\n";
             f << spiceUnique("B_" + base + "_drive", used) << " " << nodeOrGround(s.a)
               << " " << nodeOrGround(s.b) << " I="
-              << spiceNum(10.0 * m.voltsPerDb / (std::log(10.0) * m.outputOhms))
+              << spiceNum(10.0 * m.signedVoltsPerDb() / (std::log(10.0) * m.outputOhms))
               << "*ln(min(max(V(" << power << ")," << spiceNum(RmsDetectorModel::minimumPower)
               << ")," << spiceNum(RmsDetectorModel::maximumPower) << "))\n";
             continue;

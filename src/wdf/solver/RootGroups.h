@@ -348,9 +348,11 @@ public:
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
         ctx.allClosedFormBlocks = false;
-        // OTA output shares the controlled-resistor root topology, but its
-        // tanh current law must not enter the affine closed-form shortcuts.
-        if (!ctx.comp.otaSensePorts.empty())
+        // An OTA and an independently controlled dbx 200 half-cell share the
+        // resistor port topology but have nonlinear signal current laws.
+        if (!ctx.comp.otaSensePorts.empty() ||
+            std::any_of(ctx.comp.dbx200Crossover.begin(), ctx.comp.dbx200Crossover.end(),
+                        [](double crossover) { return crossover != 0.0; }))
             return false;
 
         const int nGroups = static_cast<int>(ctx.rootDevices.size());

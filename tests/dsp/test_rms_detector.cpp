@@ -114,3 +114,21 @@ TEST_CASE("Compiler revision covers the log RMS detector's reference and time co
         REQUIRE(result.circuit->revision() != original.circuit->revision());
     }
 }
+
+TEST_CASE("dbx 209 calibrated current port reproduces negative log slope and 160 C15 release",
+          "[dbx209][rms][parts-validation]") {
+    constexpr double fs = 48000.0;
+    for (double capacitance : {22e-6, 44e-6}) {
+        const auto detector = wdf::RmsDetectorModel::dbx209(23.34e-6, capacitance);
+        REQUIRE(detector.valid());
+        wdf::RmsDetectorState state(detector, 1.0 / fs);
+        state.reset(detector.referenceVolts * 10.0);
+        const auto output = [&]() { return state.outputCurrent() * detector.outputOhms; };
+        CHECK(output() == Approx(-0.120).margin(1e-9));
+        const double start = output();
+        for (int i = 0; i < 4800; ++i) state.step(0.0);
+        CHECK((output() - start) / .006 == Approx(12.0 * 22e-6 / capacitance).margin(1e-6));
+    }
+    CHECK_FALSE(wdf::RmsDetectorModel::dbx209(0.0, 22e-6).valid());
+    CHECK_FALSE(wdf::RmsDetectorModel::dbx209(23.34e-6, -1.0).valid());
+}

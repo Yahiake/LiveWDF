@@ -547,6 +547,8 @@ protected:
         vcas_.reserve(comp_.vcaSensePorts.size());
         for (const auto& [index, port] : comp_.vcaSensePorts)
             vcas_.push_back({index, port.a, port.b, makeAffine(port.off)});
+        for (const auto& bias : comp_.dbx200BiasPorts)
+            dbx200Biases_.push_back({bias.pnp, bias.npn, {bias.port.a, bias.port.b, makeAffine(bias.port.off)}});
         otas_.reserve(comp_.otaSensePorts.size());
         for (const auto& [index, port] : comp_.otaSensePorts)
             otas_.push_back({index, {port.a, port.b, makeAffine(port.off)}});
@@ -1083,6 +1085,11 @@ protected:
                    offset.eval(sources, sourceCount);
         }
     };
+    struct Dbx200BiasState {
+        size_t pnp, npn;
+        SensePort bases;
+    };
+    std::vector<Dbx200BiasState> dbx200Biases_;
     struct OtaState {
         std::size_t index;
         SensePort bias;

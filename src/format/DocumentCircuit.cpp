@@ -98,6 +98,9 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addLinearVca(getPin("in"), getPin("out"), getVal("inputOhms", 2200.0),
                                {getPin("control"), getPin("reference"),
                                 getVal("fullGainVolts", 1.0)}, comp.id);
+            } else if (comp.type == "dbx200") {
+                c.addDbx200(getPin("in"), getPin("out"), getPin("pi"), getPin("ni"),
+                            getPin("po"), getPin("no"), getPin("common"), comp.id);
             } else if (comp.type == "that2180") {
                 c.addThat2180(getPin("in"), getPin("out"), getPin("ecPlus"),
                               getPin("ecMinus"), getPin("reference"),
@@ -341,6 +344,11 @@ Circuit LiveWDFDocument::toCircuit() const {
                     throw std::runtime_error("unsupported BJT model '" + modelName +
                                              "' on part '" + comp.id + "'");
                 }
+            } else if (comp.type == "dbx209") {
+                const auto model = RmsDetectorModel::dbx209(getVal("referenceAmps", 23.34e-6),
+                                                            getVal("timingFarads", 22e-6));
+                rmsDetectors.push_back({getPin("in"), getPin("out"), getPin("common"),
+                                        comp.id, model});
             } else if (comp.type == "rmsdet") {
                 RmsDetectorModel model;
                 model.referenceVolts = getVal("referenceVolts", model.referenceVolts);

@@ -143,11 +143,15 @@ struct VcaControl {
     static constexpr double blackmerMinimumDb = -110.0;
     static constexpr double blackmerMaximumDb = 40.0;
 
+    // A dbx 200 steers the bases of a single complementary log/antilog
+    // pair directly. The 2180 has a different control-port scale.
+    double logVoltsPerDb = blackmerVoltsPerDb;
+
     double initialGain() const noexcept { return blackmer ? 1.0 : minimumGain; }
 
     double normalizedGain(double volts) const noexcept {
         if (blackmer) {
-            const double db = std::clamp(volts / blackmerVoltsPerDb,
+            const double db = std::clamp(volts / logVoltsPerDb,
                                          blackmerMinimumDb, blackmerMaximumDb);
             return std::exp2(db * 0.16609640474436812); // log2(10) / 20
         }
@@ -180,6 +184,9 @@ struct ControlledRes {
     std::optional<PhotoresistorControl> photo;
     std::optional<VcaControl> vca;
     std::optional<OtaControl> ota = std::nullopt;
+    // Signed 2*Iq*Rsense for either half of the dbx 200 class-AB cell.
+    // Zero selects the ordinary full-wave controlled resistance.
+    double dbx200Crossover = 0.0;
 };
 
 struct Res {
@@ -467,6 +474,14 @@ struct RmsDetector {
     std::size_t outputCurrentIndex;
 };
 
+// In a matched input pair the geometric-mean collector current changes by
+// exp((Ni - Pi)/(2*VT)) when the input-side base voltages are displaced.
+struct Dbx200Bias {
+    static constexpr double twiceThermalVolts = 2.0 * 0.025693;
+    size_t pnp, npn;
+    std::string ni, pi;
+};
+
 struct Circuit {
     std::vector<Res> res;
     std::vector<Cap> cap;
@@ -484,6 +499,7 @@ struct Circuit {
     std::vector<OpAmp> opamp;
     std::vector<BucketBrigade> bucketBrigades;
     std::vector<RmsDetector> rmsDetectors;
+    std::vector<Dbx200Bias> dbx200Biases;
 
     void addRes(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {
@@ -742,6 +758,45 @@ struct Circuit {
                      const std::string& name) {
         addCurrentVca(input, output, signalReference, inputOhms, inputOhms,
                       {ecPlus, ecMinus, 1.0, true}, name);
+    }
+
+    /// Calibrated analog terminals of dbx drawing 110557 (1975). The two
+    /// matched transistor pairs share emitter nodes, so each collector-current
+    /// ratio is exp(deltaVbase / VT). The input pair's current difference is
+    /// Iin and its current product at centered symmetry is Iq^2.
+    void addDbx200(const std::string& input, const std::string& output,
+                   const std::string& pi, const std::string& ni,
+                   const std::string& po, const std::string& no,
+                   const std::string& common, const std::string& name) {
+        constexpr double senseOhms = 10.0;
+        constexpr double idleAmps = 5.17e-6; // matched reference circuit, neutral controls
+        constexpr double voltsPerDb = 0.002958; // kT/q * ln(10)/20, 25 C
+        const auto copy = name + "$copy";
+        const auto drive = name + "$drive";
+        addRes(input, common, senseOhms, name + "$sense");
+        addVCVS(copy, common, output, common, 1.0, 1e-4, name + "$bootstrap");
+        addVCVS(drive, copy, input, common, -1.0, 1e-4, name + "$input");
+        const auto leg = [&](const std::string& high, const std::string& low,
+                             double sign, const std::string& suffix) {
+            addControlledRes(drive, output, senseOhms, name + suffix);
+            ctrlRes.back().vca = VcaControl{high, low, 1.0, true, voltsPerDb};
+            ctrlRes.back().dbx200Crossover = sign * 2.0 * idleAmps * senseOhms;
+        };
+        if (pi == no && po == ni) {
+            // With the two controls linked, the standing currents cancel at
+            // every audio level. The remaining whole-wave law is affine.
+            leg(pi, po, 0.0, "$cell");
+        } else {
+            const size_t pnp = ctrlRes.size();
+            leg(pi, po, 1.0, "$pnp");
+            const size_t npn = ctrlRes.size();
+            leg(no, ni, -1.0, "$npn");
+            dbx200Biases.push_back({pnp, npn, ni, pi});
+        }
+        // Forward-biased collector/base junctions carry excess current if the
+        // external transimpedance amplifier can no longer hold virtual ground.
+        addDiode(output, po, DiodeModel(336.7e-15 / 3.009, 1.0, 1.8, 1e12), name + "$cbP");
+        addDiode(no, output, DiodeModel(7.049e-15 / 2.209, 1.0, 1.43, 1e12), name + "$cbN");
     }
 
     /// Signal law of the matched NPN differential pair in MiSTer-Discrete's
