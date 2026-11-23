@@ -1,0 +1,17 @@
+Original MiSTer model, measured with the LiveWDF fixture
+R_control drive bias 1
+V_input drive 0 DC -0.44
+V_fixture supply 0 DC -1
+Q_original supply bias 0 q2n3906
+.model q2n3906 pnp(is=1.41f xti=3 eg=1.11 vaf=18.7 bf=180.7 ne=1.5 ise=0 ikf=80m xtb=1.5 br=4.977 nc=2
++ isc=0 ikr=0 rc=2.5 cjc=9.728p mjc=.5776 vjc=.75 fc=.5 cje=8.063p mje=.3677 vje=.75 tr=33.42n tf=179.3p
++ itf=.4 vtf=4 xtf=6 rb=10)
+.options tnom=27 temp=25 reltol=1e-10 abstol=1e-15 vntol=1e-11 gmin=1e-15
+.control
+set wr_singlescale
+set numdgt=15
+dc V_input -0.44 -0.88 -0.0002
+wrdata matched.txt i(V_fixture) i(V_input) v(supply) v(bias)
+quit
+.endc
+.end
