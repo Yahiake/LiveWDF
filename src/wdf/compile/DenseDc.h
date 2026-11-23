@@ -315,15 +315,12 @@ public:
 
                     const double Z_e0_ce = Z[static_cast<size_t>(e0) * eng.K_ + o];
                     const double Z_e0_be = Z[static_cast<size_t>(e0) * eng.K_ + o + 1];
-                    const double Z_e0_e0 = Z[static_cast<size_t>(e0) * eng.K_ + e0];
                     const double diC_dVce = Jm[static_cast<size_t>(o) * eng.K_ + o];
                     const double diC_dVbe = Jm[static_cast<size_t>(o) * eng.K_ + o + 1];
                     const double diB_dVce = Jm[static_cast<size_t>(o + 1) * eng.K_ + o];
                     const double diB_dVbe = Jm[static_cast<size_t>(o + 1) * eng.K_ + o + 1];
-                    const double diE_dVce = -diC_dVce - diB_dVce;
-                    const double diE_dVbe = -diC_dVbe - diB_dVbe;
-                    const double A_e0_ce = Z_e0_ce * diC_dVce + Z_e0_be * diB_dVce + Z_e0_e0 * diE_dVce;
-                    const double A_e0_be = Z_e0_ce * diC_dVbe + Z_e0_be * diB_dVbe + Z_e0_e0 * diE_dVbe;
+                    const double A_e0_ce = Z_e0_ce * diC_dVce + Z_e0_be * diB_dVce;
+                    const double A_e0_be = Z_e0_ce * diC_dVbe + Z_e0_be * diB_dVbe;
                     rhs[static_cast<size_t>(o + 1)] = newBeStep;
                     rhs[static_cast<size_t>(o)] = newCeStep;
                     rhs[static_cast<size_t>(e0)] = rhs_e0_orig

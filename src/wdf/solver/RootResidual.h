@@ -385,10 +385,11 @@ public:
                     break;
                 }
                 case DeviceKind::Bjt: {
+                    // CE and BE both return through the emitter. The residual
+                    // only multiplies these two independent current columns.
                     const int o = dev.portBase;
-                    ar[o]     += zr[o] * jData[o * K + o]     + zr[o + 1] * jData[(o + 1) * K + o]     + zr[o + 2] * jData[(o + 2) * K + o];
-                    ar[o + 1] += zr[o] * jData[o * K + o + 1] + zr[o + 1] * jData[(o + 1) * K + o + 1] + zr[o + 2] * jData[(o + 2) * K + o + 1];
-                    ar[o + 2] += zr[o] * jData[o * K + o + 2] + zr[o + 1] * jData[(o + 1) * K + o + 2] + zr[o + 2] * jData[(o + 2) * K + o + 2];
+                    for (int c = o; c < o + 2; ++c)
+                        ar[c] += zr[o] * jData[o * K + c] + zr[o + 1] * jData[(o + 1) * K + c];
                     break;
                 }
                 case DeviceKind::OpAmp: {
