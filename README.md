@@ -1,6 +1,6 @@
 # LiveWDF pedal listening examples
 
-Each of the 22 tracks plays a dry guitar excerpt, pauses for about one third of a second, then plays the same input through the named LiveWDF circuit. The reel follows the same order and has embedded chapter markers. The recordings are mono at 48 kHz.
+Each of the 29 tracks plays a dry guitar excerpt, pauses for about one third of a second, then plays the same input through the named LiveWDF circuit. The reel follows the same order and has embedded chapter markers. The recordings are mono at 48 kHz.
 
 ## Reel index
 
@@ -28,6 +28,13 @@ Each of the 22 tracks plays a dry guitar excerpt, pauses for about one third of 
 | 20 | Boss DM-2 Analog Delay | 03:06.210 | 03:11.300 | The revised compander lets the repeats decay with less distortion. |
 | 21 | DOD 250 Overdrive Preamp Gray | 03:16.640 | 03:21.570 | Listen for the LM741 and silicon clipping on hard attacks. |
 | 22 | Marshall Bluesbreaker Mk I | 03:26.750 | 03:31.380 | Listen for the change in breakup between light and hard picking. |
+| 23 | Boss BF-2 Flanger | 03:36.260 | 03:41.270 | Held chords expose the comb-filter sweep and feedback resonance. |
+| 24 | Boss BD-2 Blues Driver | 03:46.530 | 03:51.160 | Listen for the transition from clean attack to clipping. |
+| 25 | Colorsound Power Boost 18V | 03:56.040 | 04:00.670 | The combined bass and treble network reshapes the driven transistor stage. |
+| 26 | Nobels ODR-1 Natural Overdrive | 04:05.550 | 04:10.560 | Full chords bring out the Spectrum circuit and the soft clipping. |
+| 27 | EHX Electric Mistress 9V | 04:15.820 | 04:20.830 | Listen for the slow flanging motion across sustained chords. |
+| 28 | Boss HM-2 Heavy Metal | 04:26.090 | 04:30.620 | Palm-muted hits show the clipping and the Color Mix resonance. |
+| 29 | Roger Mayer Octavia Transistor | 04:35.400 | 04:39.890 | High-string notes expose the octave-up and fuzz. |
 
 ## Source and signal levels
 
@@ -59,9 +66,16 @@ Knob values below are normalized positions from 0 to 1. Settings say **Factory**
 | 20 | Sire T7 performance 11 with echo tail (1.53–5.04 s, then 1.25 s with the input silent) | 0.75 V/FS | Factory | +19.0 dB | 0 / 0 |
 | 21 | PF300 palm mutes (15.67–20.27 s) | 1 V/FS | Factory | +10.0 dB | 0 / 0 |
 | 22 | Sire T7 performance 11 (1.53–5.83 s) | 1 V/FS | Factory | +10.3 dB | 0 / 0 |
+| 23 | PF300 major chords (7.72–12.40 s) | 0.65 V/FS | Factory | +12.2 dB | 0 / 0 |
+| 24 | Sire T7 performance 11 (1.53–5.83 s) | 0.9 V/FS | Factory | -11.9 dB | 0 / 0 |
+| 25 | Sire T7 performance 11 (1.53–5.83 s) | 1 V/FS | Factory | -1.6 dB | 0 / 0 |
+| 26 | PF300 major chords (7.72–12.40 s) | 0.85 V/FS | Factory | +0.5 dB | 0 / 0 |
+| 27 | PF300 major chords (7.72–12.40 s) | 0.65 V/FS | Factory | +13.8 dB | 0 / 0 |
+| 28 | PF300 palm mutes, six shortened takes (0.00–0.70 s, 3.77–4.47 s, 7.77–8.47 s, 11.77–12.47 s, 15.77–16.47 s, 19.77–20.47 s) | 0.3 V/FS | Factory | +6.5 dB | 0 / 0 |
+| 29 | PF300 high-string bends (1.06–5.22 s) | 0.85 V/FS | Factory | +3.3 dB | 0 / 0 |
 
 Each circuit received 1 second of silent warm-up before the portion used for playback.
- All 22 playback excerpts rendered without a rejected sample.
+ All 29 playback excerpts rendered without a rejected sample.
 
 These rejects occurred during discarded silent warm-up.
 

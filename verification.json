@@ -1,5 +1,5 @@
 {
-  "reel_samples": 10352640,
+  "reel_samples": 13634400,
   "sample_rate": 48000,
   "rejected_total": 112,
   "rejected_playback": 0,
@@ -355,7 +355,7 @@
       "drive_v_per_fs": 1,
       "knobs": {},
       "circuit_sha256": "b619015b723e31d6eb1c2a08c990bb7c85fb2a2ec0fdcfacf998fec258066cbb",
-      "playback_gain": 1.5085971553425317,
+      "playback_gain": 1.5085971553429682,
       "wet_trim_db": 0.0,
       "sweep": null,
       "playback_rejected": 0,
@@ -364,8 +364,8 @@
         0.03695321727484512
       ],
       "wet_peak_rms_v": [
-        0.29297814151386603,
-        0.07828265954537363
+        0.29297814150478685,
+        0.07828265954535112
       ],
       "dry_samples": 206400,
       "pair_samples": 428640,
@@ -914,6 +914,292 @@
       "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.19741 outputRmsV=0.0327 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
       "mp3_decoded_peak": 0.6205015182495117
+    },
+    {
+      "index": 23,
+      "name": "Boss BF-2 Flanger",
+      "file": "23-boss-bf-2-flanger.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.65,
+      "knobs": {},
+      "circuit_sha256": "53d4f95b565de5ee9ecce2a3a222977eda916e2d934b7161102ca7aef43769b5",
+      "playback_gain": 4.087324192753742,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.16729010939598085,
+        0.012357780537291538
+      ],
+      "wet_peak_rms_v": [
+        0.20069992301147266,
+        0.01542018541944139
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Held chords expose the comb-filter sweep and feedback resonance.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.16729 outputPeakV=0.2007 outputRmsV=0.013997 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7786981463432312
+    },
+    {
+      "index": 24,
+      "name": "Boss BD-2 Blues Driver",
+      "file": "24-boss-bd-2-blues-driver.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.9,
+      "knobs": {},
+      "circuit_sha256": "d61eba68c60e78ae076179fce30b72b11a7bd73bc7d2a51dd6e2bdc698af04fb",
+      "playback_gain": 0.2542193765674094,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.10824151039123535,
+        0.017365250339148545
+      ],
+      "wet_peak_rms_v": [
+        1.4026016929365812,
+        0.4653014223041445
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the transition from clean attack to clipping.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.10824 outputPeakV=1.4026 outputRmsV=0.41911 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.33763667941093445
+    },
+    {
+      "index": 25,
+      "name": "Colorsound Power Boost 18V",
+      "file": "25-colorsound-power-boost-18v.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1.0,
+      "knobs": {},
+      "circuit_sha256": "6c510807a1583f1f492f52094c3472f519d5e7f5992142d323eb80d0878150d4",
+      "playback_gain": 0.8283430808017797,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12026834487915039,
+        0.01929472259905394
+      ],
+      "wet_peak_rms_v": [
+        0.9967586348715658,
+        0.14048874477515358
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "The combined bass and treble network reshapes the driven transistor stage.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.99676 outputRmsV=0.12654 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.7788673639297485
+    },
+    {
+      "index": 26,
+      "name": "Nobels ODR-1 Natural Overdrive",
+      "file": "26-nobels-odr-1-natural-overdrive.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.85,
+      "knobs": {},
+      "circuit_sha256": "f72f22cbd9dc768676ef7d8db4888e3fca511cf0354e1be136484007a5d480ef",
+      "playback_gain": 1.0610042094906043,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.21876398921012877,
+        0.01616017454876586
+      ],
+      "wet_peak_rms_v": [
+        0.436205765970918,
+        0.11180992270975927
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Full chords bring out the Spectrum circuit and the soft clipping.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.21876 outputPeakV=0.43621 outputRmsV=0.10149 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.44220998883247375
+    },
+    {
+      "index": 27,
+      "name": "EHX Electric Mistress 9V",
+      "file": "27-ehx-electric-mistress-9v.mp3",
+      "fixture": "PF300 major chords",
+      "fixture_file": "pf300-major-chords",
+      "fixture_bounds": [
+        [
+          7.72,
+          12.4
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.65,
+      "knobs": {},
+      "circuit_sha256": "2c02351dd1f041c702bb043ffd5ad29470cb78379ee00ae87001484e50f4fb46",
+      "playback_gain": 4.9102550425161695,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.16729010939598085,
+        0.012357780537291538
+      ],
+      "wet_peak_rms_v": [
+        0.04370158832706428,
+        0.0036554637963727163
+      ],
+      "dry_samples": 224640,
+      "pair_samples": 465120,
+      "note": "Listen for the slow flanging motion across sustained chords.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=272640 inputPeakV=0.16729 outputPeakV=0.043702 outputRmsV=0.0033181 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.779391884803772
+    },
+    {
+      "index": 28,
+      "name": "Boss HM-2 Heavy Metal",
+      "file": "28-boss-hm-2-heavy-metal.mp3",
+      "fixture": "PF300 palm mutes, six shortened takes",
+      "fixture_file": "pf300-palm-mutes",
+      "fixture_bounds": [
+        [
+          0,
+          0.7
+        ],
+        [
+          3.77,
+          4.47
+        ],
+        [
+          7.77,
+          8.469999999999999
+        ],
+        [
+          11.77,
+          12.469999999999999
+        ],
+        [
+          15.77,
+          16.47
+        ],
+        [
+          19.77,
+          20.47
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.3,
+      "knobs": {},
+      "circuit_sha256": "14be48ca8555be89b8d2a9395403187cee11c7248ac6ea89a545f63d89e72ac2",
+      "playback_gain": 2.1211086480480494,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.043725013732910156,
+        0.004191437178545032
+      ],
+      "wet_peak_rms_v": [
+        0.17031729208006877,
+        0.055717900419523826
+      ],
+      "dry_samples": 201600,
+      "pair_samples": 419040,
+      "note": "Palm-muted hits show the clipping and the Color Mix resonance.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=249600 inputPeakV=0.043725 outputPeakV=0.17032 outputRmsV=0.050075 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.33993852138519287
+    },
+    {
+      "index": 29,
+      "name": "Roger Mayer Octavia Transistor",
+      "file": "29-roger-mayer-octavia-transistor.mp3",
+      "fixture": "PF300 high-string bends",
+      "fixture_file": "pf300-high-bends",
+      "fixture_bounds": [
+        [
+          1.06,
+          5.22
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 0.85,
+      "knobs": {},
+      "circuit_sha256": "2ac0d02f7124efc7c3cb3aa198dc8822eb838d441e2bc24027b584bcf1671525",
+      "playback_gain": 1.4567890935296937,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.16798391938209534,
+        0.02875304321631022
+      ],
+      "wet_peak_rms_v": [
+        0.4243799356514324,
+        0.0810900856206638
+      ],
+      "dry_samples": 199680,
+      "pair_samples": 415200,
+      "note": "High-string notes expose the octave-up and fuzz.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=247680 inputPeakV=0.16798 outputPeakV=0.42438 outputRmsV=0.07281 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.5512018799781799
     }
   ]
 }
