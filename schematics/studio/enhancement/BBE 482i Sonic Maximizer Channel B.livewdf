@@ -325,49 +325,39 @@
       }
     },
     {
-      "id": "PeakMirror",
+      "id": "EDet",
       "properties": {
+        "label": "Detector input scale"
+      },
+      "type": "vcvs",
+      "values": {
+        "gain": 0.5,
+        "ro": 10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 37,
+        "y": 68
+      }
+    },
+    {
+      "id": "DDet",
+      "properties": {
+        "label": "Precision peak diode equivalent",
         "model": "Custom"
       },
       "type": "diode",
       "values": {
         "isat": 1e-07,
-        "n": 0.025,
-        "rs": 0.5
+        "n": 0.15,
+        "rs": 2.2
       },
       "visual": {
         "flipped": false,
         "rotation": 270,
-        "x": 61,
-        "y": 60
-      }
-    },
-    {
-      "id": "Rtrack",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 4.7
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 270,
-        "x": 69,
-        "y": 61
-      }
-    },
-    {
-      "id": "C15",
-      "properties": {},
-      "type": "cap",
-      "values": {
-        "value": 2.2e-05
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 79,
-        "y": 72
+        "x": 55,
+        "y": 69
       }
     },
     {
@@ -380,67 +370,401 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 88,
-        "y": 72
+        "x": 64,
+        "y": 80
       }
     },
     {
-      "id": "VCAControl",
-      "properties": {
-        "model": "TL072"
-      },
-      "type": "opamp",
+      "id": "C15",
+      "properties": {},
+      "type": "cap",
       "values": {
-        "vRailMax": 1.0,
-        "vRailMin": 0.235
+        "value": 2.2e-07
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 101,
-        "y": 64
+        "x": 64,
+        "y": 90
       }
     },
     {
-      "id": "Rscale",
+      "id": "Rcharge",
       "properties": {},
       "type": "res",
       "values": {
-        "value": 10000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 95,
-        "y": 79
-      }
-    },
-    {
-      "id": "RcontrolFb",
-      "properties": {},
-      "type": "res",
-      "values": {
-        "value": 103000.0
+        "value": 270
       },
       "visual": {
         "flipped": false,
         "rotation": 270,
-        "x": 104,
-        "y": 51
+        "x": 74,
+        "y": 69
       }
     },
     {
-      "id": "Roffset",
+      "id": "C13",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 86,
+        "y": 80
+      }
+    },
+    {
+      "id": "Rrecover",
       "properties": {},
       "type": "res",
       "values": {
-        "value": 10500000.0
+        "value": 34800
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 96,
+        "y": 80
+      }
+    },
+    {
+      "id": "VThreshold",
+      "properties": {
+        "label": "Detector knee",
+        "mode": "DC"
+      },
+      "type": "src",
+      "values": {
+        "dc": 0.00021
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 45,
+        "y": 106
+      }
+    },
+    {
+      "id": "Curve1",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 32.18,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 107
+      }
+    },
+    {
+      "id": "RC1",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1500.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 79,
+        "y": 107
+      }
+    },
+    {
+      "id": "DC1",
+      "properties": {
+        "label": "Curve limiter",
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.15,
+        "rs": 0.3
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 113
+      }
+    },
+    {
+      "id": "BC1",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 0.297
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 121
+      }
+    },
+    {
+      "id": "CB1",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 1.0,
+        "ro": 1.0
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
         "x": 105,
-        "y": 79
+        "y": 107
+      }
+    },
+    {
+      "id": "RS1",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 119,
+        "y": 107
+      }
+    },
+    {
+      "id": "Curve2",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 1.03,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 133
+      }
+    },
+    {
+      "id": "RC2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1500.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 79,
+        "y": 133
+      }
+    },
+    {
+      "id": "DC2",
+      "properties": {
+        "label": "Curve limiter",
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.15,
+        "rs": 0.3
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 139
+      }
+    },
+    {
+      "id": "BC2",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 0.089
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 147
+      }
+    },
+    {
+      "id": "CB2",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 1.0,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 105,
+        "y": 133
+      }
+    },
+    {
+      "id": "RS2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 119,
+        "y": 133
+      }
+    },
+    {
+      "id": "Curve3",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 13.11,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 159
+      }
+    },
+    {
+      "id": "RC3",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1500.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 79,
+        "y": 159
+      }
+    },
+    {
+      "id": "DC3",
+      "properties": {
+        "label": "Curve limiter",
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.15,
+        "rs": 0.3
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 165
+      }
+    },
+    {
+      "id": "BC3",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 0.276
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 173
+      }
+    },
+    {
+      "id": "CB3",
+      "properties": {},
+      "type": "vcvs",
+      "values": {
+        "gain": 1.0,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 105,
+        "y": 159
+      }
+    },
+    {
+      "id": "RS3",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 119,
+        "y": 159
+      }
+    },
+    {
+      "id": "VFloor",
+      "properties": {
+        "label": "High-band floor"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 0.239
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 121,
+        "y": 181
+      }
+    },
+    {
+      "id": "RS4",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 132,
+        "y": 181
+      }
+    },
+    {
+      "id": "VCAControl",
+      "properties": {
+        "label": "High-band gain command"
+      },
+      "type": "vcvs",
+      "values": {
+        "gain": 4.0,
+        "ro": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 141,
+        "y": 141
       }
     },
     {
@@ -627,8 +951,8 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 74,
-        "y": 85
+        "x": 72,
+        "y": 54
       }
     },
     {
@@ -641,8 +965,8 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 110,
-        "y": 89
+        "x": 79,
+        "y": 103
       }
     },
     {
@@ -713,36 +1037,12 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 83,
-        "y": 78
+        "x": 100,
+        "y": 86
       }
     },
     {
       "id": "G7",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 92,
-        "y": 78
-      }
-    },
-    {
-      "id": "G8",
-      "properties": {},
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 99,
-        "y": 85
-      }
-    },
-    {
-      "id": "G9",
       "properties": {},
       "type": "gnd",
       "values": {},
@@ -754,7 +1054,7 @@
       }
     },
     {
-      "id": "G10",
+      "id": "G8",
       "properties": {},
       "type": "gnd",
       "values": {},
@@ -766,7 +1066,7 @@
       }
     },
     {
-      "id": "G11",
+      "id": "G9",
       "properties": {},
       "type": "gnd",
       "values": {},
@@ -778,7 +1078,7 @@
       }
     },
     {
-      "id": "G12",
+      "id": "G10",
       "properties": {},
       "type": "gnd",
       "values": {},
@@ -790,7 +1090,7 @@
       }
     }
   ],
-  "description": "BBE 482i, engaged channel B. Audio board parts and NJM2153 filter topology follow Tom Farrand’s 8 September 2004 Rev. 0 analysis. Gain behavior is referenced to the New Japan Radio NJM2153 data sheet. The two integrators feed the high, mid and low paths of the summing amplifier. Process changes high-band level, Lo Contour changes low-band level, and the mid path is fixed. The proprietary peak detector and high-band VCA use a functional fit with a 0.235–1 gain range, 22 µF/3.32 kΩ release and a 4.7 Ω charge resistance. TL072 sections approximate the chip amplifiers. LED meters and bypass are omitted.",
+  "description": "BBE 482i engaged channel B, based on the 2004 Farrand board analysis and New Japan Radio NJM2153 data. The pseudo state-variable filter, summing amplifier, Process and Lo Contour retain the source-board values. The high-band stage uses a finite-bandwidth peak detector, the documented series 3.32 kΩ/0.22 µF detector branch and separate 2.2 µF integration capacitor. A continuous diode-limited gain curve reproduces the published level dependence approximately. Detector charge and recovery paths are functional estimates of the proprietary chip. TL072 sections represent its amplifiers. LED meters and bypass are outside this model.",
   "groundNode": "0",
   "inputNode": "in",
   "layout": {
@@ -886,48 +1186,16 @@
     {
       "points": [
         {
-          "x": 79,
-          "y": 74
+          "x": 96,
+          "y": 82
         },
         {
-          "x": 83,
-          "y": 74
+          "x": 100,
+          "y": 82
         },
         {
-          "x": 83,
-          "y": 76
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 88,
-          "y": 74
-        },
-        {
-          "x": 92,
-          "y": 74
-        },
-        {
-          "x": 92,
-          "y": 76
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 95,
-          "y": 81
-        },
-        {
-          "x": 99,
-          "y": 81
-        },
-        {
-          "x": 99,
-          "y": 83
+          "x": 100,
+          "y": 84
         }
       ]
     },
@@ -1179,11 +1447,7 @@
         },
         {
           "x": 76,
-          "y": 39
-        },
-        {
-          "x": 118,
-          "y": 39
+          "y": 62
         },
         {
           "x": 118,
@@ -1338,26 +1602,6 @@
     {
       "points": [
         {
-          "x": 106,
-          "y": 20
-        },
-        {
-          "x": 106,
-          "y": 25
-        },
-        {
-          "x": 101,
-          "y": 25
-        },
-        {
-          "x": 101,
-          "y": 61
-        }
-      ]
-    },
-    {
-      "points": [
-        {
           "x": 114,
           "y": 20
         },
@@ -1378,16 +1622,12 @@
     {
       "points": [
         {
-          "x": 101,
-          "y": 61
+          "x": 72,
+          "y": 20
         },
         {
-          "x": 74,
-          "y": 61
-        },
-        {
-          "x": 74,
-          "y": 85
+          "x": 72,
+          "y": 54
         }
       ]
     },
@@ -1442,39 +1682,43 @@
     {
       "points": [
         {
-          "x": 107,
+          "x": 62,
           "y": 27
         },
         {
-          "x": 107,
-          "y": 67
+          "x": 62,
+          "y": 92
         },
         {
-          "x": 101,
-          "y": 67
+          "x": 64,
+          "y": 92
         }
       ]
     },
     {
       "points": [
         {
-          "x": 107,
-          "y": 67
+          "x": 62,
+          "y": 83
         },
         {
-          "x": 107,
-          "y": 81
+          "x": 86,
+          "y": 83
         },
         {
-          "x": 105,
-          "y": 81
+          "x": 86,
+          "y": 82
         }
       ]
     },
     {
       "points": [
         {
-          "x": 107,
+          "x": 114,
+          "y": 27
+        },
+        {
+          "x": 114,
           "y": 33
         },
         {
@@ -1490,16 +1734,12 @@
     {
       "points": [
         {
-          "x": 107,
-          "y": 81
+          "x": 79,
+          "y": 83
         },
         {
-          "x": 110,
-          "y": 81
-        },
-        {
-          "x": 110,
-          "y": 89
+          "x": 79,
+          "y": 103
         }
       ]
     },
@@ -1550,16 +1790,172 @@
     {
       "points": [
         {
-          "x": 63,
-          "y": 60
+          "x": 40,
+          "y": 68
         },
         {
-          "x": 63,
-          "y": 61
+          "x": 40,
+          "y": 69
         },
         {
-          "x": 67,
-          "y": 61
+          "x": 53,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 64,
+          "y": 82
+        },
+        {
+          "x": 64,
+          "y": 88
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 107
+        },
+        {
+          "x": 77,
+          "y": 107
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 115
+        },
+        {
+          "x": 92,
+          "y": 121
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
+          "y": 107
+        },
+        {
+          "x": 117,
+          "y": 107
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 133
+        },
+        {
+          "x": 77,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 141
+        },
+        {
+          "x": 92,
+          "y": 147
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
+          "y": 133
+        },
+        {
+          "x": 117,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 159
+        },
+        {
+          "x": 77,
+          "y": 159
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 167
+        },
+        {
+          "x": 92,
+          "y": 173
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 108,
+          "y": 159
+        },
+        {
+          "x": 117,
+          "y": 159
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 121,
+          "y": 181
+        },
+        {
+          "x": 130,
+          "y": 181
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 144,
+          "y": 141
+        },
+        {
+          "x": 144,
+          "y": 139
+        },
+        {
+          "x": 129,
+          "y": 139
+        },
+        {
+          "x": 129,
+          "y": 59
+        },
+        {
+          "x": 121,
+          "y": 59
         }
       ]
     },
@@ -1754,32 +2150,124 @@
     {
       "points": [
         {
-          "x": 104,
-          "y": 64
+          "x": 57,
+          "y": 69
         },
         {
-          "x": 104,
-          "y": 61
+          "x": 64,
+          "y": 69
         },
         {
-          "x": 102,
-          "y": 61
-        },
-        {
-          "x": 102,
-          "y": 51
+          "x": 64,
+          "y": 78
         }
       ]
     },
     {
       "points": [
         {
-          "x": 102,
-          "y": 59
+          "x": 64,
+          "y": 69
         },
         {
-          "x": 121,
-          "y": 59
+          "x": 72,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 107
+        },
+        {
+          "x": 81,
+          "y": 111
+        },
+        {
+          "x": 92,
+          "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 111
+        },
+        {
+          "x": 92,
+          "y": 107
+        },
+        {
+          "x": 102,
+          "y": 107
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 133
+        },
+        {
+          "x": 81,
+          "y": 137
+        },
+        {
+          "x": 92,
+          "y": 137
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 137
+        },
+        {
+          "x": 92,
+          "y": 133
+        },
+        {
+          "x": 102,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 159
+        },
+        {
+          "x": 81,
+          "y": 163
+        },
+        {
+          "x": 92,
+          "y": 163
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 163
+        },
+        {
+          "x": 92,
+          "y": 159
+        },
+        {
+          "x": 102,
+          "y": 159
         }
       ]
     },
@@ -1910,104 +2398,104 @@
     {
       "points": [
         {
-          "x": 47,
+          "x": 36,
           "y": 23
         },
         {
-          "x": 47,
-          "y": 60
+          "x": 36,
+          "y": 27
         },
         {
-          "x": 59,
-          "y": 60
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 71,
-          "y": 61
+          "x": 34,
+          "y": 27
         },
         {
-          "x": 71,
-          "y": 70
-        },
-        {
-          "x": 79,
-          "y": 70
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 79,
-          "y": 70
-        },
-        {
-          "x": 88,
-          "y": 70
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 88,
-          "y": 70
-        },
-        {
-          "x": 88,
-          "y": 65
-        },
-        {
-          "x": 98,
-          "y": 65
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 98,
-          "y": 63
-        },
-        {
-          "x": 95,
-          "y": 63
-        },
-        {
-          "x": 95,
-          "y": 77
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 95,
+          "x": 34,
           "y": 68
-        },
-        {
-          "x": 106,
-          "y": 68
-        },
-        {
-          "x": 106,
-          "y": 51
         }
       ]
     },
     {
       "points": [
         {
-          "x": 105,
-          "y": 68
+          "x": 76,
+          "y": 69
         },
         {
-          "x": 105,
-          "y": 77
+          "x": 76,
+          "y": 78
+        },
+        {
+          "x": 86,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 86,
+          "y": 78
+        },
+        {
+          "x": 96,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 76,
+          "y": 78
+        },
+        {
+          "x": 76,
+          "y": 104
+        },
+        {
+          "x": 45,
+          "y": 104
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 45,
+          "y": 108
+        },
+        {
+          "x": 65,
+          "y": 108
+        },
+        {
+          "x": 65,
+          "y": 107
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 65,
+          "y": 108
+        },
+        {
+          "x": 65,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 65,
+          "y": 133
+        },
+        {
+          "x": 65,
+          "y": 159
         }
       ]
     },
@@ -2044,6 +2532,58 @@
         {
           "x": 187,
           "y": 29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 121,
+          "y": 107
+        },
+        {
+          "x": 121,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 121,
+          "y": 133
+        },
+        {
+          "x": 121,
+          "y": 159
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 121,
+          "y": 159
+        },
+        {
+          "x": 134,
+          "y": 159
+        },
+        {
+          "x": 134,
+          "y": 181
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 121,
+          "y": 141
+        },
+        {
+          "x": 138,
+          "y": 141
         }
       ]
     }
