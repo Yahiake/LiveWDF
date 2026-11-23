@@ -50,6 +50,18 @@ TEST_CASE("opamp model cards match the PedalKernel datasheet values", "[opamp][m
     REQUIRE(wdf::opAmpTypeFromString("unknown-part") == wdf::OpAmpType::Generic);
 }
 
+TEST_CASE("MCI2001 card reproduces its published 600 ohm output rating", "[opamp][model]") {
+    const auto type = wdf::opAmpTypeFromString("MCI-2001");
+    REQUIRE(std::string_view(wdf::opAmpTypeName(type)) == "MCI2001");
+    const auto m = wdf::OpAmpModel::fromType(type);
+    CHECK(20 * std::log10(m.openLoopGain) == Approx(90.0));
+    CHECK(m.gbw / std::pow(10.0, 50.0 / 20.0) == Approx(20000.0));
+    CHECK(m.slewRate == Approx(2.3));
+    const double loadedPeak = m.railHigh() * 600.0 / (600.0 + m.outputImpedance);
+    CHECK(10 * std::log10(loadedPeak * loadedPeak / (2.0 * 600.0 * 0.001)) == Approx(24.0).margin(0.01));
+    CHECK(wdf::opAmpSupplyMax(type) == 50.0);
+}
+
 TEST_CASE("opamp GBW lowpass coefficient is gain dependent and Nyquist safe", "[opamp][gbw]") {
     const auto tl072 = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
     const double lowGain = tl072.gbwCoeff(10.0, kFs);

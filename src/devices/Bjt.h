@@ -294,8 +294,10 @@ inline BjtModel makeEM(double Is, double Bf, double Br, double Nf, double Nr,
     return BjtModel(Is, Bf, Br, Nf, Nr, pnp);
 }
 
-inline BjtModel withLowCurrentCorrections(BjtModel model, double vaf, double ise, double ne) {
+inline BjtModel withLowCurrentCorrections(BjtModel model, double vaf, double ise, double ne,
+                                          double var = 0.0) {
     model.Vaf = vaf;
+    model.Var = var;
     model.Ise = ise;
     model.Ne = ne;
     return model;
@@ -337,6 +339,13 @@ inline const BjtEntry kBjtTable[] = {
     {"AC128",   makeEM(20.66e-6,  229.6,  14.66, 1.133, 1.140, true)},
     {"OC44",    makeEM(1.423e-6,  307.0,  20.27, 1.022, 1.025, true)},
     {"NKT275",  makeEM(1.5e-6,    85.0,   8.0,   1.05,  1.05,  true)},
+
+    // Gert Willmann's 25 °C 2N270 fit, reproduced in Greg Whitehead's FZ-1 study:
+    // https://github.com/grwhitehead/us3213181/blob/661e935/ngspice/fuzztone.mod
+    // Static transport, Early voltages and base-emitter leakage. The full fit
+    // also includes collector-base leakage, roll-off, charge and temperature.
+    {"2N270", withLowCurrentCorrections(makeEM(24.3e-6, 172.0, 17.2, 1.055, 1.055, true),
+                                         25.0, 2.57e-6, 1.99, 25.0)},
 
     // Fairchild/National transport + low-current corrections from
     // jopdorp/MiSTer-Discrete circuit-compiler@692e777, circuits/parts/discretes.lib.

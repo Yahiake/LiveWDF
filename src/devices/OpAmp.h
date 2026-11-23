@@ -68,6 +68,7 @@ enum class OpAmpType {
     Op275,
     Api2520,
     Lm324,
+    Mci2001,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -86,6 +87,7 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "ca3080" || lower == "lm3080") return OpAmpType::Ca3080;
     if (lower == "op07" || lower == "op07c") return OpAmpType::Op07;
     if (lower == "op275") return OpAmpType::Op275;
+    if (lower == "mci2001" || lower == "mci-2001") return OpAmpType::Mci2001;
     if (lower == "api2520") return OpAmpType::Api2520;
     if (lower == "lm324" || lower == "lm324-n") return OpAmpType::Lm324;
     if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
@@ -116,6 +118,7 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Ca3080: return "CA3080";
         case OpAmpType::Op07: return "OP07";
         case OpAmpType::Op275: return "OP275";
+        case OpAmpType::Mci2001: return "MCI2001";
         case OpAmpType::Api2520: return "API2520";
         case OpAmpType::Lm324: return "LM324";
         case OpAmpType::M5218Al: return "M5218AL";
@@ -147,7 +150,7 @@ inline constexpr const char* kOpAmpTypeNames[] = {
     "LM308", "LM741", "NE5532", "CA3080", "OP07",
     "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
     "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275", "API2520",
-    "LM324"};
+    "LM324", "MCI2001"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
@@ -156,6 +159,8 @@ inline double opAmpSupplyMax(OpAmpType type) {
     switch (type) {
         case OpAmpType::Ba728N:
             return 18.0;
+        case OpAmpType::Mci2001:
+            return 50.0;  // Harris HA-911 V+ to V− absolute maximum.
         case OpAmpType::Api2520:
             return 40.0;
         case OpAmpType::Lm324:
@@ -296,6 +301,18 @@ struct OpAmpModel {
                 m.slewRate = 50.0;
                 m.outputImpedance = 75.0;
                 m.outputCapacitance = 20e-12;
+                break;
+            case OpAmpType::Mci2001:
+                // MCI-2001 data sheet: 90 dB open-loop, 50 dB closed-loop
+                // through 20 kHz on ±24 V supplies, +24 dBm into 600 Ω.
+                // Use the corresponding single-pole gain-bandwidth product.
+                // The Harris HA-911 selection guide gives a 2.3 V/µs slew rate.
+                // https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/MCI-2001-Op-Amp-Replacement.pdf
+                m.openLoopGain = 31622.7766;
+                m.gbw = 6.324555e6;
+                m.slewRate = 2.3;
+                // Correct the measured loaded swing for the model's estimated Ro.
+                m.vRailPos = m.vRailNeg = 17.36 * (1.0 + m.outputImpedance / 600.0);
                 break;
             case OpAmpType::Api2520:
                 // API's 2520 data sheet gives >110 dB, 50 MHz and a 40 kHz
