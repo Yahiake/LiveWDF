@@ -470,6 +470,90 @@ public:
         iiData[o + 1] = 0.0;
     }
 
+    struct ClassABSolution {
+        double loadCurrent = 0.0;
+        double modelCurrent = 0.0;
+        double residual = 0.0;
+        bool ok = false;
+    };
+
+    /// The passive load and negative feedback make the output error fall
+    /// with current. The output current rises with error, so the intersection
+    /// is unique. Solve in volts to avoid Newton steps across the nearly
+    /// flat current-limit regions, then check the original network residual.
+    static ClassABSolution solveClassABOutput(
+        const OpAmpModel& model, double voOut, double voPos, double voNeg,
+        double zoo, double zpo, double zno, double vp, double alpha, double maxDv,
+        bool staticMode, int maxIter, double tolerance, long long& evaluations) noexcept
+    {
+        if (!(zoo >= 0.0 && zpo <= zno))
+            return {};
+        const auto errorAt = [&](double current, double& derivative) noexcept {
+            const double vDiff = (voPos - zpo * current) - (voNeg - zno * current);
+            const double source = OpAmpEngineLaw::sourceVoltage(
+                model, vDiff, vp, alpha, maxDv, staticMode, &derivative);
+            return (voOut - zoo * current) - source;
+        };
+        const double limit = model.outputCurrentLimit;
+        const double impedance = model.outputImpedance + zoo;
+        const double zDiff = zpo - zno;
+        const double zMax = std::max({std::abs(zoo), std::abs(zpo), std::abs(zno)});
+        double gain = 0.0;
+        // Use the unclamped pole for the load-line seed. A clamp active
+        // at zero current can be inactive at the solution.
+        const double a = std::clamp(alpha, 0.0, 1.0);
+        const double rawGain = staticMode ? model.openLoopGain : a * model.openLoopGain / (1.0 + a);
+        const double bias = staticMode ? 0.0 : vp / (1.0 + a);
+        double initialCurrent = (voOut - bias - rawGain * (voPos - voNeg)) /
+                                (impedance - rawGain * zDiff);
+        double seedGain = 0.0;
+        double error = errorAt(initialCurrent, seedGain);
+        if (seedGain == 0.0)
+            initialCurrent += (error - model.outputImpedance * initialCurrent) / impedance;
+        double lo = errorAt(limit, gain);
+        double hi = errorAt(-limit, gain);
+        if (!std::isfinite(lo) || !std::isfinite(hi) || lo > hi)
+            return {};
+        initialCurrent = std::clamp(initialCurrent, -limit, limit);
+        double conductanceSeed = 0.0;
+        error = model.classABVoltageError(initialCurrent, conductanceSeed);
+        const double loadedErrorSeed = errorAt(initialCurrent, seedGain);
+        error -= (error - loadedErrorSeed) /
+                 (1.0 + conductanceSeed * (zoo - seedGain * zDiff));
+        error = std::clamp(error, lo, hi);
+        const double bound = zMax *
+            (limit + model.outputJunctionIs + OpAmpModel::kSteeringDiodeIs) /
+            (2.0 * kThermalVoltage);
+        for (int iteration = 0; iteration < std::min(maxIter, 20); ++iteration) {
+            double conductance = 0.0;
+            const double current = model.outputCurrent(error, conductance);
+            const double loadedError = errorAt(current, gain);
+            const double residual = error - loadedError;
+            ++evaluations;
+            // Each logistic steering fraction has derivative at most 1/4.
+            // The sum bounds the original port residual even across clamps.
+            const double maxNetworkResidual = bound * std::abs(residual);
+            if (maxNetworkResidual <= tolerance)
+                return {current, current, maxNetworkResidual, true};
+            if (std::abs(residual) <= 1e-8) {
+                double unused = 0.0;
+                const double modelCurrent = model.outputCurrent(loadedError, unused);
+                const double networkResidual = zMax * std::abs(modelCurrent - current);
+                ++evaluations;
+                if (std::isfinite(modelCurrent) && networkResidual <= tolerance)
+                    return {current, modelCurrent, networkResidual, true};
+            }
+            if (residual > 0.0)
+                hi = error;
+            else
+                lo = error;
+            const double slope = 1.0 + conductance * (zoo - gain * zDiff);
+            const double next = error - residual / slope;
+            error = next > lo && next < hi ? next : 0.5 * (lo + hi);
+        }
+        return {};
+    }
+
     /// One operational amplifier stage in Harold Black negative feedback closed form.
     static inline void solveOpAmpGroup(
         int g,
