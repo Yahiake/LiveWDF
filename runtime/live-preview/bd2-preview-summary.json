@@ -1,0 +1,32 @@
+{
+  "Accurate": {
+    "p50_ms": 2.313364,
+    "p99_ms": 4.839086079999997,
+    "over_2ms": 1688,
+    "blocks": 2400,
+    "allocations": 0,
+    "rms_vs_accurate_db": 0.0,
+    "peak_normalized_delta": 0.0,
+    "rms_relative_error_pct": 0.0
+  },
+  "Fast Live": {
+    "p50_ms": 2.1968854999999996,
+    "p99_ms": 4.236640989999999,
+    "over_2ms": 1499,
+    "blocks": 2400,
+    "allocations": 0,
+    "rms_vs_accurate_db": 7.952422885314292e-10,
+    "peak_normalized_delta": 7.450580596923828e-08,
+    "rms_relative_error_pct": 1.187423150153197e-06
+  },
+  "Live Preview": {
+    "p50_ms": 0.989924000001,
+    "p99_ms": 1.8915231799999963,
+    "over_2ms": 21,
+    "blocks": 2400,
+    "allocations": 0,
+    "rms_vs_accurate_db": -0.09799597580439308,
+    "peak_normalized_delta": 0.26650799065828323,
+    "rms_relative_error_pct": 17.364593801285945
+  }
+}
