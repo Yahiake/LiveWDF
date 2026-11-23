@@ -171,7 +171,8 @@ public:
         double tol,
         bool relaxed,
         BlockSolveContext& ctx,
-        const NewtonBlock* reducedPlan = nullptr) noexcept
+        const NewtonBlock* reducedPlan = nullptr,
+        bool* acceptedDeviceCurrents = nullptr) noexcept
     {
         const NewtonBlock& block = Reduced && reducedPlan ? *reducedPlan : (*view.blocks)[static_cast<size_t>(b)];
         const auto& devices = Reduced ? block.reducedDevices : block.devices;
@@ -654,6 +655,8 @@ public:
             }
         }
 
+        if (acceptedDeviceCurrents)
+            *acceptedDeviceCurrents = true;
         return true;
     }
 
@@ -1134,7 +1137,7 @@ public:
     /// Solve block `b` at position `s` by its kind; false when its solve failed.
     static inline bool solveBlock(
         const BlockView& view, int b, int s, int maxIter, double tol, bool relaxed,
-        BlockSolveContext& ctx) noexcept
+        BlockSolveContext& ctx, bool* acceptedDeviceCurrents = nullptr) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
@@ -1144,7 +1147,7 @@ public:
             return true;
         if (block.linearReduction)
             return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
-                   solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
+                   solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx, nullptr, acceptedDeviceCurrents);
         if (block.isAntiParallelDiodePair) {
             RootClosedForms::solveAntiParallelDiodeGroup(
                 view, b, s, relaxed, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
@@ -1153,7 +1156,7 @@ public:
         }
         if (isScalarBlock(block, ctx.rootDevices.data()))
             return solveScalarBlock(view, b, s, relaxed, ctx);
-        return solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
+        return solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx, nullptr, acceptedDeviceCurrents);
     }
 
     /// Solve the root in block order, using the scalar closed form for a
@@ -1180,8 +1183,12 @@ public:
         ctx.keptBest = false;
 
         bool failed = false;
+        bool acceptedDeviceCurrents = false;
+        bool* saveDeviceCurrentStatus = view.count == 1 && ctx.gridLag.empty()
+            ? &acceptedDeviceCurrents : nullptr;
         for (int s = 0; s < view.count && !failed; ++s)
-            failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx);
+            failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx,
+                                 saveDeviceCurrentStatus);
 
         // A predicted grid current can warm-start later blocks and be resolved
         // by resolveMissedGrids. Regardless of prediction, the full system residual
@@ -1194,7 +1201,10 @@ public:
             // Re-evaluate every root law at the final voltages before the
             // residual check: `ii` must describe the returned `vv`, not a
             // pre-resolve iterate that happens to leave a small stale residual.
-            RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+            // A single Newton block already evaluated all device currents at
+            // its accepted voltage. Still check the full residual.
+            if (!acceptedDeviceCurrents)
+                RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
