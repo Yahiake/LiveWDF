@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
+#include <optional>
 #include <vector>
 
 #include "devices/Diode.h"
@@ -67,9 +68,10 @@ public:
         const Compiled& comp,
         const std::vector<OpAmpModel>& opAmps,
         const std::vector<double>& ctrlResValues,
-        double sampleRate)
+        double sampleRate, std::optional<unsigned> slopeMask = {})
     {
         block.clearLinearReduction();
+        block.linearSlopeMask = slopeMask.value_or(~0u);
         if (!rootDevices || !zData || K <= 0 || block.devices.empty())
             return false;
 
@@ -114,7 +116,7 @@ public:
                 if (!(a > 0.0))
                     return false;
                 block.linearG[static_cast<size_t>(d)] =
-                    a * oa.openLoopGain / (1.0 + a);
+                    (block.linearSlopeMask & (1u << d)) ? a * oa.openLoopGain / (1.0 + a) : 0.0;
             } else if (dev.kind == DeviceKind::ControlledRes) {
                 if (dev.compIndex >= ctrlResValues.size())
                     return false;
@@ -160,9 +162,14 @@ public:
                 const auto& oa = opAmps[dev.compIndex];
                 const double ro = oa.outputImpedance;
                 const double g = block.linearG[static_cast<size_t>(d)];
-                return (oa.outputVoltageWeight() / ro) * zData[static_cast<size_t>(o) * K + col] -
-                       (g / ro) * zData[static_cast<size_t>(o + 1) * K + col] +
-                       (g / ro) * zData[static_cast<size_t>(o + 2) * K + col];
+                if (!slopeMask)
+                    return (oa.outputVoltageWeight() / ro) * zData[static_cast<size_t>(o) * K + col] -
+                           (g / ro) * zData[static_cast<size_t>(o + 1) * K + col] +
+                           (g / ro) * zData[static_cast<size_t>(o + 2) * K + col];
+                const double zOut = zData[static_cast<size_t>(o) * K + col];
+                const double zDiff = zData[static_cast<size_t>(o + 1) * K + col] -
+                                     zData[static_cast<size_t>(o + 2) * K + col];
+                return std::fma(-g, zDiff, oa.outputVoltageWeight() * zOut) / ro;
             }
             const double g = block.linearG[static_cast<size_t>(d)];
             return g * zData[static_cast<size_t>(o) * K + col];
@@ -181,17 +188,30 @@ public:
                     gz(d, block.reducedPorts[static_cast<size_t>(j)]);
         }
 
-        // K = -A^-1 ALN.  `solveData` is in-place, so each column gets its own
-        // copy of A.
+        // Save one pivoted factorization for the topology and op-amp slopes.
+        if (slopeMask) {
+            block.linearLU = block.linearA;
+            block.linearPivots.resize(static_cast<size_t>(mL));
+            if (!detail::factorLUData(block.linearLU.data(), block.linearPivots.data(), mL))
+                return false;
+        }
+
+        // K = -A^-1 ALN. Mixed plans keep the factors for later samples.
         block.linearK.assign(static_cast<size_t>(mL) * static_cast<size_t>(nN), 0.0);
-        std::vector<double> aCopy(block.linearA);
+        std::vector<double> aCopy;
+        if (!slopeMask)
+            aCopy.resize(block.linearA.size());
         std::vector<double> rhs(static_cast<size_t>(mL));
         for (int j = 0; j < nN; ++j) {
-            std::copy(block.linearA.begin(), block.linearA.end(), aCopy.begin());
             for (int d = 0; d < mL; ++d)
                 rhs[static_cast<size_t>(d)] = -block.linearALN[static_cast<size_t>(d) * nN + j];
-            if (!detail::solveData(aCopy.data(), rhs.data(), mL))
-                return false;
+            if (slopeMask) {
+                detail::solveLUData(block.linearLU.data(), block.linearPivots.data(), rhs.data(), mL);
+            } else {
+                std::copy(block.linearA.begin(), block.linearA.end(), aCopy.begin());
+                if (!detail::solveData(aCopy.data(), rhs.data(), mL))
+                    return false;
+            }
             for (int d = 0; d < mL; ++d)
                 block.linearK[static_cast<size_t>(d) * nN + j] = rhs[static_cast<size_t>(d)];
         }
@@ -202,9 +222,11 @@ public:
             const int q = block.reducedRowPorts[static_cast<size_t>(r)];
             for (int j = 0; j < nN; ++j) {
                 double v = zData[static_cast<size_t>(q) * K + block.reducedPorts[static_cast<size_t>(j)]];
-                for (int l = 0; l < mL; ++l)
-                    v += zData[static_cast<size_t>(q) * K + block.linearPorts[static_cast<size_t>(l)]] *
-                         block.linearK[static_cast<size_t>(l) * nN + j];
+                for (int l = 0; l < mL; ++l) {
+                    const double z = zData[static_cast<size_t>(q) * K + block.linearPorts[static_cast<size_t>(l)]];
+                    const double k = block.linearK[static_cast<size_t>(l) * nN + j];
+                    v = slopeMask ? std::fma(z, k, v) : v + z * k;
+                }
                 block.reducedZ[static_cast<size_t>(r) * nN + j] = v;
             }
         }

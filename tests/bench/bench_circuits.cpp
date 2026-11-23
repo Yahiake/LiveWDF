@@ -67,6 +67,7 @@ constexpr int kWarmupSamples = 2048;  // untimed, before the measured repeats
 static double kBenchTol = 1e-9;
 static bool kTolOverride = false;
 static bool kFineBlocks = false;
+static bool kMixedAffine = false;
 static bool kPrintBlocks = false;
 static std::string kPotId;
 static double kPotPos = -1.0;
@@ -431,6 +432,16 @@ Result runDocument(const wdf::LiveWDFDocument& doc, double fs, int channels,
     if (inIdx < 0 && !c.src.empty())
         inIdx = 0;
 
+    if (allowExplicit && kMixedAffine && inIdx >= 0) {
+        const auto started = std::chrono::steady_clock::now();
+        size_t plans = 0;
+        for (auto& e : engines)
+            plans += e->prepareMixedAffineReduction(static_cast<size_t>(inIdx), kDriveVolts);
+        std::printf("  %zu mixed affine plans prepared in %.1f ms\n", plans,
+                    std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - started).count());
+    }
+
     std::vector<double> sv(c.src.size(), 0.0);
     for (size_t i = 0; i < c.src.size(); ++i)
         sv[i] = c.src[i].dc;
@@ -728,6 +739,9 @@ void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double 
     }
     if (inIdx < 0 && !c.src.empty())
         inIdx = 0;
+    if (kMixedAffine && inIdx >= 0)
+        std::printf("  %zu mixed affine plans prepared\n",
+                    e.prepareMixedAffineReduction(static_cast<size_t>(inIdx), kDriveVolts));
     int outIdx = e.nodeIndex(doc.outputNet());
     if (outIdx < 0)
         outIdx = outputIndex(e);
@@ -743,7 +757,7 @@ void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double 
     const auto inputAt = [&](long long n) {
         const double phase = std::fmod(static_cast<double>(n) / fs, 0.2);
         const double env = phase < 0.12 ? 1.0 : 0.0;
-        return 0.25 * env * std::sin(w * static_cast<double>(n));
+        return kDriveVolts * env * std::sin(w * static_cast<double>(n));
     };
 
     // Warm caches, then count from a clean slate: silence into the first attack.
@@ -799,8 +813,11 @@ void runBurst(const wdf::LiveWDFDocument& doc, double fs, int hostBlock, double 
                                   static_cast<size_t>(p * static_cast<double>(blockMs.size())));
         return blockMs[i];
     };
-    std::printf("\nburst: %.1f s @ %.0f Hz, host block %d, 120 ms on / 80 ms off, 0.25 V 440 Hz\n",
-                seconds, fs, hostBlock);
+    std::printf("\nburst: %.1f s @ %.0f Hz, host block %d, 120 ms on / 80 ms off, %.3g V 440 Hz\n",
+                seconds, fs, hostBlock, kDriveVolts);
+    if (kMixedAffine)
+        std::printf("  mixed affine accepted %lld/%lld attempts including warmup\n",
+                    e.mixedAffineAccepted(), e.mixedAffineAttempts());
     std::printf("  mean it/sample %.2f (max %d)   grid-limit hits/sample %.2f   block fallbacks %lld (%.2f%% of samples)   unconverged %d   nonfinite %d   peak %.6g\n",
                 static_cast<double>(iters) / static_cast<double>(n), maxIter,
                 static_cast<double>(gridLimits) / static_cast<double>(n), fallbacks,
@@ -837,6 +854,9 @@ void runSoak(const wdf::LiveWDFDocument& doc, double fs, double driveSeconds,
     }
     if (inIdx < 0 && !c.src.empty())
         inIdx = 0;
+    if (kMixedAffine && inIdx >= 0)
+        std::printf("  %zu mixed affine plans prepared\n",
+                    e.prepareMixedAffineReduction(static_cast<size_t>(inIdx), driveVolts));
     int outIdx = e.nodeIndex(doc.outputNet());
     if (outIdx < 0)
         outIdx = outputIndex(e);
@@ -909,7 +929,7 @@ int main(int argc, char** argv) {
     }
     if (argc >= 2 && std::string(argv[1]) == "--file") {
         if (argc < 3) {
-            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst] [--pentode <koren|reefman-d|reefman-e|reefman-se|compare>]\n");
+            std::printf("usage: livewdf_bench_circuits --file <circuit.livewdf> [--profile] [--joint] [--fine] [--mixed-affine] [--tol <value>] [--drive <volts>] [--grid-current on|off] [--burst] [--pentode <koren|reefman-d|reefman-e|reefman-se|compare>]\n");
             return 2;
         }
         bool profile = false;
@@ -924,6 +944,8 @@ int main(int argc, char** argv) {
                 joint = true;
             if (std::string(argv[a]) == "--fine")
                 kFineBlocks = true;
+            if (std::string(argv[a]) == "--mixed-affine")
+                kMixedAffine = true;
             if (std::string(argv[a]) == "--blocks")
                 kPrintBlocks = true;
             if (std::string(argv[a]) == "--burst")
@@ -994,7 +1016,7 @@ int main(int argc, char** argv) {
             std::printf("  warning: %s\n", warning.c_str());
 
         if (burst) {
-            for (int hostBlock : {64, 128, 256})
+            for (int hostBlock : {64, 96, 128, 256})
                 runBurst(doc, 48000.0, hostBlock, 5.0);
             return 0;
         }

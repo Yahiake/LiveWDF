@@ -240,6 +240,7 @@ void EditorWindow::Content::pumpScope() {
 }
 
 void EditorWindow::Content::timerCallback() {
+    startSavedCircuitPreparation();
     pumpScope();
 }
 
