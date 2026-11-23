@@ -3570,7 +3570,7 @@
     {
       "id": "U_OUT",
       "properties": {
-        "model": "NE5532"
+        "model": "API2520"
       },
       "type": "opamp",
       "values": {
@@ -3710,7 +3710,7 @@
       }
     }
   ],
-  "description": "Circuit approximation of the early 15-frequency proportional-Q API 550A, distinct from the later constant-Q 550A-1. Retains editable analog Twin-T filters with linked bandwidth and reciprocal stepped gain, peak/shelf outer bands, 50 Hz–15 kHz bandpass, and transformer output. Gain magnitude is selected in 2, 4, 6, 9 and 12 dB steps, with a separate Cut toggle. The highest engaged step or frequency has precedence. The analog filter and driver cards and their switch-routing equivalent are modeled from the documented response family, with linear op-amp models in the filter stages and NE5532 used as the output stage proxy.",
+  "description": "Circuit approximation of the early 15-frequency proportional-Q API 550A, distinct from the later constant-Q 550A-1. Retains editable analog Twin-T filters with linked bandwidth and reciprocal stepped gain, peak/shelf outer bands, 50 Hz–15 kHz bandpass, and transformer output. Gain magnitude is selected in 2, 4, 6, 9 and 12 dB steps, with a separate Cut toggle. The highest engaged step or frequency has precedence. The analog filter and driver cards and their switch-routing equivalent are modeled from the documented response family, with linear op-amp models in the filter stages and the API2520 card used for the output driver.",
   "groundNode": "0",
   "inputNode": "in",
   "layout": {

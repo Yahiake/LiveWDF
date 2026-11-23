@@ -345,7 +345,7 @@
     {
       "id": "U_DRIVER",
       "properties": {
-        "model": "NE5532"
+        "model": "API2520"
       },
       "type": "opamp",
       "values": {
@@ -2581,7 +2581,7 @@
       }
     }
   ],
-  "description": "Circuit approximation of the ten-band API 560 graphic equalizer. Uses the active two-capacitor bandpass cell from the related vintage API 550A-1 factory schematic, with octave-spaced capacitor values, boost and feedback cut around a shared mixer, and transformer line output. NE5532 cards stand in for filter and output amplifiers. The slider law, summing network and transformer parasitics are estimates. EQ Bypass routes around the bands and retains the output stage.",
+  "description": "Circuit approximation of the ten-band API 560 graphic equalizer. Uses the active two-capacitor bandpass cell from the related vintage API 550A-1 factory schematic, with octave-spaced capacitor values, boost and feedback cut around a shared mixer, and transformer line output. NE5532 cards stand in for the filter amplifiers and the API2520 card drives the output. The slider law, summing network and transformer parasitics are estimates. EQ Bypass routes around the bands and retains the output stage.",
   "groundNode": "0",
   "inputNode": "in",
   "layout": {
