@@ -348,6 +348,12 @@ public:
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
         ctx.allClosedFormBlocks = false;
+        // An OTA and an independently controlled dbx 200 half-cell share the
+        // resistor port topology but have nonlinear signal current laws.
+        if (!ctx.comp.otaSensePorts.empty() ||
+            std::any_of(ctx.comp.dbx200Crossover.begin(), ctx.comp.dbx200Crossover.end(),
+                        [](double crossover) { return crossover != 0.0; }))
+            return false;
 
         const int nGroups = static_cast<int>(ctx.rootDevices.size());
         if (nGroups <= 0)
@@ -361,7 +367,7 @@ public:
             const double rtot = z[static_cast<size_t>(e) * ctx.K + e] + m.rs;
             if (!(rtot > 0.0))
                 return false;
-            ctx.grpDiode[static_cast<size_t>(q)] = DiodeModel(m.isat, m.n, rtot, m.rp);
+            ctx.grpDiode[static_cast<size_t>(q)] = m.withSeriesResistance(rtot);
         }
         for (int c = 0; c < ctx.nCtrl; ++c) {
             const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(ctx.nTri + ctx.nD + c)];

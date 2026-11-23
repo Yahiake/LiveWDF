@@ -50,6 +50,26 @@ TEST_CASE("opamp model cards match the PedalKernel datasheet values", "[opamp][m
     REQUIRE(wdf::opAmpTypeFromString("unknown-part") == wdf::OpAmpType::Generic);
 }
 
+TEST_CASE("OP275 audio pole matches the measured open-loop gain", "[opamp][model]") {
+    const auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Op275);
+    const double poleHz = wdf::OpAmpEngineLaw::alpha(model, kFs) * kFs / (2.0 * kPi);
+    const double gain = model.openLoopGain / std::hypot(1.0, 15309.059 / poleHz);
+    CHECK(20.0 * std::log10(gain) == Approx(60.115).margin(0.01)); // ADI Rev. C, TPC 4
+    CHECK(model.gbw == Approx(9.0e6)); // Unity-gain crossover
+}
+
+TEST_CASE("MCI2001 card reproduces its published 600 ohm output rating", "[opamp][model]") {
+    const auto type = wdf::opAmpTypeFromString("MCI-2001");
+    REQUIRE(std::string_view(wdf::opAmpTypeName(type)) == "MCI2001");
+    const auto m = wdf::OpAmpModel::fromType(type);
+    CHECK(20 * std::log10(m.openLoopGain) == Approx(90.0));
+    CHECK(m.gbw / std::pow(10.0, 50.0 / 20.0) == Approx(20000.0));
+    CHECK(m.slewRate == Approx(2.3));
+    const double loadedPeak = m.railHigh() * 600.0 / (600.0 + m.outputImpedance);
+    CHECK(10 * std::log10(loadedPeak * loadedPeak / (2.0 * 600.0 * 0.001)) == Approx(24.0).margin(0.01));
+    CHECK(wdf::opAmpSupplyMax(type) == 50.0);
+}
+
 TEST_CASE("opamp GBW lowpass coefficient is gain dependent and Nyquist safe", "[opamp][gbw]") {
     const auto tl072 = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
     const double lowGain = tl072.gbwCoeff(10.0, kFs);
@@ -60,6 +80,75 @@ TEST_CASE("opamp GBW lowpass coefficient is gain dependent and Nyquist safe", "[
     // f_cl >= fs/2 is transparent.
     REQUIRE(tl072.gbwCoeff(0.5, kFs) == Approx(1.0));
     REQUIRE(tl072.gbwCoeff(1.0, kFs) == Approx(1.0));
+}
+
+TEST_CASE("pedal-specific opamp cards use published typical dynamics", "[opamp][model]") {
+    const auto expected = GENERATE(
+        table<const char*, double, double, double>({
+            {"M5218AL", 316227.766, 7.0e6, 3.0},
+            {"TL022", 10000.0, 0.5e6, 0.5},
+            {"MC33174", 500000.0, 1.8e6, 2.1},
+            {"MC33179", 200000.0, 5.0e6, 2.0},
+            {"BA728N", 100000.0, 0.7e6, 0.7},
+            {"TL061", 6000.0, 1.0e6, 3.5},
+        }));
+    const auto [name, gain, gbw, slewRate] = expected;
+    const auto type = wdf::opAmpTypeFromString(name);
+    REQUIRE(type != wdf::OpAmpType::Generic);
+    REQUIRE(std::string_view(wdf::opAmpTypeName(type)) == name);
+
+    const auto model = wdf::OpAmpModel::fromType(type);
+    REQUIRE(model.openLoopGain == Approx(gain));
+    REQUIRE(model.gbw == Approx(gbw));
+    REQUIRE(model.slewRate == Approx(slewRate));
+}
+
+TEST_CASE("opamp signed bounds allow positive single-supply headroom", "[opamp][model]") {
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::M5218Al);
+    model.setVRailBounds(1.5, 7.5);
+    CHECK(model.evalStatic(-0.1) == 1.5);
+    CHECK(model.evalStatic(0.1) == 7.5);
+    CHECK(model.evalStatic(4.5 / model.openLoopGain) == Approx(4.5));
+}
+
+TEST_CASE("LM324-N datasheet card supports single-supply rails", "[opamp][model]") {
+    const auto type = wdf::opAmpTypeFromString("LM324-N");
+    REQUIRE(type == wdf::OpAmpType::Lm324);
+    REQUIRE(wdf::opAmpTypeFromString(wdf::opAmpTypeName(type)) == type);
+    REQUIRE(wdf::opAmpSupplyMax(type) == Approx(32.0));
+
+    auto model = wdf::OpAmpModel::fromType(type);
+    CHECK(model.openLoopGain == Approx(100000.0));
+    CHECK(model.gbw == Approx(1.0e6));
+    CHECK(model.slewRate == Approx(0.5));
+    model.setVRailBounds(0.005, 7.0);
+    CHECK(model.evalStatic(-0.0001) == Approx(0.005));
+    CHECK(model.evalStatic(0.0001) == Approx(7.0));
+    CHECK(model.evalStatic(40e-6) == Approx(4.0));
+}
+
+TEST_CASE("MiSTer class-AB stage has a small-signal slope and bounded drive", "[opamp][model][class-ab]") {
+    const auto type = wdf::opAmpTypeFromString("LM741-Class-AB");
+    REQUIRE(type == wdf::OpAmpType::Lm741ClassAB);
+    const auto model = wdf::OpAmpModel::fromType(type);
+    REQUIRE(model.valid());
+    double slope = 0.0;
+    CHECK(model.outputCurrent(0.0, slope) == 0.0);
+    CHECK(slope == Approx(1.0 / model.outputImpedance));
+    CHECK(model.outputCurrent(1.0, slope) == Approx(25e-3));
+    CHECK(slope == 0.0);
+    CHECK(model.outputCurrent(-1.0, slope) == Approx(-25e-3));
+    CHECK(slope == 0.0);
+
+    double unused = 0.0;
+    const double below = model.outputCurrent(0.13 - 1e-6, unused);
+    const double above = model.outputCurrent(0.13 + 1e-6, unused);
+    model.outputCurrent(0.13, slope);
+    CHECK(slope == Approx((above - below) / 2e-6).epsilon(1e-7));
+
+    const auto legacy = wdf::OpAmpModel::fromType(wdf::OpAmpType::Lm741);
+    CHECK_FALSE(legacy.hasClassABOutput());
+    CHECK(legacy.outputCurrent(1.0, slope) == Approx(1.0 / 75.0));
 }
 
 TEST_CASE("opamp LM308 rolls off high frequencies more than TL072", "[opamp][gbw]") {

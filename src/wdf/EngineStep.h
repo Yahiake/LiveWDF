@@ -19,10 +19,27 @@ class EngineStep : public EngineCompile {
 public:
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
+        resetControlledDevices();
         std::vector<double> node, rootV;
         const bool haveDc =
             solveDc(node, rootV) && node.size() >= static_cast<size_t>(N_) &&
             rootV.size() >= static_cast<size_t>(K_);
+        if (haveDc && (!photoresistors_.empty() || !vcas_.empty() || !otas_.empty())) {
+            // Seed the controllers from their DC operating point, then settle
+            // the signal path at those initial control settings.
+            for (const auto& photo : photoresistors_)
+                ctrlResValues_[photo.index] = 1.0 / photoTargetConductance(
+                    photo, node, dcValues_.data(), dcValues_.size());
+            updateVcas(node, dcValues_.data(), dcValues_.size());
+            updateOtas(node, dcValues_.data(), dcValues_.size());
+            std::vector<double> litNode, litRootV;
+            if (solveDc(litNode, litRootV)) {
+                node = std::move(litNode);
+                rootV = std::move(litRootV);
+            } else {
+                resetControlledDevices();
+            }
+        }
         if (!haveDc) {
             std::vector<double> biasNode;
             if (solveNetworkBias(biasNode)) {
@@ -32,7 +49,7 @@ public:
                 node.assign(static_cast<size_t>(N_), 0.0);
                 rootV.assign(static_cast<size_t>(K_), 0.0);
             }
-        } else {
+        } else if (bucketBrigades_.empty() && rmsDetectors_.empty()) {
             std::vector<double> biasNode;
             if (solveNetworkBias(biasNode)) {
                 for (int n = 0; n < N_; ++n) {
@@ -43,6 +60,18 @@ public:
                 }
             }
         }
+        for (std::size_t i = 0; i < bucketBrigades_.size(); ++i) {
+            auto& bbd = bucketBrigades_[i];
+            const double input = haveDc ?
+                bbd.input.voltage(node, dcValues_.data(), dcValues_.size()) :
+                comp_.bucketBrigades[i].model.inputBias;
+            bbd.delay.reset(input);
+        }
+
+        for (auto& rms : rmsDetectors_)
+            rms.detector.reset(haveDc ? rms.input.voltage(node, dcValues_.data(), dcValues_.size())
+                                     : 0.0);
+
         // The closed-form root groups use the previous sample's current as
         // their branch-continuity seed. Seed it from the DC operating point so
         // sample 1 starts on the same branch as `solveDc`, rather than on
@@ -65,8 +94,15 @@ public:
                         continue;
                     const size_t ci = dev.compIndex;
                     const int o = dev.portBase;
-                    opAmpVp_[ci] = opAmps_[ci].sourceVoltageFromSolverCurrent(
-                        rootV[static_cast<size_t>(o)], i[static_cast<size_t>(o)]);
+                    const auto& model = opAmps_[ci];
+                    if (model.hasClassABOutput()) {
+                        const double vDiff = rootV[static_cast<size_t>(o + 1)] -
+                                             rootV[static_cast<size_t>(o + 2)];
+                        opAmpVp_[ci] = model.evalStatic(vDiff);
+                    } else {
+                        opAmpVp_[ci] = model.sourceVoltageFromSolverCurrent(
+                            rootV[static_cast<size_t>(o)], i[static_cast<size_t>(o)]);
+                    }
                 }
             }
             vv_ = rootV;
@@ -251,6 +287,10 @@ public:
                     slot < svSize ? svData[slot]
                                   : comp_.isrc[static_cast<size_t>(k)].second.dc;
             }
+            for (const auto& bbd : bucketBrigades_)
+                isCur_[bbd.outputCurrentIndex] = bbd.delay.outputCurrent();
+            for (const auto& rms : rmsDetectors_)
+                isCur_[rms.outputCurrentIndex] = rms.detector.outputCurrent();
         }
 
         // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
@@ -483,6 +523,26 @@ public:
             }
         }
 
+        // Optical response is slower than one sample. Read the accepted
+        // electrical state, then update the LDRs for the next root solve.
+        for (const auto& photo : photoresistors_) {
+            const double target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
+            double& ohms = ctrlResValues_[photo.index];
+            const double conductance = 1.0 / ohms;
+            const double mix = target > conductance ? photo.attack : photo.release;
+            ohms = 1.0 / (conductance + mix * (target - conductance));
+        }
+        updateVcas(node_, sourceValues, sourceCount);
+        updateOtas(node_, sourceValues, sourceCount);
+        // Commit the sampled charge only after the electrical solve has been
+        // accepted. The BBD's held output then drives the next solve.
+        for (auto& bbd : bucketBrigades_)
+            bbd.delay.step(bbd.input.voltage(node_, sourceValues, sourceCount),
+                           bbd.clock.voltage(node_, sourceValues, sourceCount), T_);
+
+        for (auto& rms : rmsDetectors_)
+            rms.detector.step(rms.input.voltage(node_, sourceValues, sourceCount));
+
         // Incident waves, then store the reactive states for the next sample.
         // Direct pre-compiled updates avoid acrossPort indirections and branch checks.
         double* LIVEWDF_RESTRICT capStateData = capState_.data();
@@ -528,6 +588,60 @@ public:
     }
 
 protected:
+    void resetControlledDevices() {
+        for (const auto& photo : photoresistors_)
+            ctrlResValues_[photo.index] = circuit_.ctrlRes[photo.index].initialOhms;
+        for (const auto& vca : vcas_)
+            ctrlResValues_[vca.index] = circuit_.ctrlRes[vca.index].initialOhms;
+        for (const auto& bias : dbx200Biases_) {
+            comp_.dbx200Crossover[bias.pnp] = circuit_.ctrlRes[bias.pnp].dbx200Crossover;
+            comp_.dbx200Crossover[bias.npn] = circuit_.ctrlRes[bias.npn].dbx200Crossover;
+        }
+        for (const auto& ota : otas_)
+            ctrlResValues_[ota.index] = circuit_.ctrlRes[ota.index].initialOhms;
+    }
+
+    void updateOtas(const std::vector<double>& nodes, const double* sources,
+                    std::size_t sourceCount) {
+        // Hold the slow input bias current for the next solve. The signal
+        // differential and its tanh current law are solved together.
+        for (const auto& ota : otas_)
+            ctrlResValues_[ota.index] =
+                OtaControl::slopeResistance(ota.bias.voltage(nodes, sources, sourceCount));
+    }
+
+    void updateVcas(const std::vector<double>& nodes, const double* sources,
+                    size_t sourceCount) {
+        // The control comes from the previous accepted circuit sample. The
+        // signal current itself is solved on the current sample as a root.
+        for (const auto& vca : vcas_) {
+            const double control =
+                (vca.control >= 0 ? nodes[static_cast<size_t>(vca.control)] : 0.0) -
+                (vca.reference >= 0 ? nodes[static_cast<size_t>(vca.reference)] : 0.0) +
+                vca.controlOffset.eval(sources, sourceCount);
+            const auto& ctrl = circuit_.ctrlRes[vca.index];
+            ctrlResValues_[vca.index] = ctrl.initialOhms * ctrl.vca->initialGain() /
+                                       ctrl.vca->normalizedGain(control);
+        }
+        for (const auto& bias : dbx200Biases_) {
+            const double v = bias.bases.voltage(nodes, sources, sourceCount);
+            const double scale = std::exp(std::clamp(v / Dbx200Bias::twiceThermalVolts, -20.0, 20.0));
+            comp_.dbx200Crossover[bias.pnp] = circuit_.ctrlRes[bias.pnp].dbx200Crossover * scale;
+            comp_.dbx200Crossover[bias.npn] = circuit_.ctrlRes[bias.npn].dbx200Crossover * scale;
+        }
+    }
+
+    double photoTargetConductance(const PhotoresistorState& state,
+                                  const std::vector<double>& nodes,
+                                  const double* sources, size_t sourceCount) const {
+        const double sense =
+            (state.sensePos >= 0 ? nodes[static_cast<size_t>(state.sensePos)] : 0.0) -
+            (state.senseNeg >= 0 ? nodes[static_cast<size_t>(state.senseNeg)] : 0.0) +
+            state.senseOffset.eval(sources, sourceCount);
+        const auto& ctrl = circuit_.ctrlRes[state.index];
+        return ctrl.photo->targetConductance(sense, ctrl.initialOhms);
+    }
+
     /// A sample may only commit reactive state after a verified solve.
     /// `lastConverged_` is the solver's certification; a finite residual alone
     /// is not proof that the original system was solved. The explicit

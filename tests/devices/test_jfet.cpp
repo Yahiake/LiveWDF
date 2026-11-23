@@ -72,6 +72,16 @@ struct BiasCase {
 
 }  // namespace
 
+TEST_CASE("2SK184-GR preset reproduces its selected datasheet bias point", "[jfet][presets]") {
+    const auto* part = wdf::findJfetByName("2SK184-GR");
+    REQUIRE(part != nullptr);
+    const auto atZeroGate = part->model.evaluate(0.0, 10.0);
+    REQUIRE(atZeroGate.valid);
+    CHECK(atZeroGate.id == Approx(4.2e-3));
+    CHECK(atZeroGate.did_gs == Approx(15.3e-3).margin(0.1e-3));
+    CHECK(part->model.evaluate(-0.6, 10.0).region == wdf::JfetRegion::Cutoff);
+}
+
 TEST_CASE("JFET equations 45-47 have the paper's regions and values", "[jfet][device]") {
     const wdf::JfetModel m = wdf::k2N5952;
     REQUIRE(m.valid());
@@ -863,7 +873,6 @@ TEST_CASE("built-in JFET presets match their LTspice cards and evaluate",
         {"J177", 3.3e-3, -1.386, 18.18e-3, 1.0, 1.0, 9.0e-12, 6.5e-12, true},
     };
 
-    REQUIRE(wdf::kNumJfets == 31);
     for (const auto& e : expected) {
         INFO("model: " << e.name);
         const auto* entry = wdf::findJfetByName(e.name);

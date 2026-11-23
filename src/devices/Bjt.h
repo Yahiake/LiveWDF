@@ -5,11 +5,10 @@
 // Bernardini, Vergani, Sarti (2020) — CSSP 39, 2020.
 // DOI: 10.1007/s00034-019-01331-7
 //
-// Active runtime law: Ebers-Moll transport form (IS/BF/BR/NF/NR, mirrored
-// for PNP). This is the whole model: no Gummel-Poon parameters, no junction
-// charge and no series parasitics. A legacy card or document may still carry
-// VAF/VAR, IKF/IKR, ISE/ISC, CJE/CJC, RB/RE/RC or TF/TR; the loader ignores
-// them.
+// Ebers-Moll transport (IS/BF/BR/NF/NR), mirrored for PNP. Opt-in MiSTer
+// cards add low-current Gummel-Poon corrections: Early effect (VAF, VAR)
+// and base-emitter recombination (ISE, NE). The model has no junction
+// charge, high-current base charge or series parasitics.
 
 #include <cmath>
 #include <string_view>
@@ -17,6 +16,8 @@
 #include "devices/Diode.h"
 
 namespace wdf {
+
+namespace solver { class RootResidual; }
 
 enum class BjtRegion {
     Invalid,
@@ -55,6 +56,13 @@ struct BjtModel {
 
     // --- Polarity ---
     bool pnp = false;      // false: NPN; true: PNP (mirrored law)
+    double Vaf = 0.0;      // zero disables Early effect in this direction
+    double Var = 0.0;
+    double Ise = 0.0;      // optional base-emitter recombination current
+    double Ne = 1.5;
+    double Ikf = 0.0;      // zero disables forward high-injection gain roll-off
+    double cbe = 0.0;      // constant base-emitter capacitance (F)
+    double cbc = 0.0;      // constant base-collector capacitance (F)
 
     // --- Derived constants (computed in prepare()) ---
     double nfVt = 0.0;
@@ -91,7 +99,18 @@ struct BjtModel {
                std::isfinite(Br) && Br > 0.0 &&
                std::isfinite(Nf) && Nf > 0.0 &&
                std::isfinite(Nr) && Nr > 0.0 &&
+               std::isfinite(Vaf) && Vaf >= 0.0 &&
+               std::isfinite(Var) && Var >= 0.0 &&
+               std::isfinite(Ise) && Ise >= 0.0 &&
+               std::isfinite(Ne) && Ne > 0.0 &&
+               std::isfinite(Ikf) && (Ikf == 0.0 || Ikf > 4.0 * Is) &&
+               std::isfinite(cbe) && cbe >= 0.0 &&
+               std::isfinite(cbc) && cbc >= 0.0 &&
                std::isfinite(Vt) && Vt > 0.0;
+    }
+
+    bool hasLowCurrentCorrections() const noexcept {
+        return Vaf > 0.0 || Var > 0.0 || Ise > 0.0;
     }
 
     // -------------------------------------------------------------------------
@@ -191,8 +210,13 @@ struct BjtModel {
     };
 
     CurrentsAndJacobian evaluateEM(double vbe, double vbc) const noexcept {
+        return valid() ? evaluateValidatedEM(vbe, vbc) : CurrentsAndJacobian{};
+    }
+
+private:
+    CurrentsAndJacobian evaluateValidatedEM(double vbe, double vbc) const noexcept {
         CurrentsAndJacobian out{};
-        if (!valid() || !std::isfinite(vbe) || !std::isfinite(vbc))
+        if (!std::isfinite(vbe) || !std::isfinite(vbc))
             return out;
         if (!(nfVt > 0.0) || !(nrVt > 0.0))
             return out;
@@ -207,18 +231,55 @@ struct BjtModel {
         const double iBc = Is * (eBc - 1.0);
         out.ib = iBe / Bf + iBc / Br;
         out.ic = iBe - iBc / alphaR;
-        out.valid = std::isfinite(out.ib) && std::isfinite(out.ic);
-        if (!out.valid) return out;
-
         const double gBe = beCapped ? 0.0 : Is * eBe / nfVt;
         const double gBc = bcCapped ? 0.0 : Is * eBc / nrVt;
         out.dib_dvbe = gBe / Bf;
         out.dib_dvbc = gBc / Br;
         out.dic_dvbe = gBe;
         out.dic_dvbc = -gBc / alphaR;
+        // MiSTer-Discrete 6393ca3, circuitsim/floatsim.py::early. Its
+        // af*i_be - ar*i_bc is iBe - iBc in this transport convention.
+        // Include the analytical voltage derivatives in the WDF Jacobian.
+        // https://github.com/jopdorp/MiSTer-Discrete/commit/6393ca319f43a3b08e651bd5ca257020a66da90d
+        if (Ikf > 0.0) {
+            // SPICE Gummel-Poon forward injection. Divide only the transport
+            // current by the normalized base charge. The reciprocal Early
+            // factor is already the multiplier used by the low-current law.
+            const double invVaf = Vaf > 0.0 ? 1.0 / Vaf : 0.0;
+            const double invVar = Var > 0.0 ? 1.0 / Var : 0.0;
+            const double earlyFactor = 1.0 - vbc * invVaf - vbe * invVar;
+            const double transport = iBe - iBc;
+            const double root = std::sqrt(1.0 + 4.0 * (iBe / Ikf));
+            const double injection = 0.5 * (1.0 + root);
+            const double injectionSlope = (gBe / Ikf) / root;
+            const double adjustedTransport = transport * earlyFactor / injection;
+            out.ic = adjustedTransport - iBc / Br;
+            out.dic_dvbe = (gBe * earlyFactor - transport * invVar
+                            - adjustedTransport * injectionSlope) / injection;
+            out.dic_dvbc = (-gBc * earlyFactor - transport * invVaf) / injection - gBc / Br;
+        } else if (Vaf > 0.0 || Var > 0.0) {
+            const double invVaf = Vaf > 0.0 ? 1.0 / Vaf : 0.0;
+            const double invVar = Var > 0.0 ? 1.0 / Var : 0.0;
+            const double early = -vbc * invVaf - vbe * invVar;
+            const double transport = iBe - iBc;
+            out.ic += transport * early;
+            out.dic_dvbe += gBe * early - transport * invVar;
+            out.dic_dvbc += -gBc * early - transport * invVaf;
+        }
+        if (Ise > 0.0) {
+            const double neVt = Ne * Vt;
+            const double leakageArg = vbe / neVt;
+            const bool capped = leakageArg >= kBJtMaxExpArg;
+            const double expLeak = std::exp(capped ? kBJtMaxExpArg : leakageArg);
+            out.ib += Ise * (expLeak - 1.0);
+            if (!capped)
+                out.dib_dvbe += Ise * expLeak / neVt;
+        }
+        out.valid = std::isfinite(out.ib) && std::isfinite(out.ic);
         return out;
     }
 
+public:
     // -------------------------------------------------------------------------
     // Terminal evaluation at the circuit's port voltages (vce, vbe), with
     // the polarity mirror and the chain rule from (vbe, vbc) to (vce, vbe):
@@ -233,12 +294,18 @@ struct BjtModel {
     };
 
     BjtCurrents evaluateTerminals(double vce, double vbe) const noexcept {
-        BjtCurrents out{};
-        if (!valid() || !std::isfinite(vce) || !std::isfinite(vbe))
-            return out;
+        return valid() ? evaluateValidatedTerminals(vce, vbe) : BjtCurrents{};
+    }
 
+private:
+    friend class solver::RootResidual;
+
+    /// The compiled engine validates the fixed model once. Trial voltages
+    /// and computed currents still receive the same checks on every solve.
+    BjtCurrents evaluateValidatedTerminals(double vce, double vbe) const noexcept {
+        BjtCurrents out{};
         const double p = pnp ? -1.0 : 1.0;
-        const auto em = evaluateEM(p * vbe, p * (vbe - vce));
+        const auto em = evaluateValidatedEM(p * vbe, p * (vbe - vce));
         if (!em.valid) return out;
 
         out.iC = p * em.ic;
@@ -268,8 +335,35 @@ inline BjtModel makeEM(double Is, double Bf, double Br, double Nf, double Nr,
     return BjtModel(Is, Bf, Br, Nf, Nr, pnp);
 }
 
-// One registry for the engine and the picker. Every card carries only the
-// five Ebers-Moll parameters the runtime reads.
+inline BjtModel withLowCurrentCorrections(BjtModel model, double vaf, double ise, double ne,
+                                          double var = 0.0) {
+    model.Vaf = vaf;
+    model.Var = var;
+    model.Ise = ise;
+    model.Ne = ne;
+    return model;
+}
+
+inline BjtModel withForwardRolloff(BjtModel model, double ikf) {
+    model.Ikf = ikf;
+    return model;
+}
+
+// Fairchild/National cards from MiSTer-Discrete circuit-compiler@692e777,
+// circuits/parts/discretes.lib. Keep transport and recombination shared with
+// the earlier cards; the extra IKF variants opt in to forward roll-off.
+inline const BjtModel kMiSTer2N3904 = withLowCurrentCorrections(
+    makeEM(6.734e-15, 416.4, 0.7371, 1.0, 1.0), 74.03, 6.734e-15, 1.259);
+inline const BjtModel kMiSTer2N3906 = withLowCurrentCorrections(
+    makeEM(1.41e-15, 180.7, 4.977, 1.0, 1.0, true), 18.7, 0.0, 1.5);
+
+inline BjtModel withJunctionCaps(BjtModel model, double cbe, double cbc) noexcept {
+    model.cbe = cbe;
+    model.cbc = cbc;
+    return model;
+}
+
+// One registry for the engine and the picker.
 inline const BjtEntry kBjtTable[] = {
     // Silicon NPN (LTspice standard.bjt)
     {"2N3904",  makeEM(1e-14,    300.0,  4.0,   1.0,   1.0,   false)},
@@ -277,12 +371,21 @@ inline const BjtEntry kBjtTable[] = {
     {"2N2222",  makeEM(1e-14,    200.0,  3.0,   1.0,   1.0,   false)},
     {"BC547B",  makeEM(2.39e-14, 294.3,  7.946, 1.008, 1.004, false)},
     {"2N5088",  makeEM(5.911e-15,1122.0, 1.271, 1.0,   1.0,   false)},
+    {"BC109C",  makeEM(7.049e-15,677.0,  2.209, 1.0,   1.0,   false)},
+    // Toshiba 2SC2240 SPICE transport parameters (IS, BF, BR, default NF/NR).
+    // https://blog.kdenki.com/2020/01/spice.html
+    {"2SC2240", makeEM(1.41e-15, 310.0,  0.8893, 1.0,  1.0,   false)},
     // DAFx-23 Table 1 (Massi, Giampiccolo, Bernardini, Sarti)
     {"2N5089",  makeEM(5.915e-15,1427.57,1.262, 1.0,   1.0,   false)},
 
     // Silicon PNP (LTspice standard.bjt)
     {"2N3906",  makeEM(1e-14,    200.0,  4.0,   1.0,   1.0,   true)},
     {"2N2907",  makeEM(1e-14,    250.0,  3.0,   1.0,   1.0,   true)},
+    // Fairchild 2N4403, LTspice standard.bjt: static Gummel-Poon transport.
+    // Package resistances and junction charge are outside this DC card.
+    {"2N4403", withForwardRolloff(withLowCurrentCorrections(
+                    makeEM(650.6e-18, 216.2, 3.578, 1.0, 1.0, true),
+                    115.7, 58.72e-15, 1.829), 1.079)},
     {"BC557B",  makeEM(3.83e-14, 344.4,  14.84, 1.008, 1.005, true)},
     {"2N5087",  makeEM(6.734e-15,254.1,  2.683, 1.0,   1.0,   true)},
 
@@ -301,6 +404,31 @@ inline const BjtEntry kBjtTable[] = {
     {"AC128",   makeEM(20.66e-6,  229.6,  14.66, 1.133, 1.140, true)},
     {"OC44",    makeEM(1.423e-6,  307.0,  20.27, 1.022, 1.025, true)},
     {"NKT275",  makeEM(1.5e-6,    85.0,   8.0,   1.05,  1.05,  true)},
+    // Same static cards with the constant AC terms in DAFx-17 Table 1.
+    {"AC128-DAFx-Cap", withJunctionCaps(makeEM(20.66e-6, 229.6, 14.66, 1.133, 1.140, true),
+                                       0.0, 100e-12)},
+    {"OC44-DAFx-Cap", withJunctionCaps(makeEM(1.423e-6, 307.0, 20.27, 1.022, 1.025, true),
+                                      410e-12, 10e-12)},
+
+    // Gert Willmann's 25 °C 2N270 fit, reproduced in Greg Whitehead's FZ-1 study:
+    // https://github.com/grwhitehead/us3213181/blob/661e935/ngspice/fuzztone.mod
+    // Static transport, Early voltages and base-emitter leakage. The full fit
+    // also includes collector-base leakage, roll-off, charge and temperature.
+    {"2N270", withLowCurrentCorrections(makeEM(24.3e-6, 172.0, 17.2, 1.055, 1.055, true),
+                                         25.0, 2.57e-6, 1.99, 25.0)},
+
+    {"2N3904-MiSTer", kMiSTer2N3904},
+    {"2N3906-MiSTer", kMiSTer2N3906},
+    {"2N3904-MiSTer-IKF", withForwardRolloff(kMiSTer2N3904, 66.78e-3)},
+    {"2N3906-MiSTer-IKF", withForwardRolloff(kMiSTer2N3906, 80e-3)},
+    // onsemi typical forward gain: 2N3904 Fig. 1 and 2N3906 Fig. 13.
+    // The PNP figure is normalized. Use about 200 at 10 mA within its 100–300 limit.
+    {"2N3904-onsemi", withForwardRolloff(withLowCurrentCorrections(
+                        makeEM(6.734e-15, 218.45, 0.7371, 1.0, 1.0),
+                        74.03, 0.0, 1.5), 0.2368)},
+    {"2N3906-onsemi", withForwardRolloff(withLowCurrentCorrections(
+                        makeEM(1.41e-15, 350.0, 4.977, 1.0, 1.0, true),
+                        18.7, 2.513e-15, 1.318), 0.04462)},
 };
 
 inline constexpr int kNumBjts =

@@ -281,7 +281,7 @@ inline Network buildNetwork(const Circuit& circuit, const Compiled& comp, double
             if (device.kind != RootKind::OpAmp)
                 continue;
             const auto& model = comp.opamp[static_cast<size_t>(device.compIndex)].model;
-            if (!(model.outputImpedance > 0.0) ||
+            if (model.hasClassABOutput() || !(model.outputImpedance > 0.0) ||
                 !std::isfinite(model.outputImpedance))
                 continue;
             const size_t port = static_cast<size_t>(device.portBase);

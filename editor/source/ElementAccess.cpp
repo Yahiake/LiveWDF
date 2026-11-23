@@ -117,6 +117,18 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "maxR")           return "Max resistance";
     if (key == "initialOhms")    return "Initial resistance";
     if (key == "initialVolts")   return "Initial capacitor voltage (V)";
+    if (key == "timingFarads")    return "Timing capacitance (F)";
+    if (key == "referenceAmps")  return "Calibrated reference current (A RMS)";
+    if (key == "inputOhms")      return "Input resistance (ohm)";
+    if (key == "fullGainVolts")  return "Full current gain control (V)";
+    if (key == "darkOhms")       return "Dark resistance (ohm)";
+    if (key == "brightOhms")     return "Bright resistance (ohm)";
+    if (key == "referenceVolts") return "Full light sense (V)";
+    if (key == "gamma")          return "Light curve exponent";
+    if (key == "attackSeconds")  return "Light response (s)";
+    if (key == "releaseSeconds") return "Dark response (s)";
+    if (key == "attackTimeConstantSeconds")  return "Attack time constant (s, 0 = shared)";
+    if (key == "releaseTimeConstantSeconds") return "Release time constant (s, 0 = shared)";
     if (key == "turnsPrimary")   return "Primary turns";
     if (key == "turnsSecondary") return "Secondary turns";
     if (key == "Lm")             return "Magnetizing Lm (H)";
@@ -126,6 +138,13 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "cp")             return "Cross cap (F)";
     if (key == "rc")             return "Cross res (ohm)";
     if (key == "gain")           return "Gain";
+    if (key == "stages")         return "Bucket-brigade stages";
+    if (key == "clockHz")        return "Clock at zero control (Hz)";
+    if (key == "periodMicrosecondsPerVolt") return "Clock period slope (µs/V)";
+    if (key == "inputBias")      return "Input center relative to common (V)";
+    if (key == "outputBias")     return "Output bias relative to common (V)";
+    if (key == "inputSwing")     return "Input swing to clipping (V)";
+    if (key == "outputOhms")     return "Output resistance (ohm)";
     // The JFET/MOSFET parameter names are the engine's symbols, but they are
     // displayed to a person; the one-letter keys are capitalised so a column of
     // captions does not read as a list of variable names.

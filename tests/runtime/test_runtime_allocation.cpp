@@ -194,3 +194,34 @@ TEST_CASE("runtime: a parameter batch does not allocate", "[runtime][allocation]
     }
     REQUIRE(allocations == 0);
 }
+
+TEST_CASE("runtime: BBD can clock faster than the host without allocation",
+          "[runtime][allocation][bbd]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0");
+    circuit.addRes("out", "0", 100000.0);
+    wdf::BucketBrigadeModel model;
+    model.stages = 1024;
+    model.clockHz = 100000.0;
+    model.inputBias = 0.0;
+    model.outputBias = 0.0;
+    circuit.addBucketBrigade("in", "out", "0", "0", model);
+    const auto compiled = livewdf::compiler::Compiler{}.compile(circuit);
+    REQUIRE(compiled.ok());
+
+    livewdf::runtime::RuntimeConfig config;
+    config.sampleRate = 48000.0;
+    auto runtime = livewdf::runtime::makeDenseRuntime(compiled.circuit, config);
+    std::vector<double> sources(static_cast<std::size_t>(compiled.circuit->sourceCount()), 0.0);
+
+    long long allocations = 0;
+    {
+        AllocationScope scope;
+        for (int frame = 0; frame < 2048; ++frame) {
+            sources[0] = 0.2 * std::sin(0.05 * frame);
+            (void)runtime->step(sources);
+        }
+        allocations = scope.count();
+    }
+    REQUIRE(allocations == 0);
+}

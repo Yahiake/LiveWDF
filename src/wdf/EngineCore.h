@@ -535,6 +535,38 @@ protected:
             ctrlResValues_[static_cast<size_t>(c)] = comp_.ctrlRes[static_cast<size_t>(c)].second;
             ctrlResNames_[static_cast<size_t>(c)] = circuit_.ctrlRes[static_cast<size_t>(c)].name;
         }
+        photoresistors_.reserve(comp_.photoSensePorts.size());
+        for (const auto& [index, port] : comp_.photoSensePorts) {
+            const auto& photo = *circuit_.ctrlRes[index].photo;
+            photoresistors_.push_back({
+                index, port.a, port.b, makeAffine(port.off),
+                -std::expm1(-T_ / photo.attackSeconds),
+                -std::expm1(-T_ / photo.releaseSeconds),
+            });
+        }
+        vcas_.reserve(comp_.vcaSensePorts.size());
+        for (const auto& [index, port] : comp_.vcaSensePorts)
+            vcas_.push_back({index, port.a, port.b, makeAffine(port.off)});
+        for (const auto& bias : comp_.dbx200BiasPorts)
+            dbx200Biases_.push_back({bias.pnp, bias.npn, {bias.port.a, bias.port.b, makeAffine(bias.port.off)}});
+        otas_.reserve(comp_.otaSensePorts.size());
+        for (const auto& [index, port] : comp_.otaSensePorts)
+            otas_.push_back({index, {port.a, port.b, makeAffine(port.off)}});
+        bucketBrigades_.reserve(comp_.bucketBrigades.size());
+        for (const auto& bbd : comp_.bucketBrigades)
+            bucketBrigades_.push_back({
+                bbd.outputCurrentIndex,
+                {bbd.input.a, bbd.input.b, makeAffine(bbd.input.off)},
+                {bbd.clock.a, bbd.clock.b, makeAffine(bbd.clock.off)},
+                BucketBrigadeState(bbd.model),
+            });
+        rmsDetectors_.reserve(comp_.rmsDetectors.size());
+        for (const auto& detector : comp_.rmsDetectors)
+            rmsDetectors_.push_back({
+                detector.outputCurrentIndex,
+                {detector.input.a, detector.input.b, makeAffine(detector.input.off)},
+                RmsDetectorState(detector.model, T_),
+            });
         // The resistor each control writes. Resolved once, here: a pot move on
         // the audio thread used to build "POT1_1" and scan the resistor list for
         // it, which allocates and is exactly the kind of work a parameter update
@@ -590,7 +622,7 @@ protected:
     bool embedOpAmpOutputResistance() {
         bool embedded = false;
         for (auto& model : opAmps_) {
-            if (!(model.outputImpedance > 0.0) ||
+            if (model.hasClassABOutput() || !(model.outputImpedance > 0.0) ||
                 !std::isfinite(model.outputImpedance))
                 continue;
             model.outputResistanceEmbedded = true;
@@ -1060,6 +1092,52 @@ protected:
     int nTri_ = 0, nD_ = 0, nCtrl_ = 0, nPent_ = 0, nJfet_ = 0, nMosfet_ = 0, nBjt_ = 0, nOpAmp_ = 0;
     std::vector<double> ctrlResValues_;
     std::vector<std::string> ctrlResNames_;
+    struct PhotoresistorState {
+        size_t index;
+        int sensePos, senseNeg;
+        AffineOffset senseOffset;
+        double attack, release;
+    };
+    std::vector<PhotoresistorState> photoresistors_;
+    struct VcaState {
+        size_t index;
+        int control, reference;
+        AffineOffset controlOffset;
+    };
+    std::vector<VcaState> vcas_;
+    struct SensePort {
+        int pos, neg;
+        AffineOffset offset;
+
+        double voltage(const std::vector<double>& nodes, const double* sources,
+                       std::size_t sourceCount) const noexcept {
+            return (pos >= 0 ? nodes[static_cast<std::size_t>(pos)] : 0.0) -
+                   (neg >= 0 ? nodes[static_cast<std::size_t>(neg)] : 0.0) +
+                   offset.eval(sources, sourceCount);
+        }
+    };
+    struct Dbx200BiasState {
+        size_t pnp, npn;
+        SensePort bases;
+    };
+    std::vector<Dbx200BiasState> dbx200Biases_;
+    struct OtaState {
+        std::size_t index;
+        SensePort bias;
+    };
+    std::vector<OtaState> otas_;
+    struct BucketBrigadeConnection {
+        std::size_t outputCurrentIndex;
+        SensePort input, clock;
+        BucketBrigadeState delay;
+    };
+    std::vector<BucketBrigadeConnection> bucketBrigades_;
+    struct RmsDetectorConnection {
+        std::size_t outputCurrentIndex;
+        SensePort input;
+        RmsDetectorState detector;
+    };
+    std::vector<RmsDetectorConnection> rmsDetectors_;
     /// Resistor indices a pot/rheostat writes, resolved in the constructor.
     std::vector<int> potResA_, potResB_, varResResIndex_;
     std::vector<Pentode> pentodes_;

@@ -2,12 +2,12 @@
 
 // Circuit description: the flat element list and the named-node netlist.
 
-#include <optional>
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -18,7 +18,9 @@
 #include "devices/Triode.h"
 #include "devices/Pentode.h"
 #include "devices/Bjt.h"
+#include "devices/BucketBrigade.h"
 #include "devices/OpAmp.h"
+#include "devices/RmsDetector.h"
 
 namespace wdf {
 
@@ -109,6 +111,69 @@ struct VarRes {
     }
 };
 
+/// Light-dependent resistor driven by the voltage across a lamp/LED's current
+/// sense resistor. The sense inputs impose no load on the light source.
+struct PhotoresistorControl {
+    std::string sensePos, senseNeg;
+    double brightOhms = 4000.0;
+    double referenceVolts = 1.0;
+    double gamma = 1.0;
+    double attackSeconds = 0.002;
+    double releaseSeconds = 0.020;
+
+    double targetConductance(double volts, double darkOhms) const {
+        const double light = std::clamp(volts / referenceVolts, 0.0, 1.0);
+        const double dark = 1.0 / darkOhms;
+        return dark + (1.0 / brightOhms - dark) * std::pow(light, gamma);
+    }
+};
+
+/// Differential control of an inverting current-output VCA.
+struct VcaControl {
+    std::string control, reference;
+    double fullGainVolts = 1.0;
+    bool blackmer = false;
+
+    static constexpr double minimumGain = 1e-5;
+    static constexpr double maximumGain = 1.6;
+
+    // THAT2180 datasheet equation 2 at 25 °C. Bound the exponential outside
+    // the characterized control range to keep out-of-range patches finite.
+    static constexpr double blackmerVoltsPerDb = 0.0061;
+    static constexpr double blackmerMinimumDb = -110.0;
+    static constexpr double blackmerMaximumDb = 40.0;
+
+    // A dbx 200 steers the bases of a single complementary log/antilog
+    // pair directly. The 2180 has a different control-port scale.
+    double logVoltsPerDb = blackmerVoltsPerDb;
+
+    double initialGain() const noexcept { return blackmer ? 1.0 : minimumGain; }
+
+    double normalizedGain(double volts) const noexcept {
+        if (blackmer) {
+            const double db = std::clamp(volts / logVoltsPerDb,
+                                         blackmerMinimumDb, blackmerMaximumDb);
+            return std::exp2(db * 0.16609640474436812); // log2(10) / 20
+        }
+        return std::clamp(volts / fullGainVolts, minimumGain, maximumGain);
+    }
+};
+
+/// A CA3080's matched-pair differential law. Sense the current in series with
+/// its bias diode, and mirror the collector difference to the output port.
+struct OtaControl {
+    std::string bias, biasDiode;
+    static constexpr double senseOhms = 100.0;
+    static constexpr double pairVolts = 2.0 * 0.02585;
+    static constexpr double transportGain = 125.0 / 126.0;
+    static constexpr double minimumCurrent = 1e-12;
+
+    static double slopeResistance(double senseVolts) noexcept {
+        const double biasAmps = std::max(senseVolts / senseOhms, minimumCurrent);
+        return pairVolts / (transportGain * biasAmps);
+    }
+};
+
 /// A dynamic audio-rate voltage/control-modulated resistor sitting at the R-type
 /// multiport root. Its resistance can be modulated every audio sample with zero
 /// matrix rebuild overhead via closed-form root division: `i = vOc / (R + Z_rr)`.
@@ -116,6 +181,12 @@ struct ControlledRes {
     std::string a, b;
     double initialOhms = 1e3;
     std::string name;
+    std::optional<PhotoresistorControl> photo;
+    std::optional<VcaControl> vca;
+    std::optional<OtaControl> ota = std::nullopt;
+    // Signed 2*Iq*Rsense for either half of the dbx 200 class-AB cell.
+    // Zero selects the ordinary full-wave controlled resistance.
+    double dbx200Crossover = 0.0;
 };
 
 struct Res {
@@ -389,6 +460,28 @@ struct BjtDevice {
     std::string name;
 };
 
+/// A clocked audio delay whose output drives a Norton equivalent.
+struct BucketBrigade {
+    std::string input, control, common, name;
+    BucketBrigadeModel model;
+    std::size_t outputCurrentIndex = 0;
+};
+
+/// A log-RMS level detector drives a Norton voltage-output equivalent.
+struct RmsDetector {
+    std::string input, common, name;
+    RmsDetectorModel model;
+    std::size_t outputCurrentIndex;
+};
+
+// In a matched input pair the geometric-mean collector current changes by
+// exp((Ni - Pi)/(2*VT)) when the input-side base voltages are displaced.
+struct Dbx200Bias {
+    static constexpr double twiceThermalVolts = 2.0 * 0.025693;
+    size_t pnp, npn;
+    std::string ni, pi;
+};
+
 struct Circuit {
     std::vector<Res> res;
     std::vector<Cap> cap;
@@ -404,6 +497,9 @@ struct Circuit {
     std::vector<Mosfet> mosfet;
     std::vector<BjtDevice> bjt;
     std::vector<OpAmp> opamp;
+    std::vector<BucketBrigade> bucketBrigades;
+    std::vector<RmsDetector> rmsDetectors;
+    std::vector<Dbx200Bias> dbx200Biases;
 
     void addRes(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {
@@ -420,6 +516,29 @@ struct Circuit {
     void addIsrc(const std::string& a, const std::string& b, double dc = 0.0, double ac = 0.0,
                  std::vector<double> sin = {}, const std::string& name = {}) {
         isrc.push_back({a, b, dc, ac, std::move(sin), name});
+    }
+    void addBucketBrigade(const std::string& input, const std::string& output,
+                          const std::string& control, const std::string& common,
+                          const BucketBrigadeModel& model, const std::string& name = {}) {
+        if (!model.valid())
+            throw std::invalid_argument("Invalid bucket-brigade parameters: " + name);
+        const auto id = name.empty() ? ("BBD" + std::to_string(bucketBrigades.size() + 1)) : name;
+        addRes(input, common, 1e6, id + "_in");
+        addRes(control, common, 1e8, id + "_clock");
+        addRes(output, common, model.outputOhms, id + "_out");
+        bucketBrigades.push_back({input, control, common, id, model, isrc.size()});
+        addIsrc(common, output, model.outputBias / model.outputOhms, 0.0, {}, id + "_drive");
+    }
+    void addRmsDetector(const std::string& input, const std::string& output,
+                        const std::string& common, const RmsDetectorModel& model,
+                        const std::string& name = {}) {
+        if (!model.valid())
+            throw std::invalid_argument("Invalid RMS detector parameters: " + name);
+        const auto id = name.empty() ? ("RMS" + std::to_string(rmsDetectors.size() + 1)) : name;
+        addRes(input, common, model.inputOhms, id + "_in");
+        addRes(output, common, model.outputOhms, id + "_out");
+        rmsDetectors.push_back({input, common, id, model, isrc.size()});
+        addIsrc(common, output, model.dcOutputCurrent(0.0), 0.0, {}, id + "_drive");
     }
     void addSrc(const std::string& a, const std::string& b, double dc = 0.0, double ac = 0.0,
                 std::vector<double> sin = {}, const std::string& name = {}) {
@@ -457,7 +576,19 @@ struct Circuit {
     void addControlledRes(const std::string& a, const std::string& b, double initialOhms = 1e3,
                           const std::string& name = {}) {
         std::string crName = name.empty() ? ("CR" + std::to_string(ctrlRes.size() + 1)) : name;
-        ctrlRes.push_back({a, b, initialOhms, crName});
+        ctrlRes.push_back({a, b, initialOhms, crName, std::nullopt, std::nullopt});
+    }
+
+    void addPhotoresistor(const std::string& a, const std::string& b, double darkOhms,
+                         const PhotoresistorControl& photo, const std::string& name = {}) {
+        const auto positive = [](double v) { return std::isfinite(v) && v > 0.0; };
+        if (!positive(darkOhms) || !positive(photo.brightOhms) ||
+            photo.brightOhms > darkOhms || !positive(photo.referenceVolts) ||
+            !positive(photo.gamma) || !positive(photo.attackSeconds) ||
+            !positive(photo.releaseSeconds))
+            throw std::invalid_argument("Invalid photoresistor parameters: " + name);
+        addControlledRes(a, b, darkOhms, name);
+        ctrlRes.back().photo = photo;
     }
 
     std::vector<MutualInd> mutual;
@@ -588,6 +719,119 @@ struct Circuit {
         vcvs.push_back({outA, outB, inA, inB, gain, ro, vName});
     }
 
+    /// Bootstrapping the root port makes the output current proportional to
+    /// the input current independently of the output load.
+    void addCurrentVca(const std::string& input, const std::string& output,
+                       const std::string& signalReference, double inputOhms,
+                       double currentOhms, const VcaControl& control,
+                       const std::string& name) {
+        const double initialOhms = currentOhms / control.initialGain();
+        if (!std::isfinite(inputOhms) || inputOhms <= 0.0 ||
+            !std::isfinite(initialOhms) || initialOhms <= 0.0 ||
+            !std::isfinite(control.fullGainVolts) || control.fullGainVolts <= 0.0)
+            throw std::invalid_argument("Invalid VCA parameters: " + name);
+        const std::string copy = name + "$copy";
+        const std::string drive = name + "$drive";
+        addRes(input, signalReference, inputOhms, name + "$ri");
+        addVCVS(copy, signalReference, output, signalReference, 1.0, 1e-4, name + "$bootstrap");
+        addVCVS(drive, copy, input, signalReference, -1.0, 1e-4, name + "$input");
+        addControlledRes(drive, output, initialOhms, name);
+        ctrlRes.back().vca = control;
+    }
+
+    /// The linear cell mirrors half the input current at unity gain.
+    void addLinearVca(const std::string& input, const std::string& output,
+                      double inputOhms, const VcaControl& control,
+                      const std::string& name) {
+        addCurrentVca(input, output, control.reference, inputOhms, 2.0 * inputOhms,
+                      control, name);
+    }
+
+    /// Room-temperature THAT2180 macromodel.
+    /// https://thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf
+    /// A small finite input resistance
+    /// approximates the summing input's virtual ground. This models gain
+    /// within the normal bias range and omits chip noise and distortion.
+    void addThat2180(const std::string& input, const std::string& output,
+                     const std::string& ecPlus, const std::string& ecMinus,
+                     const std::string& signalReference, double inputOhms,
+                     const std::string& name) {
+        addCurrentVca(input, output, signalReference, inputOhms, inputOhms,
+                      {ecPlus, ecMinus, 1.0, true}, name);
+    }
+
+    /// Calibrated analog terminals of dbx drawing 110557 (1975). The two
+    /// matched transistor pairs share emitter nodes, so each collector-current
+    /// ratio is exp(deltaVbase / VT). The input pair's current difference is
+    /// Iin and its current product at centered symmetry is Iq^2.
+    void addDbx200(const std::string& input, const std::string& output,
+                   const std::string& pi, const std::string& ni,
+                   const std::string& po, const std::string& no,
+                   const std::string& common, const std::string& name) {
+        constexpr double senseOhms = 10.0;
+        constexpr double idleAmps = 5.17e-6; // matched reference circuit, neutral controls
+        constexpr double voltsPerDb = 0.002958; // kT/q * ln(10)/20, 25 C
+        const auto copy = name + "$copy";
+        const auto drive = name + "$drive";
+        addRes(input, common, senseOhms, name + "$sense");
+        addVCVS(copy, common, output, common, 1.0, 1e-4, name + "$bootstrap");
+        addVCVS(drive, copy, input, common, -1.0, 1e-4, name + "$input");
+        const auto leg = [&](const std::string& high, const std::string& low,
+                             double sign, const std::string& suffix) {
+            addControlledRes(drive, output, senseOhms, name + suffix);
+            ctrlRes.back().vca = VcaControl{high, low, 1.0, true, voltsPerDb};
+            ctrlRes.back().dbx200Crossover = sign * 2.0 * idleAmps * senseOhms;
+        };
+        if (pi == no && po == ni) {
+            // With the two controls linked, the standing currents cancel at
+            // every audio level. The remaining whole-wave law is affine.
+            leg(pi, po, 0.0, "$cell");
+        } else {
+            const size_t pnp = ctrlRes.size();
+            leg(pi, po, 1.0, "$pnp");
+            const size_t npn = ctrlRes.size();
+            leg(no, ni, -1.0, "$npn");
+            dbx200Biases.push_back({pnp, npn, ni, pi});
+        }
+        // Forward-biased collector/base junctions carry excess current if the
+        // external transimpedance amplifier can no longer hold virtual ground.
+        addDiode(output, po, DiodeModel(336.7e-15 / 3.009, 1.0, 1.8, 1e12), name + "$cbP");
+        addDiode(no, output, DiodeModel(7.049e-15 / 2.209, 1.0, 1.43, 1e12), name + "$cbN");
+    }
+
+    /// Signal law of the matched NPN differential pair in MiSTer-Discrete's
+    /// circuits/parts/ca3080.lib, with a real bias diode and current sensing.
+    void addCa3080(const std::string& out, const std::string& neg, const std::string& pos,
+                   const std::string& vcc, const std::string& vee, const std::string& bias,
+                   const std::string& name) {
+        constexpr double mirrorRo = 1.0;
+        const auto local = [&](const char* suffix) { return name + "$" + suffix; };
+        const auto biasDiode = local("bias_diode");
+        addRes(bias, biasDiode, OtaControl::senseOhms, local("bias_sense"));
+        addDiode(biasDiode, vee, DiodeModel(5.95e-16, 1.0, 0.0, 1e12), local("bias"));
+        addRes(biasDiode, vee, 10e6, local("bias_leak"));
+        addRes(pos, neg, 26e3, local("input_res"));
+        // Use a buffered copy of the output as the offset for the root
+        // port. Its voltage is the input difference, independently of load.
+        const auto outCopy = local("out_copy");
+        const auto drive = local("drive");
+        addVCVS(outCopy, vee, out, vee, 1.0, mirrorRo, local("copy_out"));
+        addVCVS(drive, outCopy, pos, neg, 1.0, mirrorRo, local("drive_signal"));
+        addControlledRes(drive, out, OtaControl::slopeResistance(0.0), name);
+        ctrlRes.back().ota = OtaControl{bias, biasDiode};
+        addRes(out, kGroundName, 15e6, local("out_res"));
+        // Approximate 9 V output compliance with divided rail references.
+        // Keeping both references within the rails also lets source stepping
+        // initialize the circuit from zero supply.
+        const auto upper = local("upper_clamp");
+        const auto lower = local("lower_clamp");
+        addVCVS(upper, vee, vcc, vee, 0.77, mirrorRo, local("upper_ref"));
+        addVCVS(lower, vee, vcc, vee, 0.133, mirrorRo, local("lower_ref"));
+        const DiodeModel clamp(1e-14, 1.0, 0.0, 1e12);
+        addDiode(out, upper, clamp, local("clamp_pos"));
+        addDiode(lower, out, clamp, local("clamp_neg"));
+    }
+
     void addPentode(const std::string& p, const std::string& s,
                     const std::string& g, const std::string& k,
                     const Pentode& model = kEL34, const std::string& name = {}) {
@@ -645,13 +889,17 @@ struct Circuit {
 
     /// Add a three-terminal BjtDevice with Ebers-Moll model.
     /// Terminals: collector (c), base (b), emitter (e).
-    /// Model includes Ebers-Moll parameters with Early effect.
+    /// Constant junction capacitances stamp into the linear network.
     void addBjt(const std::string& collector, const std::string& base, const std::string& emitter,
                 const BjtModel& model, const std::string& name = {}) {
         if (!model.valid())
             throw std::invalid_argument("invalid BjtDevice model parameters");
         const std::string bName = name.empty() ? ("Q" + std::to_string(bjt.size() + 1)) : name;
         bjt.push_back({collector, base, emitter, model, bName});
+        if (model.cbe > 0.0)
+            addCap(base, emitter, model.cbe, bName + "$cbe");
+        if (model.cbc > 0.0)
+            addCap(base, collector, model.cbc, bName + "$cbc");
     }
 
     /// Add an operational amplifier.
@@ -660,7 +908,35 @@ struct Circuit {
                   const std::string& vcc, const std::string& vee,
                   const OpAmpModel& model, const std::string& name = {}) {
         const std::string oName = name.empty() ? ("U" + std::to_string(opamp.size() + 1)) : name;
-        opamp.push_back({out, neg, pos, vcc, vee, model, oName});
+        if (model.type != OpAmpType::Lm358) {
+            opamp.push_back({out, neg, pos, vcc, vee, model, oName});
+            return;
+        }
+        // MiSTer-Discrete 692e777, circuits/parts/lm358.lib. Each driver
+        // returns its unused steering current to the same supply that fed it.
+        // The two buffered copies of the pole implement these current paths
+        // without a branch-current probe or another nonlinear equation.
+        const auto pole = oName + "$pole";
+        opamp.push_back({pole, neg, pos, vcc, vee, model, oName});
+        const auto high = oName + "$high", low = oName + "$low";
+        const auto bh = oName + "$sourceBase", bl = oName + "$sinkBase";
+        addVCVS(high, vcc, pole, vcc, 1.0, 0.01, oName + "$sourceDrive");
+        addVCVS(low, vee, pole, vee, 1.0, 0.01, oName + "$sinkDrive");
+        addIsrc(vcc, bh, 40e-3, 0.0, {}, oName + "$sourceBias");
+        addIsrc(bl, vee, 20e-3, 0.0, {}, oName + "$sinkBias");
+        addRes(bh, high, 100e3, oName + "$sourceReturn");
+        addRes(low, bl, 100e3, oName + "$sinkReturn");
+        const DiodeModel steering(1e-5, 1.0, 0.0, 1e12);
+        addDiode(bh, high, steering, oName + "$sourceSteer");
+        addDiode(low, bl, steering, oName + "$sinkSteer");
+        addDiode(bh, out, DiodeModel(1.2e-13, 2.0, 0.0, 1e12), oName + "$darlington");
+        addDiode(out, bl, DiodeModel(1.2e-14, 1.0, 54.0, 1e12), oName + "$pnp");
+        // The upstream floor diode and 29 µA pulldown combine into one
+        // Shockley branch: I(out→vee) = Ipd * (1 - exp(-Vout,vee / VT)).
+        addDiode(vee, out, DiodeModel(29e-6, 1.0, 0.0, 1e12), oName + "$floor");
+        addRes(out, vcc, 20e6, oName + "$loadPlus");
+        addRes(out, vee, 20e6, oName + "$loadMinus");
+        addIsrc(vcc, vee, 0.321e-3, 0.0, {}, oName + "$quiescent");
     }
 
     std::vector<std::string> allNodes() const {
@@ -704,6 +980,10 @@ struct Circuit {
         for (const auto& cr : ctrlRes) {
             push(cr.a);
             push(cr.b);
+            if (cr.photo) {
+                push(cr.photo->sensePos);
+                push(cr.photo->senseNeg);
+            }
         }
         for (const auto& v : vcvs) {
             push(v.outA);

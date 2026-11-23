@@ -96,9 +96,23 @@ public:
                 const double R = ctrlResValues[dev.compIndex];
                 const double G = (R > 1e-12) ? (1.0 / R) : 1e12;
                 ++deviceEvals;
-                iData[e] = vData[e] * G;
-                if (jData)
-                    jData[e * K + e] = G;
+                if (comp.otaCurrentLaw[dev.compIndex]) {
+                    const double t = std::tanh(vData[e] / OtaControl::pairVolts);
+                    iData[e] = G * OtaControl::pairVolts * t;
+                    if (jData)
+                        jData[e * K + e] = G * (1.0 - t * t);
+                } else if (const double crossover = comp.dbx200Crossover[dev.compIndex];
+                           crossover != 0.0) {
+                    const double v = vData[e];
+                    const double split = std::copysign(std::hypot(v, crossover), crossover);
+                    iData[e] = 0.5 * G * (v + split);
+                    if (jData)
+                        jData[e * K + e] = 0.5 * G * (1.0 + v / split);
+                } else {
+                    iData[e] = vData[e] * G;
+                    if (jData)
+                        jData[e * K + e] = G;
+                }
                 break;
             }
             case DeviceKind::Pentode: {
@@ -153,7 +167,9 @@ public:
             case DeviceKind::Bjt: {
                 const double vce = vData[o];
                 const double vbe = vData[o + 1];
-                const auto cur = bjts[dev.compIndex].evaluateTerminals(vce, vbe);
+                const auto cur = comp.bjt[dev.compIndex].validModel
+                    ? bjts[dev.compIndex].evaluateValidatedTerminals(vce, vbe)
+                    : BjtModel::BjtCurrents{};
                 ++deviceEvals;
                 iData[o] = cur.valid ? cur.iC : 0.0;
                 iData[o + 1] = cur.valid ? cur.iB : 0.0;
@@ -179,9 +195,10 @@ public:
                 const double vSource = OpAmpEngineLaw::sourceVoltage(
                     oa, vDiff, opAmpVp[ci], opAmpAlpha[ci], opAmpMaxDv[ci],
                     staticMode, &dSourceDvDiff);
-                const double gOut = 1.0 / oa.outputImpedance;
+                double gOut = 0.0;
                 ++deviceEvals;
-                iData[o] = (oa.outputVoltageWeight() * vData[o] - vSource) * gOut;
+                const double outputVoltage = oa.outputVoltageWeight() * vData[o];
+                iData[o] = oa.outputCurrent(outputVoltage - vSource, gOut);
                 iData[o + 1] = 0.0;
                 iData[o + 2] = 0.0;
                 if (jData) {

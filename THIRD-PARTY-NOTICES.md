@@ -18,6 +18,7 @@ its license and how LiveWDF uses it.
 | PedalKernel op-amp element (`src/devices/OpAmp.h`) | AGPLv3-or-later + Section 7 hardware-revenue/commercial condition | https://github.com/ajmw-subs/pedalkernel | Op-amp VCVS model: the physical model was reimplemented from the public papers and SPICE documentation; only the general VCVS architecture and gain/pole/slew/rail structure common to PedalKernel's element was referenced. Source code was not copied; the comment in OpAmp.h acknowledging the PedalKernel origin is retained as provenance. Legal review of Section 7 implications is pending. |
 | Catch2 (v2.13.7) | Boost Software License 1.0 | https://github.com/catchorg/Catch2 | Test framework (vendored single header in `third_party/catch2/`). |
 | ngspice | BSD 3-Clause (ngspice) | https://ngspice.sourceforge.io | External accuracy oracle for tests (not linked; invoked as a separate process). |
+| MiSTer-Discrete circuit-compiler | GPLv3 | https://github.com/jopdorp/MiSTer-Discrete/tree/692e777112e4a3c05a17578d9cfda1ecbc9b98d6 | Component-equation and parameter references for independently implemented LiveWDF device models. |
 | `tools/` sources (`Net.h`, `SpiceNet.h`, `Engine.h`, device headers, `verify.py`, `WavIO.h`) | Provided by the project owner for use in LiveWDF | local workspace (`C:\Code\test\try\tools`) | Network compilation (`rootTransfer`), multiport-Newton engine with keep-best, SPICE parsing patterns, verification methodology. |
 
 ## Model parameter data

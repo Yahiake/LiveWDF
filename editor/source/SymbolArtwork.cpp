@@ -44,6 +44,8 @@ enum class Asset {
     VoltageSource,
     CurrentSource,
     GainBlock,
+    BucketBrigade,
+    Vca,
     Transformer,
     CenterTapTransformer,
     Triode,
@@ -51,6 +53,7 @@ enum class Asset {
     Input,
     Output,
     ControlledResistor,
+    Photoresistor,
     SpdtA,
     SpdtB,
     BjtNpn,
@@ -63,6 +66,10 @@ enum class Asset {
     ScopeProbe,
     OpAmp,
     IdealOpAmp,
+    Ca3080,
+    That2180,
+    RmsDetector,
+    Dbx200,
     count,
 };
 
@@ -79,6 +86,8 @@ const char* const assetNames[] = {
     "voltage-source",
     "current-source",
     "gain-block",
+    "bucket-brigade",
+    "vca",
     "transformer",
     "transformer-ct",
     "triode",
@@ -86,6 +95,7 @@ const char* const assetNames[] = {
     "input",
     "output",
     "controlled-resistor",
+    "photoresistor",
     "spdt-a",
     "spdt-b",
     "npn-bjt",
@@ -98,6 +108,10 @@ const char* const assetNames[] = {
     "scope",
     "opamp",
     "ideal-opamp",
+    "ca3080",
+    "that2180",
+    "rms-detector",
+    "dbx200",
 };
 
 static_assert(std::size(assetNames) == static_cast<size_t>(assetCount),
@@ -124,6 +138,11 @@ int assetForType(const std::string& type) {
     if (type == "src")         return static_cast<int>(Asset::VoltageSource);
     if (type == "isrc")        return static_cast<int>(Asset::CurrentSource);
     if (type == "vcvs")        return static_cast<int>(Asset::GainBlock);
+    if (type == "rmsdet" || type == "dbx209") return static_cast<int>(Asset::RmsDetector);
+    if (type == "bbd")         return static_cast<int>(Asset::BucketBrigade);
+    if (type == "vca")         return static_cast<int>(Asset::Vca);
+    if (type == "dbx200")      return static_cast<int>(Asset::Dbx200);
+    if (type == "that2180")     return static_cast<int>(Asset::That2180);
     if (type == "transformer") return static_cast<int>(Asset::Transformer);
     if (type == "transformer_ct") return static_cast<int>(Asset::CenterTapTransformer);
     if (type == "triode")      return static_cast<int>(Asset::Triode);
@@ -132,6 +151,7 @@ int assetForType(const std::string& type) {
     if (type == "out")         return static_cast<int>(Asset::Output);
     if (type == "gnd")         return static_cast<int>(Asset::Ground);
     if (type == "ctrlres")     return static_cast<int>(Asset::ControlledResistor);
+    if (type == "photores")    return static_cast<int>(Asset::Photoresistor);
     if (type == "switch_res")  return static_cast<int>(Asset::SpdtA);
     if (type == "bjt")         return static_cast<int>(Asset::BjtNpn);
     if (type == "jfet")        return static_cast<int>(Asset::JfetN);
@@ -140,6 +160,7 @@ int assetForType(const std::string& type) {
     if (type == "scope")       return static_cast<int>(Asset::ScopeProbe);
     if (type == "opamp")       return static_cast<int>(Asset::OpAmp);
     if (type == "idealopamp")  return static_cast<int>(Asset::IdealOpAmp);
+    if (type == "ca3080")     return static_cast<int>(Asset::Ca3080);
     return noAsset;
 }
 
@@ -527,10 +548,10 @@ std::vector<std::string> artworkTypes() {
     // listing the asset names again -- so the list cannot drift from the map, and
     // a type added to one but not the other is a test failure, not a blank part.
     for (const auto* name : {"res", "cap", "ind", "diode", "ground", "gnd",
-                             "pot", "varres", "src", "isrc", "vcvs",
-                             "transformer", "triode", "pentode", "ctrlres",
+                             "pot", "varres", "src", "isrc", "vcvs", "bbd", "rmsdet", "dbx209", "dbx200",
+                             "transformer", "triode", "pentode", "ctrlres", "photores",
                              "switch_res", "bjt", "jfet", "mosfet",
-                             "in", "out", "opamp"})
+                             "in", "out", "opamp", "ca3080"})
         if (hasArtwork(name))
             types.emplace_back(name);
 

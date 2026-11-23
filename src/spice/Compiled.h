@@ -40,11 +40,31 @@ struct Compiled {
     std::vector<std::pair<Port, double>> cap;
     std::vector<std::pair<Port, double>> ind;
     std::vector<std::pair<Port, Isrc>> isrc;
+    struct CompiledBucketBrigade {
+        Port input, clock;
+        BucketBrigadeModel model;
+        std::size_t outputCurrentIndex;
+    };
+    std::vector<CompiledBucketBrigade> bucketBrigades;
+    struct CompiledRmsDetector {
+        Port input;
+        RmsDetectorModel model;
+        std::size_t outputCurrentIndex;
+    };
+    std::vector<CompiledRmsDetector> rmsDetectors;
     std::vector<CompiledTube> tri;
     /// Diodes as compiled ports: each becomes a root port, after the tubes'.
     std::vector<std::pair<Port, DiodeModel>> diode;
     /// Controlled resistors as compiled root ports, after the diodes'.
     std::vector<std::pair<Port, double>> ctrlRes;
+    /// High-impedance sense ports, indexed by the controlled resistance moved.
+    std::vector<std::pair<size_t, Port>> photoSensePorts;
+    std::vector<std::pair<size_t, Port>> vcaSensePorts;
+    std::vector<std::pair<size_t, Port>> otaSensePorts;
+    std::vector<bool> otaCurrentLaw;
+    std::vector<double> dbx200Crossover;
+    struct Dbx200BiasPort { size_t pnp, npn; Port port; };
+    std::vector<Dbx200BiasPort> dbx200BiasPorts;
     /// Voltage-controlled voltage sources (SPICE `E` element).
     struct CompiledVCVS {
         Port outPort;
@@ -87,6 +107,7 @@ struct Compiled {
         int ic = -1, ib = -1, ie = -1;
         BjtModel model;
         std::string name;
+        bool validModel = false;
     };
     std::vector<CompiledBjt> bjt;
     /// Op-Amp: three root ports, all referenced to ground:
@@ -201,6 +222,13 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         out.ind.emplace_back(port(e.a, e.b), e.value);
     for (const auto& e : c.isrc)
         out.isrc.emplace_back(port(e.a, e.b), e);
+    for (const auto& bbd : c.bucketBrigades)
+        out.bucketBrigades.push_back({port(bbd.input, bbd.common),
+                                     port(bbd.control, bbd.common),
+                                     bbd.model, bbd.outputCurrentIndex});
+    for (const auto& detector : c.rmsDetectors)
+        out.rmsDetectors.push_back({port(detector.input, detector.common),
+                                    detector.model, detector.outputCurrentIndex});
     for (const auto& t : c.tri) {
         CompiledTube ct;
         ct.pk = port(t.p, t.k);
@@ -215,8 +243,22 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
     }
     for (const auto& d : c.diode)
         out.diode.emplace_back(port(d.a, d.b), d.model);
-    for (const auto& cr : c.ctrlRes)
+    for (const auto& cr : c.ctrlRes) {
+        if (cr.photo)
+            out.photoSensePorts.emplace_back(out.ctrlRes.size(),
+                                             port(cr.photo->sensePos, cr.photo->senseNeg));
+        if (cr.vca)
+            out.vcaSensePorts.emplace_back(out.ctrlRes.size(),
+                                            port(cr.vca->control, cr.vca->reference));
+        if (cr.ota)
+            out.otaSensePorts.emplace_back(out.ctrlRes.size(),
+                                            port(cr.ota->bias, cr.ota->biasDiode));
+        out.otaCurrentLaw.push_back(cr.ota.has_value());
+        out.dbx200Crossover.push_back(cr.dbx200Crossover);
         out.ctrlRes.emplace_back(port(cr.a, cr.b), cr.initialOhms);
+    }
+    for (const auto& bias : c.dbx200Biases)
+        out.dbx200BiasPorts.push_back({bias.pnp, bias.npn, port(bias.ni, bias.pi)});
     for (const auto& v : c.vcvs) {
         if (v.ro <= 0.0)
             throw std::runtime_error("VCVS output resistance Ro must be strictly positive: " + v.name);
@@ -283,6 +325,7 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         cb.ie = slotIndex(b.e);
         cb.model = b.model;
         cb.name = b.name;
+        cb.validModel = cb.model.valid();
         out.bjt.push_back(std::move(cb));
     }
     for (const auto& o : c.opamp) {

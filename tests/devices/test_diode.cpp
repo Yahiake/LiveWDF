@@ -108,6 +108,61 @@ wdf::Circuit mixedStageClamped() { return mixedStage(true); }
 // 1. the device law
 // --------------------------------------------------------------------------------------
 
+TEST_CASE("Opt-in low-leakage diode cards retain the forward clipping response", "[diode][device]") {
+    struct Case {
+        const char* reference;
+        const char* lowLeakage;
+        double reverseVoltage;
+        double reverseCurrent;
+    };
+    for (const auto& part : {Case{"1N914-Nexperia", "1N914-Nexperia-LowLeakage", -20, 7.784e-9},
+                             Case{"1S2075", "1S2075-LowLeakage", -30, 1.387e-9},
+                             Case{"1N4002", "1N4002-LowLeakage", -100, 14.11e-9}}) {
+        CAPTURE(part.lowLeakage);
+        const auto* reference = wdf::findDiodeByName(part.reference);
+        const auto* variant = wdf::findDiodeByName(part.lowLeakage);
+        REQUIRE(reference != nullptr);
+        REQUIRE(variant != nullptr);
+        REQUIRE(reference->rp == 1e6);
+        const auto original = reference->model();
+        const auto corrected = variant->model();
+        double oldI = 0, newI = 0, conductance = 0;
+        corrected.eval(part.reverseVoltage, newI, conductance);
+        REQUIRE(newI == Approx(-part.reverseCurrent).margin(5e-13));
+        for (const double voltage : {.5, .6, .8, 1.0}) {
+            original.eval(voltage, oldI, conductance);
+            corrected.eval(voltage, newI, conductance);
+            REQUIRE(newI == Approx(oldI).margin(1.1e-6));
+        }
+
+        const auto clipper = [](const wdf::DiodeModel& model) {
+            wdf::Circuit circuit;
+            circuit.addSrc("in", "0", 0);
+            circuit.addRes("in", "out", 1e3);
+            circuit.addRes("out", "0", 1e5);
+            circuit.addDiode("out", "0", model);
+            circuit.addDiode("0", "out", model);
+            return circuit;
+        };
+        wdf::Engine oldClipper(clipper(original), kFs);
+        wdf::Engine newClipper(clipper(corrected), kFs);
+        const int oldOut = oldClipper.nodeIndex("out");
+        const int newOut = newClipper.nodeIndex("out");
+        std::vector<double> inputs(1);
+        double deltaPeak = 0;
+        for (int frame = 0; frame < 480; ++frame) {
+            inputs[0] = 1.8 * std::sin(2 * wdf::kPi * 440 * frame / kFs);
+            const double before = oldClipper.step(inputs)[oldOut];
+            const double after = newClipper.step(inputs)[newOut];
+            REQUIRE(newClipper.lastConverged());
+            deltaPeak = std::max(deltaPeak, std::abs(before - after));
+        }
+        REQUIRE(newClipper.stateRejectCount() == 0);
+        REQUIRE(newClipper.blockFallbackCount() == 0);
+        REQUIRE(deltaPeak < .001);
+    }
+}
+
 TEST_CASE("the Shockley law with zero series resistance is exact at both signs", "[diode][device]") {
     const wdf::DiodeModel d(1e-9, 1.0, 0.0);
     double i = 0.0, di = 0.0;

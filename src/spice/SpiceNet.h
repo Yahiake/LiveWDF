@@ -439,10 +439,11 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
     /// apply when a parameter is absent (`IS=1e-14`, `N=1`, `RS=0`), but a
     /// parameter the engine does not model is an error, not something to drop:
     ///
-    ///   * `IS`, `N`, `RS`, `RP` are the whole extended junction law the engine
-    ///     solves; `RP` is the Bernardini et al extended-Shockley parallel
-    ///     resistor and defaults to 1e6. `RP=0` asks for the plain SPICE
-    ///     junction law;
+    ///   * `IS`, `N`, `RS`, `RP` give the extended junction law. `RP` is the
+    ///     Bernardini et al parallel resistor and defaults to 1e6. `RP=0`
+    ///     asks for the plain SPICE junction law;
+    ///   * `BV` and `IBV` opt into reverse breakdown. `BV` is measured at
+    ///     the junction, excluding the drop across `RS`;
     ///   * everything else (`CJO`, `TT`, `VJ`, `M`, ...) changes the circuit in
     ///     ways this engine cannot reproduce, so honouring the line by silently
     ///     ignoring them would be the increment-8 bug wearing a nicer name.
@@ -454,7 +455,7 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
         const auto found = diodeModelLines.find(lower(name));
         if (found == diodeModelLines.end()) {
             if (const auto* entry = findDiodeByName(name))
-                return DiodeModel(entry->isat, entry->n, entry->rs, entry->rp);
+                return entry->model();
             throw std::runtime_error("unknown diode model '" + name + "' in " + sourceName);
         }
         static const std::regex reKv(R"((\w+)\s*=\s*([^\s,]+))");
@@ -463,7 +464,8 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
              it != std::sregex_iterator(); ++it)
             kv[lower((*it)[1].str())] = (*it)[2].str();
         for (const auto& entry : kv)
-            if (entry.first != "is" && entry.first != "n" && entry.first != "rs" && entry.first != "rp")
+            if (entry.first != "is" && entry.first != "n" && entry.first != "rs" &&
+                entry.first != "rp" && entry.first != "bv" && entry.first != "ibv")
                 throw std::runtime_error("diode model '" + name + "' sets '" + entry.first +
                                          "', which this engine does not model; refusing rather "
                                          "than simulating without it");
@@ -475,10 +477,18 @@ inline Circuit buildFromParsed(const std::map<std::string, Subckt>& subckts,
         const double emission = num("n", 1.0);
         const double series = num("rs", 0.0);
         const double parallel = num("rp", 1e6);  // Bernardini et al extension, carried
+        const double breakdown = num("bv", 0.0);
+        const double avalancheCurrent = num("ibv", 1e-3);
         if (!(isat > 0.0) || !(emission > 0.0) || !(series >= 0.0) || !(parallel >= 0.0))
             throw std::runtime_error("diode model '" + name + "' in " + sourceName +
                                      " has a non-physical parameter (need IS>0, N>0, RS>=0, RP>=0)");
-        return DiodeModel(isat, emission, series, parallel);
+        if (!std::isfinite(breakdown) || !(breakdown >= 0.0) ||
+            !std::isfinite(avalancheCurrent) || !(avalancheCurrent > 0.0) ||
+            (breakdown > 0.0 && breakdown <= emission * kThermalVoltage *
+                                                std::log1p(avalancheCurrent / isat)))
+            throw std::runtime_error("diode model '" + name + "' in " + sourceName +
+                                     " has a non-physical reverse breakdown knee");
+        return DiodeModel(isat, emission, series, parallel, breakdown, avalancheCurrent);
     };
 
     /// The `J` element's model. A `.model NAME NJF(...)` card overrides the

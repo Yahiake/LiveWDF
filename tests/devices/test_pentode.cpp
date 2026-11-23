@@ -28,6 +28,23 @@ TEST_CASE("Pentode registry looks up models case-insensitively", "[pentode][regi
     REQUIRE(wdf::findPentodeByName("NonExistentPentode") == nullptr);
 }
 
+TEST_CASE("Small-signal pentodes match their published bias references", "[pentode][registry]") {
+    const auto* ef86 = wdf::findPentodeByName("ef86");
+    REQUIRE(ef86 != nullptr);
+    const auto ef86Bias = ef86->eval(-2.2, 140.0, 250.0);
+    CHECK(ef86Bias.ip == Approx(3.0e-3).epsilon(0.01));
+    CHECK(ef86Bias.is == Approx(0.6e-3).epsilon(0.01));
+    CHECK(ef86Bias.dip_dvgk == Approx(2.2e-3).epsilon(0.01));
+
+    const auto* sixAS6 = wdf::findPentodeByName("6as6");
+    REQUIRE(sixAS6 != nullptr);
+    const auto sixAS6Bias = sixAS6->eval(-2.0, 120.0, 120.0);
+    CHECK(sixAS6Bias.ip == Approx(5.2e-3).epsilon(0.01));
+    CHECK(sixAS6Bias.is == Approx(3.5e-3).epsilon(0.01));
+    CHECK(sixAS6Bias.dip_dvgk == Approx(3.2e-3).epsilon(0.01));
+    CHECK(sixAS6->eval(-8.0, 120.0, 120.0).ip < 200e-6);
+}
+
 TEST_CASE("Koren Pentode analytical Jacobian matches numerical finite differences", "[pentode][jacobian]") {
     const wdf::Pentode& el34 = wdf::kKorenEL34;
     const double vgk = -12.0;

@@ -106,7 +106,7 @@ public:
                 if (dev.compIndex >= opAmps.size())
                     return false;
                 const OpAmpModel& oa = opAmps[dev.compIndex];
-                if (oa.softRails)
+                if (oa.softRails || oa.hasClassABOutput())
                     return false;
                 if (!(oa.openLoopGain > 0.0) || !(oa.outputImpedance > 0.0))
                     return false;
@@ -244,7 +244,7 @@ public:
                     if (z > 0.0 && std::isfinite(z)) {
                         block.reducedScalarDiode = true;
                         block.reducedScalarPort = p;
-                        block.reducedScalarModel = DiodeModel(m.isat, m.n, z + m.rs, m.rp);
+                        block.reducedScalarModel = m.withSeriesResistance(z + m.rs);
                     }
                 }
             }

@@ -123,8 +123,9 @@ public:
             !hasAntiParallelBlock_ && !hasLinearReduction_)
             return false;
         if (blockCount_ == 1)
-            return hasLinearReduction_ || hasAntiParallelBlock_ ||
-                   solver::RootBlockSolve::hasDirectSingleOpAmp(K_, opAmps_, Z_);
+            return hasLinearReduction_ || hasAntiParallelBlock_ || hasMonotoneClassAB() ||
+                   solver::RootBlockSolve::hasDirectSingleton(
+                       newtonBlocks_.front(), rootDevices_, comp_, opAmps_, Z_, K_);
         return blockCount_ >= 2;
     }
 
@@ -403,6 +404,13 @@ protected:
         }
     }
 
+    bool hasMonotoneClassAB() const noexcept {
+        // A lone op-amp has ports out, pos, neg and only output current.
+        // Z[3] <= Z[6] gives negative feedback and Z[0] a passive load line.
+        return K_ == 3 && nOpAmp_ == 1 && opAmps_.front().hasClassABOutput() &&
+               !opAmps_.front().softRails && Z_[0] >= 0.0 && Z_[3] <= Z_[6];
+    }
+
     /// Solve the root in block order, using the scalar closed form for a
     /// singleton and the block Newton otherwise.
     ///
@@ -420,6 +428,31 @@ protected:
     /// their first pass does not converge. The fast path is an optimization only
     /// when the check passes; it is never allowed to define a different circuit.
     void solveRootBlocks(int maxIter, double tol) {
+        if (hasMonotoneClassAB()) {
+            lastBlockFallback_ = false;
+            const auto result = solver::RootClosedForms::solveClassABOutput(
+                opAmps_.front(), vOc_[0], vOc_[1], vOc_[2], Z_[0], Z_[3], Z_[6],
+                opAmpVp_[0], opAmpAlpha_[0], opAmpMaxDv_[0], staticMode_, maxIter,
+                std::max(tol, 1e-9), deviceEvals_);
+            if (result.ok) {
+                vv_[0] = vOc_[0] - Z_[0] * result.loadCurrent;
+                vv_[1] = vOc_[1] - Z_[3] * result.loadCurrent;
+                vv_[2] = vOc_[2] - Z_[6] * result.loadCurrent;
+                ii_[0] = result.modelCurrent;
+                ii_[1] = ii_[2] = 0.0;
+                lastConverged_ = true;
+                lastResidual_ = result.residual;
+                lastBlockResidual_ = result.residual;
+                keptBest_ = false;
+                vvPrev2_ = vvPrev_;
+                vvPrev_ = vv_;
+                return;
+            }
+            lastBlockFallback_ = true;
+            ++blockFallbacks_;
+            solveRootsNewton(maxIter, tol);
+            return;
+        }
         auto ctx = makeBlockSolveContext();
         auto newtonCtx = makeNewtonContext();
         solver::RootBlockSolve::solveRootBlocks(

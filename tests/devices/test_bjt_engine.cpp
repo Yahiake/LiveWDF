@@ -104,6 +104,34 @@ TEST_CASE("BJT common-emitter NPN compiles and solves via Engine", "[bjt][engine
     REQUIRE(comp.bjt[0].model.valid());
 }
 
+TEST_CASE("An engine retains its validated BJT snapshot across a linear rebuild",
+          "[bjt][engine]") {
+    using namespace wdf;
+    Circuit circuit;
+    circuit.addSrc("VCC", "0", 5.0);
+    circuit.addSrc("B", "0", 0.65);
+    circuit.addRes("VCC", "C", 1000.0, "load");
+    circuit.addBjt("C", "B", "0", findBjtByName("2N3904")->model, "Q1");
+
+    Engine accepted(circuit, 48000.0);
+    const auto collector = accepted.nodeIndex("C");
+    REQUIRE(collector >= 0);
+    const std::vector<double> sources{5.0, 0.65};
+    const double conducting = accepted.step(sources)[collector];
+    REQUIRE(conducting < 4.9);
+
+    // The raw netlist is mutable. Recompiling it must use its current card,
+    // while an already running engine owns an immutable model snapshot.
+    circuit.bjt.front().model.Ne = -1.0;
+    REQUIRE_THROWS_AS(circuit.addBjt("C", "B", "0", circuit.bjt.front().model),
+                      std::invalid_argument);
+    Engine invalid(circuit, 48000.0);
+    CHECK(invalid.step(sources)[collector] == Approx(5.0));
+
+    REQUIRE(accepted.setResistance("load", 2000.0));
+    CHECK(accepted.step(sources)[collector] < conducting);
+}
+
 TEST_CASE("BJT deep-saturation DC agrees with ngspice at matched temperature",
           "[bjt][engine][dc]") {
     using namespace wdf;
@@ -469,4 +497,39 @@ TEST_CASE("floating-emitter BJT DC Jacobian differentiates the root residual",
             CHECK(analytic[row * v.size() + col] == Approx(slope).epsilon(1e-7).margin(1e-8));
         }
     }
+}
+
+TEST_CASE("onsemi BJT options follow the published forward gain curves",
+          "[bjt][parts-validation]") {
+    // Invert collector current at fixed VCE to read hFE at the datasheet's
+    // current points. The PNP plot gives gain relative to 10 mA.
+    const auto gainAt = [](const wdf::BjtModel& model, double vce, double collectorCurrent) {
+        const double sign = model.pnp ? -1.0 : 1.0;
+        double low = 0.0, high = 1.2;
+        for (int i = 0; i < 45; ++i) {
+            const double vbe = (low + high) * 0.5;
+            if (std::abs(model.evaluateTerminals(vce, sign * vbe).iC) < collectorCurrent)
+                low = vbe;
+            else
+                high = vbe;
+        }
+        const auto currents = model.evaluateTerminals(vce, sign * (low + high) * 0.5);
+        return std::abs(currents.iC / currents.iB);
+    };
+    const auto* npn = wdf::findBjtByName("2N3904-onsemi");
+    const auto* pnp = wdf::findBjtByName("2N3906-onsemi");
+    REQUIRE(npn != nullptr);
+    REQUIRE(pnp != nullptr);
+
+    // onsemi 2N3904, figure 1, typical at 25 °C and VCE = 5 V.
+    CHECK(gainAt(npn->model, 5.0, 1e-3) == Approx(229.5).epsilon(0.025));
+    CHECK(gainAt(npn->model, 5.0, 50e-3) == Approx(193.9).epsilon(0.025));
+    CHECK(gainAt(npn->model, 5.0, 100e-3) == Approx(159.0).epsilon(0.045));
+
+    // onsemi 2N3906, figure 13, typical at 25 °C and VCE = -1 V.
+    const double reference = gainAt(pnp->model, -1.0, 10e-3);
+    CHECK(reference >= 100.0);
+    CHECK(reference <= 300.0);
+    CHECK(gainAt(pnp->model, -1.0, 1e-3) / reference == Approx(0.892).epsilon(0.08));
+    CHECK(gainAt(pnp->model, -1.0, 25e-3) / reference == Approx(0.903).epsilon(0.08));
 }

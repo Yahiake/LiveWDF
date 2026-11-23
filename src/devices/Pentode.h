@@ -698,6 +698,17 @@ inline const Pentode kKorenEL84 = Pentode::makeKoren(KorenPentode::el84(1.0));
 inline const Pentode kKoren6V6S = Pentode::makeKoren(KorenPentode::sixV6S(1.0));
 inline const Pentode kKoren6550 = Pentode::makeKoren(KorenPentode::six550(1.0));
 
+/// Philips EF86 transfer fit at its 250 V plate and 140 V screen reference.
+/// https://hfc-fs.s3-eu-west-1.amazonaws.com/s3fs-public/ef86_phillips_datasheet.pdf
+inline const Pentode kEF86 = Pentode::makeKoren(
+    {38.0, 1.35, 951.99, 2840.32, 177.12, 13.1, 1.0, 1e-8, 0.06});
+
+/// Raytheon 5725/6AS6W fit with the suppressor at cathode potential.
+/// The four-terminal pentode law does not have a separate suppressor port.
+/// https://frank.yueksel.org/sheets/138/5/5725.pdf
+inline const Pentode k6AS6 = Pentode::makeKoren(
+    {29.0, 1.5, 932.09, 893.15, 131.09, 13.0, 1.0, 1e-8, 0.06});
+
 /// Named entry in the pentode registry.
 struct NamedPentode {
     const char* name;
@@ -724,6 +735,8 @@ inline const NamedPentode kPentodeTable[] = {
     {"KOREN-EL84", &kKorenEL84},
     {"KOREN-6V6S", &kKoren6V6S},
     {"KOREN-6550", &kKoren6550},
+    {"EF86", &kEF86},
+    {"6AS6", &k6AS6},
 };
 
 /// Lookup a pentode model by name (case-insensitive ASCII). Returns nullptr

@@ -84,13 +84,18 @@ struct DiodeModel {
     double inv_g1 = 0.0;      // 1/(1 + Rs/Rp)
     double isat_g1 = 0.0;     // Is*inv_g1 = Is*Rp/(Rp+Rs)
     double inv_rple = 0.0;    // 1/(Rp + Rs)
+    double bv = 0.0;          // intrinsic reverse breakdown voltage; 0 disables breakdown
+    double ibv = 1e-3;        // avalanche current at a junction voltage of -BV
+    double breakdownV = 0.0;  // terminal voltage at the onset of avalanche current
+    double breakdownI = 0.0;  // forward-law terminal current at that voltage
 
     /// `exp` of this overflows a double. Clamping the exponent past it keeps the
     /// law finite instead of producing `inf`/`NaN` for the Newton to chew on.
     static constexpr double kMaxExponent = 700.0;
 
     DiodeModel() = default;
-    DiodeModel(double saturation, double emission, double series, double parallel = 0.0) noexcept
+    DiodeModel(double saturation, double emission, double series, double parallel = 0.0,
+               double breakdown = 0.0, double avalancheCurrent = 1e-3) noexcept
         : isat(saturation),
           n(emission),
           rs(series),
@@ -122,7 +127,27 @@ struct DiodeModel {
           isat_g1(parallel > 0.0 && series > 0.0
                       ? saturation / (1.0 + series / parallel)
                       : 0.0),
-          inv_rple(parallel + series > 0.0 ? 1.0 / (parallel + series) : 0.0) {}
+          inv_rple(parallel + series > 0.0 ? 1.0 / (parallel + series) : 0.0),
+          bv(breakdown), ibv(avalancheCurrent) {
+        if (bv > 0.0) {
+            // MiSTer-Discrete circuit-compiler 0176f12 adds an opposite
+            // exponential with a shifted knee. Using expm1 instead of exp
+            // makes its incremental current zero at the knee and keeps the
+            // LiveWDF law continuous. Below the knee the original diode's
+            // reverse saturation is held at its value there. The Rs and Rp
+            // are still shared, so the displaced problem is one forward
+            // Shockley solve, even when the root absorbs the port resistance.
+            // https://github.com/jopdorp/MiSTer-Discrete/commit/0176f12d209a7ab06593fb2232af4f3f4f5821c9
+            const double junctionV = nvt * std::log1p(ibv / isat) - bv;
+            breakdownI = isat * std::expm1(junctionV * inv_nvt) + junctionV * inv_rp;
+            breakdownV = junctionV + rs * breakdownI;
+        }
+    }
+
+    /// Same junction law after absorbing an external series resistance.
+    DiodeModel withSeriesResistance(double resistance) const noexcept {
+        return DiodeModel(isat, n, resistance, rp, bv, ibv);
+    }
 
     /// Current through the diode and its derivative, at the voltage across it
     /// (`v` positive = forward). Allocation-free and branch-predictable, so it
@@ -131,6 +156,16 @@ struct DiodeModel {
     /// residual ~5e-4 -- and this engine's Newton gates are 1e-12, so the
     /// refinement is what makes the closed form usable as a truth function.)
     void eval(double v, double& i, double& di) const noexcept {
+        if (bv > 0.0 && v < breakdownV) {
+            evalForwardLaw(breakdownV - v, i, di);
+            i = breakdownI - i;
+            return;
+        }
+        evalForwardLaw(v, i, di);
+    }
+
+private:
+    void evalForwardLaw(double v, double& i, double& di) const noexcept {
         if (rs > 0.0) {
             if (rp > 0.0) {
                 const double w = wrightOmega(zext + v * inv_c);
@@ -156,6 +191,7 @@ struct DiodeModel {
         di = isat_over_nvt * e + inv_rp;
     }
 
+public:
     /// SPICE's `pnjlim`, as the junction's own predicate: move the terminal
     /// voltage from `vold` toward `vnew` without letting the exponential leave
     /// the range in which a Newton linearisation means anything.
@@ -174,8 +210,15 @@ struct DiodeModel {
     ///
     /// `limited` reports whether either fired, for the caller's diagnostics.
     double limit(double vold, double vnew, bool& limited) const noexcept {
+        if (bv > 0.0 && vnew < breakdownV && rs == 0.0)
+            return breakdownV - limitForward(breakdownV - vold, breakdownV - vnew, limited);
         if (rp > 0.0)
             return vnew;  // bounded conductance: nothing to guard
+        return limitForward(vold, vnew, limited);
+    }
+
+private:
+    double limitForward(double vold, double vnew, bool& limited) const noexcept {
         // A non-physical model (no `vcrit`) disables the clamp rather than
         // producing `NaN` from it; the parser refuses such a model up front.
         if (!(vcrit > 0.0) || vnew <= vcrit || std::abs(vnew - vold) <= 2.0 * nvt)
@@ -235,7 +278,8 @@ struct AntiParallelDiodeModel {
         symmetrical = (std::abs(a.isat - b.isat) < 1e-15 * a.isat) &&
                       (std::abs(a.n - b.n) < 1e-6) &&
                       (std::abs(a.rs - b.rs) < 1e-6 * (a.rs + 1.0)) &&
-                      (std::abs(a.rp - b.rp) <= 1e-9 * (a.rp + 1.0));
+                      (std::abs(a.rp - b.rp) <= 1e-9 * (a.rp + 1.0)) &&
+                      a.bv == b.bv && a.ibv == b.ibv;
         isat = a.isat;
         rs = a.rs;
         nvt = a.nvt;
@@ -388,22 +432,52 @@ struct DiodeEntry {
     double n;
     double rs;
     double rp;
+    double bv = 0.0;
+    double ibv = 1e-3;
+
+    DiodeModel model() const noexcept { return DiodeModel(isat, n, rs, rp, bv, ibv); }
 };
 
-/// The 6 diode types Cathodyne offers (`Cathodyne/src/dsp/DiodeClipper.h`), with
-/// the 1N4148/1N914 saturation and emission from ATTILA's extended Shockley
-/// example (`Is = 4.352e-9, eta = 1.905, Rs = 0.56, Rp = 1e6`) and `Rp = 1e6`
-/// carrying the Bernardini et al extension on every named diode.
+/// The original Cathodyne cards use the ATTILA extended Shockley fit for
+/// 1N4148/1N914 with a 1 Mohm conductance floor.
 inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N4148", 4.352e-9, 1.905, 0.56, 1e6},
     {"1N914",  4.352e-9, 1.905, 0.56, 1e6},
     {"1N4007", 1.0e-6, 1.0, 0.04, 1e6},
+    // Diodes Inc. 1N4003 static SPICE parameters. CJO and TT are not used here.
+    // https://www.diodes.com/spice/download/337/1N4003.spice.txt
+    {"1N4003", 76.9e-12, 1.45, 0.042, 0.0, 200.0, 5.0e-6},
     {"1N34A",  1.0e-6, 1.0, 5.0, 1e6},
     {"1N5819", 1.0e-6, 1.0, 0.05, 1e6},
     {"GZ34",   2.52e-9, 1.0, 15.0, 1e6},
+    // ROHM 1SS133 in LTspice standard.dio. Only the static junction law is
+    // represented here (IS, N, RS); junction capacitance is not modelled.
+    {"1SS133", 1.0e-10, 1.5, 0.4, 1e6},
+    // Generic small red clipping LED; no specific Marshall production bin.
+    // https://www.eevblog.com/forum/projects/led-spice-model-in-eagle/
+    {"Red-LED-1V8", 93.2e-12, 3.73, 0.042, 1e6, 4.0, 10e-6},
+    // From jopdorp/MiSTer-Discrete circuit-compiler@692e777, circuits/parts/.
+    // The MA150 and 1S1588 cards there both use the Nexperia 1N4148 fit as a
+    // proxy. Name the substitution explicitly in the picker too.
+    {"1N914-Nexperia", 4.352e-9, 1.906, 0.6458, 1e6, 110.0, 1e-4},
+    {"1S1588-Proxy",   4.352e-9, 1.906, 0.6458, 1e6, 110.0, 1e-4},
+    {"MA150-Proxy",    4.352e-9, 1.906, 0.6458, 1e6, 110.0, 1e-4},
+    {"1S2075",        1.387e-9, 1.702, 1.53,   1e6, 75.0, 100e-15},
+    {"1N34A-MiSTer",  2.6e-6,   1.6,   4.0,    1e6},
+    {"1N4002",        14.11e-9, 1.984, 0.03389,1e6},
+    // Nexperia's 1N4148 model fits reverse leakage with a 5.827 Gohm shunt.
+    // https://assets.nexperia.com/documents/spice-model/1N4148.txt
+    // The 1S2075 and 1N4002 MiSTer source cards have no parallel resistor.
+    {"1N914-Nexperia-LowLeakage", 4.352e-9, 1.906, 0.6458, 5.827e9, 110.0, 1e-4},
+    {"1S2075-LowLeakage",         1.387e-9, 1.702, 1.53,   0.0,      75.0, 100e-15},
+    {"1N4002-LowLeakage",         14.11e-9, 1.984, 0.03389, 0.0},
+    // Intrinsic BV subtracts IZT * Rs from the documented terminal voltage.
+    {"1N5231B",       1e-14,    1.0,  17.0,    1e6, 5.1 - 0.02 * 17.0, 0.02},
+    {"1N5236B",       1e-14,    1.0,   6.0,    1e6, 7.5 - 0.02 * 6.0,  0.02},
+    {"1N5240B",       1e-14,    1.0,  17.0,    1e6, 10.0 - 0.02 * 17.0, 0.02},
 };
 
-inline constexpr int kNumDiodes = 6;
+inline constexpr int kNumDiodes = static_cast<int>(sizeof(kDiodeTable) / sizeof(kDiodeTable[0]));
 
 /// Finds a diode by name ("1N4148", "D1N914", etc.), case-insensitive.
 /// Leading 'D' is stripped if not found directly, matching SPICE naming conventions.

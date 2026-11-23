@@ -68,6 +68,9 @@ SpiceExportResult spiceExport(const Circuit& c,
     f << "* LiveWDF netlist exported by SpiceExport (core)\n";
     f << ".title LiveWDF\n";
     f << "* Engine integrates with trapezoidal at " << spiceNum(fs) << " Hz\n";
+    for (const auto& bbd : c.bucketBrigades)
+        f << "* " << spiceSafe(bbd.name)
+          << " bucket-brigade clock and charge state omitted; output kept at nominal DC bias\n";
     f << ".options method=gear maxord=2 reltol=1e-4 abstol=1e-9 "
          "vntol=1e-5 chgtol=1e-12 trtol=7\n";
     if (durationSeconds > 0.0) {
@@ -128,11 +131,58 @@ SpiceExportResult spiceExport(const Circuit& c,
     // ---- Controlled resistors ----
     // The engine seeds each controlled resistor from its initial ohms
     // (`Compiled::ctrlRes[].second`, read by `Engine::ctrlResValues_`), so a
-    // plain `R` at that ohmage reproduces the same DC state. The runtime
-    // controller has no SPICE equivalent and is reported in the diagnostics.
+    // plain `R` at that ohmage reproduces the same initial DC state.
     for (size_t i = 0; i < c.ctrlRes.size(); ++i) {
         const auto& e = c.ctrlRes[i];
         const std::string base = e.name.empty() ? ("CR" + std::to_string(i)) : e.name;
+        if (e.vca) {
+            const auto a = nodeOrGround(e.a);
+            const auto b = nodeOrGround(e.b);
+            const auto& vca = *e.vca;
+            const auto sense = "V(" + nodeOrGround(vca.control) + "," +
+                               nodeOrGround(vca.reference) + ")";
+            f << spiceUnique("B_" + spiceSafe(base), used) << " " << a << " " << b
+              << " I=";
+            const std::string voltage = "V(" + a + "," + b + ")";
+            if (e.dbx200Crossover != 0.0) {
+                const auto bias = std::find_if(c.dbx200Biases.begin(), c.dbx200Biases.end(),
+                    [i](const auto& pair) { return pair.pnp == i || pair.npn == i; });
+                f << "(0.5*(" << voltage << (e.dbx200Crossover > 0.0 ? "+" : "-")
+                  << "sqrt(" << voltage << "^2+" << spiceNum(e.dbx200Crossover * e.dbx200Crossover);
+                if (bias != c.dbx200Biases.end()) {
+                    f << "*exp(2*min(max(V(" << nodeOrGround(bias->ni) << "," << nodeOrGround(bias->pi)
+                      << ")/" << spiceNum(Dbx200Bias::twiceThermalVolts) << ",-20),20))";
+                }
+                f << ")))*";
+            } else {
+                f << voltage << "*";
+            }
+            if (vca.blackmer) {
+                f << "exp(" << spiceNum(std::log(10.0) / 20.0) << "*min(max("
+                  << sense << "/" << spiceNum(vca.logVoltsPerDb) << ","
+                  << spiceNum(VcaControl::blackmerMinimumDb) << "),"
+                  << spiceNum(VcaControl::blackmerMaximumDb) << "))";
+            } else {
+                f << "min(max(" << sense << "/" << spiceNum(vca.fullGainVolts) << ","
+                  << spiceNum(VcaControl::minimumGain) << "),"
+                  << spiceNum(VcaControl::maximumGain) << ")";
+            }
+            f << "/" << spiceNum(e.initialOhms * vca.initialGain()) << "\n";
+            continue;
+        }
+        if (e.ota) {
+            const auto a = nodeOrGround(e.a);
+            const auto b = nodeOrGround(e.b);
+            f << spiceUnique("B_" + spiceSafe(base), used) << " " << a << " " << b
+              << " I=" << spiceNum(OtaControl::transportGain) << "*max(V("
+              << nodeOrGround(e.ota->bias) << "," << nodeOrGround(e.ota->biasDiode) << ")/"
+              << spiceNum(OtaControl::senseOhms) << "," << spiceNum(OtaControl::minimumCurrent)
+              << ")*tanh(V(" << a << "," << b << ")/" << spiceNum(OtaControl::pairVolts)
+              << ")\n";
+            continue;
+        }
+        if (e.photo)
+            f << "* " << spiceSafe(base) << " photoresistor frozen at dark resistance\n";
         f << spiceUnique("R_" + spiceSafe(base), used) << " "
           << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
           << spiceNum(e.initialOhms) << "\n";
@@ -163,6 +213,36 @@ SpiceExportResult spiceExport(const Circuit& c,
     // ---- Current sources ----
     for (size_t i = 0; i < c.isrc.size(); ++i) {
         const auto& s = c.isrc[i];
+        const auto detector = std::find_if(c.rmsDetectors.begin(), c.rmsDetectors.end(),
+            [i](const auto& rms) { return rms.outputCurrentIndex == i; });
+        if (detector != c.rmsDetectors.end()) {
+            const auto& m = detector->model;
+            const auto base = spiceSafe(detector->name);
+            const std::string power = "x_" + base + "_power";
+            const std::string input = "V(" + nodeOrGround(detector->input) + "," +
+                                      nodeOrGround(detector->common) + ")";
+            const std::string instantaneous =
+                "min(abs(" + input + ")/" + spiceNum(m.referenceVolts) + "," +
+                spiceNum(RmsDetectorModel::maximumNormalizedInput) + ")^2";
+            f << spiceUnique("B_" + base + "_power", used) << " 0 " << power << " I=";
+            if (m.attackSeconds() == m.releaseSeconds()) {
+                f << instantaneous << "\n";
+                f << spiceUnique("R_" + base + "_mean", used) << " " << power << " 0 1\n";
+                f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 "
+                  << spiceNum(m.attackSeconds()) << "\n";
+            } else {
+                const std::string difference = instantaneous + "-V(" + power + ")";
+                f << "(" << difference << ")/ternary_fcn((" << difference << ")>0,"
+                  << spiceNum(m.attackSeconds()) << "," << spiceNum(m.releaseSeconds()) << ")\n";
+                f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 1\n";
+            }
+            f << spiceUnique("B_" + base + "_drive", used) << " " << nodeOrGround(s.a)
+              << " " << nodeOrGround(s.b) << " I="
+              << spiceNum(10.0 * m.signedVoltsPerDb() / (std::log(10.0) * m.outputOhms))
+              << "*ln(min(max(V(" << power << ")," << spiceNum(RmsDetectorModel::minimumPower)
+              << ")," << spiceNum(RmsDetectorModel::maximumPower) << "))\n";
+            continue;
+        }
         const std::string base = s.name.empty() ? ("I" + std::to_string(i)) : s.name;
         const std::string name = spiceUnique("I_" + spiceSafe(base), used);
         f << name << " " << nodeOrGround(s.a) << " " << nodeOrGround(s.b)
@@ -189,22 +269,42 @@ SpiceExportResult spiceExport(const Circuit& c,
         const auto& o = c.opamp[i];
         const std::string base = o.name.empty() ? ("OA" + std::to_string(i)) : o.name;
         const auto& m = o.model;
-        const std::string en = spiceUnique("E_" + spiceSafe(base), used);
-        const std::string rn = spiceUnique("R_" + spiceSafe(base) + "_ro", used);
         const std::string mid = spiceUnique("x_" + spiceSafe(base) + "_out", usedNodes);
-        // Ideal VCVS: mid = openLoopGain * (pos - neg)
-        f << en << " " << mid << " 0 " << o.pos << " " << o.neg
-          << " " << spiceNum(m.openLoopGain) << "\n";
-        // Output resistance
-        f << rn << " " << mid << " " << o.out << " " << spiceNum(m.outputImpedance) << "\n";
-        // Rail clamping (soft or hard): limit output to [vRailNeg, vRailPos]
-        // Using ideal diodes for clamp; for hard rails, replace with limiting sources.
+        const std::string raw = spiceNum(m.openLoopGain) + "*V(" + o.pos + "," + o.neg + ")";
+        std::string railLimited = "min(max(" + raw + "," + spiceNum(m.railLow()) +
+                                  ")," + spiceNum(m.railHigh()) + ")";
         if (m.softRails) {
-            // Asymmetric tanh clamp would need a behavioral source; hard clamp is a
-            // reasonable first-order approximation for DC comparison.
+            const auto softLimit = [&](double rail) {
+                return std::abs(rail) < 1e9 && rail != 0.0
+                    ? "(" + spiceNum(rail) + ")*tanh((" + raw + ")/(" + spiceNum(rail) + "))"
+                    : raw;
+            };
+            railLimited = "ternary_fcn((" + raw + ")>=0," + softLimit(m.railHigh()) +
+                          "," + softLimit(m.railLow()) + ")";
         }
-        // Supply pins (vcc, vee) are connected externally by the schematic; the
-        // VCVS itself doesn't consume supply current in this linear model.
+        if (m.hasClassABOutput()) {
+            const std::string voltageSource = spiceUnique("B_" + spiceSafe(base) + "_pole", used);
+            const std::string outputStage = spiceUnique("B_" + spiceSafe(base) + "_stage", used);
+            const std::string limit = spiceNum(m.outputCurrentLimit);
+            const std::string is = spiceNum(m.outputJunctionIs);
+            const std::string total = spiceNum(m.outputCurrentLimit + m.outputJunctionIs +
+                                               OpAmpModel::kSteeringDiodeIs);
+            const std::string ratio = spiceNum(m.outputJunctionIs / OpAmpModel::kSteeringDiodeIs);
+            const auto branch = [&](const std::string& v) {
+                const std::string expArg = "min(max((-" + v + ")/" +
+                                           spiceNum(kThermalVoltage) + ",-700),700)";
+                return "min(max(" + total + "/(1+exp(" + expArg + ")/" + ratio +
+                       ")-" + is + ",0)," + limit + ")";
+            };
+            f << voltageSource << " " << mid << " 0 V = {" << railLimited << "}\n";
+            f << outputStage << " " << o.out << " 0 I = {" << branch("V(" + o.out + "," + mid + ")")
+              << "-" << branch("V(" + mid + "," + o.out + ")") << "}\n";
+            continue;
+        }
+        const std::string en = spiceUnique("B_" + spiceSafe(base), used);
+        const std::string rn = spiceUnique("R_" + spiceSafe(base) + "_ro", used);
+        f << en << " " << mid << " 0 V = {" << railLimited << "}\n";
+        f << rn << " " << mid << " " << o.out << " " << spiceNum(m.outputImpedance) << "\n";
     }
 
     // ---- Triodes (DAFx-23 quadric) ----
@@ -243,6 +343,8 @@ SpiceExportResult spiceExport(const Circuit& c,
           << " N=" << spiceNum(n);
         if (rs > 0.0)
             f << " RS=" << spiceNum(rs);
+        if (d.model.bv > 0.0)
+            f << " BV=" << spiceNum(d.model.bv) << " IBV=" << spiceNum(d.model.ibv);
         f << ")\n";
         f << devName << " " << a << " " << b << " " << modelName << "\n";
 
@@ -379,85 +481,66 @@ SpiceExportResult spiceExport(const Circuit& c,
           << nodeOrGround(p.g) << " " << nodeOrGround(p.k) << " " << subName << "\n";
     }
 
-    // ---- JFETs (Bernardini et al. square law) ----
-    // Id = f(vGS, vDS) with cut-off/ohmic/saturation regions, expressed as a
-    // behavioural current source using ngspice's if() ternary.
+    // The forward square law is shared by both FET device models. Select
+    // gate-to-source or gate-to-drain overdrive when the channel reverses.
+    if (!c.jfet.empty() || !c.mosfet.empty()) {
+        f << ".func lwdf_overdrive(ds,gs,gd,vt) "
+             "max(ternary_fcn(ds>=0,gs,gd)-vt,0)\n"
+             ".func lwdf_channel(ds,ov,k,l) "
+             "sgn(ds)*k*min(abs(ds),ov)*(ov-min(abs(ds),ov)/2)*(1+l*abs(ds))\n";
+    }
+    const auto emitFet = [&](const std::string& base, const std::string& d,
+                             const std::string& g, const std::string& s,
+                             bool pChannel, double threshold, double k, double lambda) {
+        const std::string dn = nodeOrGround(d);
+        const std::string gn = nodeOrGround(g);
+        const std::string sn = nodeOrGround(s);
+        const auto voltage = [&](const std::string& pos, const std::string& neg) {
+            return pChannel ? "V(" + neg + "," + pos + ")" : "V(" + pos + "," + neg + ")";
+        };
+        const std::string ds = voltage(dn, sn);
+        f << spiceUnique("B_id_" + spiceSafe(base), used) << " " << dn << " " << sn
+          << " I = {" << (pChannel ? "-" : "") << "lwdf_channel(" << ds
+          << ",lwdf_overdrive(" << ds << "," << voltage(gn, sn) << ","
+          << voltage(gn, dn) << "," << spiceNum(threshold) << "),"
+          << spiceNum(k) << "," << spiceNum(lambda) << ")}\n";
+    };
+
     for (size_t i = 0; i < c.jfet.size(); ++i) {
         const auto& j = c.jfet[i];
         const std::string base = j.name.empty() ? ("J" + std::to_string(i)) : j.name;
-        const auto& m = j.model;
-        const double k = 2.0 * m.p.Is0 / (m.p.Vp * m.p.Vp); // 2*Is0/Vp^2
-        const std::string dn = nodeOrGround(j.dExt);
-        const std::string gn = nodeOrGround(j.gExt);
-        const std::string sn = nodeOrGround(j.sExt);
-        const std::string subName = spiceUnique("X_" + spiceSafe(base), used);
-
-        f << ".subckt " << subName << " d g s\n";
-        f << "B" << spiceUnique("id_" + spiceSafe(base), used) << " " << dn << " " << sn
-          << " I = {if(V(" << gn << "," << sn << ")-" << spiceNum(m.p.Vp) << "<=0,0,"
-          << "if(V(" << dn << "," << sn << ")<V(" << gn << "," << sn << ")-" << spiceNum(m.p.Vp)
-          << "," << spiceNum(k) << "*((" << spiceNum(1.0/m.p.Vp) << "*V(" << gn << "," << sn
-          << ")-1)*V(" << dn << "," << sn << ")-V(" << dn << "," << sn << ")^2/2)*("
-          << "1+" << spiceNum(m.p.lambda) << "*V(" << dn << "," << sn << ")),"
-          << spiceNum(m.p.Is0) << "*pow(1-V(" << gn << "," << sn << ")/" << spiceNum(m.p.Vp)
-          << ",2)*(" << "1+" << spiceNum(m.p.lambda) << "*V(" << dn << "," << sn << "))))}\n";
-        f << ".ends " << subName << "\n";
-        f << subName << " " << nodeOrGround(j.dExt) << " " << nodeOrGround(j.gExt) << " " << nodeOrGround(j.sExt) << " " << subName << "\n";
+        emitFet(base, j.d, j.g, j.s, j.model.p.pChannel, j.model.p.Vp,
+                j.model.k(), j.model.p.lambda);
     }
-
-    // ---- MOSFETs (Bernardini et al. square law) ----
     for (size_t i = 0; i < c.mosfet.size(); ++i) {
         const auto& m = c.mosfet[i];
         const std::string base = m.name.empty() ? ("M" + std::to_string(i)) : m.name;
-        const auto& mp = m.model.p;
-        const std::string dn = nodeOrGround(m.d);
-        const std::string gn = nodeOrGround(m.g);
-        const std::string sn = nodeOrGround(m.s);
-        const std::string subName = spiceUnique("X_" + spiceSafe(base), used);
-
-        f << ".subckt " << subName << " d g s\n";
-        f << "B" << spiceUnique("id_" + spiceSafe(base), used) << " " << dn << " " << sn
-          << " I = {if(V(" << gn << "," << sn << ")-" << spiceNum(mp.Vth) << "<=0,0,"
-          << "if(V(" << dn << "," << sn << ")<V(" << gn << "," << sn << ")-" << spiceNum(mp.Vth)
-          << "," << spiceNum(mp.K) << "*((" << spiceNum(mp.Vth) << "+V(" << gn << "," << sn
-          << ")-" << spiceNum(mp.Vth) << ")*V(" << dn << "," << sn << ")-V(" << dn << "," << sn
-          << ")^2/2)*(" << "1+" << spiceNum(mp.lambda) << "*V(" << dn << "," << sn << ")),"
-          << spiceNum(mp.K) << "/2*pow(V(" << gn << "," << sn << ")-" << spiceNum(mp.Vth)
-          << ",2)*(" << "1+" << spiceNum(mp.lambda) << "*V(" << dn << "," << sn << "))))}\n";
-        f << ".ends " << subName << "\n";
-        f << subName << " " << dn << " " << gn << " " << sn << " " << subName << "\n";
+        emitFet(base, m.d, m.g, m.s, m.model.p.pChannel, m.model.p.Vth,
+                m.model.p.K, m.model.p.lambda);
     }
 
-    // ---- BJTs (Ebers-Moll transport form) ----
-    // Ic = Is*(exp(Vbe/nfVt)-1) - Is/alphaR*(exp(Vbc/nrVt)-1)
-    // Ib = Is/alphaF*(exp(Vbe/nfVt)-1) - Is*(exp(Vbc/nrVt)-1)
+    // Native BJTs use the same Ebers-Moll parameters and let ngspice apply
+    // its junction limiting while finding the operating point.
     for (size_t i = 0; i < c.bjt.size(); ++i) {
         const auto& b = c.bjt[i];
         const std::string base = b.name.empty() ? ("Q" + std::to_string(i)) : b.name;
         const auto& m = b.model;
-        const double alphaF = m.Bf / (m.Bf + 1.0);
-        const double alphaR = m.Br / (m.Br + 1.0);
-        const bool pnp = m.pnp;
-        const double nfVt = m.Nf * m.Vt;
-        const double nrVt = m.Nr * m.Vt;
-        const std::string cn = nodeOrGround(b.c);
-        const std::string bn = nodeOrGround(b.b);
-        const std::string en = nodeOrGround(b.e);
-        const std::string subName = spiceUnique("X_" + spiceSafe(base), used);
-        const std::string vbe = pnp ? "V(" + en + "," + bn + ")" : "V(" + bn + "," + en + ")";
-        const std::string vbc = pnp ? "V(" + en + "," + cn + ")" : "V(" + bn + "," + cn + ")";
-
-        f << ".subckt " << subName << " c b e\n";
-        f << "B" << spiceUnique("ic_" + spiceSafe(base), used) << " " << cn << " " << en
-          << " I = {" << spiceNum(m.Is) << "*(exp(" << vbe << "/" << spiceNum(nfVt)
-          << ")-1)-" << spiceNum(m.Is / alphaR) << "*(exp(" << vbc << "/" << spiceNum(nrVt)
-          << ")-1)}\n";
-        f << "B" << spiceUnique("ib_" + spiceSafe(base), used) << " " << bn << " " << en
-          << " I = {" << spiceNum(m.Is / alphaF) << "*(exp(" << vbe << "/" << spiceNum(nfVt)
-          << ")-1)-" << spiceNum(m.Is) << "*(exp(" << vbc << "/" << spiceNum(nrVt)
-          << ")-1)}\n";
-        f << ".ends " << subName << "\n";
-        f << subName << " " << cn << " " << bn << " " << en << " " << subName << "\n";
+        const std::string modelName = spiceUnique("Qmod_" + spiceSafe(base), used);
+        const std::string deviceName = spiceUnique("Q_" + spiceSafe(base), used);
+        f << ".model " << modelName << (m.pnp ? " PNP" : " NPN") << "(IS=" << spiceNum(m.Is)
+          << " BF=" << spiceNum(m.Bf) << " BR=" << spiceNum(m.Br)
+          << " NF=" << spiceNum(m.Nf) << " NR=" << spiceNum(m.Nr);
+        if (m.Vaf > 0.0)
+            f << " VAF=" << spiceNum(m.Vaf);
+        if (m.Var > 0.0)
+            f << " VAR=" << spiceNum(m.Var);
+        if (m.Ise > 0.0)
+            f << " ISE=" << spiceNum(m.Ise) << " NE=" << spiceNum(m.Ne);
+        if (m.Ikf > 0.0)
+            f << " IKF=" << spiceNum(m.Ikf);
+        f << ")\n";
+        f << deviceName << " " << nodeOrGround(b.c) << " " << nodeOrGround(b.b)
+          << " " << nodeOrGround(b.e) << " " << modelName << "\n";
     }
 
     // ---- Control / analysis cards ----
@@ -517,7 +600,7 @@ SpiceExportResult spiceExport(const Circuit& c,
       << c.ind.size() << " Ind, " << (c.mutual.size() - shortMutual) << " K, "
       << c.ctrlRes.size() << " ControlledRes, " << c.src.size() << " Src, "
       << c.isrc.size() << " Isrc, " << c.vcvs.size() << " VCVS, "
-      << c.opamp.size() << " OpAmp (ideal VCVS: rail clamping not represented), "
+      << c.opamp.size() << " OpAmp (static rail limiting), "
       << c.tri.size() << " Tri, " << c.diode.size() << " Diode, "
       << c.pent.size() << " Pent, " << c.jfet.size() << " Jfet, "
       << c.mosfet.size() << " Mosfet, " << c.bjt.size() << " Bjt; "
@@ -526,10 +609,27 @@ SpiceExportResult spiceExport(const Circuit& c,
     if (shortMutual)
         d << "; NOT exported: " << shortMutual
           << " MutualInd with fewer than two inductors";
+    const auto photoCount = std::count_if(c.ctrlRes.begin(), c.ctrlRes.end(),
+                                         [](const auto& e) { return e.photo.has_value(); });
+    if (photoCount)
+        d << "; " << photoCount << " photoresistor(s) fixed at dark resistance";
     const auto initialCapCount = std::count_if(
         c.cap.begin(), c.cap.end(), [](const auto& e) { return e.initialVolts.has_value(); });
     if (initialCapCount)
         d << "; " << initialCapCount << " capacitor startup override(s) omitted (DC operating point)";
+    const auto vcaCount = std::count_if(c.ctrlRes.begin(), c.ctrlRes.end(),
+                                        [](const auto& e) { return e.vca.has_value(); });
+    if (vcaCount)
+        d << "; " << vcaCount << " VCA(s) with continuous SPICE control";
+    const auto otaCount = std::count_if(c.ctrlRes.begin(), c.ctrlRes.end(),
+                                        [](const auto& e) { return e.ota.has_value(); });
+    if (otaCount)
+        d << "; " << otaCount << " OTA(s) with continuous SPICE bias control";
+    if (!c.rmsDetectors.empty())
+        d << "; " << c.rmsDetectors.size() << " log RMS detector(s) with continuous SPICE averaging";
+    if (!c.bucketBrigades.empty())
+        d << "; " << c.bucketBrigades.size()
+          << " bucket-brigade delay(s) fixed at nominal DC output bias, transient wet path omitted";
     r.diagnostics = d.str();
     r.ok = (shortMutual == 0);
     return r;

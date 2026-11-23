@@ -26,7 +26,8 @@ public:
                           double sourceScale,
                           double gminOverride,
                           double tol,
-                          const std::vector<double>* warmStart) {
+                          const std::vector<double>* warmStart,
+                          const std::vector<double>* currentOverrides = nullptr) {
         const bool savedStatic = eng.staticMode_;
         eng.staticMode_ = true;
         struct StaticModeGuard {
@@ -160,7 +161,9 @@ public:
         std::vector<double> iIsrc(static_cast<size_t>(eng.nIsrc_));
         for (int k = 0; k < eng.nIsrc_; ++k)
             iIsrc[static_cast<size_t>(k)] =
-                sourceScale * eng.comp_.isrc[static_cast<size_t>(k)].second.dc;
+                sourceScale * (currentOverrides == nullptr ?
+                    eng.comp_.isrc[static_cast<size_t>(k)].second.dc :
+                    (*currentOverrides)[static_cast<size_t>(k)]);
 
         std::vector<double> u(static_cast<size_t>(eng.N_), 0.0);
         for (int n = 0; n < eng.N_; ++n) {
@@ -393,9 +396,53 @@ public:
     }
 
     template <typename EngineType>
-    static bool solveDc(const EngineType& eng, std::vector<double>& node,
-                                    std::vector<double>& rootV) {
-        if (solveDcAt(eng, node, rootV, 1.0, 0.0, 1e-14, nullptr))
+    static bool solveDc(const EngineType& eng, std::vector<double>& node, std::vector<double>& rootV) {
+        if (eng.bucketBrigades_.empty() && eng.rmsDetectors_.empty())
+            return solveDcWithCurrents(eng, node, rootV, nullptr);
+
+        std::vector<double> currents;
+        currents.reserve(eng.comp_.isrc.size());
+        for (const auto& source : eng.comp_.isrc)
+            currents.push_back(source.second.dc);
+
+        // Dynamic outputs respond to a constant input at DC. Settle their
+        // output currents from the solved input, including any DC feedback.
+        // AC-coupled circuits ordinarily settle on the second pass.
+        for (int pass = 0; pass < 24; ++pass) {
+            if (!solveDcWithCurrents(eng, node, rootV, &currents))
+                return false;
+            bool settled = true;
+            for (std::size_t i = 0; i < eng.bucketBrigades_.size(); ++i) {
+                const auto& bbd = eng.bucketBrigades_[i];
+                const auto& model = eng.comp_.bucketBrigades[i].model;
+                const double input = bbd.input.voltage(node, eng.dcValues_.data(),
+                                                       eng.dcValues_.size());
+                const double current = model.dcOutputCurrent(input);
+                auto& previous = currents[bbd.outputCurrentIndex];
+                settled = settled && std::abs(current - previous) * model.outputOhms <= 1e-8;
+                previous = current;
+            }
+            for (std::size_t i = 0; i < eng.rmsDetectors_.size(); ++i) {
+                const auto& rms = eng.rmsDetectors_[i];
+                const auto& model = eng.comp_.rmsDetectors[i].model;
+                const double input = rms.input.voltage(node, eng.dcValues_.data(),
+                                                       eng.dcValues_.size());
+                const double current = model.dcOutputCurrent(input);
+                auto& previous = currents[rms.outputCurrentIndex];
+                settled = settled && std::abs(current - previous) * model.outputOhms <= 1e-8;
+                previous = current;
+            }
+            if (settled)
+                return true;
+        }
+        return false;
+    }
+
+    template <typename EngineType>
+    static bool solveDcWithCurrents(const EngineType& eng, std::vector<double>& node,
+                                    std::vector<double>& rootV,
+                                    const std::vector<double>* currentOverrides) {
+        if (solveDcAt(eng, node, rootV, 1.0, 0.0, 1e-14, nullptr, currentOverrides))
             return true;
 
         std::vector<double> nodeTry(static_cast<size_t>(eng.N_));
@@ -403,7 +450,7 @@ public:
         const double tol = 1e-10;
 
         for (double gmin : {1e-12, 1e-11, 1e-10, 1e-9, 1e-8}) {
-            if (solveDcAt(eng, nodeTry, rootTry, 1.0, gmin, tol, nullptr)) {
+            if (solveDcAt(eng, nodeTry, rootTry, 1.0, gmin, tol, nullptr, currentOverrides)) {
                 node = nodeTry;
                 rootV = rootTry;
                 return true;
@@ -411,7 +458,7 @@ public:
         }
 
         const double gmin = 1e-10;
-        if (!solveDcAt(eng, nodeTry, rootTry, 0.0, gmin, tol, nullptr))
+        if (!solveDcAt(eng, nodeTry, rootTry, 0.0, gmin, tol, nullptr, currentOverrides))
             return false;
 
         std::vector<double> warm = rootTry;
@@ -419,7 +466,7 @@ public:
         double rung = 0.125;
         for (int guard = 0; guard < 64 && reached < 1.0; ++guard) {
             const double next = std::min(1.0, reached + rung);
-            if (solveDcAt(eng, nodeTry, rootTry, next, gmin, tol, &warm)) {
+            if (solveDcAt(eng, nodeTry, rootTry, next, gmin, tol, &warm, currentOverrides)) {
                 reached = next;
                 warm = rootTry;
                 if (reached == 1.0) {
@@ -427,7 +474,7 @@ public:
                     rootV = rootTry;
                     return true;
                 }
-                if (solveDcAt(eng, nodeTry, rootTry, 1.0, gmin, tol, &warm)) {
+                if (solveDcAt(eng, nodeTry, rootTry, 1.0, gmin, tol, &warm, currentOverrides)) {
                     node = nodeTry;
                     rootV = rootTry;
                     return true;
