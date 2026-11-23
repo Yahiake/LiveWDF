@@ -33,6 +33,7 @@ struct TransferContext {
     std::vector<int>& xrCols;
     std::vector<double>& xrVals;
     const std::vector<int>& nodeCols;
+    FactoredTransfer& factors;
 };
 
 class DenseTransfer {
@@ -42,9 +43,17 @@ public:
         for (int j = 0; j < ctx.P; ++j)
             ctx.net.elems[static_cast<size_t>(j)].g = ctx.net.eG[static_cast<size_t>(j)];
 
-        if (!rootTransferInto(ctx.net.elems, ctx.net.allRoots, ctx.N,
-                              ctx.linY, ctx.linRhs, ctx.linXe, ctx.linXr,
-                              ctx.net.mutualPairs, ctx.net.vcvsList))
+        // Small transfers are faster as precomputed row dot products. On large
+        // banks retain the factors, then compare actual nonzero counts below.
+        const bool large = static_cast<size_t>(ctx.N) * ctx.net.liveCols.size() >= 8192;
+        const auto transfer = [&](FactoredTransfer* factors) {
+            return rootTransferInto(ctx.net.elems, ctx.net.allRoots, ctx.N,
+                                    ctx.linY, ctx.linRhs, ctx.linXe, ctx.linXr,
+                                    ctx.net.mutualPairs, ctx.net.vcvsList, nullptr,
+                                    factors, ctx.net.liveCols);
+        };
+        ctx.factors.active = large && transfer(&ctx.factors);
+        if (!ctx.factors.active && !transfer(nullptr))
             return false;
 
         ctx.nLive = static_cast<int>(ctx.net.liveCols.size());
@@ -69,6 +78,10 @@ public:
             }
         }
         ctx.xeRowOffsets[static_cast<size_t>(ctx.N)] = static_cast<int>(ctx.xeVals.size());
+
+        // The triangular passes gather and scatter, so reserve them for a
+        // substantial reduction over the compiled row multiply.
+        ctx.factors.active = ctx.factors.active && ctx.xeVals.size() > 4 * ctx.factors.operations();
 
         ctx.Xr.resize(static_cast<size_t>(ctx.N) * ctx.K);
         ctx.xrRowOffsets.assign(static_cast<size_t>(ctx.N + 1), 0);

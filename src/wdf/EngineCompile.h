@@ -157,7 +157,7 @@ protected:
             linearRebuilds_, linY_, linRhs_, linXe_, linXr_,
             xeRowOffsets_, xeCols_, xeVals_,
             xrRowOffsets_, xrCols_, xrVals_,
-            rootLayout_.nodeCol
+            rootLayout_.nodeCol, networkFactors_
         };
     }
 

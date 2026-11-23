@@ -312,20 +312,24 @@ public:
         // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
         double* LIVEWDF_RESTRICT uData = u_.data();
         std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
-        for (const auto& e : xeRows1_) {
-            uData[e.node] = e.val * wData[e.col];
-        }
-        for (const auto& e : xeRows2_) {
-            uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
-        }
-        if (!xeRowsN_.empty()) {
-            const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
-            const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-            for (const auto& e : xeRowsN_) {
-                double s = 0.0;
-                for (int idx = e.start; idx < e.end; ++idx)
-                    s += xeVals[idx] * wData[xeCols[idx]];
-                uData[e.node] = s;
+        if (networkFactors_.active) {
+            networkFactors_.apply(wData, uData);
+        } else {
+            for (const auto& e : xeRows1_) {
+                uData[e.node] = e.val * wData[e.col];
+            }
+            for (const auto& e : xeRows2_) {
+                uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
+            }
+            if (!xeRowsN_.empty()) {
+                const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
+                const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
+                for (const auto& e : xeRowsN_) {
+                    double s = 0.0;
+                    for (int idx = e.start; idx < e.end; ++idx)
+                        s += xeVals[idx] * wData[xeCols[idx]];
+                    uData[e.node] = s;
+                }
             }
         }
 
@@ -405,6 +409,18 @@ public:
         std::memcpy(nodeData, uData, static_cast<size_t>(N_) * sizeof(double));
         if (K_ > 0) {
             const double* LIVEWDF_RESTRICT iiData = ii_.data();
+            for (const auto& panel : rootPanels_) {
+                double sums[rootPanelWidth]{};
+                const double* coeff = rootPanelValues_.data() + panel.valueStart;
+                for (int j = 0; j < panel.colCount; ++j) {
+                    const double current = iiData[xrCols_[panel.colStart + j]];
+                    for (int q = 0; q < rootPanelWidth; ++q)
+                        sums[q] += coeff[q] * current;
+                    coeff += rootPanelWidth;
+                }
+                for (int q = 0; q < rootPanelWidth; ++q)
+                    nodeData[panel.node + q] -= sums[q];
+            }
             for (const auto& e : xrRows1_) {
                 nodeData[e.node] -= e.val * iiData[e.col];
             }
