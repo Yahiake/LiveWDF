@@ -1,0 +1,7 @@
+fixture,mode,median_us,low_us,high_us,iterations_per_frame,rejected,fallback
+RC4558,Accurate,0.320254,0.307215,0.353547,0,0,0
+RC4558,Fast Live,0.31997,0.310557,0.390197,0,0,0
+RC4558 Class AB,Accurate,1.04712,0.984717,1.09684,3.51333,0,0
+RC4558 Class AB,Fast Live,0.991394,0.94543,1.01916,3.04667,0,0
+Boss DM-2 Analog Delay,Accurate,14.743,12.1556,16.9592,3.55783,0,0
+Boss DM-2 Analog Delay,Fast Live,11.8611,11.2042,12.2983,2.62452,0,0
