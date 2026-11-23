@@ -251,6 +251,7 @@ The bench pages provide interactive button-generated LTspice netlists rather tha
 - Model OTA control current, BJT envelope rectifier and timing feedback, with component choices and supply/bias as shown. OTA device behavior and saturation need parameterization.
 
 ### Dan Armstrong Orange Squeezer
+- With the factory bias, the second harmonic on a 440 Hz tone was 0.13% at 15 mV peak and 34.1% at 75 mV peak. The modeled JFET compression and bias strongly affect this result. A hardware comparison is pending.
 - Original-reference full schematic: https://generalguitargadgets.com/pdf/ggg_osq_sc_original.pdf; reference page https://generalguitargadgets.com/effects-projects/compression/dan-armstrong-orange-sqeezer/ explicitly labels it original. Drawing version 2012January12 is a later redraw, not an original manufacturing date or authenticated specific unit revision. Includes battery, bypass, JFETs, 4558 and trim.
 - Alternate description/analysis https://device.report/m/ee5a1dec05853573a79eacd40383a4acd1bce2704ee0fd48d7dc128083ff6331. Model nonlinear JFET shunt resistance and bias trim, rectifier and envelope memory, op amp supply limits; identify transistor model rather than claim universal device behavior.
 
@@ -285,6 +286,7 @@ Source quality and exact product revision matter. Full schematic does not mean v
 - Original Boss instructions https://cdn.roland.com/assets/media/pdf/PQ-4_OM.pdf : four bands: low, swept middle 100 Hz–1.6 kHz, swept high 500 Hz–8 kHz, presence; ±18 dB; separate level is before EQ. There is no user Q control. Pay attention to dual-ganged frequency pots and interactions; derive center law and bandwidth from circuit, do not assume generic independently controlled parametric bands.
 
 ### Boss NS-2 Noise Suppressor
+- On a 440 Hz, 75 mV peak input, the second harmonic was 2.31% with the current gate detector and 0.041% with the gain control held open. This isolates the ripple to the detector/control path. Compare the modeled open gate against hardware before adjusting its timing.
 - Full one-page schematic https://schematicsonline.com/wp-content/uploads/2022/11/Boss-NS-2-Noise-Supressor.pdf. The drawing identifies board ET 7510452000 and IC1 M5207L01. It shows all four jacks and the detector, threshold and decay networks.
 - Boss describes the envelope detector and VCA at https://www.boss.info/global/products/ns-2/. The manual at https://www.cavallimusica.com/media/productattach/b/o/boss_ns2_eng.pdf explains the send/return routing, threshold, decay and mute/reduction modes. The detector reads the input separately from the attenuated return.
 
