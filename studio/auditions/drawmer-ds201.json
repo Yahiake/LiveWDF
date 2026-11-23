@@ -1,0 +1,60 @@
+{
+  "path": "schematics/studio/dynamics/Drawmer-DS201.livewdf",
+  "slug": "drawmer-ds201",
+  "audio": [],
+  "name": "Drawmer-DS201",
+  "sample_rate_Hz": 48000,
+  "source_family": "gate",
+  "source": "Synthetic drums. The quiet phrase is 31.7 dB below the main hits.",
+  "settings": {},
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "29bb3bf6163dfa89630969e3be8192ffa069f8559e97bef8a6bb283418e46401",
+  "audio_file": "assets/drawmer-ds201-dry-wet.mp3",
+  "image_file": "assets/drawmer-ds201.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 1.2,
+  "output_peak_V": 1.2682733521298726,
+  "output_idle_offset_V": -3.9438601006931e-12,
+  "untrimmed_wet_to_dry_rms_dB": -0.3683742232769377,
+  "comparison_wet_trim_dB": 0.3643670778970096,
+  "playback": "Fixed wet playback trim measured on the loud hits. The quiet passages retain that trim.",
+  "common_clip_playback_gain": 0.5292572532940382,
+  "encoded_true_peak_dBTP": -3.762361526489258,
+  "dry_start_sec": 0,
+  "wet_start_sec": 5.61,
+  "clip_length_sec": 5.29,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.004317830795217498,
+      "loud_rms_V": 0.16704698466736514,
+      "loud_to_quiet_dB": 31.751460424834153
+    },
+    {
+      "quiet_rms_V": 1.276087906681507e-06,
+      "loud_rms_V": 0.16018442506044162,
+      "loud_to_quiet_dB": 101.97479387696374
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 0.04,
+    "130-400 Hz": 0.28,
+    "400-1200 Hz": 0.28,
+    "1200-3500 Hz": 0.26,
+    "3500-8000 Hz": 0.18,
+    "8000-15000 Hz": -0.18
+  },
+  "diagnostics": {
+    "samples": 301920.0,
+    "inputPeakV": 1.2,
+    "outputPeakV": 1.2683,
+    "outputRmsV": 0.079534,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

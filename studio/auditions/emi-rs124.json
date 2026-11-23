@@ -1,0 +1,60 @@
+{
+  "path": "schematics/studio/dynamics/EMI-RS124.livewdf",
+  "slug": "emi-rs124",
+  "audio": [],
+  "name": "EMI-RS124",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {},
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "901ddf27f5a463a656b8c5f3df245bf2e479c60fb73c7645198f2ccec093e2d3",
+  "audio_file": "assets/emi-rs124-dry-wet.mp3",
+  "image_file": "assets/emi-rs124.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 1.9,
+  "output_peak_V": 2.412551076684818,
+  "output_idle_offset_V": 1.6309308318854341e-12,
+  "untrimmed_wet_to_dry_rms_dB": 2.6621955511471693,
+  "comparison_wet_trim_dB": -5.499426468259752,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.3684210526315789,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.034182827128805195,
+      "loud_rms_V": 0.2644910590566615,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.06438419975014936,
+      "loud_rms_V": 0.35624157670764506,
+      "loud_to_quiet_dB": 14.859306044024077
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -3.64,
+    "130-400 Hz": -1.88,
+    "400-1200 Hz": -1.07,
+    "1200-3500 Hz": -1.93,
+    "3500-8000 Hz": -1.88,
+    "8000-15000 Hz": -1.82
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 1.9,
+    "outputPeakV": 2.4126,
+    "outputRmsV": 0.2072,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

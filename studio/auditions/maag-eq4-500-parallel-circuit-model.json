@@ -1,0 +1,53 @@
+{
+  "path": "schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf",
+  "slug": "maag-eq4-500-parallel-circuit-model",
+  "audio": [],
+  "name": "Maag EQ4-500 Parallel Circuit Model",
+  "sample_rate_Hz": 48000,
+  "source_family": "speech",
+  "source": "Speech test fixture with sibilant consonants.",
+  "settings": {
+    "Air Gain": 0.82,
+    "Air 10 kHz": 1,
+    "650 Hz Gain": 0.34
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "d7ea42078829f2e844197d98b7dd4bf11ca6c7c9e43a63a53e58deed1593af7b",
+  "audio_file": "assets/maag-eq4-500-parallel-circuit-model-dry-wet.mp3",
+  "image_file": "assets/maag-eq4-500-parallel-circuit-model.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.46,
+  "output_peak_V": 0.49527305392665255,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": 0.8580787512107302,
+  "comparison_wet_trim_dB": -0.5992206814903421,
+  "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+  "common_clip_playback_gain": 1.5143085481254324,
+  "encoded_true_peak_dBTP": -3.498997926712036,
+  "dry_start_sec": 0,
+  "wet_start_sec": 5.25,
+  "clip_length_sec": 4.93,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 0.22,
+    "130-400 Hz": 0.19,
+    "400-1200 Hz": -0.68,
+    "1200-3500 Hz": 0.99,
+    "3500-8000 Hz": 5.23,
+    "8000-15000 Hz": 5.58
+  },
+  "diagnostics": {
+    "samples": 284640.0,
+    "inputPeakV": 0.46,
+    "outputPeakV": 0.49527,
+    "outputRmsV": 0.10733,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

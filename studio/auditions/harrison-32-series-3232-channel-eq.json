@@ -1,0 +1,55 @@
+{
+  "path": "schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf",
+  "slug": "harrison-32-series-3232-channel-eq",
+  "audio": [],
+  "name": "Harrison 32-Series 3232 Channel EQ",
+  "sample_rate_Hz": 48000,
+  "source_family": "drums",
+  "source": "Synthetic kick, snare and cymbals.",
+  "settings": {
+    "Low Gain": 0.74,
+    "Low Frequency": 0.43,
+    "Low Mid Gain": 0.21,
+    "Low Mid Frequency": 0.41,
+    "High Gain": 0.7
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "ac210acf2e01d8e3edaa54608b3438a2eaca71859356bd1806f0d3f20ac51929",
+  "audio_file": "assets/harrison-32-series-3232-channel-eq-dry-wet.mp3",
+  "image_file": "assets/harrison-32-series-3232-channel-eq.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.46,
+  "output_peak_V": 0.5223870031269148,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": 1.9021273953748077,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 1.3400027102702128,
+  "encoded_true_peak_dBTP": -3.763524055480957,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.32,
+  "clip_length_sec": 3.0,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 2.07,
+    "130-400 Hz": -0.29,
+    "400-1200 Hz": -1.87,
+    "1200-3500 Hz": 1.67,
+    "3500-8000 Hz": 1.54,
+    "8000-15000 Hz": -0.1
+  },
+  "diagnostics": {
+    "samples": 192000.0,
+    "inputPeakV": 0.46,
+    "outputPeakV": 0.52239,
+    "outputRmsV": 0.069756,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

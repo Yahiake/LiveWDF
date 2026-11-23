@@ -1,0 +1,53 @@
+{
+  "path": "schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf",
+  "slug": "helios-type-69-musicland-eq",
+  "audio": [],
+  "name": "Helios Type 69 Musicland EQ",
+  "sample_rate_Hz": 48000,
+  "source_family": "chords",
+  "source": "Dry PF300 major-chord DI.",
+  "settings": {
+    "Mid Gain": 0.63,
+    "Mid 2 kHz": 1,
+    "Treble 4 dB": 1
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "502ab6797fe931a6da1aaf0bf04a8db8628d1cdf8a343966dcee4d836193e2d3",
+  "audio_file": "assets/helios-type-69-musicland-eq-dry-wet.mp3",
+  "image_file": "assets/helios-type-69-musicland-eq.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.46,
+  "output_peak_V": 1.0457275030248283,
+  "output_idle_offset_V": 1.574349539623654e-10,
+  "untrimmed_wet_to_dry_rms_dB": 6.289193174709285,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 0.6693904463401879,
+  "encoded_true_peak_dBTP": -3.5360984802246094,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 2.41,
+    "130-400 Hz": 4.1,
+    "400-1200 Hz": 6.61,
+    "1200-3500 Hz": 8.05,
+    "3500-8000 Hz": 7.45,
+    "8000-15000 Hz": 5.88
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.46,
+    "outputPeakV": 1.0457,
+    "outputRmsV": 0.058145,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

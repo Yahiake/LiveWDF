@@ -1,0 +1,60 @@
+{
+  "path": "schematics/studio/dynamics/Altec-436C.livewdf",
+  "slug": "altec-436c",
+  "audio": [],
+  "name": "Altec-436C",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {},
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "e3e15da007456ea89aeb9d9c036827511390be5c1e7aa225a472c0ed785276cb",
+  "audio_file": "assets/altec-436c-dry-wet.mp3",
+  "image_file": "assets/altec-436c.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 1.8,
+  "output_peak_V": 9.375068853424274,
+  "output_idle_offset_V": -5.504243792367433e-13,
+  "untrimmed_wet_to_dry_rms_dB": 16.143734870728274,
+  "comparison_wet_trim_dB": -18.823029698861603,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.38888888888888884,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.03238373096413124,
+      "loud_rms_V": 0.25057047700104773,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.28279932450712103,
+      "loud_rms_V": 1.5955484291527824,
+      "loud_to_quiet_dB": 15.028632459067069
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -3.73,
+    "130-400 Hz": -1.4,
+    "400-1200 Hz": 0.05,
+    "1200-3500 Hz": -0.74,
+    "3500-8000 Hz": -0.82,
+    "8000-15000 Hz": -0.67
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 1.8,
+    "outputPeakV": 9.3751,
+    "outputRmsV": 0.92681,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

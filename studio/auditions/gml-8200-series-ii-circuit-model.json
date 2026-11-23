@@ -1,0 +1,55 @@
+{
+  "path": "schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf",
+  "slug": "gml-8200-series-ii-circuit-model",
+  "audio": [],
+  "name": "GML 8200 Series II Circuit Model",
+  "sample_rate_Hz": 48000,
+  "source_family": "strat",
+  "source": "Dry Strat neck and middle pickup DI.",
+  "settings": {
+    "Mid Gain": 0.8,
+    "Mid Frequency": 0.43,
+    "Mid Q": 0.58,
+    "High Mid Gain": 0.28,
+    "High Mid Frequency": 0.59
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "0d8bcdfe36fb02129f0811e4755e99893124b83057636d98bca2b5871bdbdadb",
+  "audio_file": "assets/gml-8200-series-ii-circuit-model-dry-wet.mp3",
+  "image_file": "assets/gml-8200-series-ii-circuit-model.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.5,
+  "output_peak_V": 1.2465224805311632,
+  "output_idle_offset_V": 5.1195797509410116e-27,
+  "untrimmed_wet_to_dry_rms_dB": 8.529097858428567,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 0.5615622749954086,
+  "encoded_true_peak_dBTP": -3.511117935180664,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 1.27,
+    "130-400 Hz": 10.57,
+    "400-1200 Hz": 7.51,
+    "1200-3500 Hz": -4.82,
+    "3500-8000 Hz": -3.71,
+    "8000-15000 Hz": -0.58
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.5,
+    "outputPeakV": 1.2465,
+    "outputRmsV": 0.32052,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

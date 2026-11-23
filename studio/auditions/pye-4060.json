@@ -1,0 +1,62 @@
+{
+  "path": "schematics/studio/dynamics/Pye-4060.livewdf",
+  "slug": "pye-4060",
+  "audio": [],
+  "name": "Pye-4060",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {
+    "Threshold": 0.68
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "de3218c3f98b1bb04125415c1f5442b83c69417c6a27cd5b817cda2ab414c974",
+  "audio_file": "assets/pye-4060-dry-wet.mp3",
+  "image_file": "assets/pye-4060.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 3.4,
+  "output_peak_V": 1.8850327866344585,
+  "output_idle_offset_V": 3.2460803195176015e-24,
+  "untrimmed_wet_to_dry_rms_dB": -5.018203211497738,
+  "comparison_wet_trim_dB": 0.04184418764375198,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.20588235294117646,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.061169269598914555,
+      "loud_rms_V": 0.4732997898908679,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.0608752959222596,
+      "loud_rms_V": 0.2606998200030118,
+      "loud_to_quiet_dB": 12.633992918574437
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -5.24,
+    "130-400 Hz": -5.44,
+    "400-1200 Hz": -4.87,
+    "1200-3500 Hz": -5.81,
+    "3500-8000 Hz": -5.35,
+    "8000-15000 Hz": -5.03
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 3.4,
+    "outputPeakV": 1.885,
+    "outputRmsV": 0.15314,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

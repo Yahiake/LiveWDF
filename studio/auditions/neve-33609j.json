@@ -1,0 +1,60 @@
+{
+  "path": "schematics/studio/dynamics/Neve-33609J.livewdf",
+  "slug": "neve-33609j",
+  "audio": [],
+  "name": "Neve-33609J",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {},
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "7bb19ebdbbaa0ff077a14fa7ee8ab3010a1566d63dae17539cd3b1b706e9e052",
+  "audio_file": "assets/neve-33609j-dry-wet.mp3",
+  "image_file": "assets/neve-33609j.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 4.1,
+  "output_peak_V": 3.6613724939232712,
+  "output_idle_offset_V": 3.912883270283072e-20,
+  "untrimmed_wet_to_dry_rms_dB": -1.8201065088925312,
+  "comparison_wet_trim_dB": 0.0026840783569056625,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.17073170731707318,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.07376294275163224,
+      "loud_rms_V": 0.5707438642801642,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.07374015234797296,
+      "loud_rms_V": 0.46066668224590523,
+      "loud_to_quiet_dB": 15.913655449552685
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -2.0,
+    "130-400 Hz": -1.23,
+    "400-1200 Hz": -1.27,
+    "1200-3500 Hz": -1.33,
+    "3500-8000 Hz": -1.24,
+    "8000-15000 Hz": -1.34
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 4.1,
+    "outputPeakV": 3.6614,
+    "outputRmsV": 0.26688,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

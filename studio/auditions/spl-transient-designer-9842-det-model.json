@@ -1,0 +1,52 @@
+{
+  "path": "schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf",
+  "slug": "spl-transient-designer-9842-det-model",
+  "audio": [],
+  "name": "SPL Transient Designer 9842 DET Model",
+  "sample_rate_Hz": 48000,
+  "source_family": "drums",
+  "source": "Synthetic kick, snare and cymbals.",
+  "settings": {
+    "Attack": 0.82,
+    "Sustain": 0.32
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "b03f34d252b6329c9709ed48d8887bb21c917adb1ba7536cc9733fbca1330f01",
+  "audio_file": "assets/spl-transient-designer-9842-det-model-dry-wet.mp3",
+  "image_file": "assets/spl-transient-designer-9842-det-model.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.56,
+  "output_peak_V": 1.4356051705716941,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": 3.5694864614780037,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 0.4875992468885037,
+  "encoded_true_peak_dBTP": -3.412668466567993,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.32,
+  "clip_length_sec": 3.0,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 4.19,
+    "130-400 Hz": 4.36,
+    "400-1200 Hz": 3.7,
+    "1200-3500 Hz": 3.08,
+    "3500-8000 Hz": 3.94,
+    "8000-15000 Hz": 3.71
+  },
+  "diagnostics": {
+    "samples": 192000.0,
+    "inputPeakV": 0.56,
+    "outputPeakV": 1.4356,
+    "outputRmsV": 0.10289,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

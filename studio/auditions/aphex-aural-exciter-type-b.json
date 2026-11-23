@@ -1,0 +1,53 @@
+{
+  "path": "schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf",
+  "slug": "aphex-aural-exciter-type-b",
+  "audio": [],
+  "name": "Aphex Aural Exciter Type B",
+  "sample_rate_Hz": 48000,
+  "source_family": "speech",
+  "source": "Speech test fixture with sibilant consonants.",
+  "settings": {
+    "Drive": 0.72,
+    "Mix": 0.82,
+    "Tune": 0.52
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "2d8a878c005e9810b3b3a3eb88309819a4c269163c0bb57cb0a7a6f221ca1420",
+  "audio_file": "assets/aphex-aural-exciter-type-b-dry-wet.mp3",
+  "image_file": "assets/aphex-aural-exciter-type-b.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.65,
+  "output_peak_V": 0.7554576802447769,
+  "output_idle_offset_V": -8.157317876733572e-13,
+  "untrimmed_wet_to_dry_rms_dB": -0.04301840521895619,
+  "comparison_wet_trim_dB": 0.5595815733485184,
+  "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+  "common_clip_playback_gain": 0.8687780116506914,
+  "encoded_true_peak_dBTP": -3.5598065853118896,
+  "dry_start_sec": 0,
+  "wet_start_sec": 5.25,
+  "clip_length_sec": 4.93,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 0.32,
+    "130-400 Hz": 0.26,
+    "400-1200 Hz": -1.15,
+    "1200-3500 Hz": 3.73,
+    "3500-8000 Hz": 8.19,
+    "8000-15000 Hz": 8.33
+  },
+  "diagnostics": {
+    "samples": 284640.0,
+    "inputPeakV": 0.65,
+    "outputPeakV": 0.75546,
+    "outputRmsV": 0.13671,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

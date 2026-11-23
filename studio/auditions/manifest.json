@@ -1,0 +1,1419 @@
+[
+  {
+    "path": "schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf",
+    "slug": "adr-compex-f760x-rs",
+    "audio": [],
+    "name": "ADR-Compex-F760X-RS",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {
+      "Ratio": 0.68,
+      "Compress Attack": 0.2
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "7340c9dfe957c086691b8f8a3736ed115c9e0cc16d639040ded2e02509d3ee7e",
+    "audio_file": "assets/adr-compex-f760x-rs-dry-wet.mp3",
+    "image_file": "assets/adr-compex-f760x-rs.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 2.5,
+    "output_peak_V": 1.874768347350866,
+    "output_idle_offset_V": 8.346652205735686e-40,
+    "untrimmed_wet_to_dry_rms_dB": -1.4456289575265688,
+    "comparison_wet_trim_dB": -0.050823402990480146,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.27999999999999997,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.04497740411684894,
+        "loud_rms_V": 0.34801455139034404,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.04524135008040891,
+        "loud_rms_V": 0.2936312225881275,
+        "loud_to_quiet_dB": 16.245333536755087
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -1.37,
+      "130-400 Hz": -0.52,
+      "400-1200 Hz": -0.83,
+      "1200-3500 Hz": -1.41,
+      "3500-8000 Hz": -3.87,
+      "8000-15000 Hz": -8.31
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 2.5,
+      "outputPeakV": 1.8748,
+      "outputRmsV": 0.1699,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4824,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Altec-436C.livewdf",
+    "slug": "altec-436c",
+    "audio": [],
+    "name": "Altec-436C",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {},
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "e3e15da007456ea89aeb9d9c036827511390be5c1e7aa225a472c0ed785276cb",
+    "audio_file": "assets/altec-436c-dry-wet.mp3",
+    "image_file": "assets/altec-436c.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 1.8,
+    "output_peak_V": 9.375068853424274,
+    "output_idle_offset_V": -5.504243792367433e-13,
+    "untrimmed_wet_to_dry_rms_dB": 16.143734870728274,
+    "comparison_wet_trim_dB": -18.823029698861603,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.38888888888888884,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.03238373096413124,
+        "loud_rms_V": 0.25057047700104773,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.28279932450712103,
+        "loud_rms_V": 1.5955484291527824,
+        "loud_to_quiet_dB": 15.028632459067069
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -3.73,
+      "130-400 Hz": -1.4,
+      "400-1200 Hz": 0.05,
+      "1200-3500 Hz": -0.74,
+      "3500-8000 Hz": -0.82,
+      "8000-15000 Hz": -0.67
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 1.8,
+      "outputPeakV": 9.3751,
+      "outputRmsV": 0.92681,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3312,
+      2196
+    ]
+  },
+  {
+    "path": "schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf",
+    "slug": "aphex-aural-exciter-type-b",
+    "audio": [],
+    "name": "Aphex Aural Exciter Type B",
+    "sample_rate_Hz": 48000,
+    "source_family": "speech",
+    "source": "Speech test fixture with sibilant consonants.",
+    "settings": {
+      "Drive": 0.72,
+      "Mix": 0.82,
+      "Tune": 0.52
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "2d8a878c005e9810b3b3a3eb88309819a4c269163c0bb57cb0a7a6f221ca1420",
+    "audio_file": "assets/aphex-aural-exciter-type-b-dry-wet.mp3",
+    "image_file": "assets/aphex-aural-exciter-type-b.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.65,
+    "output_peak_V": 0.7554576802447769,
+    "output_idle_offset_V": -8.157317876733572e-13,
+    "untrimmed_wet_to_dry_rms_dB": -0.04301840521895619,
+    "comparison_wet_trim_dB": 0.5595815733485184,
+    "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+    "common_clip_playback_gain": 0.8687780116506914,
+    "encoded_true_peak_dBTP": -3.5598065853118896,
+    "dry_start_sec": 0,
+    "wet_start_sec": 5.25,
+    "clip_length_sec": 4.93,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 0.32,
+      "130-400 Hz": 0.26,
+      "400-1200 Hz": -1.15,
+      "1200-3500 Hz": 3.73,
+      "3500-8000 Hz": 8.19,
+      "8000-15000 Hz": 8.33
+    },
+    "diagnostics": {
+      "samples": 284640.0,
+      "inputPeakV": 0.65,
+      "outputPeakV": 0.75546,
+      "outputRmsV": 0.13671,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4356,
+      2808
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/API-2500.livewdf",
+    "slug": "api-2500",
+    "audio": [],
+    "name": "API-2500",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {
+      "Ratio": 0.76,
+      "Threshold": 0.42,
+      "Attack": 0.2
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "06fcc2f8a744357e4e26817b3243ed3559a5fe2cee84299b93c321dc4cdf87ca",
+    "audio_file": "assets/api-2500-dry-wet.mp3",
+    "image_file": "assets/api-2500.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 3.5,
+    "output_peak_V": 2.4312777913894177,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": -6.114042312853821,
+    "comparison_wet_trim_dB": 0.011627109641430091,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.19999999999999998,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.06296836576358851,
+        "loud_rms_V": 0.48722037194648166,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.06288413141191158,
+        "loud_rms_V": 0.23454980999859393,
+        "loud_to_quiet_dB": 11.43388037760991
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -6.5,
+      "130-400 Hz": -4.32,
+      "400-1200 Hz": -4.67,
+      "1200-3500 Hz": -4.85,
+      "3500-8000 Hz": -4.37,
+      "8000-15000 Hz": -4.61
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 3.5,
+      "outputPeakV": 2.4313,
+      "outputRmsV": 0.13896,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3870,
+      4050
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf",
+    "slug": "api-550a-proportional-q-circuit-model",
+    "audio": [],
+    "name": "API 550A Proportional-Q Circuit Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "chords",
+    "source": "Dry PF300 major-chord DI.",
+    "settings": {
+      "Mid 6 dB": 1,
+      "Mid 1.5 kHz": 1,
+      "Low 4 dB": 1,
+      "Low 200 Hz": 1,
+      "Low Cut": 1
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "8a9fde48df2cf4b79dd26eea837d67a66c16946a71855a0bc206b1ca8a008c30",
+    "audio_file": "assets/api-550a-proportional-q-circuit-model-dry-wet.mp3",
+    "image_file": "assets/api-550a-proportional-q-circuit-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.5,
+    "output_peak_V": 0.831207685033023,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 2.5789440004013127,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 0.8421481328967618,
+    "encoded_true_peak_dBTP": -3.505153179168701,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -2.17,
+      "130-400 Hz": -2.04,
+      "400-1200 Hz": 2.87,
+      "1200-3500 Hz": 5.36,
+      "3500-8000 Hz": 2.7,
+      "8000-15000 Hz": 0.43
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.5,
+      "outputPeakV": 0.83121,
+      "outputRmsV": 0.04123,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      7800,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/dbx 902 De-Esser.livewdf",
+    "slug": "dbx-902-de-esser",
+    "audio": [],
+    "name": "dbx 902 De-Esser",
+    "sample_rate_Hz": 48000,
+    "source_family": "speech",
+    "source": "Speech test fixture with sibilant consonants.",
+    "settings": {
+      "Range": 0.92,
+      "Frequency": 0.58,
+      "HF Only": 1
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "56fa78530e6360de00a8c0526ccb56e3f422b451f6b2f52c34572e2b162c7b67",
+    "audio_file": "assets/dbx-902-de-esser-dry-wet.mp3",
+    "image_file": "assets/dbx-902-de-esser.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.9,
+    "output_peak_V": 0.8542189994029322,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": -0.16237291402751064,
+    "comparison_wet_trim_dB": 0.09840687662999781,
+    "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+    "common_clip_playback_gain": 0.7777777777777777,
+    "encoded_true_peak_dBTP": -3.5425806045532227,
+    "dry_start_sec": 0,
+    "wet_start_sec": 5.25,
+    "clip_length_sec": 4.93,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 0.01,
+      "130-400 Hz": 0.01,
+      "400-1200 Hz": -0.03,
+      "1200-3500 Hz": -1.0,
+      "3500-8000 Hz": -10.97,
+      "8000-15000 Hz": -13.86
+    },
+    "diagnostics": {
+      "samples": 284640.0,
+      "inputPeakV": 0.9,
+      "outputPeakV": 0.85422,
+      "outputRmsV": 0.18671,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4896,
+      2934
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Drawmer-DS201.livewdf",
+    "slug": "drawmer-ds201",
+    "audio": [],
+    "name": "Drawmer-DS201",
+    "sample_rate_Hz": 48000,
+    "source_family": "gate",
+    "source": "Synthetic drums. The quiet phrase is 31.7 dB below the main hits.",
+    "settings": {},
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "29bb3bf6163dfa89630969e3be8192ffa069f8559e97bef8a6bb283418e46401",
+    "audio_file": "assets/drawmer-ds201-dry-wet.mp3",
+    "image_file": "assets/drawmer-ds201.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 1.2,
+    "output_peak_V": 1.2682733521298726,
+    "output_idle_offset_V": -3.9438601006931e-12,
+    "untrimmed_wet_to_dry_rms_dB": -0.3683742232769377,
+    "comparison_wet_trim_dB": 0.3643670778970096,
+    "playback": "Fixed wet playback trim measured on the loud hits. The quiet passages retain that trim.",
+    "common_clip_playback_gain": 0.5292572532940382,
+    "encoded_true_peak_dBTP": -3.762361526489258,
+    "dry_start_sec": 0,
+    "wet_start_sec": 5.61,
+    "clip_length_sec": 5.29,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.004317830795217498,
+        "loud_rms_V": 0.16704698466736514,
+        "loud_to_quiet_dB": 31.751460424834153
+      },
+      {
+        "quiet_rms_V": 1.276087906681507e-06,
+        "loud_rms_V": 0.16018442506044162,
+        "loud_to_quiet_dB": 101.97479387696374
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 0.04,
+      "130-400 Hz": 0.28,
+      "400-1200 Hz": 0.28,
+      "1200-3500 Hz": 0.26,
+      "3500-8000 Hz": 0.18,
+      "8000-15000 Hz": -0.18
+    },
+    "diagnostics": {
+      "samples": 301920.0,
+      "inputPeakV": 1.2,
+      "outputPeakV": 1.2683,
+      "outputRmsV": 0.079534,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4932,
+      3816
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/EMI-RS124.livewdf",
+    "slug": "emi-rs124",
+    "audio": [],
+    "name": "EMI-RS124",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {},
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "901ddf27f5a463a656b8c5f3df245bf2e479c60fb73c7645198f2ccec093e2d3",
+    "audio_file": "assets/emi-rs124-dry-wet.mp3",
+    "image_file": "assets/emi-rs124.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 1.9,
+    "output_peak_V": 2.412551076684818,
+    "output_idle_offset_V": 1.6309308318854341e-12,
+    "untrimmed_wet_to_dry_rms_dB": 2.6621955511471693,
+    "comparison_wet_trim_dB": -5.499426468259752,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.3684210526315789,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.034182827128805195,
+        "loud_rms_V": 0.2644910590566615,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.06438419975014936,
+        "loud_rms_V": 0.35624157670764506,
+        "loud_to_quiet_dB": 14.859306044024077
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -3.64,
+      "130-400 Hz": -1.88,
+      "400-1200 Hz": -1.07,
+      "1200-3500 Hz": -1.93,
+      "3500-8000 Hz": -1.88,
+      "8000-15000 Hz": -1.82
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 1.9,
+      "outputPeakV": 2.4126,
+      "outputRmsV": 0.2072,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3690,
+      2376
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf",
+    "slug": "gates-sta-level-m5167",
+    "audio": [],
+    "name": "Gates-Sta-Level-M5167",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {},
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "c3788e3356fcb4e1308ec9a0c38c0d965a9d18a4293044aa4736136e8db9f421",
+    "audio_file": "assets/gates-sta-level-m5167-dry-wet.mp3",
+    "image_file": "assets/gates-sta-level-m5167.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 2.6,
+    "output_peak_V": 3.967366865676963,
+    "output_idle_offset_V": 9.509667045088396e-14,
+    "untrimmed_wet_to_dry_rms_dB": 3.320062128096364,
+    "comparison_wet_trim_dB": -7.199940576280178,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.2692307692307692,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.046776500281522894,
+        "loud_rms_V": 0.3619351334459578,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.10715803829019399,
+        "loud_rms_V": 0.5239459487097556,
+        "loud_to_quiet_dB": 13.78523464228024
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -4.22,
+      "130-400 Hz": -3.69,
+      "400-1200 Hz": -3.84,
+      "1200-3500 Hz": -4.17,
+      "3500-8000 Hz": -4.12,
+      "8000-15000 Hz": -4.44
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 2.6,
+      "outputPeakV": 3.9674,
+      "outputRmsV": 0.30585,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      5040,
+      2214
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf",
+    "slug": "gml-8200-series-ii-circuit-model",
+    "audio": [],
+    "name": "GML 8200 Series II Circuit Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "strat",
+    "source": "Dry Strat neck and middle pickup DI.",
+    "settings": {
+      "Mid Gain": 0.8,
+      "Mid Frequency": 0.43,
+      "Mid Q": 0.58,
+      "High Mid Gain": 0.28,
+      "High Mid Frequency": 0.59
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "0d8bcdfe36fb02129f0811e4755e99893124b83057636d98bca2b5871bdbdadb",
+    "audio_file": "assets/gml-8200-series-ii-circuit-model-dry-wet.mp3",
+    "image_file": "assets/gml-8200-series-ii-circuit-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.5,
+    "output_peak_V": 1.2465224805311632,
+    "output_idle_offset_V": 5.1195797509410116e-27,
+    "untrimmed_wet_to_dry_rms_dB": 8.529097858428567,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 0.5615622749954086,
+    "encoded_true_peak_dBTP": -3.511117935180664,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 1.27,
+      "130-400 Hz": 10.57,
+      "400-1200 Hz": 7.51,
+      "1200-3500 Hz": -4.82,
+      "3500-8000 Hz": -3.71,
+      "8000-15000 Hz": -0.58
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.5,
+      "outputPeakV": 1.2465,
+      "outputRmsV": 0.32052,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      6534,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf",
+    "slug": "harrison-32-series-3232-channel-eq",
+    "audio": [],
+    "name": "Harrison 32-Series 3232 Channel EQ",
+    "sample_rate_Hz": 48000,
+    "source_family": "drums",
+    "source": "Synthetic kick, snare and cymbals.",
+    "settings": {
+      "Low Gain": 0.74,
+      "Low Frequency": 0.43,
+      "Low Mid Gain": 0.21,
+      "Low Mid Frequency": 0.41,
+      "High Gain": 0.7
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "ac210acf2e01d8e3edaa54608b3438a2eaca71859356bd1806f0d3f20ac51929",
+    "audio_file": "assets/harrison-32-series-3232-channel-eq-dry-wet.mp3",
+    "image_file": "assets/harrison-32-series-3232-channel-eq.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.46,
+    "output_peak_V": 0.5223870031269148,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 1.9021273953748077,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.3400027102702128,
+    "encoded_true_peak_dBTP": -3.763524055480957,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.32,
+    "clip_length_sec": 3.0,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 2.07,
+      "130-400 Hz": -0.29,
+      "400-1200 Hz": -1.87,
+      "1200-3500 Hz": 1.67,
+      "3500-8000 Hz": 1.54,
+      "8000-15000 Hz": -0.1
+    },
+    "diagnostics": {
+      "samples": 192000.0,
+      "inputPeakV": 0.46,
+      "outputPeakV": 0.52239,
+      "outputRmsV": 0.069756,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4482,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf",
+    "slug": "helios-type-69-musicland-eq",
+    "audio": [],
+    "name": "Helios Type 69 Musicland EQ",
+    "sample_rate_Hz": 48000,
+    "source_family": "chords",
+    "source": "Dry PF300 major-chord DI.",
+    "settings": {
+      "Mid Gain": 0.63,
+      "Mid 2 kHz": 1,
+      "Treble 4 dB": 1
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "502ab6797fe931a6da1aaf0bf04a8db8628d1cdf8a343966dcee4d836193e2d3",
+    "audio_file": "assets/helios-type-69-musicland-eq-dry-wet.mp3",
+    "image_file": "assets/helios-type-69-musicland-eq.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.46,
+    "output_peak_V": 1.0457275030248283,
+    "output_idle_offset_V": 1.574349539623654e-10,
+    "untrimmed_wet_to_dry_rms_dB": 6.289193174709285,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 0.6693904463401879,
+    "encoded_true_peak_dBTP": -3.5360984802246094,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 2.41,
+      "130-400 Hz": 4.1,
+      "400-1200 Hz": 6.61,
+      "1200-3500 Hz": 8.05,
+      "3500-8000 Hz": 7.45,
+      "8000-15000 Hz": 5.88
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.46,
+      "outputPeakV": 1.0457,
+      "outputRmsV": 0.058145,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      7578,
+      3474
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf",
+    "slug": "maag-eq4-500-parallel-circuit-model",
+    "audio": [],
+    "name": "Maag EQ4-500 Parallel Circuit Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "speech",
+    "source": "Speech test fixture with sibilant consonants.",
+    "settings": {
+      "Air Gain": 0.82,
+      "Air 10 kHz": 1,
+      "650 Hz Gain": 0.34
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "d7ea42078829f2e844197d98b7dd4bf11ca6c7c9e43a63a53e58deed1593af7b",
+    "audio_file": "assets/maag-eq4-500-parallel-circuit-model-dry-wet.mp3",
+    "image_file": "assets/maag-eq4-500-parallel-circuit-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.46,
+    "output_peak_V": 0.49527305392665255,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 0.8580787512107302,
+    "comparison_wet_trim_dB": -0.5992206814903421,
+    "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+    "common_clip_playback_gain": 1.5143085481254324,
+    "encoded_true_peak_dBTP": -3.498997926712036,
+    "dry_start_sec": 0,
+    "wet_start_sec": 5.25,
+    "clip_length_sec": 4.93,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 0.22,
+      "130-400 Hz": 0.19,
+      "400-1200 Hz": -0.68,
+      "1200-3500 Hz": 0.99,
+      "3500-8000 Hz": 5.23,
+      "8000-15000 Hz": 5.58
+    },
+    "diagnostics": {
+      "samples": 284640.0,
+      "inputPeakV": 0.46,
+      "outputPeakV": 0.49527,
+      "outputRmsV": 0.10733,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      5706,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf",
+    "slug": "manley-massive-passive-standard-circuit-model",
+    "audio": [],
+    "name": "Manley Massive Passive Standard Circuit Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "drums",
+    "source": "Synthetic kick, snare and cymbals.",
+    "settings": {
+      "Low Gain": 0.55,
+      "Low Shelf": 1,
+      "Low 68 Hz": 1,
+      "Low Mid Gain": 0.46,
+      "Low Mid Cut": 1,
+      "Low Mid 560 Hz": 1,
+      "High Gain": 0.45,
+      "High Shelf": 1,
+      "High 8.2 kHz": 1
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "1052d0903f498519d9e436a638b8a6c8ae975446000f3a90f909ad06e4b3a6ba",
+    "audio_file": "assets/manley-massive-passive-standard-circuit-model-dry-wet.mp3",
+    "image_file": "assets/manley-massive-passive-standard-circuit-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.41,
+    "output_peak_V": 0.5138072249469369,
+    "output_idle_offset_V": -2.603631504330634e-07,
+    "untrimmed_wet_to_dry_rms_dB": 2.1881246730020525,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.3623786626828613,
+    "encoded_true_peak_dBTP": -3.4708304405212402,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.32,
+    "clip_length_sec": 3.0,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 2.27,
+      "130-400 Hz": 0.49,
+      "400-1200 Hz": -1.82,
+      "1200-3500 Hz": -0.28,
+      "3500-8000 Hz": 1.28,
+      "8000-15000 Hz": 1.88
+    },
+    "diagnostics": {
+      "samples": 192000.0,
+      "inputPeakV": 0.41,
+      "outputPeakV": 0.51381,
+      "outputRmsV": 0.064255,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      7800,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Manley-Variable-Mu.livewdf",
+    "slug": "manley-variable-mu",
+    "audio": [],
+    "name": "Manley-Variable-Mu",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {
+      "Limit": 1,
+      "Attack": 0.3
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "c33038822678be4e201681441b9e10bf0be6cadbeddd941e5f6db0ec5cf74411",
+    "audio_file": "assets/manley-variable-mu-dry-wet.mp3",
+    "image_file": "assets/manley-variable-mu.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 3.4,
+    "output_peak_V": 3.9144366206615087,
+    "output_idle_offset_V": -8.824507123427991e-14,
+    "untrimmed_wet_to_dry_rms_dB": -1.3444089235954884,
+    "comparison_wet_trim_dB": 0.24555313977206888,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.17384056199382628,
+    "encoded_true_peak_dBTP": -3.0992257595062256,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.061169269598914555,
+        "loud_rms_V": 0.4732997898908679,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.05946420784428122,
+        "loud_rms_V": 0.40396508119590735,
+        "loud_to_quiet_dB": 16.64176376941658
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -0.48,
+      "130-400 Hz": 0.97,
+      "400-1200 Hz": 0.81,
+      "1200-3500 Hz": 0.25,
+      "3500-8000 Hz": 0.4,
+      "8000-15000 Hz": 0.33
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 3.4,
+      "outputPeakV": 3.9144,
+      "outputRmsV": 0.23377,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4662,
+      2862
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf",
+    "slug": "neve-1081",
+    "audio": [],
+    "comment": "https://github.com/Yahiake/LiveWDF/pull/38#issuecomment-7101253772",
+    "comment_id": 7101253772,
+    "name": "Neve 1081 Gold Label Equalizer",
+    "sample_rate_Hz": 48000,
+    "source_family": "chords",
+    "source": "Dry PF300 major-chord DI.",
+    "settings": {
+      "Lower Presence Gain": 0.24,
+      "Lower Presence 470 Hz": 1,
+      "Upper Presence Gain": 0.78,
+      "Upper Presence 2.7 kHz": 1,
+      "Treble Gain": 0.67
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "78d460a6e8b63fa15dc400a649c6693b0026602c331b3e9787472b9ed41a2c12",
+    "audio_file": "assets/neve-1081-dry-wet.mp3",
+    "image_file": "assets/neve-1081.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.43,
+    "output_peak_V": 0.45926482878059716,
+    "output_idle_offset_V": 1.127098414599459e-11,
+    "untrimmed_wet_to_dry_rms_dB": -0.3836126445281316,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.5241750644363152,
+    "encoded_true_peak_dBTP": -3.5440218448638916,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -0.67,
+      "130-400 Hz": -3.72,
+      "400-1200 Hz": -1.29,
+      "1200-3500 Hz": 3.22,
+      "3500-8000 Hz": 4.77,
+      "8000-15000 Hz": 2.51
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.43,
+      "outputPeakV": 0.45926,
+      "outputRmsV": 0.025211,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      7800,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Neve-33609J.livewdf",
+    "slug": "neve-33609j",
+    "audio": [],
+    "name": "Neve-33609J",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {},
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "7bb19ebdbbaa0ff077a14fa7ee8ab3010a1566d63dae17539cd3b1b706e9e052",
+    "audio_file": "assets/neve-33609j-dry-wet.mp3",
+    "image_file": "assets/neve-33609j.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 4.1,
+    "output_peak_V": 3.6613724939232712,
+    "output_idle_offset_V": 3.912883270283072e-20,
+    "untrimmed_wet_to_dry_rms_dB": -1.8201065088925312,
+    "comparison_wet_trim_dB": 0.0026840783569056625,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.17073170731707318,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.07376294275163224,
+        "loud_rms_V": 0.5707438642801642,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.07374015234797296,
+        "loud_rms_V": 0.46066668224590523,
+        "loud_to_quiet_dB": 15.913655449552685
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -2.0,
+      "130-400 Hz": -1.23,
+      "400-1200 Hz": -1.27,
+      "1200-3500 Hz": -1.33,
+      "3500-8000 Hz": -1.24,
+      "8000-15000 Hz": -1.34
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 4.1,
+      "outputPeakV": 3.6614,
+      "outputRmsV": 0.26688,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4932,
+      3402
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/Pye-4060.livewdf",
+    "slug": "pye-4060",
+    "audio": [],
+    "name": "Pye-4060",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {
+      "Threshold": 0.68
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "de3218c3f98b1bb04125415c1f5442b83c69417c6a27cd5b817cda2ab414c974",
+    "audio_file": "assets/pye-4060-dry-wet.mp3",
+    "image_file": "assets/pye-4060.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 3.4,
+    "output_peak_V": 1.8850327866344585,
+    "output_idle_offset_V": 3.2460803195176015e-24,
+    "untrimmed_wet_to_dry_rms_dB": -5.018203211497738,
+    "comparison_wet_trim_dB": 0.04184418764375198,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.20588235294117646,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.061169269598914555,
+        "loud_rms_V": 0.4732997898908679,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.0608752959222596,
+        "loud_rms_V": 0.2606998200030118,
+        "loud_to_quiet_dB": 12.633992918574437
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -5.24,
+      "130-400 Hz": -5.44,
+      "400-1200 Hz": -4.87,
+      "1200-3500 Hz": -5.81,
+      "3500-8000 Hz": -5.35,
+      "8000-15000 Hz": -5.03
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 3.4,
+      "outputPeakV": 1.885,
+      "outputRmsV": 0.15314,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4212,
+      2934
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf",
+    "slug": "sontec-mes-432c-9-circuit-model",
+    "audio": [],
+    "name": "Sontec MES-432C-9 Circuit Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "drums",
+    "source": "Synthetic kick, snare and cymbals.",
+    "settings": {
+      "Low Bell Gain": 0.68,
+      "Low Bell Frequency": 0.34,
+      "Mid Bell Gain": 0.23,
+      "Mid Bell Frequency": 0.46,
+      "High Shelf Gain": 0.72
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "621d4239f8bd3ad79a391748c17cebe8bd9ce9d518e0e09528e0547c005790de",
+    "audio_file": "assets/sontec-mes-432c-9-circuit-model-dry-wet.mp3",
+    "image_file": "assets/sontec-mes-432c-9-circuit-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.52,
+    "output_peak_V": 0.6100140810171493,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 0.5977779905727009,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.1475144948011797,
+    "encoded_true_peak_dBTP": -3.9608359336853027,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.32,
+    "clip_length_sec": 3.0,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 0.43,
+      "130-400 Hz": -1.04,
+      "400-1200 Hz": -1.26,
+      "1200-3500 Hz": 0.05,
+      "3500-8000 Hz": 1.2,
+      "8000-15000 Hz": 2.28
+    },
+    "diagnostics": {
+      "samples": 192000.0,
+      "inputPeakV": 0.52,
+      "outputPeakV": 0.61001,
+      "outputRmsV": 0.067859,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3852,
+      4096
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf",
+    "slug": "spl-transient-designer-9842-det-model",
+    "audio": [],
+    "name": "SPL Transient Designer 9842 DET Model",
+    "sample_rate_Hz": 48000,
+    "source_family": "drums",
+    "source": "Synthetic kick, snare and cymbals.",
+    "settings": {
+      "Attack": 0.82,
+      "Sustain": 0.32
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "b03f34d252b6329c9709ed48d8887bb21c917adb1ba7536cc9733fbca1330f01",
+    "audio_file": "assets/spl-transient-designer-9842-det-model-dry-wet.mp3",
+    "image_file": "assets/spl-transient-designer-9842-det-model.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.56,
+    "output_peak_V": 1.4356051705716941,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 3.5694864614780037,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 0.4875992468885037,
+    "encoded_true_peak_dBTP": -3.412668466567993,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.32,
+    "clip_length_sec": 3.0,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": 4.19,
+      "130-400 Hz": 4.36,
+      "400-1200 Hz": 3.7,
+      "1200-3500 Hz": 3.08,
+      "3500-8000 Hz": 3.94,
+      "8000-15000 Hz": 3.71
+    },
+    "diagnostics": {
+      "samples": 192000.0,
+      "inputPeakV": 0.56,
+      "outputPeakV": 1.4356,
+      "outputRmsV": 0.10289,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3348,
+      2268
+    ]
+  },
+  {
+    "path": "schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf",
+    "slug": "ssl-4000-g-bus-compressor",
+    "audio": [],
+    "name": "SSL-4000-G-Bus-Compressor",
+    "sample_rate_Hz": 48000,
+    "source_family": "two-level",
+    "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+    "settings": {
+      "Threshold": 0.75,
+      "Ratio 2 / 4": 1
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "d2b3521ba8acbe61b417b460d8b2a889d5c38f6c16e721033c10b7b9af11b255",
+    "audio_file": "assets/ssl-4000-g-bus-compressor-dry-wet.mp3",
+    "image_file": "assets/ssl-4000-g-bus-compressor.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 3.2,
+    "output_peak_V": 1.6618148456141988,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": -8.139373821860286,
+    "comparison_wet_trim_dB": 0.5324695233120185,
+    "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+    "common_clip_playback_gain": 0.21874999999999997,
+    "encoded_true_peak_dBTP": -3.439277172088623,
+    "dry_start_sec": 0,
+    "wet_start_sec": 4.06,
+    "clip_length_sec": 3.74,
+    "dynamics_levels": [
+      {
+        "quiet_rms_V": 0.057571077269566645,
+        "loud_rms_V": 0.44545862577964035,
+        "loud_to_quiet_dB": 17.772060338113775
+      },
+      {
+        "quiet_rms_V": 0.05414780794762748,
+        "loud_rms_V": 0.1674172353926737,
+        "loud_to_quiet_dB": 9.804385722917639
+      }
+    ],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -7.8,
+      "130-400 Hz": -6.35,
+      "400-1200 Hz": -6.35,
+      "1200-3500 Hz": -6.77,
+      "3500-8000 Hz": -6.27,
+      "8000-15000 Hz": -6.45
+    },
+    "diagnostics": {
+      "samples": 227520.0,
+      "inputPeakV": 3.2,
+      "outputPeakV": 1.6618,
+      "outputRmsV": 0.10063,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3636,
+      2736
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf",
+    "slug": "trident-a-range-1038-four-band-eq-ed3001",
+    "audio": [],
+    "name": "Trident A-Range 1038 Four-Band EQ ED3001",
+    "sample_rate_Hz": 48000,
+    "source_family": "strat",
+    "source": "Dry Strat neck and middle pickup DI.",
+    "settings": {
+      "Low mid": 0.3,
+      "High mid": 0.81,
+      "Low mid frequency step": 1,
+      "High mid frequency range": 1,
+      "High shelf": 0.6
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "fd93cddc4c0220868ba4cb1f6e04c4a44c03fe3ee57c0da453f851527403ef5f",
+    "audio_file": "assets/trident-a-range-1038-four-band-eq-ed3001-dry-wet.mp3",
+    "image_file": "assets/trident-a-range-1038-four-band-eq-ed3001.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.44,
+    "output_peak_V": 0.3334600133584885,
+    "output_idle_offset_V": -3.592293647732466e-11,
+    "untrimmed_wet_to_dry_rms_dB": -3.594364301267852,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.5909090909090908,
+    "encoded_true_peak_dBTP": -3.501347064971924,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -2.38,
+      "130-400 Hz": -3.93,
+      "400-1200 Hz": -3.52,
+      "1200-3500 Hz": 0.66,
+      "3500-8000 Hz": 7.59,
+      "8000-15000 Hz": 7.16
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.44,
+      "outputPeakV": 0.33346,
+      "outputRmsV": 0.069849,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      4356,
+      2700
+    ]
+  },
+  {
+    "path": "schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf",
+    "slug": "trident-series-80b-four-band-eq-s800",
+    "audio": [],
+    "name": "Trident Series 80B Four-Band EQ S800",
+    "sample_rate_Hz": 48000,
+    "source_family": "chords",
+    "source": "Dry PF300 major-chord DI.",
+    "settings": {
+      "Low mid": 0.27,
+      "Low mid frequency": 0.42,
+      "High mid": 0.79,
+      "High mid frequency": 0.53,
+      "High shelf": 0.65
+    },
+    "renderer": {
+      "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+      "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+      "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+    },
+    "circuit_sha256": "2c00b0083e2d93faad1f5dc8ed51be0a9d5b00e251ac7dc5015cd9e3ffd274a0",
+    "audio_file": "assets/trident-series-80b-four-band-eq-s800-dry-wet.mp3",
+    "image_file": "assets/trident-series-80b-four-band-eq-s800.png",
+    "image_note": "Editor capture of the saved preset from the rendered revision.",
+    "input_peak_V": 0.46,
+    "output_peak_V": 0.584722130792052,
+    "output_idle_offset_V": 0.0,
+    "untrimmed_wet_to_dry_rms_dB": 0.9253284038242375,
+    "comparison_wet_trim_dB": 0.0,
+    "playback": "Dry and wet share the same playback gain.",
+    "common_clip_playback_gain": 1.19714983089796,
+    "encoded_true_peak_dBTP": -3.5434868335723877,
+    "dry_start_sec": 0,
+    "wet_start_sec": 3.62,
+    "clip_length_sec": 3.3,
+    "dynamics_levels": [],
+    "band_delta_dB_with_preview_trim": {
+      "50-130 Hz": -2.01,
+      "130-400 Hz": -4.92,
+      "400-1200 Hz": 0.01,
+      "1200-3500 Hz": 5.23,
+      "3500-8000 Hz": 8.53,
+      "8000-15000 Hz": 4.02
+    },
+    "diagnostics": {
+      "samples": 206400.0,
+      "inputPeakV": 0.46,
+      "outputPeakV": 0.58472,
+      "outputRmsV": 0.031356,
+      "nonconverged": 0.0,
+      "rejected": 0.0,
+      "audibleRejects": 0.0
+    },
+    "renderer_warnings": [],
+    "editor_image_dimensions": [
+      3888,
+      3060
+    ]
+  }
+]

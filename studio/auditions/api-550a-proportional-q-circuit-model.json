@@ -1,0 +1,55 @@
+{
+  "path": "schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf",
+  "slug": "api-550a-proportional-q-circuit-model",
+  "audio": [],
+  "name": "API 550A Proportional-Q Circuit Model",
+  "sample_rate_Hz": 48000,
+  "source_family": "chords",
+  "source": "Dry PF300 major-chord DI.",
+  "settings": {
+    "Mid 6 dB": 1,
+    "Mid 1.5 kHz": 1,
+    "Low 4 dB": 1,
+    "Low 200 Hz": 1,
+    "Low Cut": 1
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "8a9fde48df2cf4b79dd26eea837d67a66c16946a71855a0bc206b1ca8a008c30",
+  "audio_file": "assets/api-550a-proportional-q-circuit-model-dry-wet.mp3",
+  "image_file": "assets/api-550a-proportional-q-circuit-model.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.5,
+  "output_peak_V": 0.831207685033023,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": 2.5789440004013127,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 0.8421481328967618,
+  "encoded_true_peak_dBTP": -3.505153179168701,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -2.17,
+    "130-400 Hz": -2.04,
+    "400-1200 Hz": 2.87,
+    "1200-3500 Hz": 5.36,
+    "3500-8000 Hz": 2.7,
+    "8000-15000 Hz": 0.43
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.5,
+    "outputPeakV": 0.83121,
+    "outputRmsV": 0.04123,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

@@ -1,0 +1,55 @@
+{
+  "path": "schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf",
+  "slug": "trident-series-80b-four-band-eq-s800",
+  "audio": [],
+  "name": "Trident Series 80B Four-Band EQ S800",
+  "sample_rate_Hz": 48000,
+  "source_family": "chords",
+  "source": "Dry PF300 major-chord DI.",
+  "settings": {
+    "Low mid": 0.27,
+    "Low mid frequency": 0.42,
+    "High mid": 0.79,
+    "High mid frequency": 0.53,
+    "High shelf": 0.65
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "2c00b0083e2d93faad1f5dc8ed51be0a9d5b00e251ac7dc5015cd9e3ffd274a0",
+  "audio_file": "assets/trident-series-80b-four-band-eq-s800-dry-wet.mp3",
+  "image_file": "assets/trident-series-80b-four-band-eq-s800.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.46,
+  "output_peak_V": 0.584722130792052,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": 0.9253284038242375,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 1.19714983089796,
+  "encoded_true_peak_dBTP": -3.5434868335723877,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -2.01,
+    "130-400 Hz": -4.92,
+    "400-1200 Hz": 0.01,
+    "1200-3500 Hz": 5.23,
+    "3500-8000 Hz": 8.53,
+    "8000-15000 Hz": 4.02
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.46,
+    "outputPeakV": 0.58472,
+    "outputRmsV": 0.031356,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

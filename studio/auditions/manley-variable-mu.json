@@ -1,0 +1,63 @@
+{
+  "path": "schematics/studio/dynamics/Manley-Variable-Mu.livewdf",
+  "slug": "manley-variable-mu",
+  "audio": [],
+  "name": "Manley-Variable-Mu",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {
+    "Limit": 1,
+    "Attack": 0.3
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "c33038822678be4e201681441b9e10bf0be6cadbeddd941e5f6db0ec5cf74411",
+  "audio_file": "assets/manley-variable-mu-dry-wet.mp3",
+  "image_file": "assets/manley-variable-mu.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 3.4,
+  "output_peak_V": 3.9144366206615087,
+  "output_idle_offset_V": -8.824507123427991e-14,
+  "untrimmed_wet_to_dry_rms_dB": -1.3444089235954884,
+  "comparison_wet_trim_dB": 0.24555313977206888,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.17384056199382628,
+  "encoded_true_peak_dBTP": -3.0992257595062256,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.061169269598914555,
+      "loud_rms_V": 0.4732997898908679,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.05946420784428122,
+      "loud_rms_V": 0.40396508119590735,
+      "loud_to_quiet_dB": 16.64176376941658
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -0.48,
+    "130-400 Hz": 0.97,
+    "400-1200 Hz": 0.81,
+    "1200-3500 Hz": 0.25,
+    "3500-8000 Hz": 0.4,
+    "8000-15000 Hz": 0.33
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 3.4,
+    "outputPeakV": 3.9144,
+    "outputRmsV": 0.23377,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

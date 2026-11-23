@@ -1,0 +1,57 @@
+{
+  "path": "schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf",
+  "slug": "neve-1081",
+  "audio": [],
+  "comment": "https://github.com/Yahiake/LiveWDF/pull/38#issuecomment-7101253772",
+  "comment_id": 7101253772,
+  "name": "Neve 1081 Gold Label Equalizer",
+  "sample_rate_Hz": 48000,
+  "source_family": "chords",
+  "source": "Dry PF300 major-chord DI.",
+  "settings": {
+    "Lower Presence Gain": 0.24,
+    "Lower Presence 470 Hz": 1,
+    "Upper Presence Gain": 0.78,
+    "Upper Presence 2.7 kHz": 1,
+    "Treble Gain": 0.67
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "78d460a6e8b63fa15dc400a649c6693b0026602c331b3e9787472b9ed41a2c12",
+  "audio_file": "assets/neve-1081-dry-wet.mp3",
+  "image_file": "assets/neve-1081.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.43,
+  "output_peak_V": 0.45926482878059716,
+  "output_idle_offset_V": 1.127098414599459e-11,
+  "untrimmed_wet_to_dry_rms_dB": -0.3836126445281316,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 1.5241750644363152,
+  "encoded_true_peak_dBTP": -3.5440218448638916,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -0.67,
+    "130-400 Hz": -3.72,
+    "400-1200 Hz": -1.29,
+    "1200-3500 Hz": 3.22,
+    "3500-8000 Hz": 4.77,
+    "8000-15000 Hz": 2.51
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.43,
+    "outputPeakV": 0.45926,
+    "outputRmsV": 0.025211,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

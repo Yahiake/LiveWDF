@@ -1,0 +1,60 @@
+{
+  "path": "schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf",
+  "slug": "gates-sta-level-m5167",
+  "audio": [],
+  "name": "Gates-Sta-Level-M5167",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {},
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "c3788e3356fcb4e1308ec9a0c38c0d965a9d18a4293044aa4736136e8db9f421",
+  "audio_file": "assets/gates-sta-level-m5167-dry-wet.mp3",
+  "image_file": "assets/gates-sta-level-m5167.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 2.6,
+  "output_peak_V": 3.967366865676963,
+  "output_idle_offset_V": 9.509667045088396e-14,
+  "untrimmed_wet_to_dry_rms_dB": 3.320062128096364,
+  "comparison_wet_trim_dB": -7.199940576280178,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.2692307692307692,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.046776500281522894,
+      "loud_rms_V": 0.3619351334459578,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.10715803829019399,
+      "loud_rms_V": 0.5239459487097556,
+      "loud_to_quiet_dB": 13.78523464228024
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -4.22,
+    "130-400 Hz": -3.69,
+    "400-1200 Hz": -3.84,
+    "1200-3500 Hz": -4.17,
+    "3500-8000 Hz": -4.12,
+    "8000-15000 Hz": -4.44
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 2.6,
+    "outputPeakV": 3.9674,
+    "outputRmsV": 0.30585,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

@@ -1,0 +1,53 @@
+{
+  "path": "schematics/studio/dynamics/dbx 902 De-Esser.livewdf",
+  "slug": "dbx-902-de-esser",
+  "audio": [],
+  "name": "dbx 902 De-Esser",
+  "sample_rate_Hz": 48000,
+  "source_family": "speech",
+  "source": "Speech test fixture with sibilant consonants.",
+  "settings": {
+    "Range": 0.92,
+    "Frequency": 0.58,
+    "HF Only": 1
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "56fa78530e6360de00a8c0526ccb56e3f422b451f6b2f52c34572e2b162c7b67",
+  "audio_file": "assets/dbx-902-de-esser-dry-wet.mp3",
+  "image_file": "assets/dbx-902-de-esser.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.9,
+  "output_peak_V": 0.8542189994029322,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": -0.16237291402751064,
+  "comparison_wet_trim_dB": 0.09840687662999781,
+  "playback": "Fixed wet playback trim matched below the sibilance band (150 Hz\u20132 kHz).",
+  "common_clip_playback_gain": 0.7777777777777777,
+  "encoded_true_peak_dBTP": -3.5425806045532227,
+  "dry_start_sec": 0,
+  "wet_start_sec": 5.25,
+  "clip_length_sec": 4.93,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": 0.01,
+    "130-400 Hz": 0.01,
+    "400-1200 Hz": -0.03,
+    "1200-3500 Hz": -1.0,
+    "3500-8000 Hz": -10.97,
+    "8000-15000 Hz": -13.86
+  },
+  "diagnostics": {
+    "samples": 284640.0,
+    "inputPeakV": 0.9,
+    "outputPeakV": 0.85422,
+    "outputRmsV": 0.18671,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

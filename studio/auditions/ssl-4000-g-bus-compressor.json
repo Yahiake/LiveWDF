@@ -1,0 +1,63 @@
+{
+  "path": "schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf",
+  "slug": "ssl-4000-g-bus-compressor",
+  "audio": [],
+  "name": "SSL-4000-G-Bus-Compressor",
+  "sample_rate_Hz": 48000,
+  "source_family": "two-level",
+  "source": "Synthetic drums. The same phrase repeats 17.7 dB louder.",
+  "settings": {
+    "Threshold": 0.75,
+    "Ratio 2 / 4": 1
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "d2b3521ba8acbe61b417b460d8b2a889d5c38f6c16e721033c10b7b9af11b255",
+  "audio_file": "assets/ssl-4000-g-bus-compressor-dry-wet.mp3",
+  "image_file": "assets/ssl-4000-g-bus-compressor.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 3.2,
+  "output_peak_V": 1.6618148456141988,
+  "output_idle_offset_V": 0.0,
+  "untrimmed_wet_to_dry_rms_dB": -8.139373821860286,
+  "comparison_wet_trim_dB": 0.5324695233120185,
+  "playback": "Fixed wet playback trim measured on the first quiet phrase. The louder phrase retains that trim.",
+  "common_clip_playback_gain": 0.21874999999999997,
+  "encoded_true_peak_dBTP": -3.439277172088623,
+  "dry_start_sec": 0,
+  "wet_start_sec": 4.06,
+  "clip_length_sec": 3.74,
+  "dynamics_levels": [
+    {
+      "quiet_rms_V": 0.057571077269566645,
+      "loud_rms_V": 0.44545862577964035,
+      "loud_to_quiet_dB": 17.772060338113775
+    },
+    {
+      "quiet_rms_V": 0.05414780794762748,
+      "loud_rms_V": 0.1674172353926737,
+      "loud_to_quiet_dB": 9.804385722917639
+    }
+  ],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -7.8,
+    "130-400 Hz": -6.35,
+    "400-1200 Hz": -6.35,
+    "1200-3500 Hz": -6.77,
+    "3500-8000 Hz": -6.27,
+    "8000-15000 Hz": -6.45
+  },
+  "diagnostics": {
+    "samples": 227520.0,
+    "inputPeakV": 3.2,
+    "outputPeakV": 1.6618,
+    "outputRmsV": 0.10063,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}

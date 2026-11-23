@@ -1,0 +1,55 @@
+{
+  "path": "schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf",
+  "slug": "trident-a-range-1038-four-band-eq-ed3001",
+  "audio": [],
+  "name": "Trident A-Range 1038 Four-Band EQ ED3001",
+  "sample_rate_Hz": 48000,
+  "source_family": "strat",
+  "source": "Dry Strat neck and middle pickup DI.",
+  "settings": {
+    "Low mid": 0.3,
+    "High mid": 0.81,
+    "Low mid frequency step": 1,
+    "High mid frequency range": 1,
+    "High shelf": 0.6
+  },
+  "renderer": {
+    "commit": "ca38519e2b2ed9d9d0669dad7efd68f6223fe45e",
+    "engine_tree": "d3c814b45724768ccfe53cc716ef6d6b42e5fe41",
+    "renderer_sha256": "e383a0c9c52453c25c7d7b4e4b38adba6789740807f40c18a7edadc594722c3e"
+  },
+  "circuit_sha256": "fd93cddc4c0220868ba4cb1f6e04c4a44c03fe3ee57c0da453f851527403ef5f",
+  "audio_file": "assets/trident-a-range-1038-four-band-eq-ed3001-dry-wet.mp3",
+  "image_file": "assets/trident-a-range-1038-four-band-eq-ed3001.png",
+  "image_note": "Editor capture of the saved preset from the rendered revision.",
+  "input_peak_V": 0.44,
+  "output_peak_V": 0.3334600133584885,
+  "output_idle_offset_V": -3.592293647732466e-11,
+  "untrimmed_wet_to_dry_rms_dB": -3.594364301267852,
+  "comparison_wet_trim_dB": 0.0,
+  "playback": "Dry and wet share the same playback gain.",
+  "common_clip_playback_gain": 1.5909090909090908,
+  "encoded_true_peak_dBTP": -3.501347064971924,
+  "dry_start_sec": 0,
+  "wet_start_sec": 3.62,
+  "clip_length_sec": 3.3,
+  "dynamics_levels": [],
+  "band_delta_dB_with_preview_trim": {
+    "50-130 Hz": -2.38,
+    "130-400 Hz": -3.93,
+    "400-1200 Hz": -3.52,
+    "1200-3500 Hz": 0.66,
+    "3500-8000 Hz": 7.59,
+    "8000-15000 Hz": 7.16
+  },
+  "diagnostics": {
+    "samples": 206400.0,
+    "inputPeakV": 0.44,
+    "outputPeakV": 0.33346,
+    "outputRmsV": 0.069849,
+    "nonconverged": 0.0,
+    "rejected": 0.0,
+    "audibleRejects": 0.0
+  },
+  "renderer_warnings": []
+}
