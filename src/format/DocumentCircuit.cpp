@@ -353,6 +353,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                 RmsDetectorModel model;
                 model.referenceVolts = getVal("referenceVolts", model.referenceVolts);
                 model.timeConstantSeconds = getVal("timeConstantSeconds", model.timeConstantSeconds);
+                model.attackTimeConstantSeconds = getVal("attackTimeConstantSeconds", 0.0);
+                model.releaseTimeConstantSeconds = getVal("releaseTimeConstantSeconds", 0.0);
                 model.voltsPerDb = getVal("voltsPerDb", model.voltsPerDb);
                 model.inputOhms = getVal("inputOhms", model.inputOhms);
                 model.outputOhms = getVal("outputOhms", model.outputOhms);

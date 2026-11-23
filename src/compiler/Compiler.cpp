@@ -176,6 +176,8 @@ std::string fingerprint(const wdf::Circuit& c) {
         mixString(hash, e.name);
         mixDouble(hash, e.model.referenceVolts);
         mixDouble(hash, e.model.timeConstantSeconds);
+        mixDouble(hash, e.model.attackTimeConstantSeconds);
+        mixDouble(hash, e.model.releaseTimeConstantSeconds);
         mixDouble(hash, e.model.voltsPerDb);
         mixBytes(hash, &e.model.negativeOutput, sizeof(e.model.negativeOutput));
         mixDouble(hash, e.model.inputOhms);

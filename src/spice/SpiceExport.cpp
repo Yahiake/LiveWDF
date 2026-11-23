@@ -212,12 +212,21 @@ SpiceExportResult spiceExport(const Circuit& c,
             const std::string power = "x_" + base + "_power";
             const std::string input = "V(" + nodeOrGround(detector->input) + "," +
                                       nodeOrGround(detector->common) + ")";
-            f << spiceUnique("B_" + base + "_power", used) << " 0 " << power
-              << " I=min(abs(" << input << ")/" << spiceNum(m.referenceVolts) << ","
-              << spiceNum(RmsDetectorModel::maximumNormalizedInput) << ")^2\n";
-            f << spiceUnique("R_" + base + "_mean", used) << " " << power << " 0 1\n";
-            f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 "
-              << spiceNum(m.timeConstantSeconds) << "\n";
+            const std::string instantaneous =
+                "min(abs(" + input + ")/" + spiceNum(m.referenceVolts) + "," +
+                spiceNum(RmsDetectorModel::maximumNormalizedInput) + ")^2";
+            f << spiceUnique("B_" + base + "_power", used) << " 0 " << power << " I=";
+            if (m.attackSeconds() == m.releaseSeconds()) {
+                f << instantaneous << "\n";
+                f << spiceUnique("R_" + base + "_mean", used) << " " << power << " 0 1\n";
+                f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 "
+                  << spiceNum(m.attackSeconds()) << "\n";
+            } else {
+                const std::string difference = instantaneous + "-V(" + power + ")";
+                f << "(" << difference << ")/ternary_fcn((" << difference << ")>0,"
+                  << spiceNum(m.attackSeconds()) << "," << spiceNum(m.releaseSeconds()) << ")\n";
+                f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 1\n";
+            }
             f << spiceUnique("B_" + base + "_drive", used) << " " << nodeOrGround(s.a)
               << " " << nodeOrGround(s.b) << " I="
               << spiceNum(10.0 * m.signedVoltsPerDb() / (std::log(10.0) * m.outputOhms))

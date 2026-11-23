@@ -79,6 +79,42 @@ TEST_CASE("Engine RMS detector senses a differential port and seeds loaded DC", 
     REQUIRE(deck.netlist.find("I=min(abs(V(input,common))") != std::string::npos);
 }
 
+TEST_CASE("Log RMS detector can use independent attack and release", "[rms][dsp]") {
+    wdf::RmsDetectorModel model;
+    model.attackTimeConstantSeconds = 0.01;
+    model.releaseTimeConstantSeconds = 0.1;
+    constexpr double fs = 48000.0;
+    wdf::RmsDetectorState state(model, 1.0 / fs);
+    state.reset(0.0);
+
+    for (int i = 0; i < 480; ++i)
+        state.step(1.0);
+    REQUIRE(state.outputCurrent() ==
+            Approx(model.current(1.0 - std::exp(-1.0))).margin(1e-10));
+
+    for (int i = 0; i < 4800; ++i)
+        state.step(0.0);
+    REQUIRE(state.outputCurrent() ==
+            Approx(model.current((1.0 - std::exp(-1.0)) * std::exp(-1.0))).margin(1e-10));
+
+    wdf::Circuit circuit;
+    circuit.addSrc("input", "0");
+    circuit.addRmsDetector("input", "output", "0", model);
+    const auto original = livewdf::compiler::Compiler{}.compile(circuit);
+    REQUIRE(original.ok());
+    for (auto field : {&wdf::RmsDetectorModel::attackTimeConstantSeconds,
+                       &wdf::RmsDetectorModel::releaseTimeConstantSeconds}) {
+        auto changed = circuit;
+        changed.rmsDetectors.front().model.*field *= 2.0;
+        const auto result = livewdf::compiler::Compiler{}.compile(changed);
+        REQUIRE(result.ok());
+        REQUIRE(result.circuit->revision() != original.circuit->revision());
+    }
+    const auto deck = wdf::spiceExport(circuit, fs);
+    REQUIRE(deck.ok);
+    REQUIRE(deck.netlist.find("ternary_fcn") != std::string::npos);
+}
+
 TEST_CASE("Format exposes a log RMS detector with valid defaults and validates overrides",
           "[rms][format]") {
     auto rms = livewdf::editor::makeComponent("rmsdet", {}, 0, 0);
@@ -94,6 +130,11 @@ TEST_CASE("Format exposes a log RMS detector with valid defaults and validates o
     doc.components.push_back(output);
     REQUIRE(doc.toCircuit().rmsDetectors.size() == 1);
     auto& part = doc.components.front();
+    part.values["attackTimeConstantSeconds"] = 0.004;
+    REQUIRE(doc.toCircuit().rmsDetectors.front().model.attackSeconds() == 0.004);
+    part.values["releaseTimeConstantSeconds"] = -1.0;
+    REQUIRE_THROWS_AS(doc.toCircuit(), std::invalid_argument);
+    part.values["releaseTimeConstantSeconds"] = 0.0;
     part.values["timeConstantSeconds"] = -1.0;
     REQUIRE_THROWS_AS(doc.toCircuit(), std::invalid_argument);
 }
