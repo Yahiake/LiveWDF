@@ -26,6 +26,11 @@ Circuit LiveWDFDocument::toCircuit() const {
         BucketBrigadeModel model;
     };
     std::vector<DocumentBucketBrigade> bucketBrigades;
+    struct DocumentRmsDetector {
+        std::string input, output, common, name;
+        RmsDetectorModel model;
+    };
+    std::vector<DocumentRmsDetector> rmsDetectors;
 
     // Rails, keyed by the net they drive: (dc volts, ac volts, part id).
     //
@@ -336,6 +341,15 @@ Circuit LiveWDFDocument::toCircuit() const {
                     throw std::runtime_error("unsupported BJT model '" + modelName +
                                              "' on part '" + comp.id + "'");
                 }
+            } else if (comp.type == "rmsdet") {
+                RmsDetectorModel model;
+                model.referenceVolts = getVal("referenceVolts", model.referenceVolts);
+                model.timeConstantSeconds = getVal("timeConstantSeconds", model.timeConstantSeconds);
+                model.voltsPerDb = getVal("voltsPerDb", model.voltsPerDb);
+                model.inputOhms = getVal("inputOhms", model.inputOhms);
+                model.outputOhms = getVal("outputOhms", model.outputOhms);
+                rmsDetectors.push_back({getPin("in"), getPin("out"), getPin("common"),
+                                        comp.id, model});
             } else if (comp.type == "bbd") {
                 BucketBrigadeModel model;
                 const double stages = getVal("stages", model.stages);
@@ -528,10 +542,12 @@ Circuit LiveWDFDocument::toCircuit() const {
             // node the plugin reads, and a node it names is a node some other
             // part's pin is on anyway.
         }
-        // Internal BBD output sources follow the explicit current sources so
-        // the source driver's existing current-source slots keep their order.
+        // Internal drives follow explicit current sources to preserve the
+        // slots used by the source driver.
         for (const auto& bbd : bucketBrigades)
             c.addBucketBrigade(bbd.input, bbd.output, bbd.clock, bbd.common, bbd.model, bbd.name);
+        for (const auto& rms : rmsDetectors)
+            c.addRmsDetector(rms.input, rms.output, rms.common, rms.model, rms.name);
         return c;
     }
 

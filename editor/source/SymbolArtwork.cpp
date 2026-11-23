@@ -68,6 +68,7 @@ enum class Asset {
     IdealOpAmp,
     Ca3080,
     That2180,
+    RmsDetector,
     count,
 };
 
@@ -108,6 +109,7 @@ const char* const assetNames[] = {
     "ideal-opamp",
     "ca3080",
     "that2180",
+    "rms-detector",
 };
 
 static_assert(std::size(assetNames) == static_cast<size_t>(assetCount),
@@ -134,6 +136,7 @@ int assetForType(const std::string& type) {
     if (type == "src")         return static_cast<int>(Asset::VoltageSource);
     if (type == "isrc")        return static_cast<int>(Asset::CurrentSource);
     if (type == "vcvs")        return static_cast<int>(Asset::GainBlock);
+    if (type == "rmsdet")      return static_cast<int>(Asset::RmsDetector);
     if (type == "bbd")         return static_cast<int>(Asset::BucketBrigade);
     if (type == "vca")         return static_cast<int>(Asset::Vca);
     if (type == "that2180")     return static_cast<int>(Asset::That2180);
@@ -542,7 +545,7 @@ std::vector<std::string> artworkTypes() {
     // listing the asset names again -- so the list cannot drift from the map, and
     // a type added to one but not the other is a test failure, not a blank part.
     for (const auto* name : {"res", "cap", "ind", "diode", "ground", "gnd",
-                             "pot", "varres", "src", "isrc", "vcvs", "bbd",
+                             "pot", "varres", "src", "isrc", "vcvs", "bbd", "rmsdet",
                              "transformer", "triode", "pentode", "ctrlres", "photores",
                              "switch_res", "bjt", "jfet", "mosfet",
                              "in", "out", "opamp", "ca3080"})

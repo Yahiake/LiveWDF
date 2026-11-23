@@ -558,6 +558,13 @@ protected:
                 {bbd.clock.a, bbd.clock.b, makeAffine(bbd.clock.off)},
                 BucketBrigadeState(bbd.model),
             });
+        rmsDetectors_.reserve(comp_.rmsDetectors.size());
+        for (const auto& detector : comp_.rmsDetectors)
+            rmsDetectors_.push_back({
+                detector.outputCurrentIndex,
+                {detector.input.a, detector.input.b, makeAffine(detector.input.off)},
+                RmsDetectorState(detector.model, T_),
+            });
         // The resistor each control writes. Resolved once, here: a pot move on
         // the audio thread used to build "POT1_1" and scan the resistor list for
         // it, which allocates and is exactly the kind of work a parameter update
@@ -1087,6 +1094,12 @@ protected:
         BucketBrigadeState delay;
     };
     std::vector<BucketBrigadeConnection> bucketBrigades_;
+    struct RmsDetectorConnection {
+        std::size_t outputCurrentIndex;
+        SensePort input;
+        RmsDetectorState detector;
+    };
+    std::vector<RmsDetectorConnection> rmsDetectors_;
     /// Resistor indices a pot/rheostat writes, resolved in the constructor.
     std::vector<int> potResA_, potResB_, varResResIndex_;
     std::vector<Pentode> pentodes_;

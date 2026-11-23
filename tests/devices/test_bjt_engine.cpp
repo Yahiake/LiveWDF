@@ -465,3 +465,40 @@ TEST_CASE("BJT transient step settles at DC and responds to base bias", "[bjt][e
         REQUIRE(std::abs(v[static_cast<size_t>(cIdx)] - vCdc) < 1e-6);
     }
 }
+
+TEST_CASE("floating-emitter BJT DC Jacobian differentiates the root residual",
+          "[bjt][engine][dc][jacobian]") {
+    struct Probe : wdf::Engine {
+        using Engine::Engine;
+        using Engine::jacobian;
+        using Engine::residual;
+    };
+
+    wdf::Circuit c;
+    c.addRes("c", "0", 1000);
+    c.addRes("b", "0", 3300);
+    c.addRes("e", "0", 470);
+    c.addBjt("c", "b", "e", wdf::findBjtByName("2N3904")->model, "Q1");
+    Probe engine(c, 48000);
+    const std::vector<double> v{0.01, 0.58, 0.2}, open(3, 0.0);
+    std::vector<double> currents, deviceJ;
+    engine.currents(v, currents, deviceJ);
+    const auto analytic = engine.jacobian(engine.rootImpedance(), deviceJ);
+    const auto evaluate = [&](const auto& point) {
+        engine.currents(point, currents, deviceJ);
+        return engine.residual(point, open, engine.rootImpedance(), currents);
+    };
+
+    constexpr double h = 1e-6;
+    for (size_t col = 0; col < v.size(); ++col) {
+        auto lo = v, hi = v;
+        lo[col] -= h;
+        hi[col] += h;
+        const auto fLo = evaluate(lo), fHi = evaluate(hi);
+        for (size_t row = 0; row < v.size(); ++row) {
+            CAPTURE(row, col);
+            const double slope = (fHi[row] - fLo[row]) / (2 * h);
+            CHECK(analytic[row * v.size() + col] == Approx(slope).epsilon(1e-7).margin(1e-8));
+        }
+    }
+}

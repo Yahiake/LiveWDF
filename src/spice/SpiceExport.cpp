@@ -190,6 +190,27 @@ SpiceExportResult spiceExport(const Circuit& c,
     // ---- Current sources ----
     for (size_t i = 0; i < c.isrc.size(); ++i) {
         const auto& s = c.isrc[i];
+        const auto detector = std::find_if(c.rmsDetectors.begin(), c.rmsDetectors.end(),
+            [i](const auto& rms) { return rms.outputCurrentIndex == i; });
+        if (detector != c.rmsDetectors.end()) {
+            const auto& m = detector->model;
+            const auto base = spiceSafe(detector->name);
+            const std::string power = "x_" + base + "_power";
+            const std::string input = "V(" + nodeOrGround(detector->input) + "," +
+                                      nodeOrGround(detector->common) + ")";
+            f << spiceUnique("B_" + base + "_power", used) << " 0 " << power
+              << " I=min(abs(" << input << ")/" << spiceNum(m.referenceVolts) << ","
+              << spiceNum(RmsDetectorModel::maximumNormalizedInput) << ")^2\n";
+            f << spiceUnique("R_" + base + "_mean", used) << " " << power << " 0 1\n";
+            f << spiceUnique("C_" + base + "_mean", used) << " " << power << " 0 "
+              << spiceNum(m.timeConstantSeconds) << "\n";
+            f << spiceUnique("B_" + base + "_drive", used) << " " << nodeOrGround(s.a)
+              << " " << nodeOrGround(s.b) << " I="
+              << spiceNum(10.0 * m.voltsPerDb / (std::log(10.0) * m.outputOhms))
+              << "*ln(min(max(V(" << power << ")," << spiceNum(RmsDetectorModel::minimumPower)
+              << ")," << spiceNum(RmsDetectorModel::maximumPower) << "))\n";
+            continue;
+        }
         const std::string base = s.name.empty() ? ("I" + std::to_string(i)) : s.name;
         const std::string name = spiceUnique("I_" + spiceSafe(base), used);
         f << name << " " << nodeOrGround(s.a) << " " << nodeOrGround(s.b)
@@ -570,6 +591,8 @@ SpiceExportResult spiceExport(const Circuit& c,
                                         [](const auto& e) { return e.ota.has_value(); });
     if (otaCount)
         d << "; " << otaCount << " OTA(s) with continuous SPICE bias control";
+    if (!c.rmsDetectors.empty())
+        d << "; " << c.rmsDetectors.size() << " log RMS detector(s) with continuous SPICE averaging";
     if (!c.bucketBrigades.empty())
         d << "; " << c.bucketBrigades.size()
           << " bucket-brigade delay(s) fixed at nominal DC output bias, transient wet path omitted";

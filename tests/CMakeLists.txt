@@ -63,6 +63,7 @@ add_executable(livewdf_tests
     devices/test_power_supply.cpp
     devices/test_omega.cpp
     dsp/test_bucket_brigade.cpp
+    dsp/test_rms_detector.cpp
     dsp/test_halfband_oversampler.cpp
 
     spice/test_spice_parser.cpp
@@ -96,6 +97,7 @@ add_executable(livewdf_tests
     # reconciled. BJT coverage lives in `devices/test_bjt*.cpp`, which builds the
     # circuit directly.
     integration/test_oracle_ngspice.cpp
+    integration/test_oracle_parts.cpp
     integration/test_oracle_ngspice_transistors.cpp
     integration/test_oracle_wdf_compiler.cpp)
 target_link_libraries(livewdf_tests PRIVATE livewdf_test_support)
@@ -132,3 +134,6 @@ target_link_libraries(livewdf_bench_scaling PRIVATE livewdf_test_support)
 
 add_executable(livewdf_bench_runtime bench/bench_runtime.cpp)
 target_link_libraries(livewdf_bench_runtime PRIVATE livewdf_test_support)
+
+add_executable(livewdf_bench_parts bench/bench_parts.cpp)
+target_link_libraries(livewdf_bench_parts PRIVATE livewdf_test_support)
