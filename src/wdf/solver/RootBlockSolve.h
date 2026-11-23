@@ -772,7 +772,7 @@ public:
                 // vSource0 + g*(vDiff - vDiff0).  The affine constant is
                 // -(vSource0 - g*vDiff0)/Ro.
                 const double h = -(vSource - g * vDiff) / ro;
-                rhs[d] = h + (1.0 / ro) * vo - (g / ro) * vp + (g / ro) * vn;
+                rhs[d] = h + (oa.outputVoltageWeight() / ro) * vo - (g / ro) * vp + (g / ro) * vn;
             } else if (dev.kind == DeviceKind::ControlledRes) {
                 const double g = block.linearG[static_cast<size_t>(d)];
                 rhs[d] = g * fold(o);
@@ -860,9 +860,8 @@ public:
                 const double vSource = OpAmpEngineLaw::sourceVoltage(
                     oa, vDiff, ctx.opAmpVp[dev.compIndex], ctx.opAmpAlpha[dev.compIndex],
                     ctx.opAmpMaxDv[dev.compIndex], ctx.staticMode, &derivative);
-                const double vSourceUsed =
-                    ctx.vv[static_cast<size_t>(o)] -
-                    ctx.ii[static_cast<size_t>(o)] * oa.outputImpedance;
+                const double vSourceUsed = oa.sourceVoltageFromSolverCurrent(
+                    ctx.vv[static_cast<size_t>(o)], ctx.ii[static_cast<size_t>(o)]);
                 const double scale = std::max(1.0, std::abs(vSource));
                 if (!std::isfinite(vSource) || !std::isfinite(vSourceUsed) ||
                     std::abs(vSource - vSourceUsed) > lawTol * scale)

@@ -587,6 +587,22 @@ protected:
         P_ = static_cast<int>(net_.eG.size());
     }
 
+    bool embedOpAmpOutputResistance() {
+        bool embedded = false;
+        for (auto& model : opAmps_) {
+            if (!(model.outputImpedance > 0.0) ||
+                !std::isfinite(model.outputImpedance))
+                continue;
+            model.outputResistanceEmbedded = true;
+            embedded = true;
+        }
+        if (embedded) {
+            net_ = buildNetwork(circuit_, comp_, T_, true);
+            P_ = static_cast<int>(net_.eG.size());
+        }
+        return embedded;
+    }
+
     void buildRootDeviceTable() {
         rootDevices_.clear();
         junctionLimiters_.clear();

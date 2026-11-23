@@ -157,9 +157,10 @@ public:
             const RootDevice& dev = rootDevices[block.linearDevices[static_cast<size_t>(d)]];
             const int o = dev.portBase;
             if (dev.kind == DeviceKind::OpAmp) {
-                const double ro = opAmps[dev.compIndex].outputImpedance;
+                const auto& oa = opAmps[dev.compIndex];
+                const double ro = oa.outputImpedance;
                 const double g = block.linearG[static_cast<size_t>(d)];
-                return (1.0 / ro) * zData[static_cast<size_t>(o) * K + col] -
+                return (oa.outputVoltageWeight() / ro) * zData[static_cast<size_t>(o) * K + col] -
                        (g / ro) * zData[static_cast<size_t>(o + 1) * K + col] +
                        (g / ro) * zData[static_cast<size_t>(o + 2) * K + col];
             }

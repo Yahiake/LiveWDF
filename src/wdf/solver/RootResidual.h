@@ -181,11 +181,11 @@ public:
                     staticMode, &dSourceDvDiff);
                 const double gOut = 1.0 / oa.outputImpedance;
                 ++deviceEvals;
-                iData[o] = (vData[o] - vSource) * gOut;
+                iData[o] = (oa.outputVoltageWeight() * vData[o] - vSource) * gOut;
                 iData[o + 1] = 0.0;
                 iData[o + 2] = 0.0;
                 if (jData) {
-                    jData[o * K + o] = gOut;
+                    jData[o * K + o] = oa.outputVoltageWeight() * gOut;
                     jData[o * K + o + 1] = -dSourceDvDiff * gOut;
                     jData[o * K + o + 2] = dSourceDvDiff * gOut;
                     jData[(o + 1) * K + o] = 0.0;

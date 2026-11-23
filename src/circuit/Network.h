@@ -161,7 +161,8 @@ struct Network {
 /// the same transfer as the device roots, so folding it into the node voltages
 /// is one multiply per source per node -- which is why its ports are carried
 /// alongside the device roots in `allRoots`.
-inline Network buildNetwork(const Circuit& circuit, const Compiled& comp, double T) {
+inline Network buildNetwork(const Circuit& circuit, const Compiled& comp, double T,
+                            bool embedOpAmpOutputResistance = false) {
     Network n;
 
     // --- element ports ------------------------------------------------
@@ -169,7 +170,7 @@ inline Network buildNetwork(const Circuit& circuit, const Compiled& comp, double
     const int nCap = static_cast<int>(circuit.cap.size());
     const int nInd = static_cast<int>(circuit.ind.size());
     const int nVCVS = static_cast<int>(circuit.vcvs.size());
-    const int P = nRes + nCap + nInd + nVCVS;
+    int P = nRes + nCap + nInd + nVCVS;
 
     n.epA.resize(P);
     n.epB.resize(P);
@@ -273,6 +274,25 @@ inline Network buildNetwork(const Circuit& circuit, const Compiled& comp, double
         const Port& p = layout.ports[static_cast<size_t>(r)];
         n.rp[static_cast<size_t>(r)] = {p.a, p.b};
         n.roffAff.push_back(makeAffine(p.off));
+    }
+
+    if (embedOpAmpOutputResistance) {
+        for (const auto& device : layout.devices) {
+            if (device.kind != RootKind::OpAmp)
+                continue;
+            const auto& model = comp.opamp[static_cast<size_t>(device.compIndex)].model;
+            if (!(model.outputImpedance > 0.0) ||
+                !std::isfinite(model.outputImpedance))
+                continue;
+            const size_t port = static_cast<size_t>(device.portBase);
+            n.epA.push_back(n.rp[port][0]);
+            n.epB.push_back(n.rp[port][1]);
+            n.eG.push_back(1.0 / model.outputImpedance);
+            n.eoffAff.push_back(n.roffAff[port]);
+            n.capOf.push_back(-1);
+            n.indOf.push_back(-1);
+            ++P;
+        }
     }
 
     // --- current-source root ports ------------------------------------

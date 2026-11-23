@@ -32,7 +32,8 @@ public:
     /// with the plate-only law.
     Engine(const Circuit& circuit, double fs, bool gridCurrent = true)
         : EngineStep(circuit, fs, gridCurrent) {
-        if (!rebuildLinear())
+        if (!rebuildLinear() &&
+            (!embedOpAmpOutputResistance() || !rebuildLinear()))
             throw std::runtime_error("rootTransfer failed (singular linear network)");
         allocateBuffers();
         reset();

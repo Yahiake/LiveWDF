@@ -149,6 +149,22 @@ struct OpAmpModel {
     /// providing continuous derivatives everywhere and natural analog warmth.
     bool softRails = false;
 
+    /// Solver-only state on an Engine's private model copy: the linear
+    /// output conductance is already present in the passive network.
+    bool outputResistanceEmbedded = false;
+
+    double outputVoltageWeight() const noexcept {
+        return outputResistanceEmbedded ? 0.0 : 1.0;
+    }
+
+    double sourceVoltageFromSolverCurrent(double voltage, double current) const noexcept {
+        return outputVoltageWeight() * voltage - outputImpedance * current;
+    }
+
+    double physicalOutputCurrent(double voltage, double current) const noexcept {
+        return outputResistanceEmbedded ? current + voltage / outputImpedance : current;
+    }
+
     OpAmpModel() = default;
     explicit OpAmpModel(OpAmpType t) : type(t) { *this = fromType(t); }
 

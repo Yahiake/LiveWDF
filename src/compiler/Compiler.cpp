@@ -97,7 +97,11 @@ std::string fingerprint(const wdf::Circuit& c) {
     std::uint64_t hash = 1469598103934665603ull;
 
     for (const auto& e : c.res) mixElement(hash, e.a, e.b, e.value, e.name);
-    for (const auto& e : c.cap) mixElement(hash, e.a, e.b, e.value, e.name);
+    for (const auto& e : c.cap) {
+        mixElement(hash, e.a, e.b, e.value, e.name);
+        if (e.initialVolts)
+            mixDouble(hash, *e.initialVolts);
+    }
     for (const auto& e : c.ind) mixElement(hash, e.a, e.b, e.value, e.name);
     for (const auto& e : c.isrc) {
         mixElement(hash, e.a, e.b, e.dc, e.name);
@@ -201,9 +205,12 @@ void validateValues(const wdf::Circuit& c, const CompileOptions& options,
     for (const auto& r : c.res)
         if (!positiveFinite(r.value))
             addValueFinding(out, options, "resistance", r.name, r.value);
-    for (const auto& e : c.cap)
+    for (const auto& e : c.cap) {
         if (!positiveFinite(e.value))
             addValueFinding(out, options, "capacitance", e.name, e.value);
+        if (e.initialVolts && !std::isfinite(*e.initialVolts))
+            addValueFinding(out, options, "capacitor initial voltage", e.name, *e.initialVolts);
+    }
     for (const auto& e : c.ind)
         if (!positiveFinite(e.value))
             addValueFinding(out, options, "inductance", e.name, e.value);

@@ -65,9 +65,8 @@ public:
                         continue;
                     const size_t ci = dev.compIndex;
                     const int o = dev.portBase;
-                    opAmpVp_[ci] = rootV[static_cast<size_t>(o)] -
-                                   opAmps_[ci].outputImpedance *
-                                       i[static_cast<size_t>(o)];
+                    opAmpVp_[ci] = opAmps_[ci].sourceVoltageFromSolverCurrent(
+                        rootV[static_cast<size_t>(o)], i[static_cast<size_t>(o)]);
                 }
             }
             vv_ = rootV;
@@ -88,8 +87,10 @@ public:
         for (int j = 0; j < P_; ++j) {
             if (net_.capOf[j] < 0)
                 continue;
-            capState_[static_cast<size_t>(net_.capOf[j])] =
-                acrossPort(static_cast<size_t>(j), node) + net_.eoffAff[static_cast<size_t>(j)].eval(dcValues_);
+            const auto k = static_cast<size_t>(net_.capOf[j]);
+            capState_[k] = circuit_.cap[k].initialVolts.value_or(
+                acrossPort(static_cast<size_t>(j), node) +
+                net_.eoffAff[static_cast<size_t>(j)].eval(dcValues_));
         }
         // Inductor state is the incident wave `a = i * 2L/T` (the port resistance
         // is 2L/T), or `a = R_L * i` for coupled groups. Seeding it is what makes
@@ -455,7 +456,8 @@ public:
                 if (ci >= opAmpSagActive_.size() || !opAmpSagActive_[ci])
                     continue;
                 const int o = dev.portBase;
-                const double iOut = ii_[static_cast<size_t>(o)];
+                const double iOut = opAmps_[ci].physicalOutputCurrent(
+                    vv_[static_cast<size_t>(o)], ii_[static_cast<size_t>(o)]);
                 const double iPos = std::max(0.0, iOut);
                 const double iNeg = std::max(0.0, -iOut);
                 const double vPos = opAmpPsuPos_[ci].tick(iPos);

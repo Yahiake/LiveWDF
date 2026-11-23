@@ -80,6 +80,9 @@ SpiceExportResult spiceExport(const Circuit& c,
     for (size_t i = 0; i < c.cap.size(); ++i) {
         const auto& e = c.cap[i];
         const std::string base = e.name.empty() ? ("C" + std::to_string(i)) : e.name;
+        if (e.initialVolts)
+            f << "* " << spiceSafe(base) << " LiveWDF initial voltage "
+              << spiceNum(*e.initialVolts) << " V omitted; transient uses DC operating point\n";
         f << spiceUnique("C_" + spiceSafe(base), used) << " "
           << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
           << spiceNum(e.value) << "\n";
@@ -514,6 +517,10 @@ SpiceExportResult spiceExport(const Circuit& c,
     if (shortMutual)
         d << "; NOT exported: " << shortMutual
           << " MutualInd with fewer than two inductors";
+    const auto initialCapCount = std::count_if(
+        c.cap.begin(), c.cap.end(), [](const auto& e) { return e.initialVolts.has_value(); });
+    if (initialCapCount)
+        d << "; " << initialCapCount << " capacitor startup override(s) omitted (DC operating point)";
     r.diagnostics = d.str();
     r.ok = (shortMutual == 0);
     return r;

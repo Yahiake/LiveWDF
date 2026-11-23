@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <string>
 #include <vector>
 
 #include "spice/Circuit.h"
@@ -83,6 +84,57 @@ TEST_CASE("opamp engine DC non-inverting amplifier gain is 1 + Rf/Ri", "[opamp][
     const int outIdx = e.nodeIndex("out");
     REQUIRE(outIdx >= 0);
     REQUIRE(node[static_cast<size_t>(outIdx)] == Approx(1.1).epsilon(2e-3));
+}
+
+TEST_CASE("unloaded opamp follower drives a second stage through a source offset",
+          "[opamp][engine][dc][tran]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 3.0, 0.0, {}, "Vin");
+    c.addSrc("next", "first", 0.5, 0.0, {}, "Voffset");
+    c.addSrc("positive", "0", 9.0, 0.0, {}, "Vcc");
+    c.addSrc("negative", "0", -2.0, 0.0, {}, "Vee");
+    const auto model = opamp(wdf::OpAmpType::Jrc4558, 9.0, 2.0);
+    c.addOpAmp("first", "first", "in", "positive", "negative", model, "U1");
+    c.addOpAmp("out", "out", "next", "positive", "negative", model, "U2");
+    c.addRes("out", "0", 100000.0, "Rload");
+
+    wdf::Engine e(c, kFs);
+    const int out = e.nodeIndex("out");
+    REQUIRE(out >= 0);
+    std::vector<double> node, rootV;
+    REQUIRE(e.solveDc(node, rootV));
+    CHECK(node[static_cast<size_t>(out)] == Approx(3.5).margin(1e-4));
+
+    for (int n = 0; n < 32; ++n) {
+        const auto& settled = e.step({3.2, 0.8, 9.0, -2.0});
+        REQUIRE(e.lastConverged());
+        if (n == 31)
+            CHECK(settled[static_cast<size_t>(out)] == Approx(4.0).margin(5e-4));
+    }
+}
+
+TEST_CASE("AC-coupled opamp follower outputs keep their DC bias",
+          "[opamp][engine][dc]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 4.5, 0.0, {}, "Vin");
+    const auto model = opamp(wdf::OpAmpType::Jrc4558, 9.0, 0.0);
+    const std::array<std::string, 5> nodes{"in", "a", "b", "c", "out"};
+    for (size_t i = 1; i < nodes.size(); ++i) {
+        const std::string coupled = nodes[i] + "_coupled";
+        c.addOpAmp(nodes[i], nodes[i], nodes[i - 1], "0", "0", model,
+                   "U" + std::to_string(i));
+        c.addRes(nodes[i], coupled, 2200.0, "R" + std::to_string(i));
+        c.addCap(coupled, "0", 22e-9, "C" + std::to_string(i));
+    }
+
+    wdf::Engine engine(c, kFs);
+    std::vector<double> voltage, rootVoltage;
+    REQUIRE(engine.solveDc(voltage, rootVoltage));
+    for (size_t i = 1; i < nodes.size(); ++i) {
+        const int output = engine.nodeIndex(nodes[i]);
+        REQUIRE(output >= 0);
+        CHECK(voltage[static_cast<size_t>(output)] == Approx(4.5).margin(1e-4));
+    }
 }
 
 TEST_CASE("opamp engine inverting AC gain follows Rf/Ri", "[opamp][engine][tran]") {
