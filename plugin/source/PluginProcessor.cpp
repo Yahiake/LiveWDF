@@ -165,9 +165,12 @@ void LiveWDFPluginProcessor::releaseResources() {
 // message thread and never in the realtime audio callback.
 void LiveWDFPluginProcessor::timerCallback() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
-    if (currentDoc_.components.empty()
-        || (static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_
-            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_))
+    if (currentDoc_.components.empty())
+        return;
+    if (liveControlUpdateFailed_.exchange(false, std::memory_order_relaxed))
+        lastError_ = "Could not apply a live control setting";
+    if (static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_
+        && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_)
         return;
 
     // `loadCircuitDocument` clears the reload path; an oversampling change must
@@ -312,6 +315,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                                                  bool initializePotParameters) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     lastError_.clear();
+    liveControlUpdateFailed_.store(false, std::memory_order_relaxed);
 
     // A document loaded from anywhere but a file has no file to reload. The
     // callers that *do* have a file set `currentFile_` again afterwards, so
@@ -445,9 +449,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
         // Start at the saved knob positions. Measure ramp progress in host
         // samples so oversampling does not change the feel of the controls.
-        potUpdateInterval_ = std::max(1, static_cast<int>(std::ceil(sampleRate_ * .0025)));
         samplesUntilPotUpdate_ = 0;
-        previousPotBlockSize_ = 0;
+        potsMoving_ = false;
         for (int i = 0; i < potControlCount_; ++i) {
             auto& control = potControls_[static_cast<size_t>(i)];
             const float value = control.knob->load(std::memory_order_relaxed);
@@ -455,6 +458,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
             control.position.setCurrentAndTargetValue(std::isfinite(value) ? value : 0.5);
         }
         applyLiveControlsToEngines(true, true);
+        leftEngine_->prepareLiveControls();
+        rightEngine_->prepareLiveControls();
     }
 
     return true;
@@ -619,24 +624,38 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     applyLiveControlsToEngines(false, true);
 }
 
-void LiveWDFPluginProcessor::updateLivePots(int numSamples) {
-    bool changed = false;
+void LiveWDFPluginProcessor::readLivePotTargets() {
     for (int i = 0; i < potControlCount_; ++i) {
         auto& control = potControls_[static_cast<size_t>(i)];
-        const double position = control.position.skip(previousPotBlockSize_);
-        changed |= !juce::exactlyEqual(position, control.applied);
         const double value = control.knob->load(std::memory_order_relaxed);
         if (std::isfinite(value))
             control.position.setTargetValue(value);
+        potsMoving_ |= control.position.isSmoothing();
     }
-    // A conductance change re-derives the transfer. Batch the changed pots
-    // and allow at most one rebuild per callback and one per 2.5 ms.
-    if (changed && samplesUntilPotUpdate_ == 0) {
-        applyLiveControlsToEngines(true, false);
-        samplesUntilPotUpdate_ = potUpdateInterval_;
+}
+
+void LiveWDFPluginProcessor::advanceLivePots() {
+    if (!potsMoving_)
+        return;
+
+    // Use a host-sample interval so oversampling and block boundaries have
+    // no effect on the control curve. Batch ganged and simultaneous changes.
+    constexpr int interval = 8;
+    potsMoving_ = false;
+    for (int i = 0; i < potControlCount_; ++i) {
+        auto& position = potControls_[static_cast<size_t>(i)].position;
+        position.getNextValue();
+        potsMoving_ |= position.isSmoothing();
     }
-    samplesUntilPotUpdate_ = std::max(0, samplesUntilPotUpdate_ - numSamples);
-    previousPotBlockSize_ = numSamples;
+    if (potsMoving_ && samplesUntilPotUpdate_ > 0) {
+        --samplesUntilPotUpdate_;
+        return;
+    }
+
+    samplesUntilPotUpdate_ = interval - 1;
+    applyLiveControlsToEngines(true, false);
+    if (!potsMoving_)
+        samplesUntilPotUpdate_ = 0;
 }
 
 void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches) {
@@ -649,9 +668,8 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
     resistorMoves_.clear();
     if (pots) {
         for (const auto& t : potTargets_) {
-            auto& control = potControls_[static_cast<size_t>(t.group)];
-            control.applied = control.position.getCurrentValue();
-            (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, control.applied);
+            const auto& control = potControls_[static_cast<size_t>(t.group)];
+            (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, control.position.getCurrentValue());
         }
     }
     if (switches) {
@@ -662,9 +680,15 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
         }
     }
 
-    leftEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+    const auto apply = [&](wdf::Engine& engine) {
+        if (switches)
+            engine.setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+        else if (!engine.setLiveControls(potMoves_, varResMoves_))
+            liveControlUpdateFailed_.store(true, std::memory_order_relaxed);
+    };
+    apply(*leftEngine_);
     if (rightEngine_)
-        rightEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+        apply(*rightEngine_);
 }
 
 // ==============================================================================

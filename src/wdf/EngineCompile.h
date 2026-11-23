@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "wdf/EngineSolve.h"
+#include "wdf/compile/AdjustableTransfer.h"
 #include "wdf/compile/DenseDc.h"
 #include "wdf/compile/DenseParameters.h"
 #include "wdf/compile/DenseTransfer.h"
@@ -106,6 +107,69 @@ public:
         return engine::DenseParameters::setParametersByIndex(pCtx, pots, varRes, resistors, [this] { return rebuildLinear(); });
     }
 
+    /// Prepare the transfer for sample-timed changes to this circuit's pots
+    /// and rheostats. Call after loading the circuit and applying its controls.
+    void prepareLiveControls() {
+        if (adjustableTransfer_.ready())
+            return;
+        adjustableResistors_.clear();
+        for (const auto* indices : {&potResA_, &potResB_, &varResResIndex_})
+            for (const int index : *indices)
+                if (index >= 0)
+                    adjustableResistors_.push_back(index);
+        std::sort(adjustableResistors_.begin(), adjustableResistors_.end());
+        adjustableResistors_.erase(std::unique(adjustableResistors_.begin(), adjustableResistors_.end()),
+                                   adjustableResistors_.end());
+        previousPots_.reserve(circuit_.pots.size());
+        previousRheostats_.reserve(circuit_.varRes.size());
+        previousResistors_.reserve(adjustableResistors_.size());
+        prepareAdjustableTransfer();
+    }
+
+    /// Apply the same taper and resistor values as setParametersByIndex.
+    /// A failed update leaves both the old settings and the old transfer live.
+    bool setLiveControls(const std::vector<std::pair<int, double>>& pots,
+                         const std::vector<std::pair<int, double>>& rheostats) {
+        if (pots.empty() && rheostats.empty())
+            return true;
+        if (!adjustableTransfer_.ready() || pots.size() > circuit_.pots.size() ||
+            rheostats.size() > circuit_.varRes.size())
+            return false;
+        previousPots_.clear();
+        previousRheostats_.clear();
+        previousResistors_.clear();
+        for (const int index : adjustableResistors_)
+            previousResistors_.emplace_back(index, circuit_.res[index].value);
+        for (const auto& setting : pots) {
+            const int index = setting.first;
+            if (index < 0 || static_cast<size_t>(index) >= circuit_.pots.size())
+                return false;
+            previousPots_.emplace_back(index, circuit_.pots[index].position);
+        }
+        for (const auto& setting : rheostats) {
+            const int index = setting.first;
+            if (index < 0 || static_cast<size_t>(index) >= circuit_.varRes.size())
+                return false;
+            previousRheostats_.emplace_back(index, circuit_.varRes[index].position);
+        }
+        auto ctx = makeParametersContext();
+        static const std::vector<std::pair<int, double>> noFixedResistors;
+        bool transferFailed = false;
+        const auto update = [this, &transferFailed] {
+            transferFailed = !adjustableTransfer_.update(net_.eG, Z_);
+            if (transferFailed)
+                return false;
+            compileZred();
+            return true;
+        };
+        if (engine::DenseParameters::setParametersByIndex(ctx, pots, rheostats, noFixedResistors, update))
+            return true;
+        if (transferFailed)
+            engine::DenseParameters::setParametersByIndex(
+                ctx, previousPots_, previousRheostats_, previousResistors_, update);
+        return false;
+    }
+
     /// The netlist's rheostats / variable resistors.
     const std::vector<VarRes>& varRes() const { return circuit_.varRes; }
 
@@ -179,9 +243,18 @@ protected:
             return false;
         refreshSparseTransfer();
         refreshRootGroups();
+        if (!adjustableResistors_.empty())
+            prepareAdjustableTransfer();
         return true;
     }
 
+    void prepareAdjustableTransfer() {
+        adjustableTransfer_.prepare(net_, linXe_, N_, Xr_, Z_, adjustableResistors_);
+    }
+
+    engine::AdjustableTransfer adjustableTransfer_;
+    std::vector<int> adjustableResistors_;
+    std::vector<std::pair<int, double>> previousPots_, previousRheostats_, previousResistors_;
     long long linearRebuilds_ = 0;
 };
 

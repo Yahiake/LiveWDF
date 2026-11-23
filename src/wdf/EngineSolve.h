@@ -103,7 +103,8 @@ public:
     /// requested, the partition succeeded, and *every* block is exact
     /// (`allClosedFormBlocks_`, from `buildRootOrder`). When false,
     /// `blockRoots()` may still be driving a general block Newton; if neither,
-    /// the circuit runs the joint Newton.
+    /// the circuit runs the joint Newton. A live transfer correction can
+    /// bypass the compiled partition until the next full transfer build.
     bool explicitRoots() const { return explicitRootsActive_; }
 
     /// Whether the general block Newton is currently driving the solve.

@@ -207,10 +207,12 @@ public:
     /// row-major, column `t` belonging to element port `liveElementPorts()[t]`.
     /// The dropped columns are the ones whose `w` entry is identically zero, so
     /// `Xe * w == XeLive * wLive` exactly. Kept compact rather than duplicated
-    /// dense, because the only reader is a diagnostic.
+    /// dense, because the only reader is a diagnostic. Prepared live controls
+    /// apply a correction to this baseline transfer during step().
     const std::vector<double>& Xe() const { return Xe_; }
     /// Column `t` of `Xe()` is the transfer of element port `liveElementPorts()[t]`.
     const std::vector<int>& liveElementPorts() const { return net_.liveCols; }
+    /// Baseline root-to-node transfer, with the same live correction as Xe().
     const std::vector<double>& Xr() const { return Xr_; }
     const std::vector<double>& elementG() const { return net_.eG; }
     const std::vector<int>& elementPortA() const { return net_.epA; }

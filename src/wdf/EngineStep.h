@@ -337,6 +337,10 @@ public:
         for (const auto& e : isrcRows_)
             uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
+        const bool adjustedTransfer = adjustableTransfer_.active();
+        if (adjustedTransfer)
+            adjustableTransfer_.correctOpenCircuit(eoffData, uData);
+
         double* LIVEWDF_RESTRICT vOcData = vOc_.data();
         for (int r = 0; r < K_; ++r) {
             const auto& rp = rootPortInfo_[static_cast<size_t>(r)];
@@ -351,7 +355,7 @@ public:
             // is driving the solve, and it never replaces the static partition
             // on circuits where that partition already pays.
             bool useRuntime = false;
-            if (runtimeBlockEnabled_ && !explicitRootsActive_ && !blockRoots() &&
+            if (!adjustedTransfer && runtimeBlockEnabled_ && !explicitRootsActive_ && !blockRoots() &&
                 (runtimeGateCooldown_ > 0 || previousCostly)) {
                 selectRuntimeRootOrder();
                 useRuntime = runtimeBlockRoots();
@@ -371,7 +375,9 @@ public:
                 --runtimeGateCooldown_;
             }
 
-            if (explicitRootsActive_)
+            if (adjustedTransfer)
+                solveRootsNewton(maxIter, tol);
+            else if (explicitRootsActive_)
                 solveRootGroups(maxIter, tol);
             else if (useRuntime)
                 solveRootBlocksRuntime(maxIter, tol);
@@ -440,6 +446,8 @@ public:
                 }
             }
         }
+        if (adjustedTransfer && K_ > 0)
+            adjustableTransfer_.correctLoadedNodes(ii_.data(), nodeData);
 
         bool stateOk = stateAcceptable();
         if (stateOk) {
