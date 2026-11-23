@@ -3,11 +3,110 @@
 #include "DiagLog.h"
 #include "EditorLayout.h"
 #include "EditorLookAndFeel.h"
+#include "FactorySchematics.h"
+#include "FastLiveCache.h"
+#include "format/ControlGroups.h"
 #include "gui/Fonts.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <utility>
 
 namespace livewdf::editor {
+namespace {
+
+bool applySavedPlaybackControls(const wdf::LiveWDFDocument& doc, wdf::Engine& engine) {
+    const auto component = [&](const std::string& id) -> const wdf::SchematicComponent& {
+        return *std::find_if(doc.components.begin(), doc.components.end(),
+                            [&](const auto& part) { return part.id == id; });
+    };
+    std::vector<std::pair<int, double>> pots, rheostats, switches;
+    const auto potGroups = wdf::potControlGroups(doc);
+    const juce::NormalisableRange<float> knobRange{0.0f, 1.0f, wdf::kLivePotStep};
+    const size_t groupCount = std::min(potGroups.size(), static_cast<size_t>(wdf::kLivePotSlots));
+    for (size_t i = 0; i < groupCount; ++i) {
+        const auto& group = potGroups[i];
+        float position = 0.5f;
+        for (const auto& member : group.members) {
+            const auto& values = component(member.id).values;
+            if (const auto found = values.find("pos"); found != values.end()) {
+                position = static_cast<float>(std::clamp(found->second, 0.0, 1.0));
+                break;
+            }
+        }
+        // Match the host parameter's normalized round trip on load.
+        position = knobRange.snapToLegalValue(knobRange.convertFrom0to1(
+            knobRange.convertTo0to1(knobRange.snapToLegalValue(position))));
+        for (const auto& member : group.members) {
+            const bool rheostat = member.type == "varres";
+            const int index = rheostat ? engine.varResIndexByName(member.id)
+                                       : engine.potIndexByName(member.id);
+            if (index >= 0)
+                (rheostat ? rheostats : pots).emplace_back(index, position);
+        }
+    }
+    for (const auto& group : wdf::switchControlGroups(doc)) {
+        const bool throwB = wdf::switchResSelectsB(component(group.members.front().id));
+        for (const auto& member : group.members) {
+            const int a = engine.resIndexByName(member.id + "_A");
+            const int b = engine.resIndexByName(member.id + "_B");
+            if (a >= 0 && b >= 0) {
+                switches.emplace_back(a, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+                switches.emplace_back(b, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+            }
+        }
+    }
+    return engine.setParametersByIndex(pots, rheostats, switches);
+}
+
+void prepareSavedCircuit(const juce::File& file) {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    if (!doc.loadFromFile(file.getFullPathName().toStdString(), error))
+        return;
+
+    const auto inputId = doc.inputId();
+    if (inputId.empty() || !doc.terminal("out") || !doc.unconnectedPins().empty())
+        return;
+
+    const auto circuit = doc.toCircuit();
+    const auto input = std::find_if(circuit.src.begin(), circuit.src.end(),
+                                    [&](const auto& source) { return source.name == inputId; });
+    if (input == circuit.src.end())
+        return;
+    wdf::Engine engine(circuit, 48000.0);
+    if (engine.nodeIndex(doc.outputNet()) < 0 || !applySavedPlaybackControls(doc, engine))
+        return;
+    if (auto setup = engine.captureMixedAffineSetup(static_cast<size_t>(input - circuit.src.begin()))) {
+        const auto cacheFile = file.isAChildOf(FactorySchematics::folder()) ? juce::File{} : file;
+        buildCachedAffineSetup(*setup, nullptr, doc.toJson(), cacheFile, true);
+    }
+}
+
+} // namespace
+
+void EditorWindow::Content::startSavedCircuitPreparation() {
+    if (pendingPreparations_.empty() ||
+        (savedCircuitPreparation_.valid() &&
+         savedCircuitPreparation_.wait_for(std::chrono::seconds(0)) != std::future_status::ready))
+        return;
+
+    auto file = std::move(pendingPreparations_.front());
+    pendingPreparations_.pop_front();
+    try {
+        savedCircuitPreparation_ = std::async(std::launch::async, [file = std::move(file)] {
+            try {
+                prepareSavedCircuit(file);
+            } catch (const std::exception&) {
+                // The saved schematic is still usable. Playback can prepare it on load.
+            }
+        });
+    } catch (const std::system_error&) {
+        // A background worker is optional to a completed save.
+    }
+}
+
 void EditorWindow::Content::rebuildNow() {
     rebuildEngine();
     pendingRebuild_ = false;
@@ -122,6 +221,9 @@ bool EditorWindow::Content::saveFile(const juce::File& file) {
     editor_.markClean();
     refreshTitle();
     tabBar_.setTabs(tabNames(), currentTab_);
+    if (std::find(pendingPreparations_.begin(), pendingPreparations_.end(), file) == pendingPreparations_.end())
+        pendingPreparations_.push_back(file);
+    startSavedCircuitPreparation();
     return true;
 }
 
