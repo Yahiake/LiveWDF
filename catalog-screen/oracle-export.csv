@@ -1,0 +1,82 @@
+schematic,status,dc_bytes,transient_bytes
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,0,1478,5303809
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,0,1664,5966485
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,0,1602,5745593
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,0,1571,5635147
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,0,1633,5856039
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,0,889,3205335
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,0,2191,7844067
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,0,1695,6076931
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,0,1947,6960503
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,0,1385,4972471
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,0,2129,7623175
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,0,858,3094889
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,0,1199,4309795
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,0,672,2432213
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,0,396,1438202
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,0,455,1659091
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,0,1447,5193363
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,0,827,2984443
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,0,2687,9611203
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,0,1168,4199349
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,0,1261,4530687
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,0,1695,6076931
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,0,1695,6076931
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,0,2532,9058973
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,0,672,2432213
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,0,2997,10715663
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,0,0,7512729
+schematics/pedals_fx/MXR Micro Amp.livewdf,0,331,1217307
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,0,1292,4641133
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,0,362,1327753
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,0,703,2542659
+schematics/pedals_fx/Marshall Guv'nor.livewdf,0,734,2653105
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,0,301,1106861
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,0,1664,5966485
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,0,1292,4641133
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,0,1385,4972471
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,0,551,1990432
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,0,765,2763551
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,0,1881,6739607
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,0,362,1327753
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,0,424,1548645
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,0,2608,9279879
+schematics/studio/dynamics/API-2500.livewdf,0,2191,7844067
+schematics/studio/dynamics/Altec-436C.livewdf,0,734,2653105
+schematics/studio/dynamics/Drawmer-DS201.livewdf,0,0,8727635
+schematics/studio/dynamics/EMI-RS124.livewdf,0,858,3094889
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,0,2687,9614685
+schematics/studio/dynamics/Fairchild-660.livewdf,0,1447,5193363
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,0,1199,4309795
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,0,1292,4641133
+schematics/studio/dynamics/Neve-33609J.livewdf,0,2036,7291837
+schematics/studio/dynamics/Pye-4060.livewdf,0,1354,4866114
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,0,1075,3868011
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,0,1323,4751579
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,1,0,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,0,1726,6187377
+schematics/studio/dynamics/UREI-LA-3A.livewdf,0,1416,5082917
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,0,1385,4972471
+schematics/studio/dynamics/dbx-160-VU.livewdf,0,1416,5082917
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,0,1385,4972471
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,0,1292,4641133
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,0,2005,7181391
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,0,6513,22864723
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,0,2780,9942541
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,0,3249,11599231
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,0,2532,9058973
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,0,3921,13918597
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,0,1664,5966485
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,timed out,0,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,0,9041,31589957
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,0,2315,8285851
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,0,3185,11378339
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,0,3185,11378339
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,0,3441,12261907
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,0,2222,7954513
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,0,2191,7844067
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,0,1478,5303809
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,0,4689,16569301
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,0,362,1327753
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,0,703,2542659
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,0,1199,4309795
