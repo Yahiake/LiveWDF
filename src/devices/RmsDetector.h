@@ -18,6 +18,9 @@ struct RmsDetectorModel {
     double inputOhms = 1.0e6;
     double outputOhms = 10.0;
     bool negativeOutput = false;
+    // Zero uses the shared averaging time constant.
+    double attackTimeConstantSeconds = 0.0;
+    double releaseTimeConstantSeconds = 0.0;
 
     // dbx 160/161, M2: calibrated current-input equivalent at 25 C.
     // C15 is the externally selected 22 uF timing capacitor. An exponential
@@ -43,11 +46,21 @@ struct RmsDetectorModel {
     bool valid() const noexcept {
         return std::isfinite(referenceVolts) && referenceVolts > 0.0 &&
                std::isfinite(timeConstantSeconds) && timeConstantSeconds > 0.0 &&
+               std::isfinite(attackTimeConstantSeconds) && attackTimeConstantSeconds >= 0.0 &&
+               std::isfinite(releaseTimeConstantSeconds) && releaseTimeConstantSeconds >= 0.0 &&
                std::isfinite(voltsPerDb) && voltsPerDb > 0.0 &&
                std::isfinite(100.0 * voltsPerDb) &&
                std::isfinite(inputOhms) && inputOhms > 0.0 &&
                std::isfinite(outputOhms) && outputOhms > 0.0 &&
                std::isfinite(100.0 * voltsPerDb / outputOhms);
+    }
+
+    double attackSeconds() const noexcept {
+        return attackTimeConstantSeconds > 0.0 ? attackTimeConstantSeconds : timeConstantSeconds;
+    }
+
+    double releaseSeconds() const noexcept {
+        return releaseTimeConstantSeconds > 0.0 ? releaseTimeConstantSeconds : timeConstantSeconds;
     }
 
     double power(double input) const noexcept {
@@ -69,20 +82,24 @@ struct RmsDetectorModel {
 class RmsDetectorState {
 public:
     RmsDetectorState(const RmsDetectorModel& model, double samplePeriod) noexcept
-        : model_(model), mix_(-std::expm1(-samplePeriod / model.timeConstantSeconds)) {}
+        : model_(model), attackMix_(-std::expm1(-samplePeriod / model.attackSeconds())),
+          releaseMix_(-std::expm1(-samplePeriod / model.releaseSeconds())) {}
 
     void reset(double input) noexcept { meanPower_ = model_.power(input); }
 
     void step(double input) noexcept {
         // Exact one-pole integration for a sample held over one interval.
-        meanPower_ = std::lerp(meanPower_, model_.power(input), mix_);
+        const double power = model_.power(input);
+        const double mix = power > meanPower_ ? attackMix_ : releaseMix_;
+        meanPower_ = std::lerp(meanPower_, power, mix);
     }
 
     double outputCurrent() const noexcept { return model_.current(meanPower_); }
 
 private:
     RmsDetectorModel model_;
-    double mix_;
+    double attackMix_;
+    double releaseMix_;
     double meanPower_ = 0.0;
 };
 

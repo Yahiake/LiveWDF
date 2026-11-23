@@ -127,6 +127,8 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "gamma")          return "Light curve exponent";
     if (key == "attackSeconds")  return "Light response (s)";
     if (key == "releaseSeconds") return "Dark response (s)";
+    if (key == "attackTimeConstantSeconds")  return "Attack time constant (s, 0 = shared)";
+    if (key == "releaseTimeConstantSeconds") return "Release time constant (s, 0 = shared)";
     if (key == "turnsPrimary")   return "Primary turns";
     if (key == "turnsSecondary") return "Secondary turns";
     if (key == "Lm")             return "Magnetizing Lm (H)";

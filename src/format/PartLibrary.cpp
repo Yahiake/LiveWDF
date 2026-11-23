@@ -701,6 +701,11 @@ wdf::SchematicComponent makeComponent(const std::string& type,
     if (type == "vca")
         comp.values["fullGainVolts"] = 1.0;
 
+    if (type == "rmsdet") {
+        comp.values["attackTimeConstantSeconds"] = 0.0;
+        comp.values["releaseTimeConstantSeconds"] = 0.0;
+    }
+
     if (type == "bbd") {
         const wdf::BucketBrigadeModel model;
         comp.values["clockHz"] = model.clockHz;
