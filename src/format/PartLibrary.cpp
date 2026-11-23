@@ -5,6 +5,7 @@
 #include "devices/Jfet.h"
 #include "devices/MosfetPresets.h"
 #include "format/TransistorPolarity.h"
+#include "spice/Circuit.h"
 
 #include <algorithm>
 #include <cmath>
@@ -51,6 +52,9 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // and a body with its leads vertical and its pins on the sides is a
         // symbol that cannot be wired sensibly.
         {"ctrlres",    "Controlled R", "CR",  {"a", "b"},               {0, 1},      {{0, -2}, {0, 2}},         1000.0,     "initialOhms","K", 0, false, "Passive/Controlled"},
+        {"photores",   "Photoresistor", "LDR", {"a", "b", "sensePos", "senseNeg"}, {1, 1, 0, 0},
+         {{3, -2}, {3, 2}, {-3, -2}, {-3, 2}}, 1e6, "darkOhms", "", 0, false,
+         "Passive/Controlled"},
         // A diode, a triode and a pentode carry a value key like every other
         // part -- the key is what the *file* calls their number, and the file
         // format must not change shape because the inspector happens to hide
@@ -100,6 +104,11 @@ const std::vector<PartSpec>& basePaletteStorage() {
          {"p1", "pt", "p2", "s1", "s2"}, {2, 0, 3, 2, 3}, {{-3, -3}, {-3, 0}, {-3, 3}, {3, -3}, {3, 3}},
          1.0, "turnsPrimary", "Ctrl+T", 0, false, "Transformers"},
         {"vcvs",       "Gain Block",   "E",   {"in", "out"},           {0, 1},      {},                        1.0,        "gain",      "Ctrl+G", 0, false, "Active/Gain Blocks"},
+        {"bbd",        "Bucket Brigade","BBD", {"in", "out", "clock", "common"}, {0, 1, 2, 3},
+         {{-3, 0}, {3, 0}, {0, -3}, {0, 3}}, 4096.0, "stages", "", 0, false, "Active/Delay Lines"},
+        {"vca",        "Linear VCA",   "VCA", {"in", "out", "control", "reference"}, {0, 1, 2, 3},
+         {{-3, 0}, {3, 0}, {0, -3}, {0, 3}}, 2200.0, "inputOhms", "", 0, false,
+         "Active/Gain Blocks"},
         // The ideal op-amp: infinite gain, no bandwidth limit, no slew, no
         // clipping and **no supply terminals**. A real card's V+/V- are how its
         // headroom is set; this part has no headroom to set, so it exposes the
@@ -122,6 +131,9 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // reached from the palette and the inspector.
         {"opamp",      "Op-Amp",       "U",   {"out", "neg", "pos", "vcc", "vee"},
          {1, 0, 0, 2, 3},             {{3, 0}, {-3, -1}, {-3, 1}, {0, -3}, {0, 3}},
+         0.0,        "",               "",  0, false, "Active/Op-Amps"},
+        {"ca3080",     "CA3080 OTA",   "OTA", {"out", "neg", "pos", "vcc", "vee", "bias"},
+         {1, 0, 0, 2, 3, 3},        {{3, 0}, {-3, -1}, {-3, 1}, {0, -3}, {0, 3}, {2, 3}},
          0.0,        "",               "",  0, false, "Active/Op-Amps"},
         {"src",        "Signal Source","V",   {"pos", "neg"},          {1, 3},      {{0, -2}, {0, 2}},         0.0,        "dc",         "B", 0, false, "Sources/Voltage"},
         // The current source, vertical like every other two-pin part: `pos` at
@@ -673,6 +685,28 @@ wdf::SchematicComponent makeComponent(const std::string& type,
     if (type == "vcvs") {
         comp.values["gain"] = 1.0;
         comp.values["ro"] = 1e-4;
+    }
+    if (type == "vca")
+        comp.values["fullGainVolts"] = 1.0;
+
+    if (type == "bbd") {
+        const wdf::BucketBrigadeModel model;
+        comp.values["clockHz"] = model.clockHz;
+        comp.values["periodMicrosecondsPerVolt"] = model.periodSecondsPerVolt * 1e6;
+        comp.values["inputBias"] = model.inputBias;
+        comp.values["outputBias"] = model.outputBias;
+        comp.values["inputSwing"] = model.inputSwing;
+        comp.values["gain"] = model.gain;
+        comp.values["outputOhms"] = model.outputOhms;
+    }
+
+    if (type == "photores") {
+        const wdf::PhotoresistorControl photo;
+        comp.values["brightOhms"] = photo.brightOhms;
+        comp.values["referenceVolts"] = photo.referenceVolts;
+        comp.values["gamma"] = photo.gamma;
+        comp.values["attackSeconds"] = photo.attackSeconds;
+        comp.values["releaseSeconds"] = photo.releaseSeconds;
     }
 
     // A transformer's visible controls are the turns ratio and the model card.

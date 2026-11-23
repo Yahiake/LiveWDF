@@ -2,12 +2,12 @@
 
 // Circuit description: the flat element list and the named-node netlist.
 
-#include <optional>
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <complex>
 #include <limits>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -18,6 +18,7 @@
 #include "devices/Triode.h"
 #include "devices/Pentode.h"
 #include "devices/Bjt.h"
+#include "devices/BucketBrigade.h"
 #include "devices/OpAmp.h"
 
 namespace wdf {
@@ -109,6 +110,50 @@ struct VarRes {
     }
 };
 
+/// Light-dependent resistor driven by the voltage across a lamp/LED's current
+/// sense resistor. The sense inputs impose no load on the light source.
+struct PhotoresistorControl {
+    std::string sensePos, senseNeg;
+    double brightOhms = 4000.0;
+    double referenceVolts = 1.0;
+    double gamma = 1.0;
+    double attackSeconds = 0.002;
+    double releaseSeconds = 0.020;
+
+    double targetConductance(double volts, double darkOhms) const {
+        const double light = std::clamp(volts / referenceVolts, 0.0, 1.0);
+        const double dark = 1.0 / darkOhms;
+        return dark + (1.0 / brightOhms - dark) * std::pow(light, gamma);
+    }
+};
+
+/// M5207L01-style linear control of an inverting current-output VCA.
+struct VcaControl {
+    std::string control, reference;
+    double fullGainVolts = 1.0;
+    static constexpr double minimumGain = 1e-5;
+    static constexpr double maximumGain = 1.6;
+
+    double normalizedGain(double volts) const noexcept {
+        return std::clamp(volts / fullGainVolts, minimumGain, maximumGain);
+    }
+};
+
+/// A CA3080's matched-pair differential law. Sense the current in series with
+/// its bias diode, and mirror the collector difference to the output port.
+struct OtaControl {
+    std::string bias, biasDiode;
+    static constexpr double senseOhms = 100.0;
+    static constexpr double pairVolts = 2.0 * 0.02585;
+    static constexpr double transportGain = 125.0 / 126.0;
+    static constexpr double minimumCurrent = 1e-12;
+
+    static double slopeResistance(double senseVolts) noexcept {
+        const double biasAmps = std::max(senseVolts / senseOhms, minimumCurrent);
+        return pairVolts / (transportGain * biasAmps);
+    }
+};
+
 /// A dynamic audio-rate voltage/control-modulated resistor sitting at the R-type
 /// multiport root. Its resistance can be modulated every audio sample with zero
 /// matrix rebuild overhead via closed-form root division: `i = vOc / (R + Z_rr)`.
@@ -116,6 +161,9 @@ struct ControlledRes {
     std::string a, b;
     double initialOhms = 1e3;
     std::string name;
+    std::optional<PhotoresistorControl> photo;
+    std::optional<VcaControl> vca;
+    std::optional<OtaControl> ota = std::nullopt;
 };
 
 struct Res {
@@ -389,6 +437,13 @@ struct BjtDevice {
     std::string name;
 };
 
+/// A clocked audio delay whose output drives a Norton equivalent.
+struct BucketBrigade {
+    std::string input, control, common, name;
+    BucketBrigadeModel model;
+    std::size_t outputCurrentIndex = 0;
+};
+
 struct Circuit {
     std::vector<Res> res;
     std::vector<Cap> cap;
@@ -404,6 +459,7 @@ struct Circuit {
     std::vector<Mosfet> mosfet;
     std::vector<BjtDevice> bjt;
     std::vector<OpAmp> opamp;
+    std::vector<BucketBrigade> bucketBrigades;
 
     void addRes(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {
@@ -420,6 +476,18 @@ struct Circuit {
     void addIsrc(const std::string& a, const std::string& b, double dc = 0.0, double ac = 0.0,
                  std::vector<double> sin = {}, const std::string& name = {}) {
         isrc.push_back({a, b, dc, ac, std::move(sin), name});
+    }
+    void addBucketBrigade(const std::string& input, const std::string& output,
+                          const std::string& control, const std::string& common,
+                          const BucketBrigadeModel& model, const std::string& name = {}) {
+        if (!model.valid())
+            throw std::invalid_argument("Invalid bucket-brigade parameters: " + name);
+        const auto id = name.empty() ? ("BBD" + std::to_string(bucketBrigades.size() + 1)) : name;
+        addRes(input, common, 1e6, id + "_in");
+        addRes(control, common, 1e8, id + "_clock");
+        addRes(output, common, model.outputOhms, id + "_out");
+        bucketBrigades.push_back({input, control, common, id, model, isrc.size()});
+        addIsrc(common, output, model.outputBias / model.outputOhms, 0.0, {}, id + "_drive");
     }
     void addSrc(const std::string& a, const std::string& b, double dc = 0.0, double ac = 0.0,
                 std::vector<double> sin = {}, const std::string& name = {}) {
@@ -457,7 +525,19 @@ struct Circuit {
     void addControlledRes(const std::string& a, const std::string& b, double initialOhms = 1e3,
                           const std::string& name = {}) {
         std::string crName = name.empty() ? ("CR" + std::to_string(ctrlRes.size() + 1)) : name;
-        ctrlRes.push_back({a, b, initialOhms, crName});
+        ctrlRes.push_back({a, b, initialOhms, crName, std::nullopt, std::nullopt});
+    }
+
+    void addPhotoresistor(const std::string& a, const std::string& b, double darkOhms,
+                         const PhotoresistorControl& photo, const std::string& name = {}) {
+        const auto positive = [](double v) { return std::isfinite(v) && v > 0.0; };
+        if (!positive(darkOhms) || !positive(photo.brightOhms) ||
+            photo.brightOhms > darkOhms || !positive(photo.referenceVolts) ||
+            !positive(photo.gamma) || !positive(photo.attackSeconds) ||
+            !positive(photo.releaseSeconds))
+            throw std::invalid_argument("Invalid photoresistor parameters: " + name);
+        addControlledRes(a, b, darkOhms, name);
+        ctrlRes.back().photo = photo;
     }
 
     std::vector<MutualInd> mutual;
@@ -588,6 +668,60 @@ struct Circuit {
         vcvs.push_back({outA, outB, inA, inB, gain, ro, vName});
     }
 
+    /// The external input resistor terminates into virtual common. Each full
+    /// gain output half-wave has half that input current, with opposite phase.
+    /// A buffered copy of the output bootstraps the controlled resistor so
+    /// its current is proportional to the input, independent of output load.
+    void addLinearVca(const std::string& input, const std::string& output,
+                      double inputOhms, const VcaControl& control,
+                      const std::string& name) {
+        if (!std::isfinite(inputOhms) || inputOhms <= 0.0 ||
+            !std::isfinite(2.0 * inputOhms / VcaControl::minimumGain) ||
+            !std::isfinite(control.fullGainVolts) || control.fullGainVolts <= 0.0)
+            throw std::invalid_argument("Invalid VCA parameters: " + name);
+        const auto& ref = control.reference;
+        const std::string copy = name + "$copy";
+        const std::string drive = name + "$drive";
+        addRes(input, ref, inputOhms, name + "$ri");
+        addVCVS(copy, ref, output, ref, 1.0, 1e-4, name + "$bootstrap");
+        addVCVS(drive, copy, input, ref, -1.0, 1e-4, name + "$input");
+        addControlledRes(drive, output, 2.0 * inputOhms / VcaControl::minimumGain, name);
+        ctrlRes.back().vca = control;
+    }
+
+    /// Signal law of the matched NPN differential pair in MiSTer-Discrete's
+    /// circuits/parts/ca3080.lib, with a real bias diode and current sensing.
+    void addCa3080(const std::string& out, const std::string& neg, const std::string& pos,
+                   const std::string& vcc, const std::string& vee, const std::string& bias,
+                   const std::string& name) {
+        constexpr double mirrorRo = 1.0;
+        const auto local = [&](const char* suffix) { return name + "$" + suffix; };
+        const auto biasDiode = local("bias_diode");
+        addRes(bias, biasDiode, OtaControl::senseOhms, local("bias_sense"));
+        addDiode(biasDiode, vee, DiodeModel(5.95e-16, 1.0, 0.0, 1e12), local("bias"));
+        addRes(biasDiode, vee, 10e6, local("bias_leak"));
+        addRes(pos, neg, 26e3, local("input_res"));
+        // Use a buffered copy of the output as the offset for the root
+        // port. Its voltage is the input difference, independently of load.
+        const auto outCopy = local("out_copy");
+        const auto drive = local("drive");
+        addVCVS(outCopy, vee, out, vee, 1.0, mirrorRo, local("copy_out"));
+        addVCVS(drive, outCopy, pos, neg, 1.0, mirrorRo, local("drive_signal"));
+        addControlledRes(drive, out, OtaControl::slopeResistance(0.0), name);
+        ctrlRes.back().ota = OtaControl{bias, biasDiode};
+        addRes(out, kGroundName, 15e6, local("out_res"));
+        // Approximate 9 V output compliance with divided rail references.
+        // Keeping both references within the rails also lets source stepping
+        // initialize the circuit from zero supply.
+        const auto upper = local("upper_clamp");
+        const auto lower = local("lower_clamp");
+        addVCVS(upper, vee, vcc, vee, 0.77, mirrorRo, local("upper_ref"));
+        addVCVS(lower, vee, vcc, vee, 0.133, mirrorRo, local("lower_ref"));
+        const DiodeModel clamp(1e-14, 1.0, 0.0, 1e12);
+        addDiode(out, upper, clamp, local("clamp_pos"));
+        addDiode(lower, out, clamp, local("clamp_neg"));
+    }
+
     void addPentode(const std::string& p, const std::string& s,
                     const std::string& g, const std::string& k,
                     const Pentode& model = kEL34, const std::string& name = {}) {
@@ -704,6 +838,10 @@ struct Circuit {
         for (const auto& cr : ctrlRes) {
             push(cr.a);
             push(cr.b);
+            if (cr.photo) {
+                push(cr.photo->sensePos);
+                push(cr.photo->senseNeg);
+            }
         }
         for (const auto& v : vcvs) {
             push(v.outA);

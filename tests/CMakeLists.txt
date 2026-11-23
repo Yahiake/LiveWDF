@@ -62,6 +62,7 @@ add_executable(livewdf_tests
     devices/test_opamp.cpp
     devices/test_power_supply.cpp
     devices/test_omega.cpp
+    dsp/test_bucket_brigade.cpp
     dsp/test_halfband_oversampler.cpp
 
     spice/test_spice_parser.cpp

@@ -348,6 +348,10 @@ public:
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
         ctx.allClosedFormBlocks = false;
+        // OTA output shares the controlled-resistor root topology, but its
+        // tanh current law must not enter the affine closed-form shortcuts.
+        if (!ctx.comp.otaSensePorts.empty())
+            return false;
 
         const int nGroups = static_cast<int>(ctx.rootDevices.size());
         if (nGroups <= 0)
@@ -361,7 +365,7 @@ public:
             const double rtot = z[static_cast<size_t>(e) * ctx.K + e] + m.rs;
             if (!(rtot > 0.0))
                 return false;
-            ctx.grpDiode[static_cast<size_t>(q)] = DiodeModel(m.isat, m.n, rtot, m.rp);
+            ctx.grpDiode[static_cast<size_t>(q)] = m.withSeriesResistance(rtot);
         }
         for (int c = 0; c < ctx.nCtrl; ++c) {
             const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(ctx.nTri + ctx.nD + c)];

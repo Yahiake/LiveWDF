@@ -55,6 +55,36 @@ wdf::Circuit biasedInverting(double ri, double rf, const wdf::OpAmpModel& model,
 }
 }  // namespace
 
+TEST_CASE("CA3080 output is a bias-scaled differential-pair current", "[ota][engine]") {
+    const auto measured = [](double bias, double input) {
+        wdf::Circuit c;
+        c.addSrc("vcc", "0", 9.0);
+        c.addSrc("vee", "0", -9.0);
+        c.addSrc("pos", "0", input);
+        c.addIsrc("0", "bias", bias);
+        c.addRes("out", "0", 10000.0);
+        c.addCa3080("out", "0", "pos", "vcc", "vee", "bias", "OTA1");
+        wdf::Engine e(c, 48000.0);
+        std::vector<double> node, root;
+        REQUIRE(e.solveDc(node, root));
+        return node.at(static_cast<size_t>(e.nodeIndex("out")));
+    };
+
+    const double bias = 120e-6;
+    const double small = 0.005;
+    const double large = 0.2;
+    const double baseline = measured(bias, 0.0);
+    const auto expected = [](double current, double v) {
+        constexpr double thermalVolts = 0.02585;
+        return 10000.0 * current * (125.0 / 126.0) * std::tanh(v / (2.0 * thermalVolts));
+    };
+    CHECK(measured(bias, small) - baseline == Approx(expected(bias, small)).epsilon(0.02));
+    CHECK(measured(bias / 2.0, small) - measured(bias / 2.0, 0.0) ==
+          Approx(expected(bias / 2.0, small)).epsilon(0.02));
+    CHECK(measured(bias, large) - baseline == Approx(expected(bias, large)).epsilon(0.02));
+    CHECK(measured(bias, -large) - baseline == Approx(expected(bias, -large)).epsilon(0.02));
+}
+
 TEST_CASE("opamp engine DC inverting amplifier sets the virtual ground", "[opamp][engine][dc]") {
     const auto c = inverting(10000.0, 20000.0, opamp(wdf::OpAmpType::Lm308), 1.0);
     wdf::Engine e(c, kFs);
@@ -93,7 +123,7 @@ TEST_CASE("unloaded opamp follower drives a second stage through a source offset
     c.addSrc("next", "first", 0.5, 0.0, {}, "Voffset");
     c.addSrc("positive", "0", 9.0, 0.0, {}, "Vcc");
     c.addSrc("negative", "0", -2.0, 0.0, {}, "Vee");
-    const auto model = opamp(wdf::OpAmpType::Jrc4558, 9.0, 2.0);
+    const auto model = opamp(wdf::OpAmpType::Ba728N, 9.0, 2.0);
     c.addOpAmp("first", "first", "in", "positive", "negative", model, "U1");
     c.addOpAmp("out", "out", "next", "positive", "negative", model, "U2");
     c.addRes("out", "0", 100000.0, "Rload");
@@ -117,7 +147,7 @@ TEST_CASE("AC-coupled opamp follower outputs keep their DC bias",
           "[opamp][engine][dc]") {
     wdf::Circuit c;
     c.addSrc("in", "0", 4.5, 0.0, {}, "Vin");
-    const auto model = opamp(wdf::OpAmpType::Jrc4558, 9.0, 0.0);
+    const auto model = opamp(wdf::OpAmpType::M5218Al, 9.0, 0.0);
     const std::array<std::string, 5> nodes{"in", "a", "b", "c", "out"};
     for (size_t i = 1; i < nodes.size(); ++i) {
         const std::string coupled = nodes[i] + "_coupled";
@@ -134,6 +164,26 @@ TEST_CASE("AC-coupled opamp follower outputs keep their DC bias",
         const int output = engine.nodeIndex(nodes[i]);
         REQUIRE(output >= 0);
         CHECK(voltage[static_cast<size_t>(output)] == Approx(4.5).margin(1e-4));
+    }
+}
+
+TEST_CASE("class-AB opamp drives a heavy load only up to its source current",
+          "[opamp][engine][class-ab]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0, 0.0, {}, "Vin");
+    c.addRes("out", "0", 100.0, "Rload");
+    const auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Lm741ClassAB);
+    c.addOpAmp("out", "0", "in", "0", "0", model, "U1");
+    wdf::Engine e(c, kFs);
+    e.reset();
+    const int out = e.nodeIndex("out");
+    REQUIRE(out >= 0);
+    for (double direction : {1.0, -1.0}) {
+        for (int n = 0; n < 31; ++n)
+            e.step({direction});
+        const auto& nodes = e.step({direction});
+        CHECK(e.lastConverged());
+        CHECK(nodes[static_cast<size_t>(out)] == Approx(direction * 2.5).margin(1e-7));
     }
 }
 

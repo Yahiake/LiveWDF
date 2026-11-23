@@ -10,6 +10,45 @@
 #include "spice/SpiceNet.h"
 #include "wdf/Engine.h"
 
+TEST_CASE("Photoresistor responds to differential light drive with separate attack and release",
+          "[photores][engine]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("input", "0", 1.0);
+    circuit.addSrc("positive", "0", 1.75);
+    circuit.addSrc("negative", "0", 1.25);
+    circuit.addRes("input", "out", 10000.0);
+    wdf::PhotoresistorControl photo;
+    photo.sensePos = "positive";
+    photo.senseNeg = "negative";
+    photo.brightOhms = 1000.0;
+    photo.attackSeconds = 0.004;
+    photo.releaseSeconds = 0.040;
+    circuit.addPhotoresistor("out", "0", 100000.0, photo, "LDR");
+
+    constexpr double fs = 48000.0;
+    wdf::Engine engine(circuit, fs);
+    const int out = engine.nodeIndex("out");
+    REQUIRE(out >= 0);
+    const std::vector<double> dc{1.0, 1.75, 1.25};
+    const double dcConductance = 0.5 * (1.0 / 100000.0 + 1.0 / 1000.0);
+    CHECK(engine.step(dc)[out] == Approx(1.0 / (1.0 + 10000.0 * dcConductance)));
+
+    const std::vector<double> bright{1.0, 2.25, 1.25};
+    for (int i = 0; i < 192; ++i)
+        engine.step(bright);
+    const double turnedOn = 1.0 / engine.controlledResistanceValues().at(0);
+    CHECK(turnedOn == Approx(0.001 + std::exp(-1.0) * (dcConductance - 0.001)));
+
+    const std::vector<double> dark{1.0, 0.25, 1.25};
+    for (int i = 0; i < 192; ++i)
+        engine.step(dark);
+    const double turnedOff = 1.0 / engine.controlledResistanceValues().at(0);
+    CHECK(turnedOff == Approx(1e-5 + std::exp(-0.1) * (turnedOn - 1e-5)));
+
+    engine.reset();
+    CHECK(engine.step(dc)[out] == Approx(1.0 / (1.0 + 10000.0 * dcConductance)));
+}
+
 // Increment 18: Variable Resistors (VarRes rheostats) & Controlled Resistors (audio-rate root elements).
 
 TEST_CASE("VarRes taper curves and resistance scaling", "[varres]") {
@@ -163,4 +202,30 @@ TEST_CASE("SPICE parser accepts VarRes and ControlledRes keywords", "[varres][ct
     REQUIRE(c.ctrlRes[0].initialOhms == 2500.0);
     REQUIRE(c.ctrlRes[1].name == "CR_Default");
     REQUIRE(c.ctrlRes[1].initialOhms == 1000.0);
+}
+
+TEST_CASE("linear VCA follows differential control and external load", "[vca][engine]") {
+    for (const double load : {2200.0, 4400.0, 8800.0}) {
+        wdf::Circuit circuit;
+        circuit.addSrc("in", "0", 4.6, 0.0, {}, "input");
+        circuit.addSrc("ctl", "0", 5.5, 0.0, {}, "control");
+        circuit.addSrc("ref", "0", 4.5, 0.0, {}, "reference");
+        circuit.addLinearVca("in", "out", 2200.0, {"ctl", "ref", 1.0}, "IC1");
+        circuit.addRes("out", "ref", load, "Rload");
+        wdf::Engine engine(circuit, 48000.0);
+        const int out = engine.nodeIndex("out");
+        REQUIRE(out >= 0);
+        engine.reset();
+        const auto linearRebuilds = engine.linearRebuilds();
+        CHECK(engine.step({4.6, 5.5, 4.5})[out] == Approx(4.5 - 0.1 * load / 4400.0).margin(1e-7));
+        for (const double delta : {-0.2, 0.0, 0.1, 0.5, 1.0, 1.4, 1.8}) {
+            const std::vector<double> sources{4.6, 4.5 + delta, 4.5};
+            engine.step(sources);
+            const double gain = std::clamp(delta, 1e-5, 1.6);
+            const double expected = 4.5 - 0.1 * load * gain / 4400.0;
+            CHECK(engine.step(sources)[out] == Approx(expected).margin(1e-7));
+            CHECK(engine.lastConverged());
+        }
+        CHECK(engine.linearRebuilds() == linearRebuilds);
+    }
 }

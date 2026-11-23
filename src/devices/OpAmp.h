@@ -36,6 +36,7 @@
 #include <string>
 #include <string_view>
 
+#include "devices/Diode.h"
 #include "devices/PowerSupply.h"
 
 namespace wdf {
@@ -54,6 +55,16 @@ enum class OpAmpType {
     Ne5532,
     Ca3080,  // OTA (transconductance amplifier); modelled as a slow VCVS here
     Op07,
+    M5218Al,
+    Tl022,
+    Mc33174,
+    Mc33179,
+    Ba728N,
+    Rc4558ClassAB,
+    Njm4558ClassAB,
+    Tl082ClassAB,
+    Lm741ClassAB,
+    Tl061,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -71,6 +82,17 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "ne5532" || lower == "njm5532" || lower == "5532") return OpAmpType::Ne5532;
     if (lower == "ca3080" || lower == "lm3080") return OpAmpType::Ca3080;
     if (lower == "op07" || lower == "op07c") return OpAmpType::Op07;
+    if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
+        return OpAmpType::M5218Al;
+    if (lower == "tl022" || lower == "tl022c") return OpAmpType::Tl022;
+    if (lower == "mc33174") return OpAmpType::Mc33174;
+    if (lower == "mc33179") return OpAmpType::Mc33179;
+    if (lower == "ba728n" || lower == "ba728" || lower == "ba728f") return OpAmpType::Ba728N;
+    if (lower == "rc4558-class-ab") return OpAmpType::Rc4558ClassAB;
+    if (lower == "njm4558-class-ab") return OpAmpType::Njm4558ClassAB;
+    if (lower == "tl082-class-ab") return OpAmpType::Tl082ClassAB;
+    if (lower == "lm741-class-ab") return OpAmpType::Lm741ClassAB;
+    if (lower == "tl061" || lower == "tl061c") return OpAmpType::Tl061;
     return OpAmpType::Generic;
 }
 
@@ -87,6 +109,16 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Ne5532: return "NE5532";
         case OpAmpType::Ca3080: return "CA3080";
         case OpAmpType::Op07: return "OP07";
+        case OpAmpType::M5218Al: return "M5218AL";
+        case OpAmpType::Tl022: return "TL022";
+        case OpAmpType::Mc33174: return "MC33174";
+        case OpAmpType::Mc33179: return "MC33179";
+        case OpAmpType::Ba728N: return "BA728N";
+        case OpAmpType::Rc4558ClassAB: return "RC4558-Class-AB";
+        case OpAmpType::Njm4558ClassAB: return "NJM4558-Class-AB";
+        case OpAmpType::Tl082ClassAB: return "TL082-Class-AB";
+        case OpAmpType::Lm741ClassAB: return "LM741-Class-AB";
+        case OpAmpType::Tl061: return "TL061";
     }
     return "Generic";
 }
@@ -103,15 +135,20 @@ inline const char* opAmpTypeName(OpAmpType type) {
 /// it was offered keep compiling; the picker simply no longer offers it.
 inline constexpr const char* kOpAmpTypeNames[] = {
     "TL071", "TL072", "TL082", "JRC4558", "RC4558",
-    "LM308", "LM741", "NE5532", "CA3080", "OP07"};
+    "LM308", "LM741", "NE5532", "CA3080", "OP07",
+    "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
+    "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
 /// Absolute maximum supply voltage (V) for the package, not an operating point.
 inline double opAmpSupplyMax(OpAmpType type) {
     switch (type) {
+        case OpAmpType::Ba728N:
+            return 18.0;
         case OpAmpType::Ne5532:
         case OpAmpType::Op07:
+        case OpAmpType::Mc33174:
             return 44.0;
         default:
             return 36.0;
@@ -120,9 +157,10 @@ inline double opAmpSupplyMax(OpAmpType type) {
 
 inline bool opAmpIsOTA(OpAmpType type) { return type == OpAmpType::Ca3080; }
 
-/// Static model card. All of these are the PedalKernel defaults
-/// (`OpAmpModel::tl072`, `lm308`, ...), which in turn match the datasheets for
-/// the parameters a guitar pedal can hear.
+/// Static model card. The original constants are from PedalKernel. Added
+/// pedal-specific cards use typical manufacturer data for gain, bandwidth and
+/// slew rate. Output impedance and capacitance retain the generic assumptions
+/// unless the card specifies them.
 struct OpAmpModel {
     OpAmpType type = OpAmpType::Generic;
 
@@ -148,7 +186,6 @@ struct OpAmpModel {
     ///   v < 0: -vRailNeg * tanh(-v / vRailNeg)
     /// providing continuous derivatives everywhere and natural analog warmth.
     bool softRails = false;
-
     /// Solver-only state on an Engine's private model copy: the linear
     /// output conductance is already present in the passive network.
     bool outputResistanceEmbedded = false;
@@ -164,6 +201,10 @@ struct OpAmpModel {
     double physicalOutputCurrent(double voltage, double current) const noexcept {
         return outputResistanceEmbedded ? current + voltage / outputImpedance : current;
     }
+    /// The optional symmetric class-AB stage limits the sourced and sunk
+    /// current. A zero limit selects the original resistive output law.
+    double outputCurrentLimit = 0.0;
+    double outputJunctionIs = 0.0;
 
     OpAmpModel() = default;
     explicit OpAmpModel(OpAmpType t) : type(t) { *this = fromType(t); }
@@ -248,13 +289,125 @@ struct OpAmpModel {
                 m.outputImpedance = 60.0;
                 m.outputCapacitance = 25e-12;
                 break;
+            case OpAmpType::M5218Al:
+                // Mitsubishi M5218AL/P/FP datasheet: 110 dB typical (10^(110/20)).
+                // https://ardent-tool.com/datasheets/Mitsubishi_M5218.pdf
+                m.openLoopGain = 316227.766;
+                m.gbw = 7.0e6;
+                m.slewRate = 3.0;
+                break;
+            case OpAmpType::Tl022:
+                // TI TL022C datasheet, typical values at ±15 V and 25 °C.
+                // https://www.ti.com/lit/ds/symlink/tl022.pdf
+                m.openLoopGain = 10000.0;
+                m.gbw = 0.5e6;
+                m.slewRate = 0.5;
+                break;
+            case OpAmpType::Mc33174:
+                // onsemi MC33171/72/74 datasheet: 500 V/mV large-signal gain.
+                // https://www.onsemi.com/pdf/datasheet/mc33171-d.pdf
+                m.openLoopGain = 500000.0;
+                m.gbw = 1.8e6;
+                m.slewRate = 2.1;
+                break;
+            case OpAmpType::Mc33179:
+                // onsemi MC33178/79 datasheet, typical values at ±15 V.
+                // https://www.onsemi.com/pdf/datasheet/mc33178-d.pdf
+                m.openLoopGain = 200000.0;
+                m.gbw = 5.0e6;
+                m.slewRate = 2.0;
+                break;
+            case OpAmpType::Ba728N:
+                // ROHM BA728/BA728F/BA728N datasheet, typical at 12 V.
+                // https://www.alldatasheet.com/datasheet-pdf/pdf/35975/ROHM/BA728N.html
+                m.openLoopGain = 100000.0;
+                m.gbw = 0.7e6;
+                m.slewRate = 0.7;
+                break;
+            // MiSTer-Discrete circuit-compiler@692e777, circuits/parts/
+            // rc4558.lib, tl082.lib and ua741.lib. The rail bounds below
+            // assume ±15 V; the schematic can set different bounds.
+            // https://github.com/jopdorp/MiSTer-Discrete/tree/692e777112e4a3c05a17578d9cfda1ecbc9b98d6/circuits/parts
+            case OpAmpType::Rc4558ClassAB:
+                m.openLoopGain = 300000.0;
+                m.gbw = 3.0e6;
+                m.slewRate = 1.7;
+                m.setClassABOutput(25e-3, 6e-8, 1.9);
+                break;
+            case OpAmpType::Njm4558ClassAB:
+                m.openLoopGain = 100000.0;
+                m.gbw = 3.0e6;
+                m.slewRate = 1.0;
+                m.setClassABOutput(25e-3, 6e-8, 1.9);
+                break;
+            case OpAmpType::Tl082ClassAB:
+                m.openLoopGain = 200000.0;
+                m.gbw = 3.0e6;
+                m.slewRate = 13.0;
+                m.setClassABOutput(26e-3, 5.8e-8, 1.44);
+                break;
+            case OpAmpType::Lm741ClassAB:
+                m.openLoopGain = 200000.0;
+                m.gbw = 1.0e6;
+                m.slewRate = 0.5;
+                m.setClassABOutput(25e-3, 6e-8, 1.9);
+                break;
+            case OpAmpType::Tl061:
+                // TI SLOS078N, TL061C: 6 V/mV large-signal gain.
+                // https://www.ti.com/lit/ds/symlink/tl061.pdf
+                m.openLoopGain = 6000.0;
+                m.gbw = 1.0e6;
+                m.slewRate = 3.5;
+                break;
         }
         return m;
     }
 
+    static constexpr double kSteeringDiodeIs = 1e-5;
+
+    void setClassABOutput(double limit, double junctionIs, double headroom) noexcept {
+        outputCurrentLimit = limit;
+        outputJunctionIs = junctionIs;
+        vRailPos = 15.0 - headroom;
+        vRailNeg = 15.0 - headroom;
+        double conductance = 0.0;
+        outputCurrent(0.0, conductance);
+        outputImpedance = 1.0 / conductance;
+    }
+
+    bool hasClassABOutput() const noexcept { return outputCurrentLimit > 0.0; }
+
+    /// Current into the modeled output pin for V(out) - V(pole). The symmetric
+    /// class-AB cards have the same ideality on both steering paths and no
+    /// series resistor. This inverts the two diode branches sampled by
+    /// MiSTer-Discrete circuitsim/mna.py::_class_b directly, avoiding tables.
+    double outputCurrent(double voltageError, double& conductance) const noexcept {
+        if (!hasClassABOutput()) {
+            conductance = 1.0 / outputImpedance;
+            return voltageError * conductance;
+        }
+
+        const double totalCurrent = outputCurrentLimit + outputJunctionIs + kSteeringDiodeIs;
+        const double ratio = outputJunctionIs / kSteeringDiodeIs;
+        const auto branch = [&](double v, double& slope) noexcept {
+            const double scaled = ratio * std::exp(std::clamp(v / kThermalVoltage, -700.0, 700.0));
+            const double fraction = scaled / (1.0 + scaled);
+            const double current = fraction * totalCurrent - outputJunctionIs;
+            slope = current > 0.0 && current < outputCurrentLimit
+                        ? fraction * (1.0 - fraction) * totalCurrent / kThermalVoltage
+                        : 0.0;
+            return std::clamp(current, 0.0, outputCurrentLimit);
+        };
+        double inSlope = 0.0, outSlope = 0.0;
+        const double entering = branch(voltageError, inSlope);
+        const double leaving = branch(-voltageError, outSlope);
+        conductance = inSlope + outSlope;
+        return entering - leaving;
+    }
+
     bool valid() const {
         return openLoopGain > 0.0 && gbw > 0.0 && slewRate >= 0.0 &&
-               outputImpedance > 0.0;
+               outputImpedance > 0.0 && (!hasClassABOutput() || outputJunctionIs > 0.0);
     }
 
     /// Set symmetric signal-swing rails (V around zero).
@@ -269,6 +422,14 @@ struct OpAmpModel {
     void setVRails(double pos, double neg) {
         vRailPos = std::max(0.0, pos);
         vRailNeg = std::max(0.0, neg);
+    }
+
+    /// Signed output swing bounds. For example, a single 9 V supply can
+    /// have both its lower and upper output limit above circuit ground.
+    void setVRailBounds(double low, double high) noexcept {
+        vRailPos = high;
+        vRailNeg = -low;
+        softRails = false;
     }
 
     /// Output limits in the model's port frame.

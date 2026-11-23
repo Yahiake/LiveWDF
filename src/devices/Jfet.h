@@ -773,6 +773,11 @@ inline constexpr JfetModel k2N5952{k2N5952Params};
 inline constexpr JfetModel k2N5457 = JfetModel::fromSpice(
     1.125e-3, -1.372, 2.3e-3, 1.0, 1.0, 4.627e-12, 4.0e-12);
 
+// 2N5458 from the published jfet.lib card (VTO, BETA, LAMBDA and parasitics).
+// https://www.diyaudio.com/community/threads/improvements-on-12ax7-12at7-el34-schematic.358653/page-3#post-6304821
+inline constexpr JfetModel k2N5458 = JfetModel::fromSpice(
+    488.9e-6, -2.882, 3.167e-3, 1.0, 1.0, 4.627e-12, 4.0e-12);
+
 // MPF102: Beta=1.04m Vto=-3.41 Lambda=2m Rd=1 Rs=1 Cgs=2.414p Cgd=1.6p.
 inline constexpr JfetModel kMPF102 = JfetModel::fromSpice(
     1.04e-3, -3.41, 2.0e-3, 1.0, 1.0, 2.414e-12, 1.6e-12);
@@ -785,6 +790,14 @@ inline constexpr JfetModel kJ201 = JfetModel::fromSpice(
 // Rd=4.151 Rs=4.151 Cgs=25.48p Cgd=20p.
 inline constexpr JfetModel k2SK170 = JfetModel::fromSpice(
     59.86e-3, -0.5024, 1.923e-3, 4.151, 4.151, 25.48e-12, 20.0e-12);
+
+// Toshiba 2SK184 datasheet, GR grade (2.6–6.5 mA IDSS).
+// Fit the 4.2 mA transfer curve at VDS = 10 V, with VTO ≈ −0.55 V;
+// lambda ≈ 0.003/V comes from the slope of the output characteristics.
+// Cgs = Ciss − Crss (13 − 3 pF). The datasheet does not give Rd or Rs.
+// https://aitendo3.sakura.ne.jp/aitendo_data/product_img/transisitor/2SK184/2SK184_toshiba.pdf
+inline constexpr JfetModel k2SK184Gr = JfetModel::fromSpice(
+    4.2e-3 / (1.03 * 0.55 * 0.55), -0.55, 0.003, 0.0, 0.0, 10.0e-12, 3.0e-12);
 
 // J111: Beta=2.91m Vto=-4.047 Lambda=17.5m Rd=1 Rs=1 Cgs=5.74p Cgd=6.46p.
 inline constexpr JfetModel kJ111 = JfetModel::fromSpice(
@@ -846,9 +859,11 @@ struct JfetEntry {
 inline constexpr JfetEntry kJfetTable[] = {
     {"2N5952", k2N5952},
     {"2N5457", k2N5457},
+    {"2N5458", k2N5458},
     {"MPF102", kMPF102},
     {"J201", kJ201},
     {"2SK170", k2SK170},
+    {"2SK184-GR", k2SK184Gr},
     {"J111", kJ111},
     {"2N3819", k2N3819},
     {"2N5484", k2N5484},

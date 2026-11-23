@@ -539,6 +539,37 @@ public:
         double vDiff = dVo - dZ * i0;
         double vSource = vBias + G * vDiff;
 
+        if (oa.hasClassABOutput()) {
+            // The output current law is bounded by the source and sink
+            // drive currents. Its intersection with the external load line
+            // is solved in that bracket; start at the small-signal solution.
+            double lo = -oa.outputCurrentLimit;
+            double hi = oa.outputCurrentLimit;
+            i0 = std::clamp(i0, lo, hi);
+            for (int iteration = 0; iteration < 28; ++iteration) {
+                double dSource = 0.0;
+                vDiff = dVo - dZ * i0;
+                vSource = OpAmpEngineLaw::sourceVoltage(
+                    oa, vDiff, opAmpVp[ci], opAmpAlpha[ci], opAmpMaxDv[ci], staticMode, &dSource);
+                double conductance = 0.0;
+                const double current = oa.outputCurrent(voOut - Zoo * i0 - vSource, conductance);
+                const double residual = i0 - current;
+                if (std::abs(residual) < 1e-12)
+                    break;
+                if (residual > 0.0)
+                    hi = i0;
+                else
+                    lo = i0;
+                const double slope = 1.0 + conductance * (Zoo - dSource * dZ);
+                const double next = slope > 0.0 ? i0 - residual / slope : i0;
+                i0 = next > lo && next < hi ? next : 0.5 * (lo + hi);
+            }
+            iiData[o] = i0;
+            iiData[o + 1] = 0.0;
+            iiData[o + 2] = 0.0;
+            return;
+        }
+
         if (!staticMode && std::isfinite(opAmpMaxDv[ci])) {
             const double vPrev = opAmpVp[ci];
             const double maxDv = opAmpMaxDv[ci];

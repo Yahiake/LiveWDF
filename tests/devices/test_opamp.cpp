@@ -62,6 +62,59 @@ TEST_CASE("opamp GBW lowpass coefficient is gain dependent and Nyquist safe", "[
     REQUIRE(tl072.gbwCoeff(1.0, kFs) == Approx(1.0));
 }
 
+TEST_CASE("pedal-specific opamp cards use published typical dynamics", "[opamp][model]") {
+    const auto expected = GENERATE(
+        table<const char*, double, double, double>({
+            {"M5218AL", 316227.766, 7.0e6, 3.0},
+            {"TL022", 10000.0, 0.5e6, 0.5},
+            {"MC33174", 500000.0, 1.8e6, 2.1},
+            {"MC33179", 200000.0, 5.0e6, 2.0},
+            {"BA728N", 100000.0, 0.7e6, 0.7},
+            {"TL061", 6000.0, 1.0e6, 3.5},
+        }));
+    const auto [name, gain, gbw, slewRate] = expected;
+    const auto type = wdf::opAmpTypeFromString(name);
+    REQUIRE(type != wdf::OpAmpType::Generic);
+    REQUIRE(std::string_view(wdf::opAmpTypeName(type)) == name);
+
+    const auto model = wdf::OpAmpModel::fromType(type);
+    REQUIRE(model.openLoopGain == Approx(gain));
+    REQUIRE(model.gbw == Approx(gbw));
+    REQUIRE(model.slewRate == Approx(slewRate));
+}
+
+TEST_CASE("opamp signed bounds allow positive single-supply headroom", "[opamp][model]") {
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::M5218Al);
+    model.setVRailBounds(1.5, 7.5);
+    CHECK(model.evalStatic(-0.1) == 1.5);
+    CHECK(model.evalStatic(0.1) == 7.5);
+    CHECK(model.evalStatic(4.5 / model.openLoopGain) == Approx(4.5));
+}
+
+TEST_CASE("MiSTer class-AB stage has a small-signal slope and bounded drive", "[opamp][model][class-ab]") {
+    const auto type = wdf::opAmpTypeFromString("LM741-Class-AB");
+    REQUIRE(type == wdf::OpAmpType::Lm741ClassAB);
+    const auto model = wdf::OpAmpModel::fromType(type);
+    REQUIRE(model.valid());
+    double slope = 0.0;
+    CHECK(model.outputCurrent(0.0, slope) == 0.0);
+    CHECK(slope == Approx(1.0 / model.outputImpedance));
+    CHECK(model.outputCurrent(1.0, slope) == Approx(25e-3));
+    CHECK(slope == 0.0);
+    CHECK(model.outputCurrent(-1.0, slope) == Approx(-25e-3));
+    CHECK(slope == 0.0);
+
+    double unused = 0.0;
+    const double below = model.outputCurrent(0.13 - 1e-6, unused);
+    const double above = model.outputCurrent(0.13 + 1e-6, unused);
+    model.outputCurrent(0.13, slope);
+    CHECK(slope == Approx((above - below) / 2e-6).epsilon(1e-7));
+
+    const auto legacy = wdf::OpAmpModel::fromType(wdf::OpAmpType::Lm741);
+    CHECK_FALSE(legacy.hasClassABOutput());
+    CHECK(legacy.outputCurrent(1.0, slope) == Approx(1.0 / 75.0));
+}
+
 TEST_CASE("opamp LM308 rolls off high frequencies more than TL072", "[opamp][gbw]") {
     // Same test as PedalKernel: gain 100, 15 kHz. LM308 f_cl = 10 kHz,
     // TL072 f_cl = 30 kHz, so the LM308 output must be visibly smaller.

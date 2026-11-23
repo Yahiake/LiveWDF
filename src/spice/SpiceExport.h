@@ -28,6 +28,8 @@
 //   * A ControlledRes is exported as a plain R at the ohms the engine seeds
 //     it with (Circuit::addControlledRes's initial value); a text deck cannot
 //     express the runtime controller.
+//   * A capacitor's optional LiveWDF startup seed is recorded in a comment.
+//     The exported transient uses the DC operating point for all capacitors.
 //   * Nothing is dropped silently: ok says whether every element found a
 //     representation, and diagnostics counts what each kind became.
 // ============================================================================

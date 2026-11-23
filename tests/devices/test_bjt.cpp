@@ -6,8 +6,8 @@
 using namespace wdf;
 
 TEST_CASE("BJT presets valid and evaluate at representative points", "[bjt][presets]") {
-    const char* names[] = {"2N3904","2N2222A","2N2222","BC547B","2N5088",
-                           "2N3906","2N2907","BC557B","2N5087"};
+    const char* names[] = {"2N3904","2N2222A","2N2222","BC547B","2N5088","BC109C","2SC2240",
+                           "2N3906","2N2907","BC557B","2N5087","2N3904-MiSTer","2N3906-MiSTer"};
     for (const char* n : names) {
         const BjtEntry* e = findBjtByName(n);
         REQUIRE(e != nullptr);
@@ -26,6 +26,29 @@ TEST_CASE("BJT presets valid and evaluate at representative points", "[bjt][pres
         CHECK(std::isfinite(res.iB));
         CHECK(std::isfinite(res.iE));
     }
+}
+
+TEST_CASE("MiSTer BJT corrections affect gain and retain an exact Jacobian", "[bjt][presets]") {
+    const auto* preset = findBjtByName("2N3904-MiSTer");
+    REQUIRE(preset != nullptr);
+    const auto& model = preset->model;
+    const auto atOneVolt = model.evaluateTerminals(1.0, 0.60);
+    const auto atFiveVolts = model.evaluateTerminals(5.0, 0.60);
+    REQUIRE(atOneVolt.valid);
+    REQUIRE(atFiveVolts.valid);
+    CHECK(atFiveVolts.iC > atOneVolt.iC);
+    CHECK(atFiveVolts.iB > atFiveVolts.iC / model.Bf);
+
+    constexpr double h = 1e-6;
+    const auto minus = model.evaluateTerminals(5.0, 0.60 - h);
+    const auto plus = model.evaluateTerminals(5.0, 0.60 + h);
+    CHECK(atFiveVolts.diC_dVbe == Approx((plus.iC - minus.iC) / (2.0 * h)).epsilon(1e-7));
+    CHECK(atFiveVolts.diB_dVbe == Approx((plus.iB - minus.iB) / (2.0 * h)).epsilon(1e-7));
+    const auto collectorMinus = model.evaluateTerminals(5.0 - h, 0.60);
+    const auto collectorPlus = model.evaluateTerminals(5.0 + h, 0.60);
+    CHECK(atFiveVolts.diC_dVce == Approx((collectorPlus.iC - collectorMinus.iC) / (2.0 * h))
+                                     .epsilon(1e-7));
+    CHECK_FALSE(findBjtByName("2N3904")->model.hasLowCurrentCorrections());
 }
 
 TEST_CASE("a PNP BJT is the exact mirror of the NPN Ebers-Moll law",

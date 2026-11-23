@@ -11,9 +11,7 @@
 
 // Increment 16: Cathodyne diode presets + 3-terminal potentiometer expansion.
 
-TEST_CASE("named diode registry provides Cathodyne's 6 presets", "[diode][registry]") {
-    REQUIRE(wdf::kNumDiodes == 6);
-
+TEST_CASE("named diode registry retains legacy presets and resolves 1SS133", "[diode][registry]") {
     const auto* d4148 = wdf::findDiodeByName("1N4148");
     REQUIRE(d4148 != nullptr);
     REQUIRE(d4148->isat == Approx(4.352e-9));
@@ -45,11 +43,18 @@ TEST_CASE("named diode registry provides Cathodyne's 6 presets", "[diode][regist
     REQUIRE(dgz34->isat == Approx(2.52e-9));
     REQUIRE(dgz34->rs == Approx(15.0));
 
+    const auto* d1ss133 = wdf::findDiodeByName("1SS133");
+    REQUIRE(d1ss133 != nullptr);
+    REQUIRE(d1ss133->isat == Approx(1.0e-10));
+    REQUIRE(d1ss133->n == Approx(1.5));
+    REQUIRE(d1ss133->rs == Approx(0.4));
+
     // Case-insensitivity and SPICE leading 'D' tolerance
     REQUIRE(wdf::findDiodeByName("1n4148") == d4148);
     REQUIRE(wdf::findDiodeByName("D1N4148") == d4148);
     REQUIRE(wdf::findDiodeByName("d1n4007") == d4007);
     REQUIRE(wdf::findDiodeByName("dgz34") == dgz34);
+    REQUIRE(wdf::findDiodeByName("d1ss133") == d1ss133);
 
     REQUIRE(wdf::findDiodeByName("NONEXISTENT_DIODE") == nullptr);
 }
@@ -85,8 +90,60 @@ TEST_CASE("SPICE parser resolves named diode presets without boilerplate .model"
     REQUIRE(c3.diode[0].model.n == Approx(1.1));
     REQUIRE(c3.diode[0].model.rs == Approx(1.2));
 
-    // 4. Unknown diode model still throws
+    const auto mt2 = wdf::buildFromString("D1 a b 1SS133\n");
+    REQUIRE(mt2.diode.size() == 1);
+    REQUIRE(mt2.diode[0].model.isat == Approx(1.0e-10));
+    REQUIRE(mt2.diode[0].model.n == Approx(1.5));
+    REQUIRE(mt2.diode[0].model.rs == Approx(0.4));
+
+    // Unknown diode model still throws
     REQUIRE_THROWS_AS(wdf::buildFromString("D1 a b UNKNOWN_DIODE\n"), std::runtime_error);
+}
+
+TEST_CASE("reverse breakdown adds a continuous avalanche branch", "[diode][breakdown]") {
+    constexpr double knee = 5.1 - 0.02 * 17.0;
+    const wdf::DiodeModel simple(1e-14, 1.0, 17.0);
+    const wdf::DiodeModel zener(1e-14, 1.0, 17.0, 0.0, knee, 0.02);
+    double current = 0.0, slope = 0.0, baseline = 0.0, oldSlope = 0.0;
+    simple.eval(0.65, baseline, oldSlope);
+    zener.eval(0.65, current, slope);
+    CHECK(current == baseline);
+    CHECK(slope == oldSlope);
+
+    zener.eval(zener.breakdownV - 1e-8, current, slope);
+    zener.eval(zener.breakdownV + 1e-8, baseline, oldSlope);
+    CHECK(current == Approx(baseline).margin(1e-16));
+
+    zener.eval(-5.1, current, slope);
+    CHECK(current == Approx(-0.02).margin(1e-12));
+    CHECK(slope > 0.0);
+    CHECK(slope < 1.0 / 17.0);
+
+    bool limited = false;
+    const auto noSeries = zener.withSeriesResistance(0.0);
+    const double trial = noSeries.limit(0.0, -20.0, limited);
+    CHECK(limited);
+    CHECK(trial > -20.0);
+    CHECK(trial < noSeries.breakdownV);
+}
+
+TEST_CASE("a SPICE zener retains its breakdown through WDF port reduction", "[diode][breakdown][spice]") {
+    const auto c = wdf::buildFromString(
+        "Vin in 0 DC 0\n"
+        "Rin in out 1k\n"
+        "Dz 0 out Z\n"
+        ".model Z D(IS=1e-14 N=1 RS=17 RP=0 BV=4.76 IBV=0.02)\n");
+    REQUIRE(c.src.size() == 1);
+    REQUIRE(c.diode.size() == 1);
+    REQUIRE(c.diode[0].model.bv == Approx(4.76));
+    wdf::Engine e(c, 48000.0);
+    e.reset();
+    const int out = e.nodeIndex("out");
+    REQUIRE(out >= 0);
+    CHECK(e.step({25.1})[static_cast<size_t>(out)] == Approx(5.1).margin(1e-8));
+    CHECK(e.lastConverged());
+    CHECK(e.step({2.0})[static_cast<size_t>(out)] == Approx(2.0).margin(1e-8));
+    CHECK(e.lastConverged());
 }
 
 TEST_CASE("potentiometer taper formulas compute correct divider ratios", "[pot][taper]") {

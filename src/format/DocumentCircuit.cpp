@@ -21,6 +21,11 @@ namespace wdf {
 
 Circuit LiveWDFDocument::toCircuit() const {
     Circuit c;
+    struct DocumentBucketBrigade {
+        std::string input, output, clock, common, name;
+        BucketBrigadeModel model;
+    };
+    std::vector<DocumentBucketBrigade> bucketBrigades;
 
     // Rails, keyed by the net they drive: (dc volts, ac volts, part id).
     //
@@ -84,14 +89,31 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addVarRes(getPin("a"), getPin("b"), getVal("maxR", 10000.0), getVal("pos", 0.5), taper, comp.id);
             } else if (comp.type == "ctrlres") {
                 c.addControlledRes(getPin("a"), getPin("b"), getVal("initialOhms", 1000.0), comp.id);
+            } else if (comp.type == "vca") {
+                c.addLinearVca(getPin("in"), getPin("out"), getVal("inputOhms", 2200.0),
+                               {getPin("control"), getPin("reference"),
+                                getVal("fullGainVolts", 1.0)}, comp.id);
+            } else if (comp.type == "photores") {
+                PhotoresistorControl photo;
+                photo.sensePos = getPin("sensePos");
+                photo.senseNeg = getPin("senseNeg");
+                photo.brightOhms = getVal("brightOhms", photo.brightOhms);
+                photo.referenceVolts = getVal("referenceVolts", photo.referenceVolts);
+                photo.gamma = getVal("gamma", photo.gamma);
+                photo.attackSeconds = getVal("attackSeconds", photo.attackSeconds);
+                photo.releaseSeconds = getVal("releaseSeconds", photo.releaseSeconds);
+                c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
+                                   photo, comp.id);
+            } else if (comp.type == "ca3080") {
+                c.addCa3080(getPin("out"), getPin("neg"), getPin("pos"), getPin("vcc"),
+                           getPin("vee"), getPin("bias"), comp.id);
             } else if (comp.type == "diode") {
                 const std::string modelName = getProp("model", "1N4148");
                 const auto* entry = findDiodeByName(modelName);
-                double rp = 1e6;
-                if (entry) rp = entry->rp;
-                DiodeModel dm = entry ? DiodeModel(entry->isat, entry->n, entry->rs, rp)
+                DiodeModel dm = entry ? entry->model()
                                       : DiodeModel(getVal("isat", 1e-14), getVal("n", 1.0),
-                                                   getVal("rs", 0.0), rp);
+                                                   getVal("rs", 0.0), 1e6, getVal("bv", 0.0),
+                                                   getVal("ibv", 1e-3));
                 c.addDiode(getPin("anode"), getPin("cathode"), dm, comp.id);
             } else if (comp.type == "triode") {
                 const std::string modelName = getProp("model", "12AX7");
@@ -267,11 +289,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addMosfet(getPin("drain"), getPin("gate"), source, model, comp.id);
             } else if (comp.type == "bjt") {
                 // Polarity is carried by the model card. Both NPN and PNP are
-                // supported. The part carries the five Ebers-Moll parameters --
-                // Is/Bf/Br/Nf/Nr -- which are the only numbers the model reads.
-                // A recognized card supplies the defaults, edited EM values
-                // override them, and "Custom" requires the five EM values
-                // explicitly. Legacy Gummel-Poon keys are ignored.
+                // supported. A recognized card supplies the defaults, and
+                // edited Is/Bf/Br/Nf/Nr values override its transport values.
+                // "Custom" requires the five Ebers-Moll values explicitly.
+                // Low-current corrections come from the named opt-in cards.
                 const std::string modelName = getProp("model", "2N3904");
                 const auto* entry = wdf::findBjtByName(modelName);
                 const bool isCustom = modelName == "Custom";
@@ -282,9 +303,13 @@ Circuit LiveWDFDocument::toCircuit() const {
                                          hasEm("nf") && hasEm("nr");
                 if (entry && hasEmValues) {
                     // Recognized card with edited values -- build model from them.
-                    const wdf::BjtModel userModel(
-                        comp.values.at("is"), comp.values.at("bf"), comp.values.at("br"),
-                        comp.values.at("nf"), comp.values.at("nr"), entry->model.pnp);
+                    wdf::BjtModel userModel = entry->model;
+                    userModel.Is = comp.values.at("is");
+                    userModel.Bf = comp.values.at("bf");
+                    userModel.Br = comp.values.at("br");
+                    userModel.Nf = comp.values.at("nf");
+                    userModel.Nr = comp.values.at("nr");
+                    userModel.prepare();
                     if (!userModel.valid())
                         throw std::runtime_error("BJT '" + comp.id + "' has invalid model values");
                     c.addBjt(getPin("collector"), getPin("base"), getPin("emitter"),
@@ -307,6 +332,22 @@ Circuit LiveWDFDocument::toCircuit() const {
                     throw std::runtime_error("unsupported BJT model '" + modelName +
                                              "' on part '" + comp.id + "'");
                 }
+            } else if (comp.type == "bbd") {
+                BucketBrigadeModel model;
+                const double stages = getVal("stages", model.stages);
+                if (!std::isfinite(stages) || stages < 2 || stages > 32768 ||
+                    std::floor(stages) != stages)
+                    throw std::invalid_argument("Invalid bucket-brigade stage count: " + comp.id);
+                model.stages = static_cast<int>(stages);
+                model.clockHz = getVal("clockHz", model.clockHz);
+                model.periodSecondsPerVolt = getVal("periodMicrosecondsPerVolt", 0.0) * 1.0e-6;
+                model.inputBias = getVal("inputBias", model.inputBias);
+                model.outputBias = getVal("outputBias", model.outputBias);
+                model.inputSwing = getVal("inputSwing", model.inputSwing);
+                model.gain = getVal("gain", model.gain);
+                model.outputOhms = getVal("outputOhms", model.outputOhms);
+                bucketBrigades.push_back({getPin("in"), getPin("out"), getPin("clock"),
+                                          getPin("common"), comp.id, model});
             } else if (comp.type == "vcvs") {
                 // The gain block has **two** terminals, in and out; the
                 // reference is ground. It used to have four -- in+, in-, out+,
@@ -319,7 +360,13 @@ Circuit LiveWDFDocument::toCircuit() const {
                 const std::string modelName = getProp("model", "TL072");
                 const OpAmpType type = opAmpTypeFromString(modelName);
                 OpAmpModel model = OpAmpModel::fromType(type);
-                if (comp.values.count("vRailPos") && comp.values.count("vRailNeg")) {
+                if (comp.values.count("vRailMin") || comp.values.count("vRailMax")) {
+                    const double low = getVal("vRailMin", model.railLow());
+                    const double high = getVal("vRailMax", model.railHigh());
+                    if (!std::isfinite(low) || !std::isfinite(high) || low > high)
+                        throw std::runtime_error("Op-amp '" + comp.id + "' has invalid rail bounds");
+                    model.setVRailBounds(low, high);
+                } else if (comp.values.count("vRailPos") && comp.values.count("vRailNeg")) {
                     model.setVRails(comp.values.at("vRailPos"), comp.values.at("vRailNeg"));
                 }
                 c.addOpAmp(getPin("out"), getPin("neg"), getPin("pos"),
@@ -477,6 +524,10 @@ Circuit LiveWDFDocument::toCircuit() const {
             // node the plugin reads, and a node it names is a node some other
             // part's pin is on anyway.
         }
+        // Internal BBD output sources follow the explicit current sources so
+        // the source driver's existing current-source slots keep their order.
+        for (const auto& bbd : bucketBrigades)
+            c.addBucketBrigade(bbd.input, bbd.output, bbd.clock, bbd.common, bbd.model, bbd.name);
         return c;
     }
 

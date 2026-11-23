@@ -96,9 +96,16 @@ public:
                 const double R = ctrlResValues[dev.compIndex];
                 const double G = (R > 1e-12) ? (1.0 / R) : 1e12;
                 ++deviceEvals;
-                iData[e] = vData[e] * G;
-                if (jData)
-                    jData[e * K + e] = G;
+                if (comp.otaCurrentLaw[dev.compIndex]) {
+                    const double t = std::tanh(vData[e] / OtaControl::pairVolts);
+                    iData[e] = G * OtaControl::pairVolts * t;
+                    if (jData)
+                        jData[e * K + e] = G * (1.0 - t * t);
+                } else {
+                    iData[e] = vData[e] * G;
+                    if (jData)
+                        jData[e * K + e] = G;
+                }
                 break;
             }
             case DeviceKind::Pentode: {
@@ -179,9 +186,10 @@ public:
                 const double vSource = OpAmpEngineLaw::sourceVoltage(
                     oa, vDiff, opAmpVp[ci], opAmpAlpha[ci], opAmpMaxDv[ci],
                     staticMode, &dSourceDvDiff);
-                const double gOut = 1.0 / oa.outputImpedance;
+                double gOut = 0.0;
                 ++deviceEvals;
-                iData[o] = (oa.outputVoltageWeight() * vData[o] - vSource) * gOut;
+                const double outputVoltage = oa.outputVoltageWeight() * vData[o];
+                iData[o] = oa.outputCurrent(outputVoltage - vSource, gOut);
                 iData[o + 1] = 0.0;
                 iData[o + 2] = 0.0;
                 if (jData) {
