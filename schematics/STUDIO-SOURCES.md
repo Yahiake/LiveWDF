@@ -1,0 +1,96 @@
+# Classic analog studio equipment
+
+These 40 circuits are the studio half of the factory expansion in [PR #38](https://github.com/Yahiake/LiveWDF/pull/38). Each entry targets a specific hardware signal path. Keep all entries when the exact schematic or part model still needs research.
+
+The factory collection already packages nested directories. Place these circuits under `studio/` in effect-type subdirectories. Use source levels appropriate to each device and document the voltage, gain settings and source or load impedance.
+
+## Preamps and console channels
+
+| # | Device | Starting reference |
+|---:|---|---|
+| 1 | Neve 1073 | [EH10023 and amplifier boards](https://www.technicalaudio.com/neve/neve_pdf/1073-fullpak.pdf) |
+| 2 | Neve 1081 | [AMS Neve service manual, issue 4.2](https://www.ams-neve.com/wp-content/uploads/2021/10/1081usermanualissue42.pdf) |
+| 3 | [API 312 preamp, VP312 Rev A](studio/preamps/API%20312%20Preamp%20VP312%20Rev%20A.livewdf) | [CAPI signal-path schematic](https://www.capi-gear.com/catalog/images/gallery/VP312/VP312-VPR-Rev-A-schematic.pdf) and [1972 API 2520 technical literature](https://www.steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf) |
+| 4 | SSL 4000 E 242 Black EQ | [82E242 circuit sheet](https://www.ka-electronics.com/images/SSL/ssl_82E242.pdf) |
+| 5 | Trident A-Range EQ | [A-Range derivative and trace discussion](https://groupdiy.com/threads/trident-a-range-channel-strip.48493/) |
+| 6 | Trident 80B EQ | [Trident 80B parameter and control manual](https://tridentaudiodevelopments.com/wp-content/uploads/2022/02/80b-Manual.pdf) |
+| 7 | Helios Type 69 EQ | |
+| 8 | Harrison 32C channel EQ | |
+| 9 | MCI JH-400B input module | [MCI JH-400B schematics and wiring](https://thehistoryofrecording.com/Manuals/MCI/MCI_JH-400b_Manual_Schematics.pdf) |
+| 10 | Soundcraft Series 600 mono input module | [Soundcraft Series 600 manuals](https://www.soundcraft.com/en-US/products/Series-600) |
+
+## Compressors, limiters and gates
+
+| # | Device | Starting reference |
+|---:|---|---|
+| 11 | UREI 1176LN Rev D | [UREI revision and drawing archive](https://music-electronics-forum.com/filedata/fetch?d=1576868886&id=856342) |
+| 12 | Teletronix LA-2A | [Teletronix circuit, UTC transformers](https://audiocircuit.dk/downloads/urei/Urei-LA2A-lim-sch.pdf) |
+| 13 | UREI LA-3A | [UREI manual, drawing C/1186.3](https://www.steampoweredradio.com/pdf/urei/manuals/UREI%20LA-3A%20Leveling%20Amplifier%20Manual.pdf) |
+| 14 | Fairchild 660 | [Archived Fairchild 660 drawings](https://www.benmook.com/tech/documents/Schematics%202/Schematics%201/) |
+| 15 | Gates Sta-Level | [Gates M5167 instructions](https://www.worldradiohistory.com/Archive-Catalogs/Gates-Harris/Gates-Sta-Level-Amplifier-M5167-1956.pdf) |
+| 16 | Altec 436C | [Altec Lansing 436C schematic](https://aboutprosound.com/wp-content/uploads/2022/10/Altec-436C.pdf) |
+| 17 | EMI RS124 | |
+| 18 | dbx 160 VU | [Model 160/161 factory manual](https://schematicsforfree.com/files/Audio/Products/Professional%20Audio/D/dbx/dbx%20160-161%20Compressor%20Limiter%20Manual.pdf)  · [Factory VCA 200 drawing 110557, page 1](https://proaudiodesignforum.com/images/pdf/dBx_200_202_202C_2001_2000T_202XT_Schematics_Merged.pdf) · [160/161 service calibration and module bill of materials](https://www.lost-manuals.com/pdf/dbx--160--service--ID11749.pdf) |
+| 19 | Manley Variable Mu | |
+| 20 | Pye 4060 | [Postfade technical analysis and basic schematic](https://postfade.co.uk/wp-content/uploads/2021/07/PYE-BROADCAST-AUDIO-CONSOLES-PART-FOUR-mini-.pdf) |
+| 21 | SSL 4000 G Bus Compressor | [SSL 4000G service manual](https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/SSL-4000G-Console-Service-Manual-v1_1.pdf) |
+| 22 | API 2500 | |
+| 23 | Neve 33609/J | [AMS Neve technical handbook with circuit diagrams](https://thehistoryofrecording.com/Manuals/Neve/Neve%2033609J%20Technical%20Handbook.pdf) |
+| 24 | ADR Compex F760X-RS | |
+| 25 | Drawmer DS201 | |
+
+## Equalizers
+
+| # | Device | Starting reference |
+|---:|---|---|
+| 26 | Pultec EQP-1A | [Amplifier schematic](https://civade.com/AudioPro/PultecEQP.pdf) and [passive network](https://www.benmook.com/tech/documents/Schematics%202/Schematics%201/Pultec-EQP-1Aman%201.pdf) |
+| 27 | Pultec MEQ-5 | [MEQ-5 factory manual](https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/Pultec-MEQ5-Manual.pdf) |
+| 28 | API 550A | |
+| 29 | API 560 | |
+| 30 | GML 8200 | [Massenburg control and response specifications](https://massenburg.com/wp-content/uploads/2020/02/190528_8200_Specs.pdf) |
+| 31 | Sontec MES-432C | |
+| 32 | Mäag EQ4 | |
+| 33 | Manley Massive Passive | |
+| 34 | UREI 545 | [UREI 545 manual and schematic](https://thehistoryofrecording.com/Manuals/UREI/UREI-545_Manual.pdf) and [Diodes Inc. 1N4003 bias diode SPICE model](https://www.diodes.com/spice/download/337/1N4003.spice.txt) |
+
+## De-essing, enhancement and saturation
+
+| # | Device | Starting reference |
+|---:|---|---|
+| 35 | dbx 902 De-Esser | [dbx factory schematic archive](https://dbxpro.com/en-US/downloads/en/schematic) |
+| 36 | Aphex Aural Exciter Type B | |
+| 37 | BBE 482i Sonic Maximizer | [Schematic-derived Channel B model](https://guitar-gear.ru/forum/index.php?app=core&attach_id=29567&module=attach&section=attach) |
+| 38 | SPL Transient Designer 9842 | [SPL 9842 owner’s manual](https://spl.audio/wp-content/uploads/TransientDesigner4_9842_OM_E.pdf) |
+| 39 | [Thermionic Culture Vulture](studio/enhancement/Thermionic-Culture-Vulture.livewdf) | [October 2005 manufacturer manual](https://www.thermionicculture.com/images/stories/virtuemart/product/CultureVultureValveDistortionUnitManual9.pdf) and [production review](https://www.soundonsound.com/reviews/thermionic-culture-culture-vulture) |
+| 40 | [Empirical Labs FATSO EL7](studio/dynamics/Empirical%20Labs%20FATSO%20EL7.livewdf) | [Original EL7 manual and block diagram](https://www.empiricallabs.com/wp-content/uploads/fatso_manual.pdf) |
+
+## API 312 verification
+
+The VP312 Rev A model uses the signal path with pad off, normal polarity and full output. The API 2520 card is based on published typical gain, bandwidth and slew. Transformer ratios follow the chosen winding connections. Winding resistance, inductance and leakage are approximate linear parameters pending measurements.
+
+At the factory Gain position with a 150 Ω source and 600 Ω load, a 1 mV peak sine measured +42.77 dB at 1 kHz. The native overload sweep through 0.85 V peak at 48 kHz produced zero rejected steps on the direct op-amp path. No hardware response or saturation measurement was used.
+
+## Thermionic Culture Vulture
+
+The October 2005 manual documents EF86 input, 6AS6 distortion and 5963 output valves, the three distortion modes, 5/9 kHz low-pass filters and an Overdrive gain and bias change. The model uses a 12AU7 equivalent of the 5963. The factory component drawing and production P2 wiring are unavailable. The two opposed 6AS6 contributions approximate one P2 stage. Its operating current is the sum of both contributions. Component values and the 6AS6 control voltages are fitted estimates.
+
+The shared Bias knob uses calibrated ranges per mode. With Overdrive off, the estimated cathode currents in mA at minimum, midpoint and maximum knob settings are 0.542, 0.249 and 0.063 in T, 0.608, 0.350 and 0.032 in P1, and 0.630, 0.308 and 0.018 in P2. This keeps the normal operating points near the manual's guidance and leaves room for both overfeeding and starvation. At Bias 0.65, the P2 equivalent draws 0.189 mA. Its second harmonic was 1.10 dB above the fundamental at 1.737 V peak and 9.35 dB above at 5 V peak on a 1 kHz tone.
+
+At 1.737 V peak with Drive 0.49 and Bias 0.50, T gave +0.09 dB gain, with H2 at −68.0 dBc. P1's H3 was −34.9 dBc and 5.8 dB above its H2. The 48 kHz guitar comparison uses the same input excerpt and the same knob settings in T, P1 and P2 at 1.737 and 5 V peak. The clips are matched in RMS after rendering. Overdrive is demonstrated separately. All seven 192,000-frame renders completed with zero rejected steps.
+
+The model's default T path approached the rated +17 dBV output at 1 kHz with a 20 kΩ load. The passive input pad and output stage approximate the line interfaces. The modeled input is about 100 kΩ and the small-signal output is about 0.86 kΩ at 1 kHz, compared with the manual's 30 kΩ and 2 kΩ. Measured low-drive T response is down about 3.8 dB at 50 Hz relative to 1 kHz. The host Output terminal uses an 8 V peak scale, so a unity-voltage test renders about 18 dB below host dry at 1 V per full scale. It reserves digital level for higher-drive settings and does not limit peaks.
+
+## Empirical Labs FATSO EL7
+
+The original EL7 manual shows a differential receiver, input gain, feedback VCA compressor, always-active soft clipper, dynamic Warmth filter, switchable buffered transformer and output gain. Both detectors sense the output of Warmth before Tranny. The model follows that order for one channel, with a host reference on the cold input and a relay-style bypass. The manual describes a gentle 2:1 Buss mode with a soft knee, a slower-releasing G.P. mode, an 1176-like Tracking mode and a stronger Spank limiter that can run alongside any primary mode. The [contemporary EL7 review](https://www.soundonsound.com/reviews/empirical-labs-el7-fatso-jr) also describes Warmth's seven threshold settings and its 15 dB range at 20 kHz.
+
+The public factory diagram specifies blocks and controls. The circuit values are a reconstruction. The split-band Warmth shelf uses a continuous threshold. The asymmetric diode clipper, log RMS mode detectors, two-slope Buss knee, bounded command stages and transformer model reproduce the identified behaviors using fitted curves and time constants. The transformer uses linear winding inductance, leakage and loss with a separate low-frequency saturation network. The model does not include stereo linking, an external sidechain insert, metering, transformer hysteresis or the original push-button sequence. Set Compressor on for Buss, then choose G.P. or Tracking as needed. Switching Spank on with Compressor off gives standalone Spank. Bypass switches the input directly to the output.
+
+Native 48 kHz sweeps exercised levels up to 1.5 V peak and all mode and control endpoints with zero rejected steps. With compression off, the highest Warmth setting attenuated a 1.5 V peak test tone by 6.9 dB at 8 kHz, 14.4 dB at 20 kHz and less than 0.02 dB at 200 Hz. At 440 Hz and 0.75 V peak, Buss, G.P., Tracking and Spank reduced the fundamental by 5.0, 7.2, 9.8 and 18.0 dB relative to compression off. Without compression or Warmth, the asymmetric clipper measured about 4.9% THD at that test level and about 9.3% at 1.5 V peak. Engaging Tranny increased the third harmonic's fraction of the 40 Hz fundamental from 8.7% to 11.5% at 1.5 V peak. These are model results. Native drum renders at 2 V per full scale produced zero rejected steps with the default Buss setting and with Tracking, Spank, Warmth and Tranny engaged.
+
+The output follower uses a TL071 simulation proxy and retains the ±12 V model limits. At 48 kHz, 1 kHz input tones from +4 to +18 dBu with Input at 0.85 and compression, Warmth and Tranny off produced zero rejected steps with this follower. The previous NE5532 follower produced 542, 1,183 and 5,832 rejects at +10, +14 and +18 dBu over 33,600 samples each. At +4 and +10 dBu, the follower change altered the measured harmonic distortion by less than 0.003 percentage points. The manual identifies its 0 VU and Pinned indicators with approximately 1% and 5% distortion. Those indicators measure distortion with the input gain applied. In the model at near-unity gain, 1 kHz and with compression, Warmth and Tranny off, 0 and +4 dBu at the input produced 0.88% and 4.36% THD. With Input at 0.85, a −18 dBu, 40 Hz tone produced 12.4% THD from the Spank mode model alone. The same tone with Tranny, Tracking and Warmth also engaged produced 14.0% THD. No measured EL7 harmonic sweep was available to calibrate the magnitude of these effects.
+
+## Parts references
+
+- [THAT 2180-series datasheet](https://thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf) gives the internal equivalent circuit, nominal gain law and a complete test application. [AES paper 4055](https://www.thatcorp.com/datashts/AES4055_An_Improved_Monolithic_VCA.pdf) covers the compensated Blackmer cell and sources of distortion.
+- [Analog Devices OP275 datasheet](https://www.analog.com/media/en/technical-documentation/data-sheets/OP275.pdf) provides typical amplifier limits and a manufacturer SPICE macromodel.

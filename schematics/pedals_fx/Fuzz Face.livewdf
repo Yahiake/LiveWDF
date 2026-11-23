@@ -150,7 +150,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.8,
+        "pos": 0.546,
         "totalR": 500000
       },
       "visual": {
@@ -177,7 +177,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 24
+        "fullScaleVolts": 1.3
       },
       "visual": {
         "flipped": true,
@@ -194,7 +194,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.9,
+        "pos": 0.05,
         "totalR": 1000
       },
       "visual": {
@@ -402,19 +402,7 @@
       "points": [
         {
           "x": 35,
-          "y": -1
-        },
-        {
-          "x": 39,
-          "y": -1
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 39,
-          "y": -1
+          "y": -7
         },
         {
           "x": 39,

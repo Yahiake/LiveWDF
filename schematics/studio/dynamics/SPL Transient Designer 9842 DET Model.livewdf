@@ -1,0 +1,2296 @@
+{
+  "author": "LiveWDF",
+  "category": "Dynamics",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 2,
+        "y": 20
+      }
+    },
+    {
+      "id": "Rin",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "Rterm",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 18,
+        "y": 30
+      }
+    },
+    {
+      "id": "InputBuffer",
+      "properties": {
+        "model": "NE5532"
+      },
+      "type": "opamp",
+      "values": {
+        "vRailMax": 17.35,
+        "vRailMin": -17.35
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 27,
+        "y": 20
+      }
+    },
+    {
+      "id": "RinVca",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 19900
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 45,
+        "y": 20
+      }
+    },
+    {
+      "id": "VCA",
+      "properties": {},
+      "type": "that2180",
+      "values": {
+        "inputOhms": 100
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 64,
+        "y": 20
+      }
+    },
+    {
+      "id": "IToV",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 87,
+        "y": 20
+      }
+    },
+    {
+      "id": "Riv",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 20000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 85,
+        "y": 10
+      }
+    },
+    {
+      "id": "Civ",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1.8e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 86,
+        "y": 0
+      }
+    },
+    {
+      "id": "LineOut",
+      "properties": {
+        "model": "NE5532"
+      },
+      "type": "opamp",
+      "values": {
+        "vRailMax": 14.3,
+        "vRailMin": -14.3
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 117,
+        "y": 20
+      }
+    },
+    {
+      "id": "Rout",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 51
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 132,
+        "y": 20
+      }
+    },
+    {
+      "id": "Rload",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 142,
+        "y": 31
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 151,
+        "y": 20
+      }
+    },
+    {
+      "id": "EnvelopeTracking",
+      "properties": {},
+      "type": "rmsdet",
+      "values": {
+        "inputOhms": 2000000.0,
+        "outputOhms": 5,
+        "referenceVolts": 0.775,
+        "timeConstantSeconds": 0.002,
+        "voltsPerDb": 0.0061
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 48
+      }
+    },
+    {
+      "id": "EnvelopeSlowerAttack",
+      "properties": {},
+      "type": "rmsdet",
+      "values": {
+        "inputOhms": 2000000.0,
+        "outputOhms": 5,
+        "referenceVolts": 0.775,
+        "timeConstantSeconds": 0.064,
+        "voltsPerDb": 0.0061
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 62
+      }
+    },
+    {
+      "id": "EnvelopeLongDecay",
+      "properties": {},
+      "type": "rmsdet",
+      "values": {
+        "inputOhms": 2000000.0,
+        "outputOhms": 5,
+        "referenceVolts": 0.775,
+        "timeConstantSeconds": 0.16,
+        "voltsPerDb": 0.0061
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 81
+      }
+    },
+    {
+      "id": "AttackDifferenceP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 56,
+        "y": 49
+      }
+    },
+    {
+      "id": "AttackDifferencePG",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 62,
+        "y": 60
+      }
+    },
+    {
+      "id": "AttackDifferenceN",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 55,
+        "y": 40
+      }
+    },
+    {
+      "id": "AttackDifference",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 46
+      }
+    },
+    {
+      "id": "AttackDifferenceFB",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 70,
+        "y": 37
+      }
+    },
+    {
+      "id": "AttackDifferenceRs",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2200
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 77,
+        "y": 46
+      }
+    },
+    {
+      "id": "AttackDifferenceFloor",
+      "properties": {
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.01,
+        "rs": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 84,
+        "y": 38
+      }
+    },
+    {
+      "id": "AttackDifferenceMax",
+      "properties": {
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.01,
+        "rs": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 54
+      }
+    },
+    {
+      "id": "AttackDifferenceReference",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 0.09150000000000001
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 93,
+        "y": 61
+      }
+    },
+    {
+      "id": "AttackDifferenceBuffer",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 46
+      }
+    },
+    {
+      "id": "SustainDifferenceP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 56,
+        "y": 85
+      }
+    },
+    {
+      "id": "SustainDifferencePG",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 62,
+        "y": 96
+      }
+    },
+    {
+      "id": "SustainDifferenceN",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 55,
+        "y": 76
+      }
+    },
+    {
+      "id": "SustainDifference",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 82
+      }
+    },
+    {
+      "id": "SustainDifferenceFB",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 70,
+        "y": 73
+      }
+    },
+    {
+      "id": "SustainDifferenceRs",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2200
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 77,
+        "y": 82
+      }
+    },
+    {
+      "id": "SustainDifferenceFloor",
+      "properties": {
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.01,
+        "rs": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 84,
+        "y": 74
+      }
+    },
+    {
+      "id": "SustainDifferenceMax",
+      "properties": {
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-07,
+        "n": 0.01,
+        "rs": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 90
+      }
+    },
+    {
+      "id": "SustainDifferenceReference",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 0.1464
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 93,
+        "y": 97
+      }
+    },
+    {
+      "id": "SustainDifferenceBuffer",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 82
+      }
+    },
+    {
+      "id": "ATKRi",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 95,
+        "y": 45
+      }
+    },
+    {
+      "id": "ATKInv",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 107,
+        "y": 45
+      }
+    },
+    {
+      "id": "ATKRf",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 107,
+        "y": 36
+      }
+    },
+    {
+      "id": "ATK",
+      "properties": {
+        "label": "Attack",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 123,
+        "y": 53
+      }
+    },
+    {
+      "id": "ATKBuffer",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 137,
+        "y": 53
+      }
+    },
+    {
+      "id": "SUSRi",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 95,
+        "y": 83
+      }
+    },
+    {
+      "id": "SUSInv",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 107,
+        "y": 83
+      }
+    },
+    {
+      "id": "SUSRf",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 107,
+        "y": 74
+      }
+    },
+    {
+      "id": "SUS",
+      "properties": {
+        "label": "Sustain",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 123,
+        "y": 91
+      }
+    },
+    {
+      "id": "SUSBuffer",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 137,
+        "y": 91
+      }
+    },
+    {
+      "id": "RAttackSum",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 149,
+        "y": 54
+      }
+    },
+    {
+      "id": "RSustainSum",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 149,
+        "y": 84
+      }
+    },
+    {
+      "id": "ControlSum",
+      "properties": {},
+      "type": "idealopamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 163,
+        "y": 67
+      }
+    },
+    {
+      "id": "RsumFeedback",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 165,
+        "y": 55
+      }
+    },
+    {
+      "id": "Vpos",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 18
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 104
+      }
+    },
+    {
+      "id": "Vneg",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": -18
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 115,
+        "y": 105
+      }
+    },
+    {
+      "id": "G1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 36
+      }
+    },
+    {
+      "id": "G2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 59,
+        "y": 21
+      }
+    },
+    {
+      "id": "G3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 27
+      }
+    },
+    {
+      "id": "G4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 80,
+        "y": 25
+      }
+    },
+    {
+      "id": "G5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 146,
+        "y": 37
+      }
+    },
+    {
+      "id": "G6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 39,
+        "y": 55
+      }
+    },
+    {
+      "id": "G7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 39,
+        "y": 69
+      }
+    },
+    {
+      "id": "G8",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 39,
+        "y": 88
+      }
+    },
+    {
+      "id": "G9",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 66,
+        "y": 66
+      }
+    },
+    {
+      "id": "G10",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 88,
+        "y": 40
+      }
+    },
+    {
+      "id": "G11",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 66,
+        "y": 102
+      }
+    },
+    {
+      "id": "G12",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 88,
+        "y": 76
+      }
+    },
+    {
+      "id": "G13",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 100,
+        "y": 50
+      }
+    },
+    {
+      "id": "G14",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 100,
+        "y": 88
+      }
+    },
+    {
+      "id": "G15",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 156,
+        "y": 72
+      }
+    }
+  ],
+  "description": "Functional mono model of the SPL 9842 with the differential-envelope architecture documented in the factory owner’s manual, diagrams 1–6. Attack compares a fast level follower with a slower attack estimate and Sustain compares a longer decay estimate with the same fast follower. The detector fit uses log RMS tracking times of 2 ms, 64 ms and 160 ms, so each difference follows relative level changes. The time constants, detector components and line stages are estimated. The independent bipolar controls cover ±15 dB Attack and ±24 dB Sustain. A native THAT2180 represents the 6.1 mV/dB control law of the factory THAT2181. The source and load are unbalanced equivalents, the line stage clips near the specified +22.4 dBu output ceiling, and linking, LED metering and relay bypass are omitted.",
+  "groundNode": "0",
+  "inputNode": "in",
+  "layout": {
+    "pots": [
+      "Attack",
+      "Sustain"
+    ]
+  },
+  "name": "SPL Transient Designer 9842 DET Model",
+  "outputNode": "out",
+  "version": 3,
+  "wires": [
+    {
+      "points": [
+        {
+          "x": 18,
+          "y": 32
+        },
+        {
+          "x": 22,
+          "y": 32
+        },
+        {
+          "x": 22,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 17
+        },
+        {
+          "x": 59,
+          "y": 17
+        },
+        {
+          "x": 59,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 64,
+          "y": 23
+        },
+        {
+          "x": 68,
+          "y": 23
+        },
+        {
+          "x": 68,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 21
+        },
+        {
+          "x": 80,
+          "y": 21
+        },
+        {
+          "x": 80,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 142,
+          "y": 33
+        },
+        {
+          "x": 146,
+          "y": 33
+        },
+        {
+          "x": 146,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 51
+        },
+        {
+          "x": 39,
+          "y": 51
+        },
+        {
+          "x": 39,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 65
+        },
+        {
+          "x": 39,
+          "y": 65
+        },
+        {
+          "x": 39,
+          "y": 67
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 84
+        },
+        {
+          "x": 39,
+          "y": 84
+        },
+        {
+          "x": 39,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 62,
+          "y": 62
+        },
+        {
+          "x": 66,
+          "y": 62
+        },
+        {
+          "x": 66,
+          "y": 64
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 36
+        },
+        {
+          "x": 88,
+          "y": 36
+        },
+        {
+          "x": 88,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 62,
+          "y": 98
+        },
+        {
+          "x": 66,
+          "y": 98
+        },
+        {
+          "x": 66,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 72
+        },
+        {
+          "x": 88,
+          "y": 72
+        },
+        {
+          "x": 88,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 46
+        },
+        {
+          "x": 100,
+          "y": 46
+        },
+        {
+          "x": 100,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 84
+        },
+        {
+          "x": 100,
+          "y": 84
+        },
+        {
+          "x": 100,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 160,
+          "y": 68
+        },
+        {
+          "x": 156,
+          "y": 68
+        },
+        {
+          "x": 156,
+          "y": 70
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 20
+        },
+        {
+          "x": 30,
+          "y": 16
+        },
+        {
+          "x": 24,
+          "y": 16
+        },
+        {
+          "x": 24,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 20
+        },
+        {
+          "x": 43,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 20
+        },
+        {
+          "x": 32,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 48
+        },
+        {
+          "x": 32,
+          "y": 62
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 62
+        },
+        {
+          "x": 32,
+          "y": 81
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 38,
+          "y": 48
+        },
+        {
+          "x": 38,
+          "y": 49
+        },
+        {
+          "x": 54,
+          "y": 49
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 53,
+          "y": 49
+        },
+        {
+          "x": 53,
+          "y": 76
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 38,
+          "y": 62
+        },
+        {
+          "x": 40,
+          "y": 62
+        },
+        {
+          "x": 40,
+          "y": 40
+        },
+        {
+          "x": 53,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 38,
+          "y": 81
+        },
+        {
+          "x": 54,
+          "y": 81
+        },
+        {
+          "x": 54,
+          "y": 85
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 46
+        },
+        {
+          "x": 93,
+          "y": 43
+        },
+        {
+          "x": 87,
+          "y": 43
+        },
+        {
+          "x": 87,
+          "y": 45
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 46
+        },
+        {
+          "x": 93,
+          "y": 49
+        },
+        {
+          "x": 125,
+          "y": 49
+        },
+        {
+          "x": 125,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 82
+        },
+        {
+          "x": 93,
+          "y": 79
+        },
+        {
+          "x": 87,
+          "y": 79
+        },
+        {
+          "x": 87,
+          "y": 81
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 82
+        },
+        {
+          "x": 93,
+          "y": 83
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 80
+        },
+        {
+          "x": 125,
+          "y": 80
+        },
+        {
+          "x": 125,
+          "y": 91
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 151,
+          "y": 54
+        },
+        {
+          "x": 151,
+          "y": 84
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 151,
+          "y": 66
+        },
+        {
+          "x": 160,
+          "y": 66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 151,
+          "y": 55
+        },
+        {
+          "x": 163,
+          "y": 55
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 27,
+          "y": 17
+        },
+        {
+          "x": 27,
+          "y": 15
+        },
+        {
+          "x": 117,
+          "y": 15
+        },
+        {
+          "x": 117,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 15
+        },
+        {
+          "x": 73,
+          "y": 104
+        },
+        {
+          "x": 68,
+          "y": 104
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 27,
+          "y": 23
+        },
+        {
+          "x": 27,
+          "y": 26
+        },
+        {
+          "x": 117,
+          "y": 26
+        },
+        {
+          "x": 117,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 26
+        },
+        {
+          "x": 115,
+          "y": 105
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 4,
+          "y": 20
+        },
+        {
+          "x": 10,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 47,
+          "y": 20
+        },
+        {
+          "x": 61,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 56
+        },
+        {
+          "x": 93,
+          "y": 56
+        },
+        {
+          "x": 93,
+          "y": 61
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 92
+        },
+        {
+          "x": 93,
+          "y": 92
+        },
+        {
+          "x": 93,
+          "y": 97
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 123,
+          "y": 56
+        },
+        {
+          "x": 134,
+          "y": 56
+        },
+        {
+          "x": 134,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 123,
+          "y": 94
+        },
+        {
+          "x": 134,
+          "y": 94
+        },
+        {
+          "x": 134,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 14,
+          "y": 20
+        },
+        {
+          "x": 18,
+          "y": 20
+        },
+        {
+          "x": 18,
+          "y": 28
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 18,
+          "y": 21
+        },
+        {
+          "x": 24,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 65,
+          "y": 17
+        },
+        {
+          "x": 65,
+          "y": 14
+        },
+        {
+          "x": 167,
+          "y": 14
+        },
+        {
+          "x": 167,
+          "y": 67
+        },
+        {
+          "x": 166,
+          "y": 67
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 120,
+          "y": 20
+        },
+        {
+          "x": 120,
+          "y": 16
+        },
+        {
+          "x": 114,
+          "y": 16
+        },
+        {
+          "x": 114,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 120,
+          "y": 20
+        },
+        {
+          "x": 130,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 134,
+          "y": 20
+        },
+        {
+          "x": 142,
+          "y": 20
+        },
+        {
+          "x": 142,
+          "y": 29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 142,
+          "y": 20
+        },
+        {
+          "x": 149,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 58,
+          "y": 49
+        },
+        {
+          "x": 62,
+          "y": 49
+        },
+        {
+          "x": 62,
+          "y": 58
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 62,
+          "y": 49
+        },
+        {
+          "x": 62,
+          "y": 47
+        },
+        {
+          "x": 65,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 57,
+          "y": 40
+        },
+        {
+          "x": 57,
+          "y": 45
+        },
+        {
+          "x": 65,
+          "y": 45
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 57,
+          "y": 40
+        },
+        {
+          "x": 72,
+          "y": 40
+        },
+        {
+          "x": 72,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 46
+        },
+        {
+          "x": 71,
+          "y": 43
+        },
+        {
+          "x": 68,
+          "y": 43
+        },
+        {
+          "x": 68,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 46
+        },
+        {
+          "x": 75,
+          "y": 46
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 58,
+          "y": 85
+        },
+        {
+          "x": 62,
+          "y": 85
+        },
+        {
+          "x": 62,
+          "y": 94
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 62,
+          "y": 85
+        },
+        {
+          "x": 62,
+          "y": 83
+        },
+        {
+          "x": 65,
+          "y": 83
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 57,
+          "y": 76
+        },
+        {
+          "x": 57,
+          "y": 81
+        },
+        {
+          "x": 65,
+          "y": 81
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 57,
+          "y": 76
+        },
+        {
+          "x": 72,
+          "y": 76
+        },
+        {
+          "x": 72,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 82
+        },
+        {
+          "x": 71,
+          "y": 79
+        },
+        {
+          "x": 68,
+          "y": 79
+        },
+        {
+          "x": 68,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 82
+        },
+        {
+          "x": 75,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 97,
+          "y": 45
+        },
+        {
+          "x": 97,
+          "y": 44
+        },
+        {
+          "x": 104,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 44
+        },
+        {
+          "x": 104,
+          "y": 42
+        },
+        {
+          "x": 109,
+          "y": 42
+        },
+        {
+          "x": 109,
+          "y": 36
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 45
+        },
+        {
+          "x": 110,
+          "y": 34
+        },
+        {
+          "x": 105,
+          "y": 34
+        },
+        {
+          "x": 105,
+          "y": 36
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 45
+        },
+        {
+          "x": 110,
+          "y": 53
+        },
+        {
+          "x": 121,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 140,
+          "y": 53
+        },
+        {
+          "x": 140,
+          "y": 50
+        },
+        {
+          "x": 134,
+          "y": 50
+        },
+        {
+          "x": 134,
+          "y": 52
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 140,
+          "y": 53
+        },
+        {
+          "x": 140,
+          "y": 54
+        },
+        {
+          "x": 147,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 97,
+          "y": 83
+        },
+        {
+          "x": 97,
+          "y": 82
+        },
+        {
+          "x": 104,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 82
+        },
+        {
+          "x": 104,
+          "y": 79
+        },
+        {
+          "x": 109,
+          "y": 79
+        },
+        {
+          "x": 109,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 83
+        },
+        {
+          "x": 110,
+          "y": 72
+        },
+        {
+          "x": 105,
+          "y": 72
+        },
+        {
+          "x": 105,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 83
+        },
+        {
+          "x": 121,
+          "y": 83
+        },
+        {
+          "x": 121,
+          "y": 91
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 140,
+          "y": 91
+        },
+        {
+          "x": 140,
+          "y": 88
+        },
+        {
+          "x": 134,
+          "y": 88
+        },
+        {
+          "x": 134,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 140,
+          "y": 88
+        },
+        {
+          "x": 140,
+          "y": 84
+        },
+        {
+          "x": 147,
+          "y": 84
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 20
+        },
+        {
+          "x": 67,
+          "y": 19
+        },
+        {
+          "x": 84,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 83,
+          "y": 19
+        },
+        {
+          "x": 83,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 83,
+          "y": 10
+        },
+        {
+          "x": 83,
+          "y": 0
+        },
+        {
+          "x": 84,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 20
+        },
+        {
+          "x": 90,
+          "y": 10
+        },
+        {
+          "x": 87,
+          "y": 10
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 88,
+          "y": 10
+        },
+        {
+          "x": 88,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 20
+        },
+        {
+          "x": 90,
+          "y": 21
+        },
+        {
+          "x": 114,
+          "y": 21
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 79,
+          "y": 46
+        },
+        {
+          "x": 84,
+          "y": 46
+        },
+        {
+          "x": 84,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 46
+        },
+        {
+          "x": 84,
+          "y": 52
+        },
+        {
+          "x": 90,
+          "y": 52
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 47
+        },
+        {
+          "x": 87,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 79,
+          "y": 82
+        },
+        {
+          "x": 84,
+          "y": 82
+        },
+        {
+          "x": 84,
+          "y": 76
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 82
+        },
+        {
+          "x": 84,
+          "y": 88
+        },
+        {
+          "x": 90,
+          "y": 88
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 83
+        },
+        {
+          "x": 87,
+          "y": 83
+        }
+      ]
+    }
+  ]
+}

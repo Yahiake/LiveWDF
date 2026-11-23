@@ -436,8 +436,8 @@
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 120,
-        "y": 23
+        "x": 92,
+        "y": 13
       }
     },
     {
@@ -528,23 +528,9 @@
         "x": 105,
         "y": 19
       }
-    },
-    {
-      "id": "C8",
-      "properties": {},
-      "type": "cap",
-      "values": {
-        "value": 4e-08
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 90,
-        "x": 112,
-        "y": 23
-      }
     }
   ],
-  "description": "",
+  "description": "Buffered GCB-95 signal-path topology from the ElectroSmash schematic. The output shares the AC-coupled top of the treadle pot, its wiper feeds the second transistor through a separate capacitor, and the 470 kΩ DC bias path bypasses the pot. The existing 2N3904 models approximate the reference MPSA13 and MPSA18 transistors. https://electrosmash.mas-effects.com/crybaby-gcb-95",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -929,18 +915,6 @@
       "points": [
         {
           "x": 84,
-          "y": 9
-        },
-        {
-          "x": 84,
-          "y": 17
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 84,
           "y": 21
         },
         {
@@ -1216,24 +1190,36 @@
     {
       "points": [
         {
-          "x": 106,
-          "y": 23
+          "x": 84,
+          "y": 16
         },
         {
-          "x": 110,
-          "y": 23
+          "x": 84,
+          "y": 17
         }
       ]
     },
     {
       "points": [
         {
-          "x": 114,
-          "y": 23
+          "x": 84,
+          "y": 16
         },
         {
-          "x": 118,
-          "y": 23
+          "x": 84,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 13
+        },
+        {
+          "x": 90,
+          "y": 13
         }
       ]
     }
