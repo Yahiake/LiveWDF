@@ -18,6 +18,10 @@
 #include "format/Document.h"
 
 namespace wdf {
+
+inline constexpr int kLivePotSlots = 16;
+inline constexpr float kLivePotStep = 0.005f;
+
 // ---------------------------------------------------------------------------
 // Live controls: the parts that move together.
 //
