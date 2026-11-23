@@ -1862,7 +1862,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
         return 1;
     }
 
@@ -1896,10 +1896,8 @@ int main(int argc, char** argv) {
             sweep = true;
         else if (arg == "--runtime-check")
             runtimeCheck = true;
-        else if (arg == "--fast-live")
+        else if (arg == "--fast-live" || arg == "--live-preview")
             solveQuality = 1.0f;
-        else if (arg == "--live-preview")
-            solveQuality = 2.0f;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)

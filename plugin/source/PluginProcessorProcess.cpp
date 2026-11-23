@@ -29,8 +29,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     if (offline)
         timerCallback();
 
-    const bool forceAccurate = shouldForceAccurate();
-    const bool useLiveQuality = !forceAccurate && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
+    const bool fastLive = !shouldForceAccurate() && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
 
     // Read audio gain parameters
     const float inputTrimDb = *apvts_.getRawParameterValue("input_trim");
@@ -83,17 +82,15 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // Try to acquire engine lock (never block audio thread)
     std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-    if (!lock.owns_lock() || !leftEngine_ || outNodeIndex_ < 0 || (forceAccurate && usingPreview_)) {
+    if (!lock.owns_lock() || !leftEngine_ || outNodeIndex_ < 0) {
         // Fallback: pass through with master gain
         buffer.applyGain(outputGain);
         outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
         return;
     }
 
-    // A supported preview uses the fitted model at the ordinary solve
-    // tolerance. Unsupported preview sheets use the Fast Live tolerance.
     constexpr double kFastLiveTolerance = 1e-7;
-    const double solveTolerance = useLiveQuality && !usingPreview_
+    const double solveTolerance = fastLive
         ? kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 

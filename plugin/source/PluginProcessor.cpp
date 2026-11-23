@@ -4,10 +4,6 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
-#include <array>
-#include <cstdint>
-#include <stdexcept>
-#include <string_view>
 
 namespace livewdf {
 
@@ -31,61 +27,6 @@ std::string describeRejection(const wdf::LiveWDFDocument& doc,
                " -- the circuit cannot be built";
 
     return "circuit rejected: " + engineMessage;
-}
-
-bool hasLivePreview(const wdf::LiveWDFDocument& doc) {
-    if (doc.name != "Boss BD-2 Blues Driver")
-        return false;
-
-    // The compact stages are fitted to this factory sheet. Include the wiring,
-    // model cards and component values in the check, with all knob positions neutral.
-    auto canonical = doc;
-    for (auto& component : canonical.components)
-        if (component.type == "pot" || component.type == "varres")
-            component.values["pos"] = 0.5;
-    constexpr std::uint64_t factoryBd2 = 0x3a795ec22f98d984ULL;
-    return static_cast<std::uint64_t>(juce::String(canonical.toJson()).hashCode64()) == factoryBd2;
-}
-
-template <typename Items>
-const auto& previewPart(const Items& items, std::string_view name) {
-    const auto part = std::find_if(items.begin(), items.end(),
-                                   [name](const auto& item) { return item.name == name; });
-    if (part == items.end())
-        throw std::runtime_error("missing Live Preview stage component");
-    return *part;
-}
-
-void replaceBd2Stage(wdf::Circuit& circuit, const std::array<std::string_view, 3>& devices,
-                     const std::array<std::string_view, 3>& passiveParts,
-                     const std::string& name, double lowerRail) {
-    const auto input = previewPart(circuit.jfet, devices[0]).gExt;
-    const auto feedback = previewPart(circuit.jfet, devices[1]).gExt;
-    const auto output = previewPart(circuit.bjt, devices[2]).c;
-    const auto supply = previewPart(circuit.bjt, devices[2]).e;
-    const auto isStageDevice = [&](const auto& item) {
-        return std::find(devices.begin(), devices.end(), item.name) != devices.end();
-    };
-    const auto isPrivatePart = [&](const auto& item) {
-        return std::find(passiveParts.begin(), passiveParts.end(), item.name) != passiveParts.end()
-            || std::any_of(devices.begin(), devices.end(), [&](auto device) {
-                return item.name.starts_with(device) && item.name.size() > device.size()
-                    && item.name[device.size()] == '$';
-            });
-    };
-    std::erase_if(circuit.jfet, isStageDevice);
-    std::erase_if(circuit.bjt, isStageDevice);
-    std::erase_if(circuit.res, isPrivatePart);
-    std::erase_if(circuit.cap, isPrivatePart);
-
-    // Keep the original stage feedback and loading outside the fitted stage.
-    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::M5218Al);
-    model.openLoopGain = 2000.0;
-    model.gbw = 7e6;
-    model.outputImpedance = 100.0;
-    model.setVRailBounds(lowerRail, 8.0);
-    circuit.addRes(input, feedback, 5e6, name + "$input");
-    circuit.addOpAmp(output, feedback, input, supply, "0", model, name);
 }
 
 }  // namespace
@@ -138,7 +79,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"solve_quality", 1}, "Solve Quality",
-        juce::StringArray{"Accurate", "Fast Live", "Live Preview"}, 0));
+        juce::StringArray{"Accurate", "Fast Live"}, 0));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"accurate_export", 1}, "Accurate export", true));
@@ -233,23 +174,18 @@ bool LiveWDFPluginProcessor::shouldForceAccurate() const {
     return isNonRealtime() && *apvts_.getRawParameterValue("accurate_export") > 0.5f;
 }
 
-bool LiveWDFPluginProcessor::wantsLivePreview() const {
-    return !shouldForceAccurate() && *apvts_.getRawParameterValue("solve_quality") > 1.5f;
-}
-
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
     constexpr int polyphase4x = 2;
     return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f
         ? polyphase4x : static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
 }
 
-// Changes to the engine topology or rate run here off the realtime thread.
+// Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (currentDoc_.components.empty()
         || (effectiveOversamplingChoice() == attemptedOversamplingChoice_
-            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_
-            && (previewAvailable_ && wantsLivePreview()) == attemptedPreview_))
+            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_))
         return;
 
     // Keep the file path and the host's live knob values through the rebuild.
@@ -258,7 +194,7 @@ void LiveWDFPluginProcessor::timerCallback() {
     currentFile_ = circuitFile;
 }
 
-void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs, bool preview,
+void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                                                std::unique_ptr<wdf::Engine>& left,
                                                std::unique_ptr<wdf::Engine>& right,
                                                int& inSrcIdx, int& outIdx,
@@ -272,10 +208,6 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     wdf::Circuit c;
     try {
         c = doc.toCircuit();
-        if (preview) {
-            replaceBd2Stage(c, {"Q10", "Q11", "Q9"}, {"R28", "R30", "C21"}, "PreviewA", 0.03);
-            replaceBd2Stage(c, {"Q14", "Q13", "Q12"}, {"R33", "R36", "C20"}, "PreviewB", 0.0);
-        }
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -412,22 +344,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::vector<double> baseSources;
     std::vector<AcSource> acSources;
 
-    const bool previewAvailable = hasLivePreview(doc);
-    const bool requestPreview = previewAvailable && wantsLivePreview();
-    bool preview = requestPreview;
-    buildEngineFromDoc(doc, effectiveFs, preview, newLeft, newRight, inSrcIdx, outIdx, baseSources, acSources);
-    if (preview && (!newLeft || !newRight || outIdx < 0)) {
-        // Treat a failed compact build like an unsupported sheet.
-        preview = false;
-        lastError_.clear();
-        buildEngineFromDoc(doc, effectiveFs, preview, newLeft, newRight, inSrcIdx, outIdx, baseSources, acSources);
-    }
+    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources, acSources);
 
     if (!newLeft || !newRight) {
         return false;
     }
-    previewAvailable_ = previewAvailable;
-    attemptedPreview_ = requestPreview;
 
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
@@ -443,7 +364,6 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
         rightEngine_ = std::move(newRight);
-        usingPreview_ = preview;
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;

@@ -92,9 +92,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
 
     solveQualityCombo_.addItem("Accurate", 1);
     solveQualityCombo_.addItem("Fast Live", 2);
-    solveQualityCombo_.addItem("Live Preview", 3);
-    solveQualityCombo_.setTooltip("Fast Live relaxes solver precision during playback. "
-                                  "Live Preview uses a compact model on the factory Boss BD-2 and Fast Live elsewhere.");
+    solveQualityCombo_.setTooltip("Fast Live uses a looser solver tolerance.");
     addAndMakeVisible(solveQualityCombo_);
     solveQualityAttach_ = std::make_unique<ComboBoxAttachment>(
         processor_.getAPVTS(), "solve_quality", solveQualityCombo_);
