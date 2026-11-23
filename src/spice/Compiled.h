@@ -107,6 +107,7 @@ struct Compiled {
         int ic = -1, ib = -1, ie = -1;
         BjtModel model;
         std::string name;
+        bool validModel = false;
     };
     std::vector<CompiledBjt> bjt;
     /// Op-Amp: three root ports, all referenced to ground:
@@ -324,6 +325,7 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         cb.ie = slotIndex(b.e);
         cb.model = b.model;
         cb.name = b.name;
+        cb.validModel = cb.model.valid();
         out.bjt.push_back(std::move(cb));
     }
     for (const auto& o : c.opamp) {
