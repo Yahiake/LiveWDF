@@ -68,13 +68,19 @@ public:
     }
 
     double step(double input, double control, double samplePeriod) noexcept {
+        if (!std::isfinite(input) || !std::isfinite(control) ||
+            !std::isfinite(samplePeriod) || !(samplePeriod > 0.0))
+            return output_;
         const double cycles = samplePeriod / model_.clockPeriod(control);
         const double nextPhase = phase_ + cycles;
         // Floating-point rounding must not move an exactly aligned clock edge
         // to the following host sample, e.g. 25 edges per 12 samples at 48 kHz.
         const double edgeTolerance = 8.0 * std::numeric_limits<double>::epsilon() *
                                      std::max(1.0, nextPhase);
-        const auto clockEdges = static_cast<unsigned>(nextPhase + edgeTolerance);
+        const double edges = nextPhase + edgeTolerance;
+        if (!(edges >= 0.0 && edges < std::ldexp(1.0, std::numeric_limits<unsigned>::digits)))
+            return output_;
+        const auto clockEdges = static_cast<unsigned>(edges);
         for (unsigned i = 0; i < clockEdges; ++i) {
             const double at = (1.0 - phase_ + i) / cycles;
             const double sample = std::lerp(previousInput_, input, std::clamp(at, 0.0, 1.0));
