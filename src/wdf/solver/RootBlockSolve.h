@@ -216,6 +216,21 @@ public:
                 break;
             }
         }
+        if (hasOpAmp && n >= 4 && !relaxed) {
+            // In coupled stages the preceding two samples give a useful
+            // first iterate. Keep the guess local to the last accepted
+            // voltage. All subsequent step limits and residual gates apply.
+            constexpr double maxPrediction = 0.05;
+            for (int di : block.devices) {
+                const auto& dev = ctx.rootDevices[di];
+                for (int i = dev.portBase; i < dev.portBase + dev.numPorts; ++i) {
+                    const size_t r = static_cast<size_t>(i);
+                    const double delta = ctx.vvPrev[r] - ctx.vvPrev2[r];
+                    if (std::isfinite(delta))
+                        ctx.blockV[r] += std::clamp(delta, -maxPrediction, maxPrediction);
+                }
+            }
+        }
         if (!hasOpAmp) {
             for (int c : block.ports) {
                 const double prev = ctx.ii[static_cast<size_t>(c)];
