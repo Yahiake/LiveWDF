@@ -455,6 +455,29 @@ struct OpAmpModel {
 
     bool hasClassABOutput() const noexcept { return outputCurrentLimit > 0.0; }
 
+    /// Smallest voltage error that gives the specified Class AB current.
+    /// This inverts the same symmetric steering fractions as outputCurrent.
+    double classABVoltageError(double current, double& conductance) const noexcept {
+        const double limit = outputCurrentLimit;
+        const double ratio = outputJunctionIs / kSteeringDiodeIs;
+        const double total = limit + outputJunctionIs + kSteeringDiodeIs;
+        const double magnitude = std::min(std::abs(current), limit);
+        const double f = magnitude / total;
+        const double linear = f * (1.0 + ratio * ratio);
+        // Solve r(1+f)y² + f(1+r²)y - r(1-f) = 0 for y = exp(-|v|/VT).
+        double y = 2.0 * ratio * (1.0 - f) /
+                   (linear + std::sqrt(linear * linear + 4.0 * ratio * ratio * (1.0 - f * f)));
+        const bool oneBranch = y < kSteeringDiodeIs / (limit + kSteeringDiodeIs);
+        if (oneBranch)
+            y = ratio * (total / (magnitude + outputJunctionIs) - 1.0);
+        const double entering = ratio / (ratio + y);
+        const double weak = ratio * y;
+        const double leaving = weak / (1.0 + weak);
+        conductance = (entering * (1.0 - entering) +
+                       (oneBranch ? 0.0 : leaving * (1.0 - leaving))) * total / kThermalVoltage;
+        return std::copysign(-kThermalVoltage * std::log(y), current);
+    }
+
     /// Current into the modeled output pin for V(out) - V(pole). The symmetric
     /// class-AB cards have the same ideality on both steering paths and no
     /// series resistor. This inverts the two diode branches sampled by
