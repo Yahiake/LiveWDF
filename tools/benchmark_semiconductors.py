@@ -26,6 +26,7 @@ MISTER_MODELS = {
     '1n34a-mister': ('d1n34a', 'd1n34a'),
     '1n4002': ('1n4002', '1n4002'),
 }
+LOW_LEAKAGE = ('1n914-nexperia', '1s2075', '1n4002')
 
 SOURCE_REFERENCES = {
     '2n3904-mister': ('onsemi 2N3904, p. 2', 'https://www.onsemi.com/pdf/datasheet/2n3904-d.pdf'),
@@ -80,7 +81,7 @@ def run_ngspice(executable, path, stem):
                    capture_output=True, text=True, check=True)
 
 
-def source_deck(exported, sweep, model, card, kind):
+def source_deck(exported, sweep, model, card, kind, vendor_shunt=False):
     body, control = exported.split('\n.control\n', 1)
     # Keep the exact fixture and .options, replacing only the exported DUT.
     parts = body.splitlines()
@@ -91,6 +92,8 @@ def source_deck(exported, sweep, model, card, kind):
     else:
         fixture = [line for line in parts if line.lower().startswith(('v_input ', 'r_meter '))]
         element = f'D_original sense 0 {model}'
+        if vendor_shunt:
+            fixture.append('R_vendor sense 0 5.827e9')
     control = control.replace(f'{sweep}-ngspice.txt', f'{sweep}-original.txt')
     return '\n'.join(['Original MiSTer model, measured with the LiveWDF fixture',
                        *fixture, element, card, options, '.control', control])
@@ -116,11 +119,13 @@ def load_sweep(path, row, spice, mister_repo):
     run_ngspice(spice, path, f'{identifier}-export')
     export = ngspice_traces(path, row, 'ngspice')
     curves = [native, export]
-    if mister_repo and row['id'] in MISTER_MODELS:
-        model, card = get_mister_model(mister_repo, row['id'])
+    donor = row['id'].removesuffix('-lowleakage')
+    if mister_repo and donor in MISTER_MODELS:
+        model, card = get_mister_model(mister_repo, donor)
         filename = path / f'{identifier}-original.cir'
         template = (path / f'{identifier}-export.cir').read_text()
-        filename.write_text(source_deck(template, identifier, model, card, row['kind']))
+        vendor_shunt = row['id'] == '1n914-nexperia-lowleakage'
+        filename.write_text(source_deck(template, identifier, model, card, row['kind'], vendor_shunt))
         run_ngspice(spice, path, f'{identifier}-original')
         curves.append(ngspice_traces(path, row, 'original'))
     for curve in curves[1:]:
@@ -154,7 +159,7 @@ def interpolate(x, y, value):
 
 
 def physical_checks(item, forward, reverse):
-    base = item.removesuffix('-ikf')
+    base = item.removesuffix('-ikf').removesuffix('-lowleakage')
     card = forward[0]
     if base in BJT_GAIN:
         test_i, low, high = BJT_GAIN[base]
@@ -166,7 +171,10 @@ def physical_checks(item, forward, reverse):
         idss = interpolate(card[:, 2], card[:, 3], 0)
         yield f'IDSS {idss*1000:.3g} mA at VGS 0 V (range {low*1000:g}–{high*1000:g} mA)', low <= idss <= high
         test_i = 1e-7 if base == '2sk184-gr' else 1e-8
-        vgs = abs(interpolate(card[:, 3], card[:, 2], test_i))
+        above = np.flatnonzero(card[:, 3] >= test_i)
+        crossing = above[0] if len(above) else 0
+        vgs = abs(interpolate(card[crossing-1:crossing+1, 3],
+                              card[crossing-1:crossing+1, 2], test_i)) if crossing else np.nan
         low, high = (.2, 1.5) if base == '2sk184-gr' else (1.0, 7.0)
         yield (f'|VGS(off)| {vgs:.3g} V at {test_i*1e9:g} nA (range {low:g}–{high:g} V)',
                low <= vgs <= high)
@@ -176,16 +184,19 @@ def physical_checks(item, forward, reverse):
         rev = reverse[0]
         ir = abs(interpolate(rev[:, 1], rev[:, 3], -test_v))
         yield f'VF {vf:.3g} V at {test_i*1000:g} mA (max {vf_limit:g} V)', vf <= vf_limit
-        yield (f'IR {ir*1e6:.3g} µA at {test_v:g} V reverse (max {ir_limit*1e6:g} µA, {ir/ir_limit:.1f}×)',
+        yield (f'IR {ir*1e6:.3g} µA at {test_v:g} V reverse (max {ir_limit*1e6:g} µA, {ir/ir_limit:.3g}×)',
                ir <= ir_limit)
 
 
 def plot_card(path, part, kind, title, data):
     _, curves = data[part]
     reverse = data[part + '-reverse'][1] if kind == 'diode' else None
+    series = SERIES
+    if part == '1n914-nexperia-lowleakage':
+        series = [*SERIES[:2], ('Nexperia junction and shunt', *SERIES[2][1:])]
     fig, axes = plt.subplots(3, 1, figsize=(8.0, 9.2), layout='constrained')
     fig.suptitle(title, fontsize=17, weight='bold', x=.025, ha='left')
-    for curve, (name, color, style) in zip(curves, SERIES):
+    for curve, (name, color, style) in zip(curves, series):
         terminal, bias, current, bias_i = curve[:, 1:].T
         control = terminal if kind == 'diode' else bias
         axes[0].semilogy(np.abs(control) if kind == 'bjt' else control,
@@ -198,9 +209,9 @@ def plot_card(path, part, kind, title, data):
         elif kind == 'jfet':
             axes[1].plot(bias, 1000*current, c=color, ls=style, lw=1.8)
     if reverse:
-        for curve, (name, color, style) in zip(reverse, SERIES):
+        for curve, (name, color, style) in zip(reverse, series):
             axes[1].plot(-curve[:, 1], -curve[:, 3]*1e6, c=color, ls=style, lw=1.8, label=name)
-        limits = DIODE_LIMITS.get(part)
+        limits = DIODE_LIMITS.get(part.removesuffix('-lowleakage'))
         if limits:
             test_i, vf, test_v, ir = limits
             axes[0].plot([vf], [1000*test_i], marker='v', ms=7, color='#243036', label='Manufacturer maximum')
@@ -222,7 +233,7 @@ def plot_card(path, part, kind, title, data):
                              color='#243036', capsize=4, label='Manufacturer IDSS range')
     axes[0].set(xlabel={'bjt': '|Base–emitter voltage| (V)', 'jfet': 'Gate–source voltage (V)',
                         'diode': 'Forward terminal voltage (V)'}[kind], ylabel='Current magnitude (mA)')
-    for curve, (label, color, style) in zip(curves[1:], SERIES[1:]):
+    for curve, (label, color, style) in zip(curves[1:], series[1:]):
         delta = np.abs(curves[0][:, 3] - curve[:, 3])
         axes[2].semilogy(curves[0][:, 0], np.maximum(delta, 1e-15)*1e6,
                          c=color, ls=style, lw=1.8, label=f'vs. {label}')
@@ -232,6 +243,33 @@ def plot_card(path, part, kind, title, data):
         if axis.get_legend_handles_labels()[0]:
             axis.legend(frameon=False, loc='best')
     fig.savefig(path / f'{part}.png', dpi=160)
+    plt.close(fig)
+
+
+def plot_leakage_comparison(path, cases):
+    if not all(f'{ident}-lowleakage' in cases and ident in cases for ident in LOW_LEAKAGE):
+        return
+    fig, axes = plt.subplots(2, 3, figsize=(12, 6), layout='constrained')
+    fig.suptitle('Diode shunt comparison', fontsize=17, weight='bold')
+    for (reverse, forward), ident in zip(axes.T, LOW_LEAKAGE):
+        corrected = f'{ident}-lowleakage'
+        reverse.set_title(cases[ident][0]['card'], weight='bold')
+        for key, label, color in ((ident, 'Original LiveWDF card', '#175c85'),
+                                  (corrected, 'LowLeakage card', '#cf6022')):
+            curve = cases[key+'-reverse'][1][0]
+            reverse.semilogy(-curve[1:, 1], np.abs(curve[1:, 3])*1e6,
+                             color=color, label=label, lw=1.8)
+        _, _, test_v, limit = DIODE_LIMITS[ident]
+        reverse.plot([test_v], [limit*1e6], '^', color='#243036', label='Manufacturer maximum')
+        reverse.set(xlabel='Reverse voltage (V)', ylabel='Reverse current (µA)')
+        before, after = cases[ident][1][0], cases[corrected][1][0]
+        aligned = np.interp(before[:, 1], after[:, 1], after[:, 3])
+        forward.plot(before[:, 1], (before[:, 3] - aligned)*1e6, color='#175c85', lw=1.8)
+        forward.set(xlabel='Forward voltage (V)', ylabel='Current reduction (µA)')
+        reverse.grid(alpha=.24)
+        forward.grid(alpha=.24)
+    axes[0, 0].legend(frameon=False)
+    fig.savefig(path / 'leakage-before-after.png', dpi=160)
     plt.close(fig)
 
 
@@ -265,7 +303,7 @@ def report(path, cases, metrics):
             ident = row['id']
             _, primary = cases[ident]
             reverse = cases.get(ident+'-reverse')
-            ref_case = ident.removesuffix('-ikf')
+            ref_case = ident.removesuffix('-ikf').removesuffix('-lowleakage')
             for summary, meets in physical_checks(ident, primary, reverse[1] if reverse else None):
                 reference = SOURCE_REFERENCES[ref_case]
                 title = cases[ident][0]['card']
@@ -273,6 +311,12 @@ def report(path, cases, metrics):
                 summary = summary.replace('|', r'\|')
                 file.write(f'| {title} | {summary}. [{reference[0]}]({reference[1]}) | {result} |\n')
         file.write('\n[DC residuals](residuals.csv) · [timing and diagnostic counts](timing.csv)\n')
+        if (path / 'clipping-timing.csv').exists():
+            file.write('\nThe clipping fixture uses two opposing diodes, a 1 kΩ source resistance '
+                       'and a 100 kΩ load. It uses the same timing protocol and a ±1.8 V sine. '
+                       '[Clipping timing](clipping-timing.csv)\n')
+        if (path / 'leakage-before-after.png').exists():
+            file.write('\n[Forward and reverse shunt comparison](leakage-before-after.png)\n')
 
 
 def main():
@@ -309,6 +353,7 @@ def main():
     for ident, (row, _) in cases.items():
         if ident == row['id']:
             plot_card(output, ident, row['kind'], row['card'], cases)
+    plot_leakage_comparison(output, cases)
     report(output, cases, metrics)
 
 

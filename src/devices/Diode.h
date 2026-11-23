@@ -439,7 +439,7 @@ struct DiodeEntry {
 };
 
 /// The original Cathodyne cards use the ATTILA extended Shockley fit for
-/// 1N4148/1N914. The named presets retain the same 1 Mohm conductance floor.
+/// 1N4148/1N914 with a 1 Mohm conductance floor.
 inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N4148", 4.352e-9, 1.905, 0.56, 1e6},
     {"1N914",  4.352e-9, 1.905, 0.56, 1e6},
@@ -462,6 +462,12 @@ inline constexpr DiodeEntry kDiodeTable[] = {
     {"1S2075",        1.387e-9, 1.702, 1.53,   1e6, 75.0, 100e-15},
     {"1N34A-MiSTer",  2.6e-6,   1.6,   4.0,    1e6},
     {"1N4002",        14.11e-9, 1.984, 0.03389,1e6},
+    // Nexperia's 1N4148 model fits reverse leakage with a 5.827 Gohm shunt.
+    // https://assets.nexperia.com/documents/spice-model/1N4148.txt
+    // The 1S2075 and 1N4002 MiSTer source cards have no parallel resistor.
+    {"1N914-Nexperia-LowLeakage", 4.352e-9, 1.906, 0.6458, 5.827e9, 110.0, 1e-4},
+    {"1S2075-LowLeakage",         1.387e-9, 1.702, 1.53,   0.0,      75.0, 100e-15},
+    {"1N4002-LowLeakage",         14.11e-9, 1.984, 0.03389, 0.0},
     // Intrinsic BV subtracts IZT * Rs from the documented terminal voltage.
     {"1N5231B",       1e-14,    1.0,  17.0,    1e6, 5.1 - 0.02 * 17.0, 0.02},
     {"1N5236B",       1e-14,    1.0,   6.0,    1e6, 7.5 - 0.02 * 6.0,  0.02},
