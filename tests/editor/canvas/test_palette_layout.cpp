@@ -41,8 +41,8 @@ struct RowGeometry {
     /// less the pill's 2px inset.
     int symbolColumn;
 
-    /// The width left for the name and the shortcut, after the symbol column
-    /// and the 6px inset that follows it.
+    /// The width left for the name and shortcut after the symbol column
+    /// and the 6px inset on either side of the text.
     int textWidth;
 };
 
@@ -53,7 +53,7 @@ RowGeometry rowGeometry() {
     const int rowWidth = layout::kPaletteWidth - 2 * kPanelInset;
     const int symbolColumn = layout::kPaletteRowHeight - 4;
 
-    return {rowWidth, symbolColumn, rowWidth - symbolColumn - kTextInset};
+    return {rowWidth, symbolColumn, rowWidth - symbolColumn - 2 * kTextInset};
 }
 
 }  // namespace
@@ -90,11 +90,19 @@ TEST_CASE("Every palette name fits beside its shortcut", "[palette][layout]") {
                               << "column " << shortcutColumn << "px");
 
     for (const auto& spec : partPalette()) {
+        const auto name = juce::String(spec.paletteLabel());
         INFO("part: " << spec.paletteLabel());
-
-        const auto nameWidth =
-            juce::GlyphArrangement::getStringWidth(nameFont, spec.paletteLabel());
-        CHECK(nameWidth + shortcutColumn <= static_cast<float>(geometry.textWidth));
+        const int reserved = displayShortcut(spec.key).isEmpty() ? 0 : shortcutColumn;
+        const auto width = static_cast<float>(geometry.textWidth - reserved);
+        juce::GlyphArrangement original;
+        original.addLineOfText(nameFont, name, 0.0f, 0.0f);
+        juce::GlyphArrangement fitted;
+        fitted.addFittedText(nameFont, name, 0.0f, 0.0f, width,
+                             static_cast<float>(geometry.symbolColumn),
+                             juce::Justification::centredLeft, 1, metrics::kNameMinimumHorizontalScale);
+        REQUIRE(fitted.getNumGlyphs() == original.getNumGlyphs());
+        for (int i = 0; i < original.getNumGlyphs(); ++i)
+            CHECK(fitted.getGlyph(i).getCharacter() == original.getGlyph(i).getCharacter());
     }
 }
 

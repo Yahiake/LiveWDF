@@ -412,7 +412,8 @@ void PartPalettePanel::paint(juce::Graphics& g) {
 
             g.setColour(ink);
             g.setFont(Fonts::light(static_cast<float>(metrics::kNameHeight)));
-            g.drawText(spec.paletteLabel(), textArea, juce::Justification::centredLeft, true);
+            g.drawFittedText(spec.paletteLabel(), textArea, juce::Justification::centredLeft,
+                             1, metrics::kNameMinimumHorizontalScale);
 
             if (shortcut.isNotEmpty()) {
                 g.setColour(ink.withAlpha(0.5f));
