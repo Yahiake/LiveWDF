@@ -126,6 +126,8 @@ public:
         prepareAdjustableTransfer();
     }
 
+    bool hasAdjustedLiveTransfer() const noexcept { return adjustableTransfer_.active(); }
+
     /// Apply the same taper and resistor values as setParametersByIndex.
     /// A failed update leaves both the old settings and the old transfer live.
     bool setLiveControls(const std::vector<std::pair<int, double>>& pots,

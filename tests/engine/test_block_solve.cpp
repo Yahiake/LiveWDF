@@ -130,6 +130,86 @@ TEST_CASE("block solve matches joint Newton: shared-cathode pair plus diodes",
                        &sharedCathodePairAndDiodes);
 }
 
+TEST_CASE("prepared affine regions preserve a coupled root through clipping and rebuilds",
+          "[engine][blocksolve][affine]") {
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(7.0, 7.0);
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "sum", 10e3, "Input");
+    c.addRes("out", "sum", 100e3, "Feedback");
+    c.addCap("out", "0", 100e-12);
+    c.addOpAmp("out", "sum", "0", "0", "0", model, "U");
+    c.addDiode("out", "sum", wdf::DiodeModel(1e-11, 2.0, 10.0), "D1");
+    c.addDiode("sum", "out", wdf::DiodeModel(1e-11, 2.0, 10.0), "D2");
+    c.addRes("out", "load", 1e3);
+    c.addDiode("load", "0", wdf::DiodeModel(1e-11, 2.0, 10.0), "D3");
+    c.addVarRes("in", "aux", 22e3, 0.5, wdf::PotTaper::Linear, "Aux");
+    c.addRes("aux", "0", 10e3);
+
+    wdf::Engine full(c, kFs);
+    wdf::Engine reduced(c, kFs);
+    reduced.prepareLiveControls();
+    REQUIRE(reduced.prepareMixedAffineReduction(0) > 0);
+    const auto verify = [&](int first, int end) {
+        std::vector<double> input(1);
+        double peakDifference = 0.0;
+        for (int n = first; n < end; ++n) {
+            const double drive = n < 1000 ? 0.02 : (n < 2500 ? 2.0 : 0.35);
+            input[0] = drive * sine(1.0, n);
+            const auto& expected = full.step(input);
+            const auto& actual = reduced.step(input);
+            REQUIRE_FALSE(full.lastStateRejected());
+            REQUIRE_FALSE(reduced.lastStateRejected());
+            for (size_t node = 0; node < expected.size(); ++node)
+                peakDifference = std::max(peakDifference, std::abs(expected[node] - actual[node]));
+        }
+        CHECK(peakDifference < 1e-7);
+    };
+    verify(0, 3000);
+    REQUIRE(reduced.mixedAffineAccepted() > 0);
+    CHECK(reduced.mixedAffineAccepted() <= reduced.mixedAffineAttempts());
+
+    const auto attempts = reduced.mixedAffineAttempts();
+    auto stale = reduced.captureMixedAffineSetup(0);
+    REQUIRE(stale);
+    stale->build();
+    CHECK_FALSE(full.installMixedAffineSetup(*stale));
+
+    // This resistor changes the network but leaves the root impedance
+    // untouched, so a matrix comparison alone cannot detect the live edit.
+    const auto revision = reduced.linearRebuilds();
+    REQUIRE(reduced.setLiveControls({}, {{0, 0.75}}));
+    REQUIRE(full.setVarResPosition(0, 0.75));
+    CHECK(reduced.linearRebuilds() == revision);
+    CHECK_FALSE(reduced.captureMixedAffineSetup(0));
+    CHECK_FALSE(reduced.installMixedAffineSetup(*stale));
+    verify(3000, 3250);
+    CHECK(reduced.mixedAffineAttempts() == attempts);
+    REQUIRE(reduced.setLiveControls({}, {{0, 0.5}}));
+    REQUIRE(full.setVarResPosition(0, 0.5));
+    REQUIRE(reduced.captureMixedAffineSetup(0));
+    REQUIRE(reduced.installMixedAffineSetup(*stale));
+
+    REQUIRE(reduced.setResistance("Feedback", 47e3));
+    REQUIRE(full.setResistance("Feedback", 47e3));
+    CHECK_FALSE(reduced.installMixedAffineSetup(*stale));
+    verify(3000, 3500);
+    CHECK(reduced.mixedAffineAttempts() == attempts);
+
+    auto current = reduced.captureMixedAffineSetup(0);
+    REQUIRE(current);
+    current->build();
+    REQUIRE(reduced.installMixedAffineSetup(*current));
+    reduced.useMixedAffineReduction(false);
+    verify(3500, 3750);
+    CHECK(reduced.mixedAffineAttempts() == attempts);
+
+    reduced.useMixedAffineReduction(true);
+    verify(3750, 4000);
+    CHECK(reduced.mixedAffineAttempts() > attempts);
+}
+
 TEST_CASE("block solve stands down where the joint Newton measured no win",
           "[blocksolve]") {
     // Two blocks, only one of them scalar-capable: the joint matrix is still

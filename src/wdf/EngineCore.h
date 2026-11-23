@@ -1267,6 +1267,9 @@ protected:
     /// True when at least one block has an affine-device reduction (op-amps or
     /// controlled resistors eliminated from the Newton unknowns). A single
     /// such block is worth the block path even though `blockCount_ == 1`.
+    bool mixedAffineEnabled_ = true;
+    long long mixedAffineAttempts_ = 0;
+    long long mixedAffineAccepted_ = 0;
     bool hasLinearReduction_ = false;
 
     Dense linY_, linRhs_, linXe_, linXr_;

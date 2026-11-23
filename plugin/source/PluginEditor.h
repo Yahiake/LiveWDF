@@ -6,6 +6,7 @@
 #include "PluginProcessor.h"
 #include "gui/VintageKnob.h"
 #include "gui/DualOscilloscope.h"
+#include "PresetLibraryPanel.h"
 #include "SchematicEditor.h"
 #include "UiLookAndFeel.h"
 
@@ -54,6 +55,10 @@ private:
     juce::TextButton aboutBtn_ { "ABOUT" };
 
     juce::ComboBox oversamplingCombo_;
+    juce::ToggleButton reportLatencyBtn_{"Report latency"};
+    juce::ToggleButton oversampleExportBtn_ { "4× export" };
+    juce::ComboBox solveQualityCombo_;
+    juce::ToggleButton accurateExportBtn_ { "Accurate export" };
 
     /// Mono is the default. One engine instead of two is the single largest
     /// saving on the plugin path, and a mono amp chain does not need a second
@@ -68,6 +73,7 @@ private:
     /// plugin is playing *the thing I just saved*", which is the whole question
     /// when the editor and the plugin are both open.
     juce::Label statusLabel_;
+    editor::FactoryPresetStepper presetStepper_{*this, statusLabel_};
 
     // Central schematic. This is the editor's own canvas, embedded read-only:
     // the plugin plays a circuit, the editor draws it, and both use the same
@@ -106,17 +112,22 @@ private:
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
     std::unique_ptr<ComboBoxAttachment> oversamplingAttach_;
+    std::unique_ptr<ButtonAttachment> reportLatencyAttach_;
+    std::unique_ptr<ButtonAttachment> oversampleExportAttach_;
+    std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
+    std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
-    juce::Array<juce::File> factoryFiles_;
+    juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 
     void rebuildDynamicControls();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
-    void showFactoryMenu();
+    void showFactoryBrowser();
 
     /// Load a file and update every part of the editor that depends on it.
     /// Returns false and puts the reason in the status line when the document

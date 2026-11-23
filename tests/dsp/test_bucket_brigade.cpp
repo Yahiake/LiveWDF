@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -101,6 +102,24 @@ TEST_CASE("engine BBD resets its wet path and recirculates delayed audio", "[bbd
     const auto deck = wdf::spiceExport(circuit, kSampleRate, 0.05);
     REQUIRE(deck.ok);
     REQUIRE(deck.diagnostics.find("transient wet path omitted") != std::string::npos);
+}
+
+TEST_CASE("an invalid BBD clock holds its last charge and resumes on the next valid sample", "[bbd][dsp]") {
+    auto model = clockedModel();
+    model.stages = 4;
+    wdf::BucketBrigadeState reference(model), device(model);
+    const double period = 1.0 / kSampleRate;
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+
+    for (int sample = 0; sample < 8; ++sample) {
+        const double input = .1 * sample;
+        const double expected = reference.step(input, 0.0, period);
+        REQUIRE(device.step(input, 0.0, period) == expected);
+        REQUIRE(device.step(.9, nan, period) == expected);
+        REQUIRE(device.step(nan, 0.0, period) == expected);
+        REQUIRE(device.step(.9, 0.0, -period) == expected);
+        REQUIRE(device.step(.9, 0.0, 1e10) == expected);
+    }
 }
 
 TEST_CASE("BBD settles and seeds the wet history at an off-center DC bias",

@@ -2,6 +2,8 @@
 
 #include <juce_core/juce_core.h>
 
+#include <vector>
+
 namespace livewdf {
 
 /// The factory circuits that ship with the editor and the plugin.
@@ -16,6 +18,15 @@ namespace livewdf {
 /// `Factory/`, not inside it.
 class FactorySchematics {
 public:
+    enum class Collection { Amps, Pedals, Studio, Other };
+
+    struct Preset {
+        juce::File file;
+        Collection collection;
+        juce::String effect;
+        bool featured;
+    };
+
     /// `Documents/LiveWDF/Factory`.
     static juce::File folder();
 
@@ -29,8 +40,9 @@ public:
     /// Documents folder.
     static juce::Result ensureInstalledAt(const juce::File& targetFolder);
 
-    /// Every `.livewdf` file under the factory folder, sorted for a menu.
-    static juce::Array<juce::File> list();
+    /// Classify and sort the installed catalog without reading the circuits.
+    static std::vector<Preset> list(const juce::File& root);
+    static juce::String collectionName(Collection collection);
 };
 
 } // namespace livewdf

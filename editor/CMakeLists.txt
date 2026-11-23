@@ -73,6 +73,11 @@ set(LIVEWDF_EDITOR_CORE_SOURCES
     gui/ScopeView.h
 )
 
+add_library(LiveWDF_FastLiveCache STATIC source/FastLiveCache.cpp)
+set_target_properties(LiveWDF_FastLiveCache PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_compile_definitions(LiveWDF_FastLiveCache PRIVATE JUCE_USE_CURL=0)
+target_link_libraries(LiveWDF_FastLiveCache PRIVATE livewdf livewdf_options juce::juce_cryptography)
+
 add_library(LiveWDF_EditorCore STATIC ${LIVEWDF_EDITOR_CORE_SOURCES})
 set_target_properties(LiveWDF_EditorCore PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(LiveWDF_EditorCore PUBLIC
@@ -98,6 +103,7 @@ target_link_libraries(LiveWDF_EditorCore PUBLIC
     juce::juce_gui_basics
     juce::juce_recommended_config_flags
     juce::juce_recommended_warning_flags
+    PRIVATE LiveWDF_FastLiveCache
 )
 
 # The app is optional; the core above is not. The plugin links the core for its
@@ -107,7 +113,6 @@ if(LIVEWDF_BUILD_EDITOR)
     juce_add_gui_app(LiveWDF_Editor
         PRODUCT_NAME "LiveWDF Editor"
         COMPANY_NAME "LiveWDF"
-        VERSION "0.1.0"
     )
 
     target_sources(LiveWDF_Editor PRIVATE

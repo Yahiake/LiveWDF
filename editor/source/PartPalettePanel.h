@@ -34,6 +34,9 @@ namespace metrics {
 /// The name's height, in pixels: the editor's everyday label size.
 constexpr int kNameHeight = 17;
 
+/// Maximum compression for a long model name within the palette row.
+constexpr float kNameMinimumHorizontalScale = 0.66f;
+
 /// The shortcut's height, in pixels.
 ///
 /// **Smaller than the name on purpose.** The shortcut is a fact *about* the

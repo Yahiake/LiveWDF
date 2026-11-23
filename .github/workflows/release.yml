@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+concurrency: publish
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Next minor version, unless this commit is already released
+        id: next
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          released=$(gh release list --exclude-pre-releases --json tagName -q '.[].tagName' | grep -Fxf <(git tag --points-at HEAD) || true)
+          if [ -n "$released" ]; then
+            echo "::error::$GITHUB_SHA is already released as $released"
+            exit 1
+          fi
+          version=$(tools/next_version.sh minor)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: version
+    uses: ./.github/workflows/build.yml
+    with:
+      version: ${{ needs.version.outputs.version }}
+
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERSION: ${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Tag and release
+        working-directory: dist
+        run: |
+          sha256sum -- * > SHA256SUMS
+          previous=$(gh release list --exclude-pre-releases --limit 1 --json tagName -q '.[0].tagName')
+          gh release create "v$VERSION" * --target "$GITHUB_SHA" --title "LiveWDF $VERSION" --generate-notes ${previous:+--notes-start-tag "$previous"}

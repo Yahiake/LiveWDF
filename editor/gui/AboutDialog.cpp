@@ -1,6 +1,7 @@
 #include "AboutDialog.h"
 #include "Fonts.h"
 #include "glow/Glow.h"
+#include "livewdf.h"
 
 namespace livewdf::editor {
 
@@ -239,7 +240,7 @@ void AboutDialog::paint(juce::Graphics& g) {
     // 6. Version and copyright
     g.setFont(Fonts::monoSemiBold(12.0f));
     g.setColour(juce::Colour(0xFF8B9BB4));
-    g.drawText("Version: 0.1.0",
+    g.drawText(juce::String("Version: ") + livewdf::version(),
                cardBounds_.getX() + pad, curY, 200, 20,
                juce::Justification::left);
 

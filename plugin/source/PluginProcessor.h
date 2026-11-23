@@ -5,9 +5,12 @@
 #include "wdf/Engine.h"
 #include "dsp/HalfBandOversampler.h"
 #include "format/LiveWDFFile.h"
+#include "format/ControlGroups.h"
 #include "gui/DualOscilloscope.h"
 
 #include <array>
+#include <atomic>
+#include <future>
 #include <mutex>
 #include <memory>
 #include <map>
@@ -21,7 +24,7 @@ public:
     /// the ceiling on how many document pot groups can get a knob. A document
     /// with more groups than this still loads and plays -- the extra groups
     /// keep their saved positions, they just have no parameter to drive them.
-    static constexpr int kMaxPotKnobs = 16;
+    static constexpr int kMaxPotKnobs = wdf::kLivePotSlots;
 
     LiveWDFPluginProcessor();
     ~LiveWDFPluginProcessor() override;
@@ -33,6 +36,7 @@ public:
     void releaseResources() override;
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
+    void processBlockBypassed(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
@@ -142,8 +146,18 @@ private:
     bool attemptedGridCurrent_ = true;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
+    bool oversamplersPrepared_ = false;
     wdf::HalfBandOversampler halfBandOversamplerL_{wdf::OversamplingFactor::X1};
     wdf::HalfBandOversampler halfBandOversamplerR_{wdf::OversamplingFactor::X1};
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Thiran> halfBandPadding_{2};
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::None> dryDelay_{32};
+    std::atomic<int> processingLatencySamples_{0};
+    int dryDelaySamples_ = 0;
+
+    juce::dsp::Oversampling<float>* activePolyphaseOversampler() const noexcept;
+    void applyPendingCircuitOptions();
+    void updateReportedLatency();
+    void processDryDelay(juce::dsp::AudioBlock<float> block, bool replace, int latency) noexcept;
 
     // Engine instances (stereo pair)
     // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.
@@ -151,6 +165,22 @@ private:
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
+    unsigned long long engineGeneration_ = 0;
+
+    struct AffineKey {
+        unsigned long long generation = 0;
+        long long revision = 0;
+        bool stereo = false;
+        bool operator==(const AffineKey&) const = default;
+    };
+    struct AffineResult {
+        AffineKey key;
+        wdf::Engine::MixedAffineSetup left;
+        std::optional<wdf::Engine::MixedAffineSetup> right;
+    };
+    std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
+    std::optional<AffineResult> readyAffine_;
+    std::future<AffineResult> affineJob_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
     /// throws and the live positions the editor draws.
@@ -165,6 +195,7 @@ private:
     /// copies by this one.
     mutable std::mutex controlMutex_;
     wdf::LiveWDFDocument currentDoc_;
+    std::shared_ptr<const std::string> cacheDocument_;
 
     /// The file the circuit was loaded from, so it can be re-read. Empty when
     /// the circuit came from host state rather than a file.
@@ -256,8 +287,11 @@ private:
     int samplesPerBlock_ = 512;
 
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
+    bool shouldForceAccurate() const;
+    int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
+    void prepareFastLiveAffine();
     void readLivePotTargets();
     void advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
