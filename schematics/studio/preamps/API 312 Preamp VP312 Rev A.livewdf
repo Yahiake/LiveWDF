@@ -1,0 +1,832 @@
+{
+  "author": "LiveWDF",
+  "category": "Preamp",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 6,
+        "y": 32
+      }
+    },
+    {
+      "id": "R101",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 150
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 15,
+        "y": 32
+      }
+    },
+    {
+      "id": "C006",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 23,
+        "y": 42
+      }
+    },
+    {
+      "id": "GND1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 23,
+        "y": 49
+      }
+    },
+    {
+      "id": "T1",
+      "properties": {
+        "label": "EA2622",
+        "model": "Real \u2014 Manual"
+      },
+      "type": "transformer",
+      "values": {
+        "Lm": 5.0,
+        "dcrPrimary": 11,
+        "dcrSecondary": 400,
+        "leakage": 8e-05,
+        "turnsPrimary": 1,
+        "turnsSecondary": 8
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 32,
+        "y": 35
+      }
+    },
+    {
+      "id": "GND4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 29,
+        "y": 48
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 48
+      }
+    },
+    {
+      "id": "R002",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 150000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 42
+      }
+    },
+    {
+      "id": "GND7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 49
+      }
+    },
+    {
+      "id": "C001",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 41
+      }
+    },
+    {
+      "id": "R003",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 52
+      }
+    },
+    {
+      "id": "GND9",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 59
+      }
+    },
+    {
+      "id": "VCC",
+      "properties": {
+        "label": "+16 V"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 16
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 63,
+        "y": 19
+      }
+    },
+    {
+      "id": "VEE",
+      "properties": {
+        "label": "-16 V"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -16
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 77,
+        "y": 48
+      }
+    },
+    {
+      "id": "A1",
+      "properties": {
+        "model": "API2520"
+      },
+      "type": "opamp",
+      "values": {
+        "vRailMax": 12.1,
+        "vRailMin": -12.1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 67,
+        "y": 31
+      }
+    },
+    {
+      "id": "R004",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 20000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 68,
+        "y": 15
+      }
+    },
+    {
+      "id": "C002",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1.2e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 69,
+        "y": 8
+      }
+    },
+    {
+      "id": "R011",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 200
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 60,
+        "y": 45
+      }
+    },
+    {
+      "id": "C008",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 0.00033
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 65,
+        "y": 54
+      }
+    },
+    {
+      "id": "VR2",
+      "properties": {
+        "label": "Gain",
+        "taper": "RevLog"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.75,
+        "totalR": 25000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 71,
+        "y": 64
+      }
+    },
+    {
+      "id": "GND12",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 75,
+        "y": 71
+      }
+    },
+    {
+      "id": "R012",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 81,
+        "y": 31
+      }
+    },
+    {
+      "id": "T2",
+      "properties": {
+        "label": "EA2503",
+        "model": "Real \u2014 Manual"
+      },
+      "type": "transformer",
+      "values": {
+        "Lm": 1.2,
+        "dcrPrimary": 1.8,
+        "dcrSecondary": 5.3,
+        "leakage": 0.00015,
+        "turnsPrimary": 1,
+        "turnsSecondary": 2
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 92,
+        "y": 34
+      }
+    },
+    {
+      "id": "GND15",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 46
+      }
+    },
+    {
+      "id": "GND16",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 46
+      }
+    },
+    {
+      "id": "R102",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 600
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 104,
+        "y": 41
+      }
+    },
+    {
+      "id": "GND18",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 104,
+        "y": 49
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 116,
+        "y": 31
+      }
+    }
+  ],
+  "description": "API 312 family signal path from the CAPI VP312-VPR Rev A schematic, with the pad off, normal polarity and full output. Includes vendor-derived AP2520 gain, bandwidth and slew. The 1:8 input and 1:2 output transformer ratios are retained with approximate linear winding parameters. The input has a 150 \u03a9 source resistance and the output has a 600 \u03a9 load. Phantom power, switching and output fader circuitry are omitted.",
+  "io": {
+    "groundNode": "0",
+    "inputNode": "in",
+    "outputNode": "out"
+  },
+  "layout": {
+    "pots": [
+      "Gain"
+    ]
+  },
+  "name": "API 312 Preamp VP312 Rev A",
+  "version": 3,
+  "wires": [
+    {
+      "points": [
+        {
+          "x": 23,
+          "y": 44
+        },
+        {
+          "x": 23,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 38
+        },
+        {
+          "x": 29,
+          "y": 46
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 38
+        },
+        {
+          "x": 35,
+          "y": 46
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 42,
+          "y": 44
+        },
+        {
+          "x": 42,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 54
+        },
+        {
+          "x": 52,
+          "y": 57
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 74,
+          "y": 64
+        },
+        {
+          "x": 74,
+          "y": 69
+        },
+        {
+          "x": 75,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 66
+        },
+        {
+          "x": 71,
+          "y": 69
+        },
+        {
+          "x": 75,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 37
+        },
+        {
+          "x": 89,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 95,
+          "y": 37
+        },
+        {
+          "x": 95,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 43
+        },
+        {
+          "x": 104,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 50
+        },
+        {
+          "x": 52,
+          "y": 43
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 54
+        },
+        {
+          "x": 63,
+          "y": 47
+        },
+        {
+          "x": 60,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 28
+        },
+        {
+          "x": 63,
+          "y": 28
+        },
+        {
+          "x": 63,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 62
+        },
+        {
+          "x": 71,
+          "y": 54
+        },
+        {
+          "x": 67,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 32
+        },
+        {
+          "x": 8,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 31
+        },
+        {
+          "x": 83,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 34
+        },
+        {
+          "x": 77,
+          "y": 34
+        },
+        {
+          "x": 77,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 32
+        },
+        {
+          "x": 17,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 23,
+          "y": 40
+        },
+        {
+          "x": 23,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 39
+        },
+        {
+          "x": 104,
+          "y": 31
+        },
+        {
+          "x": 95,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 114,
+          "y": 31
+        },
+        {
+          "x": 104,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 66,
+          "y": 15
+        },
+        {
+          "x": 66,
+          "y": 27
+        },
+        {
+          "x": 64,
+          "y": 27
+        },
+        {
+          "x": 64,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 8
+        },
+        {
+          "x": 66,
+          "y": 8
+        },
+        {
+          "x": 66,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 60,
+          "y": 43
+        },
+        {
+          "x": 60,
+          "y": 30
+        },
+        {
+          "x": 64,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 79,
+          "y": 31
+        },
+        {
+          "x": 70,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 15
+        },
+        {
+          "x": 70,
+          "y": 31
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 71,
+          "y": 8
+        },
+        {
+          "x": 71,
+          "y": 15
+        },
+        {
+          "x": 70,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 42,
+          "y": 40
+        },
+        {
+          "x": 42,
+          "y": 32
+        },
+        {
+          "x": 35,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 39
+        },
+        {
+          "x": 42,
+          "y": 39
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 64,
+          "y": 32
+        },
+        {
+          "x": 42,
+          "y": 32
+        }
+      ]
+    }
+  ]
+}

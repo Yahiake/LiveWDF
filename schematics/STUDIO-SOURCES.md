@@ -2,7 +2,7 @@
 
 These 40 circuits are the studio half of the factory expansion in [PR #38](https://github.com/Yahiake/LiveWDF/pull/38). Each entry targets a specific hardware signal path. Keep all entries when the exact schematic or part model still needs research.
 
-The factory collection already packages nested directories. Place these circuits under `studio/` in effect-type subdirectories. Use line-level source material for listening tests and document the actual voltage, gain settings and source or load impedance.
+The factory collection already packages nested directories. Place these circuits under `studio/` in effect-type subdirectories. Use source levels appropriate to each device and document the voltage, gain settings and source or load impedance.
 
 ## Preamps and console channels
 
@@ -10,14 +10,14 @@ The factory collection already packages nested directories. Place these circuits
 |---:|---|---|
 | 1 | Neve 1073 | [EH10023 and amplifier boards](https://www.technicalaudio.com/neve/neve_pdf/1073-fullpak.pdf) |
 | 2 | Neve 1081 | [AMS Neve service manual, issue 4.2](https://www.ams-neve.com/wp-content/uploads/2021/10/1081usermanualissue42.pdf) |
-| 3 | API 312 | [1972 API technical literature](https://www.steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf) |
+| 3 | [API 312 preamp, VP312 Rev A](studio/preamps/API%20312%20Preamp%20VP312%20Rev%20A.livewdf) | [CAPI signal-path schematic](https://www.capi-gear.com/catalog/images/gallery/VP312/VP312-VPR-Rev-A-schematic.pdf) and [1972 API 2520 technical literature](https://www.steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf) |
 | 4 | SSL 4000 E 242 Black EQ | [82E242 circuit sheet](https://www.ka-electronics.com/images/SSL/ssl_82E242.pdf) |
-| 5 | Trident A-Range EQ | |
-| 6 | Trident 80B EQ | |
+| 5 | Trident A-Range EQ | [A-Range derivative and trace discussion](https://groupdiy.com/threads/trident-a-range-channel-strip.48493/) |
+| 6 | Trident 80B EQ | [Trident 80B parameter and control manual](https://tridentaudiodevelopments.com/wp-content/uploads/2022/02/80b-Manual.pdf) |
 | 7 | Helios Type 69 EQ | |
 | 8 | Harrison 32C channel EQ | |
-| 9 | MCI JH-400B input module | |
-| 10 | Soundcraft Series 600 mono input module | |
+| 9 | MCI JH-400B input module | [MCI JH-400B schematics and wiring](https://thehistoryofrecording.com/Manuals/MCI/MCI_JH-400b_Manual_Schematics.pdf) |
+| 10 | Soundcraft Series 600 mono input module | [Soundcraft Series 600 manuals](https://www.soundcraft.com/en-US/products/Series-600) |
 
 ## Compressors, limiters and gates
 
@@ -32,10 +32,10 @@ The factory collection already packages nested directories. Place these circuits
 | 17 | EMI RS124 | |
 | 18 | dbx 160 VU | [Model 160/161 factory manual](https://schematicsforfree.com/files/Audio/Products/Professional%20Audio/D/dbx/dbx%20160-161%20Compressor%20Limiter%20Manual.pdf) |
 | 19 | Manley Variable Mu | |
-| 20 | Pye 4060 | |
+| 20 | Pye 4060 | [Postfade technical analysis and basic schematic](https://postfade.co.uk/wp-content/uploads/2021/07/PYE-BROADCAST-AUDIO-CONSOLES-PART-FOUR-mini-.pdf) |
 | 21 | SSL 4000 G Bus Compressor | [SSL 4000G service manual](https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/SSL-4000G-Console-Service-Manual-v1_1.pdf) |
 | 22 | API 2500 | |
-| 23 | Neve 33609/J | |
+| 23 | Neve 33609/J | [AMS Neve technical handbook with circuit diagrams](https://thehistoryofrecording.com/Manuals/Neve/Neve%2033609J%20Technical%20Handbook.pdf) |
 | 24 | ADR Compex F760X-RS | |
 | 25 | Drawmer DS201 | |
 
@@ -47,7 +47,7 @@ The factory collection already packages nested directories. Place these circuits
 | 27 | Pultec MEQ-5 | [MEQ-5 factory manual](https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/Pultec-MEQ5-Manual.pdf) |
 | 28 | API 550A | |
 | 29 | API 560 | |
-| 30 | GML 8200 | |
+| 30 | GML 8200 | [Massenburg control and response specifications](https://massenburg.com/wp-content/uploads/2020/02/190528_8200_Specs.pdf) |
 | 31 | Sontec MES-432C | |
 | 32 | Mäag EQ4 | |
 | 33 | Manley Massive Passive | |
@@ -59,10 +59,16 @@ The factory collection already packages nested directories. Place these circuits
 |---:|---|---|
 | 35 | dbx 902 De-Esser | [dbx factory schematic archive](https://dbxpro.com/en-US/downloads/en/schematic) |
 | 36 | Aphex Aural Exciter Type B | |
-| 37 | BBE 482i Sonic Maximizer | |
-| 38 | SPL Transient Designer 9842 | |
+| 37 | BBE 482i Sonic Maximizer | [Schematic-derived Channel B model](https://guitar-gear.ru/forum/index.php?app=core&attach_id=29567&module=attach&section=attach) |
+| 38 | SPL Transient Designer 9842 | [SPL 9842 owner’s manual](https://spl.audio/wp-content/uploads/TransientDesigner4_9842_OM_E.pdf) |
 | 39 | Thermionic Culture Vulture | |
 | 40 | Empirical Labs FATSO EL7 | |
+
+## API 312 verification
+
+The VP312 Rev A model uses the signal path with pad off, normal polarity and full output. The API 2520 card is based on published typical gain, bandwidth and slew. Transformer ratios follow the chosen winding connections. Winding resistance, inductance and leakage are approximate linear parameters pending measurements.
+
+At the factory Gain position with a 150 Ω source and 600 Ω load, a 1 mV peak sine measured +42.77 dB at 1 kHz. The native overload sweep through 0.85 V peak at 48 kHz produced zero rejected steps on the direct op-amp path. No hardware response or saturation measurement was used.
 
 ## Parts references
 
