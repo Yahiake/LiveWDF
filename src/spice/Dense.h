@@ -50,6 +50,22 @@ inline bool solveInPlace(Dense& A, Dense& B, FactoredTransfer* factors = nullptr
         if (factors)
             factors->rows[k].forwardEnd = static_cast<int>(factors->forward.size());
     }
+    if (factors) {
+        for (int i = n - 1; i >= 0; --i) {
+            // Each RHS column is independent; update the contiguous row for
+            // each nonzero pivot coefficient, preserving its summation order.
+            for (int k = i + 1; k < n; ++k) {
+                const double coefficient = A[i][k];
+                if (coefficient == 0.0)
+                    continue;
+                for (int j = 0; j < m; ++j)
+                    B[i][j] -= coefficient * B[k][j];
+            }
+            for (int j = 0; j < m; ++j)
+                B[i][j] /= A[i][i];
+        }
+        return true;
+    }
     for (int i = n - 1; i >= 0; --i) {
         for (int j = 0; j < m; ++j) {
             double s = B[i][j];
