@@ -1,0 +1,3 @@
+model,url,revision,figure,temperature_C,abs_VCE_V,extraction,points,x_scale,y_scale,max_x_tick_error_percent,max_y_tick_error,y_error_units,pdf_sha256
+2n3904,https://www.onsemi.com/pdf/datasheet/2n3904-d.pdf,"October 2024, Rev. 3","Fig. 1, p. 3",+25,5.0,PDF vector centerline,107,log10,linear,0.06501793307212012,0.0995968739395039,gain units,37df3039e5693f2bc92bcdfd467ee8cda3316bf07ebe2353586fa1a3a881b15d
+2n3906,https://www.onsemi.com/pdf/datasheet/2n3906-d.pdf,"February 2010, Rev. 4","Fig. 13, p. 6",+25,1.0,PDF vector centerline,263,log10,log10,1.642766289755282,1.8645273889389413,%,eef38310a520cb5b4fba94d649681e772ba15ad4b74d8756a32e4972515522db

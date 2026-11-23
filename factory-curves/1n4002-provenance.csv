@@ -1,0 +1,3 @@
+regime,url,revision,figure,junction_temperature_C,extraction,points,pdf_sha256
+forward,https://www.vishay.com/docs/88503/1n4001.pdf,"29-Apr-2020, document 88503","Fig. 4, p. 3",25,PDF vector centerline,11,56a77c6615c90c11993d37d94e67f335cf3a2d1fe00f25d2a1a4833834356d07
+reverse,https://www.vishay.com/docs/88503/1n4001.pdf,"29-Apr-2020, document 88503","Fig. 5, p. 3",25,PDF vector centerline,7,56a77c6615c90c11993d37d94e67f335cf3a2d1fe00f25d2a1a4833834356d07
