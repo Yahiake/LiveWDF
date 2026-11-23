@@ -1,0 +1,649 @@
+path,rate,level,in_peak_V,out_peak_V,out_rms_V,dc_out_V,preroll_rejects,rejects,nonfinite,cpu_us_frame,load_warnings
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,48000,0.1,0.0118195343,0.547857818,0.204245287,1.22141533e-11,0,0,0,19.0999,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,48000,0.4,0.047278137,0.929569868,0.526632477,1.22141533e-11,0,0,0,37.6853,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,48000,1.0,0.118195343,1.01387022,0.615938126,1.22141533e-11,0,0,0,91.6901,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,48000,2.0,0.236390685,1.02683639,0.653945251,1.22141533e-11,0,0,0,92.0685,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,96000,0.1,0.0118195343,0.549685797,0.2043456,-7.81910994e-13,0,0,0,21.4609,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,96000,0.4,0.047278137,0.92991947,0.527393623,-7.81910994e-13,0,0,0,28.7367,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,96000,1.0,0.118195343,1.01292824,0.617555365,-7.81910994e-13,0,0,0,32.2270,0
+schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,96000,2.0,0.236390685,1.02262851,0.655329144,-7.81910994e-13,0,0,0,63.2098,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,48000,0.1,0.0118195343,0.0191333998,0.00627559417,1.70976566e-11,0,0,0,55.7246,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,48000,0.4,0.047278137,0.0654576598,0.0227530696,1.70976566e-11,0,0,0,55.6746,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,48000,1.0,0.118195343,0.137261642,0.0449109185,1.70976566e-11,0,0,0,62.7207,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,48000,2.0,0.236390685,0.305285678,0.0905259009,1.70976566e-11,0,0,0,69.6312,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,96000,0.1,0.0118195343,0.0192313492,0.00629892864,4.20251611e-11,0,0,0,6.2274,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,96000,0.4,0.047278137,0.0644620553,0.0227117574,4.20251611e-11,0,0,0,6.9116,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,96000,1.0,0.118195343,0.140478105,0.0448737372,4.20251611e-11,0,0,0,8.8931,0
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,96000,2.0,0.236390685,0.305617781,0.0908112807,4.20251611e-11,0,0,0,14.8021,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,48000,0.1,0.0118195343,0.0151180845,0.00502378009,-9.12032072e-07,0,0,0,5.6155,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,48000,0.4,0.047278137,0.0606278643,0.0191133789,-9.12032072e-07,0,0,0,6.1160,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,48000,1.0,0.118195343,0.122915041,0.0410883049,-9.12032072e-07,0,0,0,8.1243,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,48000,2.0,0.236390685,0.305136694,0.102211188,-9.12032072e-07,0,0,0,7.4427,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,96000,0.1,0.0118195343,0.0153085984,0.00504134348,-9.1150281e-07,0,0,0,7.3002,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,96000,0.4,0.047278137,0.0611771706,0.0191262979,-9.1150281e-07,0,0,0,8.9378,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,96000,1.0,0.118195343,0.122569729,0.0409957135,-9.1150281e-07,0,0,0,10.1503,0
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,96000,2.0,0.236390685,0.30451689,0.102768366,-9.1150281e-07,0,0,0,12.1746,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,48000,0.1,0.0118195343,0.0812378816,0.030761494,5.28899841e-14,0,0,0,10.1828,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,48000,0.4,0.047278137,0.293694285,0.105934487,5.28899841e-14,0,0,0,12.9171,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,48000,1.0,0.118195343,0.423397088,0.114067498,5.28899841e-14,0,0,0,13.6598,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,48000,2.0,0.236390685,0.378679913,0.114704476,5.28899841e-14,0,0,0,15.0979,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,96000,0.1,0.0118195343,0.0812938612,0.0307788037,1.00884103e-10,0,0,0,12.0125,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,96000,0.4,0.047278137,0.293842847,0.105953395,1.00884103e-10,0,0,0,16.3124,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,96000,1.0,0.118195343,0.421692602,0.114109187,1.00884103e-10,0,0,0,17.6115,0
+schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,96000,2.0,0.236390685,0.377970282,0.114746772,1.00884103e-10,0,0,0,11.3072,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,48000,0.1,0.0118195343,0.011104517,0.00417631941,1.83153825e-10,0,0,0,8.9528,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,48000,0.4,0.047278137,0.0472064106,0.0178659326,1.83153825e-10,0,0,0,9.6437,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,48000,1.0,0.118195343,0.124071347,0.0467720591,1.83153825e-10,0,0,0,10.0093,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,48000,2.0,0.236390685,0.254633826,0.096610226,1.83153825e-10,0,0,0,9.6595,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,96000,0.1,0.0118195343,0.0111661261,0.00417753465,2.19996865e-09,0,0,0,7.9785,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,96000,0.4,0.047278137,0.0472755822,0.0178508818,2.19996865e-09,0,0,0,9.4636,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,96000,1.0,0.118195343,0.123365643,0.0467253705,2.19996865e-09,0,0,0,10.3371,0
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,96000,2.0,0.236390685,0.253739741,0.096539877,2.19996865e-09,0,0,0,10.1909,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,48000,0.1,0.0118195343,0.0848472435,0.0346665256,-9.31321114e-11,0,0,0,10.7462,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,48000,0.4,0.047278137,0.14915735,0.0694734484,-9.31321114e-11,0,0,0,16.2411,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,48000,1.0,0.118195343,0.17691681,0.0822087261,-9.31321114e-11,0,12,0,32.5549,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,48000,2.0,0.236390685,0.18424846,0.0879070065,-9.31321114e-11,0,23,0,34.3921,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,96000,0.1,0.0118195343,0.0852867587,0.0346900113,-9.97566543e-11,0,0,0,5.3686,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,96000,0.4,0.047278137,0.152021615,0.0695756052,-9.97566543e-11,0,0,0,7.1616,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,96000,1.0,0.118195343,0.175755939,0.0825633158,-9.97566543e-11,0,0,0,10.0827,0
+schematics/pedals_fx/Boss DS-1A Distortion.livewdf,96000,2.0,0.236390685,0.192381029,0.0883471707,-9.97566543e-11,0,0,0,13.3901,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,48000,0.1,0.0118195343,0.0111568979,0.00416200244,-9.44332371e-10,0,0,0,5.8010,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,48000,0.4,0.047278137,0.0446250215,0.0166480056,-9.44332371e-10,0,0,0,6.2091,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,48000,1.0,0.118195343,0.111549807,0.0416199433,-9.44332371e-10,0,0,0,6.9462,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,48000,2.0,0.236390685,0.223055297,0.0832393719,-9.44332371e-10,0,0,0,7.6288,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,96000,0.1,0.0118195343,0.0111630569,0.0041633418,-8.28744169e-10,0,0,0,5.7089,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,96000,0.4,0.047278137,0.0446496574,0.0166533629,-8.28744169e-10,0,0,0,7.5663,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,96000,1.0,0.118195343,0.111611382,0.0416333367,-8.28744169e-10,0,0,0,10.8116,0
+schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,96000,2.0,0.236390685,0.223178398,0.083266158,-8.28744169e-10,0,0,0,15.3228,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,48000,0.1,0.0118195343,0.126708008,0.083278063,6.53893901e-07,0,0,0,44.7051,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,48000,0.4,0.047278137,0.149403347,0.109036913,6.53893901e-07,0,38,0,53.5574,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,48000,1.0,0.118195343,0.164667847,0.115437279,6.53893901e-07,0,198,0,81.9128,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,48000,2.0,0.236390685,0.184353953,0.115864516,6.53893901e-07,0,333,0,119.6637,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,96000,0.1,0.0118195343,0.126879341,0.083329985,6.5392543e-07,0,0,0,127.3403,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,96000,0.4,0.047278137,0.14907963,0.109138456,6.5392543e-07,0,0,0,25.1590,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,96000,1.0,0.118195343,0.165268606,0.115203614,6.5392543e-07,0,42,0,37.6824,0
+schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf,96000,2.0,0.236390685,0.178584564,0.115149589,6.5392543e-07,0,85,0,200.0180,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,48000,0.1,0.0118195343,0.204906605,0.137183425,-1.56669117e-10,0,0,0,20.8779,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,48000,0.4,0.047278137,0.213054426,0.144464608,-1.56669117e-10,0,0,0,26.0463,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,48000,1.0,0.118195343,0.214137076,0.145444203,-1.56669117e-10,0,0,0,15.7043,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,48000,2.0,0.236390685,0.220788164,0.147880509,-1.56669117e-10,0,0,0,16.1127,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,96000,0.1,0.0118195343,0.204951377,0.13736709,-1.44301147e-10,0,0,0,21.9860,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,96000,0.4,0.047278137,0.212604722,0.144790711,-1.44301147e-10,0,0,0,14.4532,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,96000,1.0,0.118195343,0.21264397,0.145777015,-1.44301147e-10,0,0,0,14.1377,0
+schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf,96000,2.0,0.236390685,0.221797151,0.147985802,-1.44301147e-10,0,0,0,17.0007,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,48000,0.1,0.0118195343,1.04888056e-07,3.94487702e-08,-1.54888822e-09,0,0,0,10.1435,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,48000,0.4,0.047278137,0.0447185237,0.0161445231,-1.54888822e-09,0,0,0,19.7056,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,48000,1.0,0.118195343,0.132340065,0.0470708867,-1.54888822e-09,0,0,0,28.4805,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,48000,2.0,0.236390685,0.26773218,0.096181747,-1.54888822e-09,0,0,0,34.2584,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,96000,0.1,0.0118195343,1.0543927e-07,3.94267613e-08,-3.1699296e-13,0,0,0,60.7845,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,96000,0.4,0.047278137,0.0447837256,0.0161510605,-3.1699296e-13,0,0,0,83.1490,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,96000,1.0,0.118195343,0.132499925,0.0471672327,-3.1699296e-13,0,0,0,20.0906,0
+schematics/pedals_fx/Boss NS-2 Noise Suppressor.livewdf,96000,2.0,0.236390685,0.267736096,0.096288406,-3.1699296e-13,0,0,0,19.8761,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,48000,0.1,0.0118195343,0.0111549614,0.00418116803,-1.59710413e-10,16,0,0,13.0150,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,48000,0.4,0.047278137,0.0446158596,0.0167246662,-1.59710413e-10,16,0,0,15.5906,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,48000,1.0,0.118195343,0.11151654,0.0418115735,-1.59710413e-10,16,0,0,16.3488,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,48000,2.0,0.236390685,0.222951193,0.0836224817,-1.59710413e-10,16,0,0,19.8465,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,96000,0.1,0.0118195343,0.0111593095,0.00418202197,-7.59445978e-11,0,0,0,13.2920,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,96000,0.4,0.047278137,0.0446332274,0.0167280819,-7.59445978e-11,0,0,0,12.7272,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,96000,1.0,0.118195343,0.111559909,0.0418201128,-7.59445978e-11,0,0,0,9.5066,0
+schematics/pedals_fx/Boss PQ-4 Parametric EQ.livewdf,96000,2.0,0.236390685,0.223037818,0.0836395602,-7.59445978e-11,0,0,0,10.1867,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,48000,0.1,0.0118195343,0.0931122953,0.0376786634,-9.19303413e-10,0,0,0,10.3179,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,48000,0.4,0.047278137,0.19644797,0.0899785229,-9.19303413e-10,0,0,0,9.5678,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,48000,1.0,0.118195343,0.243793874,0.123541998,-9.19303413e-10,0,0,0,11.7606,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,48000,2.0,0.236390685,0.297593137,0.149474443,-9.19303413e-10,0,0,0,8.9242,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,96000,0.1,0.0118195343,0.0938877883,0.0377201312,-8.89135371e-10,0,0,0,6.4955,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,96000,0.4,0.047278137,0.196812595,0.0900273917,-8.89135371e-10,0,0,0,8.0344,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,96000,1.0,0.118195343,0.24414688,0.123621186,-8.89135371e-10,0,0,0,6.3355,0
+schematics/pedals_fx/Boss SD-1 Super OverDrive.livewdf,96000,2.0,0.236390685,0.29801783,0.149602172,-8.89135371e-10,0,0,0,7.0020,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,48000,0.1,0.0118195343,0.0110159552,0.00342433187,8.96454367e-07,0,0,0,2.5951,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,48000,0.4,0.047278137,0.0440213171,0.0143121241,8.96454367e-07,0,0,0,2.5617,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,48000,1.0,0.118195343,0.10871753,0.0358991509,8.96454367e-07,0,0,0,2.5625,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,48000,2.0,0.236390685,0.218679889,0.06919269,8.96454367e-07,0,0,0,2.6047,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,96000,0.1,0.0118195343,0.0110157699,0.00342449153,8.96416238e-07,0,0,0,2.6731,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,96000,0.4,0.047278137,0.0440202724,0.0143124875,8.96416238e-07,0,0,0,2.6486,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,96000,1.0,0.118195343,0.108716021,0.0358988547,8.96416238e-07,0,0,0,2.6957,0
+schematics/pedals_fx/Boss TR-2 Tremolo.livewdf,96000,2.0,0.236390685,0.218673443,0.0691891146,8.96416238e-07,0,0,0,2.7024,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,48000,0.1,0.0118195343,0.0862789779,0.0325400608,5.18269871e-11,0,0,0,2.6008,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,48000,0.4,0.047278137,0.344895517,0.130158167,5.18269871e-11,0,0,0,2.8883,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,48000,1.0,0.118195343,0.860984905,0.325365914,5.18269871e-11,0,0,0,3.5153,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,48000,2.0,0.236390685,1.7165379,0.650511002,5.18269871e-11,0,0,0,3.4769,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,96000,0.1,0.0118195343,0.087142324,0.0325440014,-3.68149955e-12,0,0,0,1.4366,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,96000,0.4,0.047278137,0.348349365,0.13017393,-3.68149955e-12,0,0,0,1.4472,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,96000,1.0,0.118195343,0.86961806,0.325405331,-3.68149955e-12,0,0,0,1.4237,0
+schematics/pedals_fx/Colorsound Power Boost 18V.livewdf,96000,2.0,0.236390685,1.73375745,0.650589902,-3.68149955e-12,0,0,0,1.7233,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,48000,0.1,0.0118195343,0.0550788,0.0209451758,-1.41596647e-11,0,0,0,0.8881,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,48000,0.4,0.047278137,0.184176985,0.0805321049,-1.41596647e-11,0,0,0,0.9751,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,48000,1.0,0.118195343,0.234169265,0.145521769,-1.41596647e-11,0,0,0,1.2103,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,48000,2.0,0.236390685,0.256019962,0.186220144,-1.41596647e-11,0,0,0,1.4243,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,96000,0.1,0.0118195343,0.0552555215,0.0209724467,-8.26837182e-12,0,0,0,1.4003,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,96000,0.4,0.047278137,0.184738398,0.0806184034,-8.26837182e-12,0,0,0,1.5791,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,96000,1.0,0.118195343,0.234233977,0.145636141,-8.26837182e-12,0,0,0,1.1360,0
+schematics/pedals_fx/DOD 250 Overdrive Preamp Gray.livewdf,96000,2.0,0.236390685,0.255823638,0.186402844,-8.26837182e-12,0,0,0,1.1925,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,48000,0.1,0.0118195343,0.0589792601,0.0220833572,2.11048892e-07,0,0,0,4.3293,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,48000,0.4,0.047278137,0.224349417,0.0759617833,2.11048892e-07,0,0,0,4.5192,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,48000,1.0,0.118195343,0.56078273,0.15737962,2.11048892e-07,0,0,0,5.8014,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,48000,2.0,0.236390685,1.11477097,0.240345004,2.11048892e-07,0,0,0,4.9533,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,96000,0.1,0.0118195343,0.059051941,0.0220987955,2.11686194e-07,0,0,0,22.7975,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,96000,0.4,0.047278137,0.225647928,0.0760087522,2.11686194e-07,0,0,0,9.8163,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,96000,1.0,0.118195343,0.56402838,0.157471296,2.11686194e-07,0,0,0,4.7531,0
+schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,96000,2.0,0.236390685,1.1165682,0.240427085,2.11686194e-07,0,0,0,4.5118,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,48000,0.1,0.0118195343,0.0617420473,0.0232278645,-5.61931293e-16,0,0,0,5.5047,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,48000,0.4,0.047278137,0.246946682,0.0929070479,-5.61931293e-16,0,0,0,6.2594,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,48000,1.0,0.118195343,0.427897232,0.138785374,-5.61931293e-16,0,0,0,11.5437,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,48000,2.0,0.236390685,0.548989193,0.15597161,-5.61931293e-16,0,0,0,12.4156,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,96000,0.1,0.0118195343,0.0622620444,0.0232434567,3.67670465e-14,0,0,0,8.3015,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,96000,0.4,0.047278137,0.249041014,0.0929692303,3.67670465e-14,0,0,0,6.2840,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,96000,1.0,0.118195343,0.42988877,0.139056389,3.67670465e-14,0,0,0,6.5468,0
+schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,96000,2.0,0.236390685,0.549532954,0.156307989,3.67670465e-14,0,0,0,6.7775,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,48000,0.1,0.0118195343,0.267356962,0.161546161,4.11484158e-09,0,0,0,7.4926,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,48000,0.4,0.047278137,0.394840136,0.210479207,4.11484158e-09,0,0,0,10.2026,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,48000,1.0,0.118195343,0.459759597,0.23894726,4.11484158e-09,0,0,0,9.9849,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,48000,2.0,0.236390685,0.497654873,0.255155393,4.11484158e-09,0,0,0,25.8365,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,96000,0.1,0.0118195343,0.271457331,0.161540312,1.60088987e-09,0,0,0,3.4639,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,96000,0.4,0.047278137,0.406592847,0.210540231,1.60088987e-09,0,0,0,3.9559,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,96000,1.0,0.118195343,0.469958864,0.239097142,1.60088987e-09,0,0,0,6.2249,0
+schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,96000,2.0,0.236390685,0.519687623,0.255424096,1.60088987e-09,0,0,0,7.1344,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,48000,0.1,0.0118195343,0.00693096172,0.00259321085,-1.12799322e-10,0,0,0,6.1314,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,48000,0.4,0.047278137,0.0294436455,0.0109215321,-1.12799322e-10,0,0,0,5.9185,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,48000,1.0,0.118195343,0.0786576111,0.0284030157,-1.12799322e-10,0,0,0,5.8295,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,48000,2.0,0.236390685,0.164057701,0.0589452856,-1.12799322e-10,0,0,0,4.1566,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,96000,0.1,0.0118195343,0.00693316243,0.00259348583,-9.04677799e-11,0,0,0,3.4252,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,96000,0.4,0.047278137,0.0291171868,0.0108506789,-9.04677799e-11,0,0,0,3.2687,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,96000,1.0,0.118195343,0.0771175197,0.0281331897,-9.04677799e-11,0,0,0,3.3221,0
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,96000,2.0,0.236390685,0.1605091,0.0582793447,-9.04677799e-11,0,0,0,3.3356,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,48000,0.1,0.0118195343,0.0029446892,0.000913730359,2.89531965e-08,0,0,0,3.8682,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,48000,0.4,0.047278137,0.00670619849,0.00197484068,2.89531965e-08,0,0,0,4.0244,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,48000,1.0,0.118195343,0.0325199044,0.00991106416,2.89531965e-08,0,0,0,3.7789,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,48000,2.0,0.236390685,0.0644728238,0.0259540311,2.89531965e-08,0,0,0,3.7243,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,96000,0.1,0.0118195343,0.00302267024,0.000940669526,2.89478992e-08,0,0,0,1.8267,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,96000,0.4,0.047278137,0.00653117909,0.00198904927,2.89478992e-08,0,0,0,1.8284,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,96000,1.0,0.118195343,0.0328006572,0.00961179252,2.89478992e-08,0,0,0,1.9205,0
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,96000,2.0,0.236390685,0.0682490663,0.0259647117,2.89478992e-08,0,0,0,1.8298,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,48000,0.1,0.0118195343,0.00883493138,0.00293675117,-3.48833118e-09,0,0,0,5.1526,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,48000,0.4,0.047278137,0.0542072751,0.0174476256,-3.48833118e-09,0,0,0,12.0049,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,48000,1.0,0.118195343,0.109188783,0.0360239999,-3.48833118e-09,0,0,0,10.5183,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,48000,2.0,0.236390685,0.203912823,0.0628675199,-3.48833118e-09,0,0,0,6.5410,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,96000,0.1,0.0118195343,0.00862579094,0.00294708951,-3.42628503e-09,0,0,0,5.3271,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,96000,0.4,0.047278137,0.0554036983,0.0175064508,-3.42628503e-09,0,0,0,8.1971,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,96000,1.0,0.118195343,0.107020967,0.0359026889,-3.42628503e-09,0,0,0,9.4250,0
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,96000,2.0,0.236390685,0.213054595,0.0633328895,-3.42628503e-09,0,0,0,9.5260,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,48000,0.1,0.0118195343,0.0049653852,0.00181012146,-0.000362139442,0,0,0,22.6904,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,48000,0.4,0.047278137,0.0174016419,0.00682760448,-0.000362139442,0,0,0,22.1775,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,48000,1.0,0.118195343,0.0446806811,0.0169918851,-0.000362139442,0,0,0,30.0166,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,48000,2.0,0.236390685,0.0948477368,0.0344732643,-0.000362139442,0,0,0,29.6861,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,96000,0.1,0.0118195343,0.00499079115,0.00180951968,-0.000362104567,0,0,0,25.1513,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,96000,0.4,0.047278137,0.0173626026,0.00682527143,-0.000362104567,0,0,0,19.7825,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,96000,1.0,0.118195343,0.0445621376,0.0169860235,-0.000362104567,0,0,0,31.8413,0
+schematics/pedals_fx/EHX Small Stone Issue J.livewdf,96000,2.0,0.236390685,0.0948254719,0.0344613482,-0.000362104567,0,0,0,34.5994,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,48000,0.1,0.0118195343,0.0117826642,0.00432425354,-8.75104628e-15,0,0,0,10.7141,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,48000,0.4,0.047278137,0.0470725529,0.0175813547,-8.75104628e-15,0,0,0,10.4965,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,48000,1.0,0.118195343,0.117679948,0.0439515115,-8.75104628e-15,0,0,0,10.6923,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,48000,2.0,0.236390685,0.235360837,0.0879019409,-8.75104628e-15,0,0,0,10.6467,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,96000,0.1,0.0118195343,0.0117835429,0.00432483842,3.50199261e-14,0,0,0,61.2547,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,96000,0.4,0.047278137,0.0470764182,0.0175824843,3.50199261e-14,0,0,0,9.5133,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,96000,1.0,0.118195343,0.117689571,0.043954341,3.50199261e-14,0,0,0,11.3680,0
+schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,96000,2.0,0.236390685,0.235380022,0.0879076011,3.50199261e-14,0,0,0,15.7955,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,48000,0.1,0.0118195343,0.0124261896,0.00464429819,4.75222118e-07,0,0,0,10.0452,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,48000,0.4,0.047278137,0.0499585231,0.0186330597,4.75222118e-07,0,0,0,11.0711,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,48000,1.0,0.118195343,0.124892988,0.0466648496,4.75222118e-07,0,0,0,12.1295,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,48000,2.0,0.236390685,0.25079397,0.0934693543,4.75222118e-07,0,0,0,18.8386,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,96000,0.1,0.0118195343,0.0124291535,0.00464498542,4.74917067e-07,0,0,0,14.5283,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,96000,0.4,0.047278137,0.0501487321,0.0186589686,4.74917067e-07,0,0,0,15.9793,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,96000,1.0,0.118195343,0.125661211,0.0467632978,4.74917067e-07,0,0,0,18.3479,0
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,96000,2.0,0.236390685,0.252647338,0.0937062581,4.74917067e-07,0,0,0,19.1292,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,48000,0.1,0.0118195343,0.0740508811,0.0271816528,3.88578059e-15,0,0,0,4.5969,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,48000,0.4,0.047278137,0.279109465,0.103907602,3.88578059e-15,0,0,0,5.9448,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,48000,1.0,0.118195343,0.542170186,0.13573103,3.88578059e-15,0,0,0,6.8044,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,48000,2.0,0.236390685,0.440278061,0.123870443,3.88578059e-15,0,0,0,6.5485,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,96000,0.1,0.0118195343,0.0740784148,0.0271865923,-3.33066907e-16,0,0,0,4.1931,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,96000,0.4,0.047278137,0.279201079,0.103939487,-3.33066907e-16,0,0,0,4.7685,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,96000,1.0,0.118195343,0.542986427,0.13604979,-3.33066907e-16,0,0,0,5.3660,0
+schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,96000,2.0,0.236390685,0.44087442,0.124097918,-3.33066907e-16,0,0,0,5.6367,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,48000,0.1,0.0118195343,0.0117721357,0.00439987605,1.59569857e-11,0,0,0,4.1822,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,48000,0.4,0.047278137,0.0470905107,0.0175995049,1.59569857e-11,0,0,0,4.3936,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,48000,1.0,0.118195343,0.117729159,0.0439987637,1.59569857e-11,0,0,0,4.6460,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,48000,2.0,0.236390685,0.235462089,0.0879975295,1.59569857e-11,0,0,0,4.6982,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,96000,0.1,0.0118195343,0.0117902729,0.00440071067,1.59595752e-11,0,0,0,4.8996,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,96000,0.4,0.047278137,0.0471611965,0.0176028434,1.59595752e-11,0,0,0,5.1722,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,96000,1.0,0.118195343,0.117903099,0.0440071098,1.59595752e-11,0,0,0,4.5192,0
+schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,96000,2.0,0.236390685,0.235806296,0.0880142216,1.59595752e-11,0,0,0,4.3170,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,48000,0.1,0.0118195343,0.00666133106,0.00257643404,7.48648255e-10,0,0,0,14.6329,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,48000,0.4,0.047278137,0.0251970018,0.0102596112,7.48648255e-10,0,0,0,11.8289,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,48000,1.0,0.118195343,0.0603725078,0.0232510084,7.48648255e-10,0,0,0,11.2677,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,48000,2.0,0.236390685,0.130595959,0.0523262508,7.48648255e-10,0,0,0,11.3465,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,96000,0.1,0.0118195343,0.0066691119,0.0025815836,1.3924506e-10,0,0,0,10.5909,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,96000,0.4,0.047278137,0.0254582481,0.0102820485,1.3924506e-10,0,0,0,16.8179,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,96000,1.0,0.118195343,0.0618326255,0.0232891422,1.3924506e-10,0,0,0,19.5836,0
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,96000,2.0,0.236390685,0.131787187,0.0523383982,1.3924506e-10,0,0,0,13.6239,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,48000,0.1,0.0118195343,0.0249953123,0.00934033429,-1.40159479e-11,0,0,0,0.3598,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,48000,0.4,0.047278137,0.0999841775,0.0373613375,-1.40159479e-11,0,0,0,0.3611,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,48000,1.0,0.118195343,0.249965397,0.0934033444,-1.40159479e-11,0,0,0,0.3586,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,48000,2.0,0.236390685,0.499937826,0.18680669,-1.40159479e-11,0,0,0,0.3609,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,96000,0.1,0.0118195343,0.0250059659,0.00934250474,-2.36779998e-11,0,0,0,0.4309,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,96000,0.4,0.047278137,0.100026738,0.0373700192,-2.36779998e-11,0,0,0,0.4200,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,96000,1.0,0.118195343,0.25007171,0.0934250488,-2.36779998e-11,0,0,0,0.3921,0
+schematics/pedals_fx/MXR Micro Amp.livewdf,96000,2.0,0.236390685,0.500150329,0.186850099,-2.36779998e-11,0,0,0,0.4789,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,48000,0.1,0.0118195343,0.0183457295,0.00664819879,4.06485956e-10,0,0,0,13.9634,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,48000,0.4,0.047278137,0.0733342554,0.0265923911,4.06485956e-10,0,0,0,17.8024,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,48000,1.0,0.118195343,0.189291164,0.068586013,4.06485956e-10,0,0,0,19.3857,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,48000,2.0,0.236390685,0.370920459,0.125864313,4.06485956e-10,0,0,0,21.7722,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,96000,0.1,0.0118195343,0.0183985763,0.00665065854,4.10165013e-10,0,0,0,81.0661,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,96000,0.4,0.047278137,0.0735453792,0.0266022291,4.10165013e-10,0,0,0,80.6928,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,96000,1.0,0.118195343,0.190283138,0.0686076431,4.10165013e-10,0,0,0,85.4813,0
+schematics/pedals_fx/MXR Phase 90 Script.livewdf,96000,2.0,0.236390685,0.373837641,0.12584516,4.10165013e-10,0,0,0,144.8567,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,48000,0.1,0.0118195343,1.42684224,0.45865053,-4.4408921e-16,0,0,0,5.6266,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,48000,0.4,0.047278137,1.90744954,0.631635795,-4.4408921e-16,0,0,0,5.7371,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,48000,1.0,0.118195343,1.97436202,0.67971313,-4.4408921e-16,0,0,0,6.0446,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,48000,2.0,0.236390685,1.98817842,0.706171466,-4.4408921e-16,0,0,0,6.8932,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,96000,0.1,0.0118195343,1.45850557,0.458432493,5.99520433e-15,0,0,0,3.1503,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,96000,0.4,0.047278137,1.91909743,0.630923459,5.99520433e-15,0,0,0,3.4279,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,96000,1.0,0.118195343,1.99045942,0.678826654,5.99520433e-15,0,0,0,3.5757,0
+schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,96000,2.0,0.236390685,2.02393488,0.705642691,5.99520433e-15,0,0,0,5.8912,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,48000,0.1,0.0118195343,0.0317201482,0.0117937663,-3.43320062e-07,0,0,0,5.9242,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,48000,0.4,0.047278137,0.100240205,0.0390939283,-3.43320062e-07,0,0,0,4.9710,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,48000,1.0,0.118195343,0.151848806,0.0611631437,-3.43320062e-07,0,0,0,5.0422,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,48000,2.0,0.236390685,0.188714897,0.0768998108,-3.43320062e-07,0,0,0,5.4057,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,96000,0.1,0.0118195343,0.0320746796,0.0118090392,-3.43395186e-07,0,0,0,41.6485,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,96000,0.4,0.047278137,0.100996366,0.0393199101,-3.43395186e-07,0,0,0,16.2209,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,96000,1.0,0.118195343,0.153409487,0.0618154317,-3.43395186e-07,0,0,0,6.2063,0
+schematics/pedals_fx/Marshall Bluesbreaker Mk I.livewdf,96000,2.0,0.236390685,0.190526486,0.0778547189,-3.43395186e-07,0,0,0,4.9091,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,48000,0.1,0.0118195343,0.15259845,0.0648186805,2.17974092e-10,0,0,0,1.3733,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,48000,0.4,0.047278137,0.356834072,0.195091046,2.17974092e-10,0,0,0,2.1369,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,48000,1.0,0.118195343,0.358292376,0.232825462,2.17974092e-10,0,21,0,4.2318,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,48000,2.0,0.236390685,0.355753294,0.244619864,2.17974092e-10,0,170,0,8.9622,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,96000,0.1,0.0118195343,0.153043315,0.0648891815,2.26325738e-10,0,0,0,2.0157,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,96000,0.4,0.047278137,0.357255435,0.195154551,2.26325738e-10,0,0,0,2.4237,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,96000,1.0,0.118195343,0.358229067,0.232613699,2.26325738e-10,0,0,0,1.8878,0
+schematics/pedals_fx/Marshall Guv'nor.livewdf,96000,2.0,0.236390685,0.357364169,0.243107035,2.26325738e-10,0,0,0,2.1746,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,48000,0.1,0.0118195343,0.179568851,0.0377825518,-7.77156117e-16,0,0,0,1.7124,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,48000,0.4,0.047278137,0.327992472,0.0531215363,-7.77156117e-16,0,0,0,2.4035,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,48000,1.0,0.118195343,0.3062756,0.0562956034,-7.77156117e-16,0,0,0,2.3244,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,48000,2.0,0.236390685,0.385205105,0.0668811199,-7.77156117e-16,0,0,0,2.3292,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,96000,0.1,0.0118195343,0.180986108,0.0377049857,-3.38618023e-15,0,0,0,1.3113,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,96000,0.4,0.047278137,0.342282586,0.0528781635,-3.38618023e-15,0,0,0,2.4390,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,96000,1.0,0.118195343,0.307939195,0.0561344893,-3.38618023e-15,0,0,0,2.6470,0
+schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf,96000,2.0,0.236390685,0.384772001,0.0665614216,-3.38618023e-15,0,0,0,2.6167,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,48000,0.1,0.0118195343,0.0352036728,0.0222875959,-2.02934891e-13,0,0,0,7.1628,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,48000,0.4,0.047278137,0.132223366,0.0671080972,-2.02934891e-13,0,0,0,8.3854,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,48000,1.0,0.118195343,0.195366365,0.0556515678,-2.02934891e-13,0,0,0,13.4073,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,48000,2.0,0.236390685,0.73026031,0.347873668,-2.02934891e-13,0,0,0,13.9948,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,96000,0.1,0.0118195343,0.0352223006,0.0222881181,-1.14873389e-13,0,0,0,8.5653,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,96000,0.4,0.047278137,0.132183384,0.0669289297,-1.14873389e-13,0,0,0,8.0954,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,96000,1.0,0.118195343,0.195286654,0.0557422892,-1.14873389e-13,0,0,0,12.3286,0
+schematics/pedals_fx/Musitronics Mu-Tron III.livewdf,96000,2.0,0.236390685,0.729827148,0.345486238,-1.14873389e-13,0,0,0,12.1377,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,48000,0.1,0.0118195343,0.19152607,0.0835293111,-2.46913601e-10,0,0,0,11.2679,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,48000,0.4,0.047278137,0.351319421,0.168572348,-2.46913601e-10,0,0,0,13.9046,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,48000,1.0,0.118195343,0.428284413,0.209576879,-2.46913601e-10,0,0,0,14.4364,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,48000,2.0,0.236390685,0.480701708,0.235051663,-2.46913601e-10,0,0,0,15.2262,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,96000,0.1,0.0118195343,0.192127757,0.0835782326,1.93622895e-10,0,0,0,10.1014,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,96000,0.4,0.047278137,0.351967667,0.168450025,1.93622895e-10,0,0,0,11.1966,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,96000,1.0,0.118195343,0.42897985,0.209403615,1.93622895e-10,0,0,0,10.0682,0
+schematics/pedals_fx/Nobels ODR-1 Natural Overdrive.livewdf,96000,2.0,0.236390685,0.481745876,0.234879499,1.93622895e-10,0,0,0,13.9019,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,48000,0.1,0.0118195343,0.0219820135,0.00821067023,1.27249811e-16,0,0,0,4.6347,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,48000,0.4,0.047278137,0.0879290625,0.032842681,1.27249811e-16,0,0,0,4.6989,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,48000,1.0,0.118195343,0.178455332,0.0685064715,1.27249811e-16,0,0,0,9.9766,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,48000,2.0,0.236390685,0.163061185,0.0727439551,1.27249811e-16,0,0,0,11.5345,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,96000,0.1,0.0118195343,0.0219925161,0.00821300018,-4.72375223e-16,0,0,0,4.3937,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,96000,0.4,0.047278137,0.0879710472,0.0328520008,-4.72375223e-16,0,0,0,4.7118,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,96000,1.0,0.118195343,0.178513503,0.0685164282,-4.72375223e-16,0,0,0,5.8097,0
+schematics/pedals_fx/Origin Effects Cali76 FET Compressor (Circuit Approximation).livewdf,96000,2.0,0.236390685,0.163254036,0.0727505764,-4.72375223e-16,0,0,0,7.1602,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,48000,0.1,0.0118195343,0.200937544,0.152745426,3.66169141e-07,0,0,0,5.8430,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,48000,0.4,0.047278137,0.201847421,0.160273138,3.66169141e-07,0,0,0,5.6140,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,48000,1.0,0.118195343,0.204386289,0.161324829,3.66169141e-07,0,0,0,5.4090,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,48000,2.0,0.236390685,0.204550816,0.161170944,3.66169141e-07,0,0,0,5.5292,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,96000,0.1,0.0118195343,0.20084928,0.153195392,3.66216788e-07,0,0,0,3.0002,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,96000,0.4,0.047278137,0.201609436,0.160468318,3.66216788e-07,0,0,0,2.8199,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,96000,1.0,0.118195343,0.203233349,0.161450199,3.66216788e-07,0,0,0,2.8024,0
+schematics/pedals_fx/Pro Co RAT LM308.livewdf,96000,2.0,0.236390685,0.204579569,0.161328112,3.66216788e-07,0,0,0,3.6296,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,48000,0.1,0.0118195343,0.0915197033,0.0258723424,7.41184891e-13,0,0,0,11.6574,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,48000,0.4,0.047278137,0.345060417,0.105520381,7.41184891e-13,0,0,0,13.2058,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,48000,1.0,0.118195343,0.584694613,0.178353134,7.41184891e-13,0,0,0,19.1105,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,48000,2.0,0.236390685,0.63378193,0.191677882,7.41184891e-13,0,0,0,18.1691,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,96000,0.1,0.0118195343,0.0915785995,0.0258745707,-3.10862447e-15,0,0,0,65.0234,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,96000,0.4,0.047278137,0.345119567,0.105513147,-3.10862447e-15,0,0,0,21.5541,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,96000,1.0,0.118195343,0.584886715,0.17794804,-3.10862447e-15,0,0,0,8.5186,0
+schematics/pedals_fx/Roger Mayer Octavia Transistor.livewdf,96000,2.0,0.236390685,0.633380405,0.191405827,-3.10862447e-15,0,0,0,8.9985,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,48000,0.1,0.0118195343,0.00974443307,0.00395782338,3.94766066e-07,0,0,0,15.9410,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,48000,0.4,0.047278137,0.0398198956,0.0162642551,3.94766066e-07,0,0,0,19.0479,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,48000,1.0,0.118195343,0.0999865194,0.0403899487,3.94766066e-07,0,0,0,21.2731,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,48000,2.0,0.236390685,0.211741066,0.0773970289,3.94766066e-07,0,0,0,33.1651,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,96000,0.1,0.0118195343,0.00985438245,0.00395226821,3.94762056e-07,0,0,0,16.2423,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,96000,0.4,0.047278137,0.0396531606,0.0162578781,3.94762056e-07,0,0,0,21.1581,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,96000,1.0,0.118195343,0.099962428,0.04035771,3.94762056e-07,0,0,0,27.9713,0
+schematics/pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf,96000,2.0,0.236390685,0.211326176,0.0772975098,3.94762056e-07,0,0,0,31.3408,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,48000,0.1,0.0118195343,0.241613822,0.110933242,-8.85402862e-15,0,0,0,4.8537,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,48000,0.4,0.047278137,0.248211868,0.122689406,-8.85402862e-15,0,0,0,4.4659,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,48000,1.0,0.118195343,0.244197468,0.124391614,-8.85402862e-15,0,0,0,4.3939,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,48000,2.0,0.236390685,0.250294744,0.1181578,-8.85402862e-15,0,0,0,4.3038,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,96000,0.1,0.0118195343,0.244391873,0.110898885,-1.38437872e-13,0,0,0,5.2864,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,96000,0.4,0.047278137,0.247963764,0.122777849,-1.38437872e-13,0,0,0,4.6945,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,96000,1.0,0.118195343,0.247598977,0.124502581,-1.38437872e-13,0,0,0,4.2911,0
+schematics/pedals_fx/Sola Sound Tone Bender Professional Mk II.livewdf,96000,2.0,0.236390685,0.252033107,0.118263139,-1.38437872e-13,0,0,0,4.2538,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,48000,0.1,0.0118195343,1.93587566,0.957120552,5.88640248e-13,0,0,0,3.8055,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,48000,0.4,0.047278137,2.08207812,0.864393223,5.88640248e-13,0,0,0,3.4775,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,48000,1.0,0.118195343,2.06520526,0.728978768,5.88640248e-13,0,0,0,3.1272,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,48000,2.0,0.236390685,1.97573787,0.612107549,5.88640248e-13,0,0,0,4.2466,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,96000,0.1,0.0118195343,1.84970738,0.959216708,8.80406859e-13,0,0,0,3.1612,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,96000,0.4,0.047278137,2.06007513,0.871404436,8.80406859e-13,0,0,0,2.7168,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,96000,1.0,0.118195343,1.98503035,0.727719414,8.80406859e-13,0,0,0,2.5989,0
+schematics/pedals_fx/ZVEX Fuzz Factory.livewdf,96000,2.0,0.236390685,1.94678666,0.61018692,8.80406859e-13,0,0,0,2.5387,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,48000,0.1,0.123120149,0.118744247,0.0455180865,3.98211156e-41,0,0,0,25.9784,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,48000,0.4,0.492480594,0.473917672,0.182081811,3.98211156e-41,0,0,0,27.7800,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,48000,1.0,1.23120149,1.12404445,0.448538652,3.98211156e-41,0,0,0,30.0369,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,48000,2.0,2.46240297,1.91177532,0.713280024,3.98211156e-41,0,0,0,25.8763,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,96000,0.1,0.123120149,0.119033375,0.045554708,3.40023266e-41,0,0,0,15.0657,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,96000,0.4,0.492480594,0.475076788,0.182228266,3.40023266e-41,0,0,0,17.0001,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,96000,1.0,1.23120149,1.12651017,0.44889553,3.40023266e-41,0,0,0,16.4855,0
+schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf,96000,2.0,2.46240297,1.91569608,0.71342482,3.40023266e-41,0,0,0,16.8617,0
+schematics/studio/dynamics/API-2500.livewdf,48000,0.1,0.123120149,0.123044876,0.0459554027,0,0,0,0,2.7439,0
+schematics/studio/dynamics/API-2500.livewdf,48000,0.4,0.492480594,0.492205967,0.183821599,0,0,0,0,2.7047,0
+schematics/studio/dynamics/API-2500.livewdf,48000,1.0,1.23120149,1.23056352,0.459553995,0,0,0,0,4.1540,0
+schematics/studio/dynamics/API-2500.livewdf,48000,2.0,2.46240297,2.07215954,0.772076359,0,0,0,0,4.9935,0
+schematics/studio/dynamics/API-2500.livewdf,96000,0.1,0.123120149,0.123062316,0.0459582213,0,0,0,0,2.4219,0
+schematics/studio/dynamics/API-2500.livewdf,96000,0.4,0.492480594,0.492275352,0.183832874,0,0,0,0,2.4722,0
+schematics/studio/dynamics/API-2500.livewdf,96000,1.0,1.23120149,1.23073643,0.459582181,0,0,0,0,2.6142,0
+schematics/studio/dynamics/API-2500.livewdf,96000,2.0,2.46240297,2.07190878,0.772112791,0,0,0,0,2.6843,0
+schematics/studio/dynamics/Altec-436C.livewdf,48000,0.1,0.123120149,1.15196895,0.430090814,6.75385416e-12,0,0,0,7.1160,0
+schematics/studio/dynamics/Altec-436C.livewdf,48000,0.4,0.492480594,4.27245291,1.79376665,6.75385416e-12,0,0,0,8.5468,0
+schematics/studio/dynamics/Altec-436C.livewdf,48000,1.0,1.23120149,6.97900953,3.3387659,6.75385416e-12,0,0,0,14.1624,0
+schematics/studio/dynamics/Altec-436C.livewdf,48000,2.0,2.46240297,8.72041323,3.43952205,6.75385416e-12,0,0,0,13.7642,0
+schematics/studio/dynamics/Altec-436C.livewdf,96000,0.1,0.123120149,1.15218619,0.430104279,1.54151425e-09,0,0,0,5.3353,0
+schematics/studio/dynamics/Altec-436C.livewdf,96000,0.4,0.492480594,4.28238461,1.79381088,1.54151425e-09,0,0,0,5.3667,0
+schematics/studio/dynamics/Altec-436C.livewdf,96000,1.0,1.23120149,6.97100952,3.33876501,1.54151425e-09,0,0,0,5.8957,0
+schematics/studio/dynamics/Altec-436C.livewdf,96000,2.0,2.46240297,8.71978546,3.43958982,1.54151425e-09,0,0,0,9.2618,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,48000,0.1,0.123120149,0.120958808,0.0444812351,-1.61587358e-11,0,0,0,36.1463,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,48000,0.4,0.492480594,0.48379504,0.181852088,-1.61587358e-11,0,0,0,29.8464,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,48000,1.0,1.23120149,1.20928647,0.454639478,-1.61587358e-11,0,0,0,37.1024,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,48000,2.0,2.46240297,2.41790089,0.909309529,-1.61587358e-11,0,0,0,76.7482,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,96000,0.1,0.123120149,0.12180368,0.0444893521,1.25939363e-12,0,0,0,38.5484,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,96000,0.4,0.492480594,0.487173856,0.181887606,1.25939363e-12,0,0,0,23.0058,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,96000,1.0,1.23120149,1.21773015,0.454728275,1.25939363e-12,0,0,0,98.2750,0
+schematics/studio/dynamics/Drawmer-DS201.livewdf,96000,2.0,2.46240297,2.43477702,0.909487133,1.25939363e-12,0,0,0,60.7130,0
+schematics/studio/dynamics/EMI-RS124.livewdf,48000,0.1,0.123120149,0.233746415,0.0874382576,9.71254909e-11,0,0,0,8.4329,0
+schematics/studio/dynamics/EMI-RS124.livewdf,48000,0.4,0.492480594,0.930132032,0.341277263,9.71254909e-11,0,0,0,7.0848,0
+schematics/studio/dynamics/EMI-RS124.livewdf,48000,1.0,1.23120149,1.56716537,0.617008704,9.71254909e-11,0,0,0,7.0030,0
+schematics/studio/dynamics/EMI-RS124.livewdf,48000,2.0,2.46240297,1.92908357,0.610024842,9.71254909e-11,0,0,0,6.9765,0
+schematics/studio/dynamics/EMI-RS124.livewdf,96000,0.1,0.123120149,0.233798091,0.0874412114,1.61719566e-10,0,0,0,5.3695,0
+schematics/studio/dynamics/EMI-RS124.livewdf,96000,0.4,0.492480594,0.930033654,0.34129012,1.61719566e-10,0,0,0,5.9980,0
+schematics/studio/dynamics/EMI-RS124.livewdf,96000,1.0,1.23120149,1.56787674,0.617074692,1.61719566e-10,0,0,0,6.3888,0
+schematics/studio/dynamics/EMI-RS124.livewdf,96000,2.0,2.46240297,1.93945766,0.610081008,1.61719566e-10,0,0,0,6.8803,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,48000,0.1,0.123120149,0.114184063,0.0426266435,1.58484786e-20,0,0,0,2.9340,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,48000,0.4,0.492480594,0.456558633,0.168776376,1.58484786e-20,0,0,0,2.8657,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,48000,1.0,1.23120149,0.91661708,0.318285995,1.58484786e-20,0,0,0,2.8947,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,48000,2.0,2.46240297,1.3681276,0.498592952,1.58484786e-20,0,0,0,2.9569,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,96000,0.1,0.123120149,0.114190184,0.0426290031,1.58484786e-20,0,0,0,2.5292,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,96000,0.4,0.492480594,0.456583085,0.168778084,1.58484786e-20,0,0,0,2.7454,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,96000,1.0,1.23120149,0.915789345,0.318261775,1.58484786e-20,0,0,0,2.7331,0
+schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,96000,2.0,2.46240297,1.36723584,0.498568057,1.58484786e-20,0,0,0,2.8231,0
+schematics/studio/dynamics/Fairchild-660.livewdf,48000,0.1,0.123120149,0.243232887,0.090839143,-2.00045475e-14,0,0,0,33.1765,0
+schematics/studio/dynamics/Fairchild-660.livewdf,48000,0.4,0.492480594,0.972878432,0.363349198,-2.00045475e-14,0,0,0,37.0324,0
+schematics/studio/dynamics/Fairchild-660.livewdf,48000,1.0,1.23120149,2.34355884,0.87889791,-2.00045475e-14,0,0,0,32.4589,0
+schematics/studio/dynamics/Fairchild-660.livewdf,48000,2.0,2.46240297,3.85925616,1.4146441,-2.00045475e-14,0,0,0,38.0444,0
+schematics/studio/dynamics/Fairchild-660.livewdf,96000,0.1,0.123120149,0.243281877,0.0908415774,2.66630213e-12,0,0,0,12.5454,0
+schematics/studio/dynamics/Fairchild-660.livewdf,96000,0.4,0.492480594,0.973074353,0.363358935,2.66630213e-12,0,0,0,12.3602,0
+schematics/studio/dynamics/Fairchild-660.livewdf,96000,1.0,1.23120149,2.34422618,0.878943995,2.66630213e-12,0,0,0,41.5560,0
+schematics/studio/dynamics/Fairchild-660.livewdf,96000,2.0,2.46240297,3.86055932,1.41479602,2.66630213e-12,0,0,0,39.3368,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,48000,0.1,0.123120149,0.2568763,0.0963570641,1.05487032e-12,0,0,0,10.8200,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,48000,0.4,0.492480594,1.02740417,0.385413463,1.05487032e-12,0,0,0,10.1359,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,48000,1.0,1.23120149,2.40473579,0.840086637,1.05487032e-12,0,0,0,11.8572,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,48000,2.0,2.46240297,3.1421521,0.974736542,1.05487032e-12,0,0,0,12.1709,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,96000,0.1,0.123120149,0.257742594,0.0963637004,-3.69173938e-12,0,0,0,14.8781,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,96000,0.4,0.492480594,1.03086767,0.385440004,-3.69173938e-12,0,0,0,19.0137,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,96000,1.0,1.23120149,2.40436103,0.840119093,-3.69173938e-12,0,0,0,19.1828,0
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,96000,2.0,2.46240297,3.17200672,0.974828405,-3.69173938e-12,0,0,0,18.8644,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,48000,0.1,0.123120149,0.123003156,0.0458833748,3.56389455e-11,0,0,0,4.8506,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,48000,0.4,0.492480594,0.491895856,0.18350495,3.56389455e-11,0,0,0,4.9692,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,48000,1.0,1.23120149,1.25544891,0.458602358,3.56389455e-11,0,0,0,6.3453,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,48000,2.0,2.46240297,2.61176885,0.872194304,3.56389455e-11,0,0,0,7.2045,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,96000,0.1,0.123120149,0.123010493,0.0458846108,2.42873391e-11,0,0,0,9.1188,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,96000,0.4,0.492480594,0.491924704,0.183509864,2.42873391e-11,0,0,0,9.9036,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,96000,1.0,1.23120149,1.25536195,0.458615826,2.42873391e-11,0,0,0,10.7810,0
+schematics/studio/dynamics/Manley-Variable-Mu.livewdf,96000,2.0,2.46240297,2.61173836,0.872215138,2.42873391e-11,0,0,0,11.0512,0
+schematics/studio/dynamics/Neve-33609J.livewdf,48000,0.1,0.123120149,0.122903073,0.0459561697,-1.17228212e-18,0,0,0,93.8211,0
+schematics/studio/dynamics/Neve-33609J.livewdf,48000,0.4,0.492480594,0.491283234,0.183762974,-1.17228212e-18,0,0,0,76.6923,0
+schematics/studio/dynamics/Neve-33609J.livewdf,48000,1.0,1.23120149,1.22289063,0.458560692,-1.17228212e-18,0,0,0,61.3285,0
+schematics/studio/dynamics/Neve-33609J.livewdf,48000,2.0,2.46240297,2.28481458,0.825568468,-1.17228212e-18,0,0,0,31.1451,0
+schematics/studio/dynamics/Neve-33609J.livewdf,96000,0.1,0.123120149,0.122961197,0.045968013,-2.29516508e-17,0,0,0,20.5645,0
+schematics/studio/dynamics/Neve-33609J.livewdf,96000,0.4,0.492480594,0.491514586,0.183810318,-2.29516508e-17,0,0,0,28.1927,0
+schematics/studio/dynamics/Neve-33609J.livewdf,96000,1.0,1.23120149,1.22346002,0.458678157,-2.29516508e-17,0,0,0,33.3849,0
+schematics/studio/dynamics/Neve-33609J.livewdf,96000,2.0,2.46240297,2.28570558,0.825637836,-2.29516508e-17,0,0,0,181.1576,0
+schematics/studio/dynamics/Pye-4060.livewdf,48000,0.1,0.123120149,0.122250113,0.0459189123,-6.38787099e-24,0,0,0,8.2585,0
+schematics/studio/dynamics/Pye-4060.livewdf,48000,0.4,0.492480594,0.489033804,0.183672453,-6.38787099e-24,0,0,0,9.0406,0
+schematics/studio/dynamics/Pye-4060.livewdf,48000,1.0,1.23120149,1.22038366,0.45742784,-6.38787099e-24,0,0,0,9.7948,0
+schematics/studio/dynamics/Pye-4060.livewdf,48000,2.0,2.46240297,1.84220955,0.604203401,-6.38787099e-24,0,0,0,11.3934,0
+schematics/studio/dynamics/Pye-4060.livewdf,96000,0.1,0.123120149,0.122629041,0.0459247176,-6.38967333e-24,0,0,0,5.4295,0
+schematics/studio/dynamics/Pye-4060.livewdf,96000,0.4,0.492480594,0.490536098,0.183696583,-6.38967333e-24,0,0,0,5.1323,0
+schematics/studio/dynamics/Pye-4060.livewdf,96000,1.0,1.23120149,1.22278567,0.457476051,-6.38967333e-24,0,0,0,4.9012,0
+schematics/studio/dynamics/Pye-4060.livewdf,96000,2.0,2.46240297,1.8451436,0.604871108,-6.38967333e-24,0,0,0,4.7625,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,48000,0.1,0.123120149,0.121942468,0.0455177494,0,0,0,0,2.6361,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,48000,0.4,0.492480594,0.487769753,0.182070937,0,0,0,0,2.6722,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,48000,1.0,1.23120149,1.21942394,0.455177194,0,0,0,0,2.4549,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,48000,2.0,2.46240297,2.43884712,0.91035417,0,0,0,0,2.5512,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,96000,0.1,0.123120149,0.121947479,0.0455197666,0,0,0,0,2.7173,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,96000,0.4,0.492480594,0.487789798,0.182079006,0,0,0,0,2.7112,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,96000,1.0,1.23120149,1.21947406,0.455197366,0,0,0,0,2.4330,0
+schematics/studio/dynamics/SPL Transient Designer 9842 DET Model.livewdf,96000,2.0,2.46240297,2.43894735,0.910394514,0,0,0,0,2.6436,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,48000,0.1,0.123120149,0.121456978,0.045365957,0,0,0,0,31.6090,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,48000,0.4,0.492480594,0.482089926,0.179223202,0,0,0,0,30.4835,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,48000,1.0,1.23120149,1.09797366,0.386764932,0,0,0,0,15.6237,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,48000,2.0,2.46240297,1.67121862,0.563556924,0,0,0,0,9.7101,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,96000,0.1,0.123120149,0.121493481,0.0453698896,0,0,0,0,7.0685,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,96000,0.4,0.492480594,0.482225815,0.179236412,0,0,0,0,7.5148,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,96000,1.0,1.23120149,1.10072962,0.386754565,0,0,0,0,7.5799,0
+schematics/studio/dynamics/SSL-4000-G-Bus-Compressor.livewdf,96000,2.0,2.46240297,1.67385931,0.563505861,0,0,0,0,7.5578,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,48000,0.1,0.123120149,1.02122116,0.379140567,6.98330282e-14,0,0,0,12.4769,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,48000,0.4,0.492480594,1.93254922,0.640483767,6.98330282e-14,0,0,0,8.9295,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,48000,1.0,1.23120149,2.47662344,0.813771882,6.98330282e-14,0,0,0,7.6147,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,48000,2.0,2.46240297,2.95853509,0.974657619,6.98330282e-14,0,0,0,7.8926,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,96000,0.1,0.123120149,1.02223043,0.379569018,-1.7119639e-13,0,0,0,58.5051,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,96000,0.4,0.492480594,1.9417849,0.643639428,-1.7119639e-13,0,0,0,57.9646,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,96000,1.0,1.23120149,2.4908439,0.818849083,-1.7119639e-13,0,0,0,63.9774,0
+schematics/studio/dynamics/Teletronix-LA-2A.livewdf,96000,2.0,2.46240297,2.97659971,0.981320455,-1.7119639e-13,0,0,0,44.9717,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,48000,0.1,0.123120149,0.453953465,0.16647923,-9.22440985e-05,0,0,0,76.4343,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,48000,0.4,0.492480594,1.14966358,0.363775861,-9.22440985e-05,0,0,0,52.2798,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,48000,1.0,1.23120149,1.83253744,0.657718152,-9.22440985e-05,0,0,0,59.2948,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,48000,2.0,2.46240297,3.1263089,1.16176578,-9.22440985e-05,0,0,0,60.7722,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,96000,0.1,0.123120149,0.517300559,0.180697504,0.0110042634,0,0,0,47.8940,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,96000,0.4,0.492480594,1.15408078,0.366132282,0.0110042634,0,0,0,33.8561,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,96000,1.0,1.23120149,1.85579921,0.661246908,0.0110042634,0,0,0,31.4843,0
+schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf,96000,2.0,2.46240297,3.15114736,1.16595588,0.0110042634,0,0,0,40.1104,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,48000,0.1,0.123120149,1.0661993,0.396913925,-5.11300366e-06,0,0,0,72.7599,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,48000,0.4,0.492480594,1.86772383,0.630480701,-5.11300366e-06,0,0,0,54.8542,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,48000,1.0,1.23120149,2.41864275,0.822585459,-5.11300366e-06,0,0,0,50.4548,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,48000,2.0,2.46240297,2.90979757,1.00890746,-5.11300366e-06,0,0,0,69.0186,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,96000,0.1,0.123120149,1.06810798,0.398410517,-2.80258033e-06,0,0,0,78.2539,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,96000,0.4,0.492480594,1.87726314,0.633895097,-2.80258033e-06,0,0,0,77.6592,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,96000,1.0,1.23120149,2.4240554,0.827318647,-2.80258033e-06,0,0,0,60.4245,0
+schematics/studio/dynamics/UREI-LA-3A.livewdf,96000,2.0,2.46240297,2.92680534,1.0146438,-2.80258033e-06,0,0,0,77.7783,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,48000,0.1,0.123120149,0.075341951,0.0281578161,0,0,0,0,5.4605,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,48000,0.4,0.492480594,0.30129307,0.112616283,0,0,0,0,3.6583,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,48000,1.0,1.23120149,0.753200838,0.281530472,0,0,0,0,3.2089,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,48000,2.0,2.46240297,1.5063596,0.563043994,0,0,0,0,3.6620,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,96000,0.1,0.123120149,0.0759780796,0.0282249016,0,0,0,0,5.3504,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,96000,0.4,0.492480594,0.303839973,0.112883965,0,0,0,0,5.5837,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,96000,1.0,1.23120149,0.759569127,0.282196843,0,0,0,0,10.7063,0
+schematics/studio/dynamics/dbx 902 De-Esser.livewdf,96000,2.0,2.46240297,1.51909709,0.564372909,0,0,0,0,5.4306,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,48000,0.1,0.123120149,0.12116262,0.0454570538,9.45051464e-09,0,0,0,8.2921,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,48000,0.4,0.492480594,0.48516533,0.182019422,9.45051464e-09,0,0,0,8.2001,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,48000,1.0,1.23120149,1.21377054,0.455367055,9.45051464e-09,0,0,0,15.7219,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,48000,2.0,2.46240297,2.20881635,0.704126786,9.45051464e-09,0,0,0,9.3910,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,96000,0.1,0.123120149,0.12158117,0.04548364,9.45942476e-09,0,0,0,5.5790,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,96000,0.4,0.492480594,0.486826843,0.182125857,9.45942476e-09,0,0,0,5.7790,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,96000,1.0,1.23120149,1.21789827,0.455633307,9.45942476e-09,0,0,0,5.6184,0
+schematics/studio/dynamics/dbx-160-VU.livewdf,96000,2.0,2.46240297,2.216789,0.704269692,9.45942476e-09,0,0,0,6.0279,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,48000,0.1,0.123120149,0.122984024,0.044915376,7.37951367e-14,0,0,0,6.1837,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,48000,0.4,0.492480594,0.490874124,0.179624567,7.37951367e-14,0,0,0,8.3318,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,48000,1.0,1.23120149,1.22439414,0.448818645,7.37951367e-14,0,0,0,8.8721,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,48000,2.0,2.46240297,2.44038777,0.896932331,7.37951367e-14,0,0,0,9.4330,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,96000,0.1,0.123120149,0.123438263,0.0449033189,1.60302327e-13,0,0,0,4.6097,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,96000,0.4,0.492480594,0.492486165,0.179578203,1.60302327e-13,0,0,0,4.3749,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,96000,1.0,1.23120149,1.22706282,0.448715705,1.60302327e-13,0,0,0,8.0801,0
+schematics/studio/enhancement/Aphex Aural Exciter Type B.livewdf,96000,2.0,2.46240297,2.4410648,0.89677106,1.60302327e-13,0,0,0,7.4899,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,48000,0.1,0.123120149,0.136999269,0.0506077162,0,0,0,0,4.7345,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,48000,0.4,0.492480594,0.559102054,0.204925291,0,0,0,0,5.3379,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,48000,1.0,1.23120149,1.40526171,0.513871655,0,0,0,0,5.2459,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,48000,2.0,2.46240297,2.82460323,1.03066945,0,0,0,0,5.6301,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,96000,0.1,0.123120149,0.138159375,0.0505967996,0,0,0,0,4.7319,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,96000,0.4,0.492480594,0.564225492,0.2048591,0,0,0,0,4.5840,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,96000,1.0,1.23120149,1.41759681,0.513692231,0,0,0,0,4.5549,0
+schematics/studio/enhancement/BBE 482i Sonic Maximizer Channel B.livewdf,96000,2.0,2.46240297,2.84841591,1.03028517,0,0,0,0,4.7420,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,48000,0.1,0.123120149,0.12203041,0.0457159916,3.04112291e-12,0,0,0,3.8358,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,48000,0.4,0.492480594,0.487979679,0.182857788,3.04112291e-12,0,0,0,4.3191,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,48000,1.0,1.23120149,1.2188439,0.457058216,3.04112291e-12,0,0,0,8.5774,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,48000,2.0,2.46240297,2.43160883,0.913501508,3.04112291e-12,0,0,0,8.5849,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,96000,0.1,0.123120149,0.122056567,0.0457214204,-1.18554055e-11,0,0,0,6.1072,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,96000,0.4,0.492480594,0.488084244,0.182879504,-1.18554055e-11,0,0,0,4.2337,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,96000,1.0,1.23120149,1.21910474,0.457112497,-1.18554055e-11,0,0,0,6.2948,0
+schematics/studio/enhancement/Thermionic-Culture-Vulture.livewdf,96000,2.0,2.46240297,2.43212698,0.913609989,-1.18554055e-11,0,0,0,8.4573,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,48000,0.1,0.123120149,0.123073481,0.0459501068,0,0,0,0,2.6044,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,48000,0.4,0.492480594,0.492298941,0.183800427,0,0,0,0,2.5299,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,48000,1.0,1.23120149,1.23075747,0.459501069,0,0,0,0,2.2753,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,48000,2.0,2.46240297,2.46153145,0.919002138,0,0,0,0,2.4728,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,96000,0.1,0.123120149,0.12308219,0.0459518128,0,0,0,0,4.2860,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,96000,0.4,0.492480594,0.492333631,0.183807251,0,0,0,0,4.3012,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,96000,1.0,1.23120149,1.2308439,0.459518129,0,0,0,0,2.5963,0
+schematics/studio/eq/API 550A Proportional-Q Circuit Model.livewdf,96000,2.0,2.46240297,2.46170385,0.919036258,0,0,0,0,2.5085,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,48000,0.1,0.123120149,0.123039447,0.0459372874,0,0,0,0,4.1882,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,48000,0.4,0.492480594,0.492158986,0.18374915,0,0,0,0,4.2251,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,48000,1.0,1.23120149,1.23040016,0.459372874,0,0,0,0,4.7010,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,48000,2.0,2.46240297,2.46080519,0.918745748,0,0,0,0,8.2302,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,96000,0.1,0.123120149,0.123076548,0.045944654,0,0,0,0,6.3310,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,96000,0.4,0.492480594,0.492307322,0.183778616,0,0,0,0,6.0784,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,96000,1.0,1.23120149,1.23077085,0.45944654,0,0,0,0,6.1674,0
+schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf,96000,2.0,2.46240297,2.4615463,0.91889308,0,0,0,0,6.3975,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,48000,0.1,0.123120149,0.122754809,0.0458250474,1.56751793e-26,0,0,0,3.3784,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,48000,0.4,0.492480594,0.491019241,0.18330019,1.56751793e-26,0,0,0,3.7140,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,48000,1.0,1.23120149,1.22754812,0.458250474,1.56751793e-26,0,0,0,5.3488,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,48000,2.0,2.46240297,2.45509627,0.916500948,1.56751793e-26,0,0,0,5.8917,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,96000,0.1,0.123120149,0.122754808,0.0458262649,1.56751867e-26,0,0,0,4.1966,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,96000,0.4,0.492480594,0.491019238,0.18330506,1.56751867e-26,0,0,0,3.4125,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,96000,1.0,1.23120149,1.2275481,0.458262649,1.56751867e-26,0,0,0,3.6708,0
+schematics/studio/eq/GML 8200 Series II Circuit Model.livewdf,96000,2.0,2.46240297,2.45509623,0.916525298,1.56751867e-26,0,0,0,3.6832,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,48000,0.1,0.123120149,0.121969748,0.0457554759,0,0,0,0,24.1229,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,48000,0.4,0.492480594,0.487878991,0.183021904,0,0,0,0,22.8330,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,48000,1.0,1.23120149,1.21969748,0.45755476,0,0,0,0,12.7569,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,48000,2.0,2.46240297,2.43939496,0.915109521,0,0,0,0,13.8927,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,96000,0.1,0.123120149,0.122153522,0.0457935084,0,0,0,0,4.7462,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,96000,0.4,0.492480594,0.488614086,0.183174034,0,0,0,0,2.8260,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,96000,1.0,1.23120149,1.22153522,0.457935085,0,0,0,0,2.4720,0
+schematics/studio/eq/Harrison 32-Series 3232 Channel EQ.livewdf,96000,2.0,2.46240297,2.44307043,0.91587017,0,0,0,0,2.4244,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,48000,0.1,0.123120149,0.158649224,0.0593244842,4.23305835e-12,0,0,0,7.2829,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,48000,0.4,0.492480594,0.63456749,0.237297372,4.23305835e-12,0,0,0,7.9426,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,48000,1.0,1.23120149,1.58614729,0.593235317,4.23305835e-12,0,0,0,12.9327,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,48000,2.0,2.46240297,3.17098294,1.18641044,4.23305835e-12,0,0,0,8.5006,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,96000,0.1,0.123120149,0.158654775,0.0593262243,-1.27542421e-12,0,0,0,10.3700,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,96000,0.4,0.492480594,0.63458905,0.237304332,-1.27542421e-12,0,0,0,9.9287,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,96000,1.0,1.23120149,1.58619958,0.593252719,-1.27542421e-12,0,0,0,9.9799,0
+schematics/studio/eq/Helios Type 69 Musicland EQ.livewdf,96000,2.0,2.46240297,3.17108392,1.18644526,-1.27542421e-12,0,0,0,10.5293,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,48000,0.1,0.123120149,0.123405603,0.0462165027,0,0,0,0,1.4030,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,48000,0.4,0.492480594,0.493621426,0.184866081,0,0,0,0,1.6171,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,48000,1.0,1.23120149,1.23405208,0.462165312,0,0,0,0,1.2888,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,48000,2.0,2.46240297,2.46810216,0.92433077,0,0,0,0,1.3128,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,96000,0.1,0.123120149,0.123402018,0.0462168358,0,0,0,0,1.4470,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,96000,0.4,0.492480594,0.493607102,0.184867414,0,0,0,0,1.0763,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,96000,1.0,1.23120149,1.23401629,0.462168645,0,0,0,0,0.8199,0
+schematics/studio/eq/Maag EQ4-500 Parallel Circuit Model.livewdf,96000,2.0,2.46240297,2.46803061,0.924337438,0,0,0,0,0.8366,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,48000,0.1,0.123120149,0.123027004,0.0459662169,-2.82266524e-06,0,0,0,14.2133,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,48000,0.4,0.492480594,0.492228465,0.18386479,-2.82266524e-06,0,0,0,14.2906,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,48000,1.0,1.23120149,1.23095864,0.459660763,-2.82266524e-06,0,0,0,14.5240,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,48000,2.0,2.46240297,2.46292084,0.919312636,-2.82266524e-06,0,0,0,16.0953,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,96000,0.1,0.123120149,0.123031048,0.0459682492,-2.82245097e-06,0,0,0,8.8285,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,96000,0.4,0.492480594,0.49224383,0.183872919,-2.82245097e-06,0,0,0,8.9235,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,96000,1.0,1.23120149,1.23099591,0.459681084,-2.82245097e-06,0,0,0,9.3116,0
+schematics/studio/eq/Manley Massive Passive Standard Circuit Model.livewdf,96000,2.0,2.46240297,2.46299415,0.919353275,-2.82245097e-06,0,0,0,9.2960,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,48000,0.1,0.123120149,0.126911224,0.0474735874,-5.15036902e-11,0,0,0,74.9397,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,48000,0.4,0.492480594,0.507664025,0.189894334,-5.15036902e-11,0,0,0,88.3384,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,48000,1.0,1.23120149,1.2691823,0.474735483,-5.15036902e-11,0,0,0,101.1228,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,48000,2.0,2.46240297,2.53837686,0.949468139,-5.15036902e-11,0,0,0,113.3028,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,96000,0.1,0.123120149,0.12691887,0.0474749931,-8.79047946e-11,0,0,0,229.6236,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,96000,0.4,0.492480594,0.507694232,0.189899957,-8.79047946e-11,0,0,0,58.9297,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,96000,1.0,1.23120149,1.26925725,0.47474954,-8.79047946e-11,0,0,0,55.5222,0
+schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf,96000,2.0,2.46240297,2.53852605,0.949496253,-8.79047946e-11,0,0,0,81.3732,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,48000,0.1,0.123120149,0.126830006,0.0470568283,-6.5138684e-11,0,0,0,4.7582,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,48000,0.4,0.492480594,0.507314964,0.188227256,-6.5138684e-11,0,0,0,4.5532,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,48000,1.0,1.23120149,1.26827686,0.47056728,-6.5138684e-11,0,0,0,4.6404,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,48000,2.0,2.46240297,2.53652128,0.94112833,-6.5138684e-11,0,0,0,4.6788,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,96000,0.1,0.123120149,0.126823793,0.0470487382,1.06539617e-08,0,0,0,22.9577,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,96000,0.4,0.492480594,0.507290105,0.188194895,1.06539617e-08,0,0,0,10.5571,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,96000,1.0,1.23120149,1.26821482,0.470486379,1.06539617e-08,0,0,0,4.9184,0
+schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf,96000,2.0,2.46240297,2.53639753,0.940966538,1.06539617e-08,0,0,0,4.8242,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,48000,0.1,0.123120149,0.139340439,0.0525354616,-8.53590976e-10,0,0,0,5.6771,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,48000,0.4,0.492480594,0.557361309,0.210141705,-8.53590976e-10,0,0,0,5.8370,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,48000,1.0,1.23120149,1.39336858,0.525351524,-8.53590976e-10,0,0,0,6.4555,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,48000,2.0,2.46240297,2.78638847,1.05068043,-8.53590976e-10,0,0,0,6.2155,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,96000,0.1,0.123120149,0.140021466,0.0525469349,-8.49365023e-10,0,0,0,6.1155,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,96000,0.4,0.492480594,0.560082834,0.210187598,-8.49365023e-10,0,0,0,6.3032,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,96000,1.0,1.23120149,1.40015735,0.525466254,-8.49365023e-10,0,0,0,6.1935,0
+schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf,96000,2.0,2.46240297,2.79984988,1.05090989,-8.49365023e-10,0,0,0,6.6217,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,48000,0.1,0.123120149,0.130882733,0.0464420074,0.0144924959,0,0,0,5.4123,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,48000,0.4,0.492480594,0.503782717,0.184257712,0.0144924959,0,0,0,5.7251,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,48000,1.0,1.23120149,1.24592651,0.459872146,0.0144924959,0,0,0,5.0707,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,48000,2.0,2.46240297,2.4788469,0.919399091,0.0144924959,0,0,0,4.8688,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,96000,0.1,0.123120149,0.130910939,0.0464461401,0.0144930413,0,0,0,5.6643,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,96000,0.4,0.492480594,0.503874092,0.184274221,0.0144930413,0,0,0,5.6390,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,96000,1.0,1.23120149,1.24615458,0.459913365,0.0144930413,0,0,0,5.4343,0
+schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf,96000,2.0,2.46240297,2.47930234,0.919481484,0.0144930413,0,0,0,5.5681,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,48000,0.1,0.123120149,0.123020319,0.0459225944,0,0,0,0,7.3449,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,48000,0.4,0.492480594,0.492081279,0.183690377,0,0,0,0,8.1258,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,48000,1.0,1.23120149,1.23020321,0.459225942,0,0,0,0,15.1847,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,48000,2.0,2.46240297,2.46040643,0.918451884,0,0,0,0,16.8658,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,96000,0.1,0.123120149,0.123050973,0.0459301465,0,0,0,0,3.9965,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,96000,0.4,0.492480594,0.492203897,0.183720586,0,0,0,0,4.0654,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,96000,1.0,1.23120149,1.23050975,0.459301464,0,0,0,0,5.5295,0
+schematics/studio/eq/Sontec MES-432C-9 Circuit Model.livewdf,96000,2.0,2.46240297,2.46101951,0.918602927,0,0,0,0,9.5239,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,48000,0.1,0.123120149,0.12301546,0.04602199,6.50975336e-09,0,0,0,6.7481,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,48000,0.4,0.492480594,0.492088082,0.184087968,6.50975336e-09,0,0,0,7.0535,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,48000,1.0,1.23120149,1.23025473,0.460219936,6.50975336e-09,0,0,0,7.8837,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,48000,2.0,2.46240297,2.4605483,0.920439883,6.50975336e-09,0,0,0,8.8231,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,96000,0.1,0.123120149,0.123103411,0.0460400654,6.48271851e-09,0,0,0,9.2879,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,96000,0.4,0.492480594,0.492439475,0.18416027,6.48271851e-09,0,0,0,11.5699,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,96000,1.0,1.23120149,1.23113264,0.460400689,6.48271851e-09,0,0,0,7.6328,0
+schematics/studio/eq/Soundcraft Series 600 Mono Input.livewdf,96000,2.0,2.46240297,2.46230337,0.920801388,6.48271851e-09,0,0,0,7.8616,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,48000,0.1,0.123120149,0.117624541,0.0438039673,-2.59170463e-11,0,0,0,7.5640,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,48000,0.4,0.492480594,0.470501505,0.175215879,-2.59170463e-11,0,0,0,7.9719,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,48000,1.0,1.23120149,1.17625946,0.438039517,-2.59170463e-11,0,0,0,9.1183,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,48000,2.0,2.46240297,2.35252157,0.876077458,-2.59170463e-11,0,0,0,8.4975,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,96000,0.1,0.123120149,0.117634245,0.0438048436,5.78967985e-11,0,0,0,6.9895,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,96000,0.4,0.492480594,0.470540297,0.175219385,5.78967985e-11,0,0,0,7.5075,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,96000,1.0,1.23120149,1.1763564,0.438048281,5.78967985e-11,0,0,0,5.7962,0
+schematics/studio/eq/Trident A-Range 1038 Four-Band EQ ED3001.livewdf,96000,2.0,2.46240297,2.35271538,0.876094985,5.78967985e-11,0,0,0,4.8183,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,48000,0.1,0.123120149,0.118192919,0.0440895326,0,0,0,0,9.8466,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,48000,0.4,0.492480594,0.472778615,0.176358124,0,0,0,0,9.6286,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,48000,1.0,1.23120149,1.18195926,0.440895301,0,0,0,0,10.6095,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,48000,2.0,2.46240297,2.36393783,0.881790591,0,0,0,0,8.9454,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,96000,0.1,0.123120149,0.118212674,0.0440940114,0,0,0,0,1.7117,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,96000,0.4,0.492480594,0.472857475,0.176376039,0,0,0,0,1.6886,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,96000,1.0,1.23120149,1.18215612,0.440940088,0,0,0,0,1.6940,0
+schematics/studio/eq/Trident Series 80B Four-Band EQ S800.livewdf,96000,2.0,2.46240297,2.3643311,0.881880165,0,0,0,0,1.7003,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,48000,0.1,0.123120149,0.12029655,0.0450282083,-1.04349714e-13,0,0,0,21.2956,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,48000,0.4,0.492480594,0.481204874,0.180116153,-1.04349714e-13,0,0,0,19.8651,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,48000,1.0,1.23120149,1.20302758,0.450300961,-1.04349714e-13,0,0,0,25.1425,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,48000,2.0,2.46240297,2.40606667,0.900617297,-1.04349714e-13,0,0,0,25.5889,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,96000,0.1,0.123120149,0.120618182,0.0450880045,-2.17102665e-13,0,0,0,16.6660,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,96000,0.4,0.492480594,0.482483167,0.180354996,-2.17102665e-13,0,0,0,18.5972,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,96000,1.0,1.23120149,1.20621819,0.450896969,-2.17102665e-13,0,0,0,14.6434,0
+schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf,96000,2.0,2.46240297,2.4124438,0.901807678,-2.17102665e-13,0,0,0,14.9522,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,48000,0.1,0.00196992238,0.269308217,0.101050198,0,0,0,0,0.4632,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,48000,0.4,0.00787968951,1.07726831,0.404200811,0,0,0,0,0.4854,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,48000,1.0,0.0196992238,2.69322358,1.01050206,0,0,0,0,0.4896,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,48000,2.0,0.0393984475,5.38651709,2.02100417,0,0,0,0,0.4954,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,96000,0.1,0.00196992238,0.270085989,0.101060534,0,0,0,0,2.3742,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,96000,0.4,0.00787968951,1.08034544,0.404242156,0,0,0,0,1.9166,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,96000,1.0,0.0196992238,2.70086549,1.01060542,0,0,0,0,0.2396,0
+schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf,96000,2.0,0.0393984475,5.4017331,2.02121089,0,0,0,0,0.2364,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,48000,0.1,0.00196992238,0.132705014,0.0496069365,-3.72367795e-08,0,0,0,3.6104,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,48000,0.4,0.00787968951,0.530891441,0.19844281,-3.72367795e-08,0,0,0,5.0208,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,48000,1.0,0.0196992238,1.32732072,0.496137744,-3.72367795e-08,0,0,0,5.3338,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,48000,2.0,0.0393984475,2.65469584,0.992311771,-3.72367795e-08,0,0,0,5.9624,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,96000,0.1,0.00196992238,0.132731999,0.0496134781,-3.72768779e-08,0,0,0,2.0830,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,96000,0.4,0.00787968951,0.531003046,0.198469216,-3.72768779e-08,0,0,0,2.4972,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,96000,1.0,0.0196992238,1.32759912,0.496204046,-3.72768779e-08,0,0,0,2.9574,0
+schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf,96000,2.0,0.0393984475,2.65524956,0.992444464,-3.72768779e-08,0,0,0,2.7776,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,48000,0.1,0.123120149,0.114239198,0.0428329496,2.9139122e-07,0,0,0,9.7892,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,48000,0.4,0.492480594,0.456957655,0.171331813,2.9139122e-07,0,0,0,9.5680,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,48000,1.0,1.23120149,1.14239698,0.428329541,2.9139122e-07,0,0,0,8.9204,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,48000,2.0,2.46240297,2.28480116,0.856658985,2.9139122e-07,0,0,0,9.6204,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,96000,0.1,0.123120149,0.11453156,0.0428347552,3.11044996e-07,0,0,0,10.4953,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,96000,0.4,0.492480594,0.458126859,0.171339035,3.11044996e-07,0,0,0,10.5247,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,96000,1.0,1.23120149,1.14531903,0.428347596,3.11044996e-07,0,0,0,7.3549,0
+schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf,96000,2.0,2.46240297,2.29064237,0.856695095,3.11044996e-07,0,0,0,6.0803,0
