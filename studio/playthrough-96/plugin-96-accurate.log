@@ -1,0 +1,36 @@
+
+Pro Co RAT LM308 pass 1
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 13.6%  p99 24.6%  p99.9 82.3%  max 131.3%
+cpu  p50 13.6%  p99 24.6%  p99.9 82.4%  max 131.5%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks
+
+Boss DM-2 Analog Delay pass 1
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 39.2%  p99 78.4%  p99.9 158.3%  max 360.2%
+cpu  p50 39.2%  p99 75.6%  p99.9 158.4%  max 360.4%  allocs 0 in 0 callbacks, page faults 0 in 0 callbacks
+
+Pro Co RAT LM308 pass 2
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 13.8%  p99 30.7%  p99.9 63.0%  max 190.8%
+cpu  p50 13.9%  p99 30.6%  p99.9 60.2%  max 124.2%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks
+
+Boss DM-2 Analog Delay pass 2
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 39.1%  p99 64.7%  p99.9 96.4%  max 119.0%
+cpu  p50 39.1%  p99 64.2%  p99.9 96.4%  max 119.1%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks
+
+Pro Co RAT LM308 pass 3
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 13.6%  p99 29.6%  p99.9 72.1%  max 173.4%
+cpu  p50 13.6%  p99 29.6%  p99.9 72.2%  max 173.5%  allocs 0 in 0 callbacks, page faults 0 in 0 callbacks
+
+Boss DM-2 Analog Delay pass 3
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 40.0%  p99 136.0%  p99.9 281.0%  max 412.8%
+cpu  p50 40.0%  p99 136.2%  p99.9 281.2%  max 413.0%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks

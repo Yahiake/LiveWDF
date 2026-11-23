@@ -1,0 +1,10 @@
+Boss BD-2 Blues Driver
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 137.9%  p99 333.6%  p99.9 484.2%  max 620.2%
+cpu  p50 138.0%  p99 333.0%  p99.9 484.4%  max 620.4%  allocs 0 in 0 callbacks, page faults 2 in 1 callbacks
+Boss DS-1A Distortion
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 34.9%  p99 122.6%  p99.9 329.0%  max 2294.7%
+cpu  p50 34.9%  p99 122.6%  p99.9 329.0%  max 2294.9%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks

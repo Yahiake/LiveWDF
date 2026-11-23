@@ -1,0 +1,12 @@
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 77.5%  p99 485.5%  p99.9 944.8%  max 2990.0%
+cpu  p50 77.4%  p99 187.1%  p99.9 739.0%  max 2990.2%  allocs 0 in 0 callbacks, page faults 1 in 1 callbacks
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 78.9%  p99 236.6%  p99.9 956.7%  max 1560.8%
+cpu  p50 78.9%  p99 129.6%  p99.9 515.3%  max 739.7%  allocs 0 in 0 callbacks, page faults 2 in 1 callbacks
+grid_current: ON
+3000 callbacks of 96 at 48000 Hz, budget 2000.0 us
+wall p50 77.9%  p99 532.3%  p99.9 981.3%  max 2459.0%
+cpu  p50 77.7%  p99 251.3%  p99.9 725.5%  max 2459.2%  allocs 0 in 0 callbacks, page faults 0 in 0 callbacks
