@@ -167,7 +167,7 @@
       "type": "varres",
       "values": {
         "maxR": 50000.0,
-        "pos": 0.75
+        "pos": 0.025
       },
       "visual": {
         "flipped": false,
@@ -332,7 +332,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.046,
+        "pos": 0.072,
         "totalR": 500000.0
       },
       "visual": {

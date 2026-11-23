@@ -279,7 +279,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.75,
+        "pos": 0.0,
         "totalR": 25000.0
       },
       "visual": {
@@ -392,7 +392,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.0
+        "fullScaleVolts": 32.0
       },
       "visual": {
         "flipped": false,
