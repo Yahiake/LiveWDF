@@ -67,6 +67,7 @@ enum class OpAmpType {
     Tl061,
     Op275,
     Api2520,
+    Lm324,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -86,6 +87,7 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "op07" || lower == "op07c") return OpAmpType::Op07;
     if (lower == "op275") return OpAmpType::Op275;
     if (lower == "api2520") return OpAmpType::Api2520;
+    if (lower == "lm324" || lower == "lm324-n") return OpAmpType::Lm324;
     if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
         return OpAmpType::M5218Al;
     if (lower == "tl022" || lower == "tl022c") return OpAmpType::Tl022;
@@ -115,6 +117,7 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Op07: return "OP07";
         case OpAmpType::Op275: return "OP275";
         case OpAmpType::Api2520: return "API2520";
+        case OpAmpType::Lm324: return "LM324";
         case OpAmpType::M5218Al: return "M5218AL";
         case OpAmpType::Tl022: return "TL022";
         case OpAmpType::Mc33174: return "MC33174";
@@ -143,7 +146,8 @@ inline constexpr const char* kOpAmpTypeNames[] = {
     "TL071", "TL072", "TL082", "JRC4558", "RC4558",
     "LM308", "LM741", "NE5532", "CA3080", "OP07",
     "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
-    "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275", "API2520"};
+    "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275", "API2520",
+    "LM324"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
@@ -154,6 +158,8 @@ inline double opAmpSupplyMax(OpAmpType type) {
             return 18.0;
         case OpAmpType::Api2520:
             return 40.0;
+        case OpAmpType::Lm324:
+            return 32.0;
         case OpAmpType::Ne5532:
         case OpAmpType::Op07:
         case OpAmpType::Op275:
@@ -311,6 +317,18 @@ struct OpAmpModel {
                 m.outputImpedance = 30.0;
                 // Compensate the 13.9 V swing specified into 2 kΩ for Ro.
                 m.vRailPos = m.vRailNeg = 13.9 * (1.0 + m.outputImpedance / 2000.0);
+                break;
+            case OpAmpType::Lm324:
+                // TI LM324-N, SNOSC16D, nominal gain at 15 V with a >=2 kΩ
+                // load. TI's LM324-N product table gives 1 MHz and 0.5 V/µs.
+                // https://www.ti.com/lit/ds/symlink/lm324-n.pdf
+                // https://www.ti.com/product/LM324-N
+                m.openLoopGain = 100000.0;
+                m.gbw = 1.0e6;
+                m.slewRate = 0.5;
+                // Typical light-load headroom on nominal ±15 V rails.
+                // Single-supply documents set their own output bounds.
+                m.setVRailBounds(-14.995, 13.0);
                 break;
             case OpAmpType::Op07:
                 m.openLoopGain = 400000.0;
