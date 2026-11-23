@@ -1,6 +1,6 @@
 # LiveWDF pedal listening examples
 
-Each of the 21 tracks plays a dry guitar excerpt, pauses for about one third of a second, then plays the same input through the named LiveWDF circuit. The reel follows the same order and has embedded chapter markers. The recordings are mono at 48 kHz.
+Each of the 22 tracks plays a dry guitar excerpt, pauses for about one third of a second, then plays the same input through the named LiveWDF circuit. The reel follows the same order and has embedded chapter markers. The recordings are mono at 48 kHz.
 
 ## Reel index
 
@@ -27,6 +27,7 @@ Each of the 21 tracks plays a dry guitar excerpt, pauses for about one third of 
 | 19 | EHX Small Clone MN3007 | 02:55.940 | 03:00.950 | Listen for the more pronounced pitch motion. |
 | 20 | Boss DM-2 Analog Delay | 03:06.210 | 03:11.300 | The revised compander lets the repeats decay with less distortion. |
 | 21 | DOD 250 Overdrive Preamp Gray | 03:16.640 | 03:21.570 | Listen for the LM741 and silicon clipping on hard attacks. |
+| 22 | Marshall Bluesbreaker Mk I | 03:26.750 | 03:31.380 | Listen for the change in breakup between light and hard picking. |
 
 ## Source and signal levels
 
@@ -57,9 +58,10 @@ Knob values below are normalized positions from 0 to 1. Settings say **Factory**
 | 19 | PF300 major chords (7.72–12.40 s) | 0.6 V/FS | Factory | +14.5 dB | 0 / 0 |
 | 20 | Sire T7 performance 11 with echo tail (1.53–5.04 s, then 1.25 s with the input silent) | 0.75 V/FS | Factory | +19.0 dB | 0 / 0 |
 | 21 | PF300 palm mutes (15.67–20.27 s) | 1 V/FS | Factory | +10.0 dB | 0 / 0 |
+| 22 | Sire T7 performance 11 (1.53–5.83 s) | 1 V/FS | Factory | +10.3 dB | 0 / 0 |
 
 Each circuit received 1 second of silent warm-up before the portion used for playback.
- All 21 playback excerpts rendered without a rejected sample.
+ All 22 playback excerpts rendered without a rejected sample.
 
 These rejects occurred during discarded silent warm-up.
 

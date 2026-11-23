@@ -1,5 +1,5 @@
 {
-  "reel_samples": 9896160,
+  "reel_samples": 10352640,
   "sample_rate": 48000,
   "rejected_total": 112,
   "rejected_playback": 0,
@@ -876,6 +876,44 @@
       "render_log": "samples=268800 inputPeakV=0.14575 outputPeakV=0.24205 outputRmsV=0.033461 nonconverged=0 rejected=0 audibleRejects=0",
       "warmup_rejected": 0,
       "mp3_decoded_peak": 0.779268741607666
+    },
+    {
+      "index": 22,
+      "name": "Marshall Bluesbreaker Mk I",
+      "file": "22-marshall-bluesbreaker-mk-i.mp3",
+      "fixture": "Sire T7 performance 11",
+      "fixture_file": "sire-t7-performance-11",
+      "fixture_bounds": [
+        [
+          1.53,
+          5.83
+        ]
+      ],
+      "fixture_tail_sec": 0.0,
+      "test_hum": false,
+      "drive_v_per_fs": 1.0,
+      "knobs": {},
+      "circuit_sha256": "01d2a2b43803f2b8b15046e0db6b3c92a75f8ab68830963310c79ffecdf77225",
+      "playback_gain": 3.2581892726982256,
+      "wet_trim_db": 0.0,
+      "sweep": null,
+      "playback_rejected": 0,
+      "dry_peak_rms_v": [
+        0.12026834487915039,
+        0.01929472259905394
+      ],
+      "wet_peak_rms_v": [
+        0.19740633090612975,
+        0.03630365383112667
+      ],
+      "dry_samples": 206400,
+      "pair_samples": 428640,
+      "note": "Listen for the change in breakup between light and hard picking.",
+      "nonconverged": 0,
+      "rejected": 0,
+      "render_log": "samples=254400 inputPeakV=0.12027 outputPeakV=0.19741 outputRmsV=0.0327 nonconverged=0 rejected=0 audibleRejects=0",
+      "warmup_rejected": 0,
+      "mp3_decoded_peak": 0.6205015182495117
     }
   ]
 }
