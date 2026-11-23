@@ -50,9 +50,12 @@ jobs:
     steps:
       - uses: actions/download-artifact@v8
         with:
+          path: dist
           merge-multiple: true
 
       - name: Tag and release
+        working-directory: dist
         run: |
+          sha256sum -- * > SHA256SUMS
           previous=$(gh release list --exclude-pre-releases --limit 1 --json tagName -q '.[0].tagName')
-          gh release create "v$VERSION" LiveWDF-*.zip --target "$GITHUB_SHA" --title "LiveWDF $VERSION" --generate-notes ${previous:+--notes-start-tag "$previous"}
+          gh release create "v$VERSION" * --target "$GITHUB_SHA" --title "LiveWDF $VERSION" --generate-notes ${previous:+--notes-start-tag "$previous"}
