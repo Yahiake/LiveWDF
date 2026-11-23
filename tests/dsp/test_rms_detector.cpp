@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "compiler/Compiler.h"
 #include "devices/RmsDetector.h"
 #include "format/Document.h"
 #include "format/PartLibrary.h"
@@ -95,4 +96,21 @@ TEST_CASE("Format exposes a log RMS detector with valid defaults and validates o
     auto& part = doc.components.front();
     part.values["timeConstantSeconds"] = -1.0;
     REQUIRE_THROWS_AS(doc.toCircuit(), std::invalid_argument);
+}
+
+TEST_CASE("Compiler revision covers the log RMS detector's reference and time constant",
+          "[rms][compiler]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("input", "0");
+    circuit.addRmsDetector("input", "output", "0", {});
+    const auto original = livewdf::compiler::Compiler{}.compile(circuit);
+    REQUIRE(original.ok());
+    for (auto field : {&wdf::RmsDetectorModel::referenceVolts,
+                       &wdf::RmsDetectorModel::timeConstantSeconds}) {
+        auto changed = circuit;
+        changed.rmsDetectors.front().model.*field *= 2.0;
+        const auto result = livewdf::compiler::Compiler{}.compile(changed);
+        REQUIRE(result.ok());
+        REQUIRE(result.circuit->revision() != original.circuit->revision());
+    }
 }

@@ -162,6 +162,17 @@ std::string fingerprint(const wdf::Circuit& c) {
         mixDouble(hash, e.model.gain);
         mixDouble(hash, e.model.outputOhms);
     }
+    for (const auto& e : c.rmsDetectors) {
+        mixString(hash, e.input);
+        mixString(hash, e.common);
+        mixString(hash, e.name);
+        mixDouble(hash, e.model.referenceVolts);
+        mixDouble(hash, e.model.timeConstantSeconds);
+        mixDouble(hash, e.model.voltsPerDb);
+        mixDouble(hash, e.model.inputOhms);
+        mixDouble(hash, e.model.outputOhms);
+        mixBytes(hash, &e.outputCurrentIndex, sizeof(e.outputCurrentIndex));
+    }
     for (const auto& e : c.tri) {
         mixString(hash, e.g);
         mixString(hash, e.p);
