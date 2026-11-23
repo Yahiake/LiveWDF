@@ -282,6 +282,8 @@ TEST_CASE("Measure OP275 closed-loop response against an external SPICE model",
                         lwdf_test::csvNumber(rms), lwdf_test::csvNumber(errorPeak)});
         WARN("OP275 " << hz << " Hz gain error " << nativeDb - spiceDb
              << " dB, phase error " << phaseError << " deg, waveform RMS error " << rms << " V");
+        CHECK(std::abs(nativeDb - spiceDb) < 0.4);
+        CHECK(std::abs(phaseError) < 1.1);
         CHECK(engine.stateRejectCount() == 0);
     }
     lwdf_test::writeCsv("parts_op275", {"frequency_Hz", "livewdf_dB", "ngspice_dB",

@@ -533,13 +533,20 @@ struct OpAmpModel {
         return 1.0;
     }
 
+    /// ADI OP275 Rev. C, TPC 4: 60.115 dB open-loop gain at 15.309 kHz
+    /// gives a 15.51 MHz audio-band gain product. The same plot crosses
+    /// unity near 9 MHz after the high-frequency pole/zero pair.
+    double audioGainBandwidth() const noexcept {
+        return type == OpAmpType::Op275 ? gbw * (15.51 / 9.0) : gbw;
+    }
+
     /// GBW single-pole coefficient for the closed-loop gain `gain`:
     ///   f_cl = GBW / max(|gain|, 1)
     ///   g    = 1 - exp(-2*pi*f_cl/fs)
     /// A closed-loop bandwidth at or above Nyquist is transparent.
     double gbwCoeff(double gain, double sampleRate) const {
         const double g = std::max(std::abs(gain), 1.0);
-        const double fcl = gbw / g;
+        const double fcl = audioGainBandwidth() / g;
         if (fcl >= sampleRate * 0.5)
             return 1.0;
         return 1.0 - std::exp(-2.0 * kOpAmpPi * fcl / sampleRate);
@@ -818,9 +825,9 @@ struct OpAmpEngineLaw {
     }
 
     /// Backward-Euler pole coefficient for the dominant pole at
-    /// `f_p = gbw / openLoopGain`.
+    /// the audio-band gain product divided by the open-loop DC gain.
     static double alpha(const OpAmpModel& model, double sampleRate) {
-        const double fp = model.gbw / std::max(model.openLoopGain, 1.0);
+        const double fp = model.audioGainBandwidth() / std::max(model.openLoopGain, 1.0);
         return 2.0 * kOpAmpPi * fp / sampleRate;
     }
 

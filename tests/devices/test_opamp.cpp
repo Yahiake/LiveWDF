@@ -50,6 +50,14 @@ TEST_CASE("opamp model cards match the PedalKernel datasheet values", "[opamp][m
     REQUIRE(wdf::opAmpTypeFromString("unknown-part") == wdf::OpAmpType::Generic);
 }
 
+TEST_CASE("OP275 audio pole matches the measured open-loop gain", "[opamp][model]") {
+    const auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Op275);
+    const double poleHz = wdf::OpAmpEngineLaw::alpha(model, kFs) * kFs / (2.0 * kPi);
+    const double gain = model.openLoopGain / std::hypot(1.0, 15309.059 / poleHz);
+    CHECK(20.0 * std::log10(gain) == Approx(60.115).margin(0.01)); // ADI Rev. C, TPC 4
+    CHECK(model.gbw == Approx(9.0e6)); // Unity-gain crossover
+}
+
 TEST_CASE("MCI2001 card reproduces its published 600 ohm output rating", "[opamp][model]") {
     const auto type = wdf::opAmpTypeFromString("MCI-2001");
     REQUIRE(std::string_view(wdf::opAmpTypeName(type)) == "MCI2001");
