@@ -239,6 +239,12 @@ TEST_CASE("block solver falls back when the static graph is stale",
                                          joint.rootVoltages()[static_cast<size_t>(r)]));
     CAPTURE(worst, block.lastResidual(), joint.lastResidual());
     REQUIRE(worst < 1e-8);
+
+    REQUIRE(block.setExplicitRoots(false));
+    REQUIRE_FALSE(block.blockRoots());
+    block.step(sv);
+    REQUIRE(block.blockFallbackCount() == 1);
+    REQUIRE_FALSE(block.lastBlockFallback());
 }
 
 class CascadeAuditProbe : public wdf::Engine {
