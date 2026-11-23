@@ -160,10 +160,13 @@ TEST_CASE("AC-coupled opamp follower outputs keep their DC bias",
     wdf::Engine engine(c, kFs);
     std::vector<double> voltage, rootVoltage;
     REQUIRE(engine.solveDc(voltage, rootVoltage));
+    const double followerGain = model.openLoopGain / (1.0 + model.openLoopGain);
+    double expected = 4.5;
     for (size_t i = 1; i < nodes.size(); ++i) {
+        expected *= followerGain;
         const int output = engine.nodeIndex(nodes[i]);
         REQUIRE(output >= 0);
-        CHECK(voltage[static_cast<size_t>(output)] == Approx(4.5).margin(1e-4));
+        CHECK(voltage[static_cast<size_t>(output)] == Approx(expected).margin(1e-7));
     }
 }
 
@@ -453,4 +456,34 @@ TEST_CASE("opamp engine pedalkernel golden probe", "[opamp][probe]") {
     const double rms = std::sqrt(sumsq / (kN - 9600));
     WARN("pedalkernel probe peak=" << peak << " rms=" << rms);
     REQUIRE(peak > 0.0);
+}
+
+TEST_CASE("single negative-feedback opamp solves rails and recovery without Newton",
+          "[opamp][engine][rail][block]") {
+    auto model = opamp(wdf::OpAmpType::Ne5532, 11.0, 11.0);
+    model.openLoopGain = 316227.766;
+    model.gbw = 50.0e6;
+    model.slewRate = 2.75;
+    model.outputImpedance = 5.0;
+    auto circuit = inverting(2000.0, 20000.0, model);
+    circuit.addCap("inv", "out", 120e-12, "Cf");
+    circuit.addRes("out", "0", 600.0, "Rload");
+    wdf::Engine engine(circuit, kFs);
+    const int output = engine.nodeIndex("out");
+    REQUIRE(output >= 0);
+    REQUIRE(engine.blockRoots());
+
+    for (const auto& [input, expected] :
+         std::array<std::pair<double, double>, 5>{{{.05, -.5}, {2.0, -10.89},
+                                                   {-2.0, 10.89}, {-.05, .5}, {0.0, 0.0}}}) {
+        double settled = 0.0;
+        for (int n = 0; n < 64; ++n) {
+            settled = engine.step({input})[static_cast<size_t>(output)];
+            REQUIRE(engine.lastConverged());
+            REQUIRE_FALSE(engine.lastStateRejected());
+            CHECK(engine.newtonIterations() == 0);
+        }
+        CHECK(settled == Approx(expected).margin(0.025));
+    }
+    CHECK(engine.blockFallbackCount() == 0);
 }

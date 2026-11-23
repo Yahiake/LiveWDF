@@ -91,6 +91,22 @@ TEST_CASE("opamp signed bounds allow positive single-supply headroom", "[opamp][
     CHECK(model.evalStatic(4.5 / model.openLoopGain) == Approx(4.5));
 }
 
+TEST_CASE("LM324-N datasheet card supports single-supply rails", "[opamp][model]") {
+    const auto type = wdf::opAmpTypeFromString("LM324-N");
+    REQUIRE(type == wdf::OpAmpType::Lm324);
+    REQUIRE(wdf::opAmpTypeFromString(wdf::opAmpTypeName(type)) == type);
+    REQUIRE(wdf::opAmpSupplyMax(type) == Approx(32.0));
+
+    auto model = wdf::OpAmpModel::fromType(type);
+    CHECK(model.openLoopGain == Approx(100000.0));
+    CHECK(model.gbw == Approx(1.0e6));
+    CHECK(model.slewRate == Approx(0.5));
+    model.setVRailBounds(0.005, 7.0);
+    CHECK(model.evalStatic(-0.0001) == Approx(0.005));
+    CHECK(model.evalStatic(0.0001) == Approx(7.0));
+    CHECK(model.evalStatic(40e-6) == Approx(4.0));
+}
+
 TEST_CASE("MiSTer class-AB stage has a small-signal slope and bounded drive", "[opamp][model][class-ab]") {
     const auto type = wdf::opAmpTypeFromString("LM741-Class-AB");
     REQUIRE(type == wdf::OpAmpType::Lm741ClassAB);
