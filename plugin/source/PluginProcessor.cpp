@@ -8,10 +8,25 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <cmath>
 
 namespace livewdf {
 
 namespace {
+
+// The low-frequency group delay is the first moment of the oversampling
+// round trip. Measure after decimation so the phase of the decimator is included.
+float halfBandLatency(wdf::OversamplingFactor factor) {
+    wdf::HalfBandOversampler oversampler(factor);
+    double gain = 0.0;
+    double moment = 0.0;
+    for (int i = 0; i < 256; ++i) {
+        const double sample = oversampler.process(i == 0 ? 1.0 : 0.0, [](double x) { return x; });
+        gain += sample;
+        moment += i * sample;
+    }
+    return static_cast<float>(moment / gain);
+}
 
 std::atomic_flag affineWorkerBusy;
 
@@ -87,6 +102,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
             juce::NormalisableRange<float>(0.0f, 1.0f, wdf::kLivePotStep), 0.5f));
     }
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"report_latency", 1}, "Report Latency", true,
+        juce::AudioParameterBoolAttributes().withAutomatable(false)));
+
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
         juce::ParameterID{"solve_quality", 1}, "Solve Quality",
         juce::StringArray{"Accurate", "Fast Live"}, 1));
@@ -111,11 +130,11 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
 
     // Initialize oversamplers (2x = factor 1, 4x = factor 2, 8x = factor 3)
     oversampler2x_ = std::make_unique<juce::dsp::Oversampling<float>>(
-        2, 1, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+        2, 1, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, true);
     oversampler4x_ = std::make_unique<juce::dsp::Oversampling<float>>(
-        2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+        2, 2, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, true);
     oversampler8x_ = std::make_unique<juce::dsp::Oversampling<float>>(
-        2, 3, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, false);
+        2, 3, juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, true, true);
 
     // **No built-in circuit.** A factory preset is uneditable and cannot carry
     // the routed wires the editor draws, so the plugin opens empty and waits for
@@ -146,12 +165,17 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     oversampler2x_->initProcessing(static_cast<size_t>(samplesPerBlock));
     oversampler4x_->initProcessing(static_cast<size_t>(samplesPerBlock));
     oversampler8x_->initProcessing(static_cast<size_t>(samplesPerBlock));
+    oversamplersPrepared_ = true;
 
     oversampler2x_->reset();
     oversampler4x_->reset();
     oversampler8x_->reset();
     halfBandOversamplerL_.reset();
     halfBandOversamplerR_.reset();
+    const juce::dsp::ProcessSpec spec{sampleRate, static_cast<juce::uint32>(samplesPerBlock), 2};
+    halfBandPadding_.prepare(spec);
+    dryDelay_.prepare(spec);
+    dryDelaySamples_ = 0;
     engineLock.unlock();
 
     // Scratch for the dry/wet copy. Pre-size larger than the announced host
@@ -169,6 +193,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     if (!currentDoc_.components.empty())
         loadCircuitDocument(currentDoc_, false);
     currentFile_ = circuitFile;
+    updateReportedLatency();
 }
 
 void LiveWDFPluginProcessor::releaseResources() {
@@ -178,6 +203,26 @@ void LiveWDFPluginProcessor::releaseResources() {
     oversampler8x_->reset();
     halfBandOversamplerL_.reset();
     halfBandOversamplerR_.reset();
+    halfBandPadding_.reset();
+    dryDelay_.reset();
+}
+
+juce::dsp::Oversampling<float>* LiveWDFPluginProcessor::activePolyphaseOversampler() const noexcept {
+    if (!useHalfBand_) {
+        switch (currentOversamplingFactor_) {
+            case 2: return oversampler2x_.get();
+            case 4: return oversampler4x_.get();
+            case 8: return oversampler8x_.get();
+            default: break;
+        }
+    }
+    return nullptr;
+}
+
+void LiveWDFPluginProcessor::updateReportedLatency() {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    const bool report = *apvts_.getRawParameterValue("report_latency") > 0.5f;
+    setLatencySamples(report ? processingLatencySamples_.load(std::memory_order_relaxed) : 0);
 }
 
 bool LiveWDFPluginProcessor::shouldForceAccurate() const {
@@ -192,6 +237,14 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    applyPendingCircuitOptions();
+    if (!isNonRealtime() && !currentDoc_.components.empty())
+        prepareFastLiveAffine();
+    updateReportedLatency();
+}
+
+void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (currentDoc_.components.empty())
         return;
@@ -202,10 +255,6 @@ void LiveWDFPluginProcessor::timerCallback() {
         loadCircuitDocument(currentDoc_, false);
         currentFile_ = circuitFile;
     }
-
-    // Offline processBlock may call this timer directly for oversampling.
-    if (!isNonRealtime())
-        prepareFastLiveAffine();
 }
 
 void LiveWDFPluginProcessor::prepareFastLiveAffine() {
@@ -405,7 +454,10 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
 }
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc) {
-    return loadCircuitDocument(doc, true);
+    const bool loaded = loadCircuitDocument(doc, true);
+    if (loaded)
+        updateReportedLatency();
+    return loaded;
 }
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc,
@@ -469,20 +521,31 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
             probeVoltages_.assign(probeNodes.size(), 0.0);
             probeNodes_ = std::move(probeNodes);
         }
-        const bool changedOversampling = currentOversamplingFactor_ != factor || useHalfBand_ != halfBand;
         currentOversamplingFactor_ = factor;
         useHalfBand_ = halfBand;
+        int latency = 0;
         if (halfBand) {
             const auto f = factor == 4 ? wdf::OversamplingFactor::X4 : wdf::OversamplingFactor::X2;
             halfBandOversamplerL_.setFactor(f);
             halfBandOversamplerR_.setFactor(f);
             halfBandOversamplerL_.reset();
             halfBandOversamplerR_.reset();
-        } else if (changedOversampling) {
-            if (factor == 2) oversampler2x_->reset();
-            if (factor == 4) oversampler4x_->reset();
-            if (factor == 8) oversampler8x_->reset();
+            if (oversamplersPrepared_) {
+                static const float latency2x = halfBandLatency(wdf::OversamplingFactor::X2);
+                static const float latency4x = halfBandLatency(wdf::OversamplingFactor::X4);
+                const float nominal = factor == 4 ? latency4x : latency2x;
+                latency = static_cast<int>(std::ceil(nominal));
+                // Keep the first-order all-pass away from a near-zero delay.
+                if (latency - nominal < 0.618f)
+                    ++latency;
+                halfBandPadding_.reset();
+                halfBandPadding_.setDelay(latency - nominal);
+            }
+        } else if (auto* oversampler = activePolyphaseOversampler(); oversamplersPrepared_ && oversampler) {
+            oversampler->reset();
+            latency = juce::roundToInt(oversampler->getLatencyInSamples());
         }
+        processingLatencySamples_.store(latency, std::memory_order_relaxed);
 
         // **One control per label.** The editor writes a grouped value to the
         // whole group; the plugin builds a group from the same document and
@@ -755,6 +818,7 @@ void LiveWDFPluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
 void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
     if (xmlState != nullptr && xmlState->hasTagName(apvts_.state.getType())) {
+        std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
         apvts_.replaceState(juce::ValueTree::fromXml(*xmlState));
 
         // Restore custom LiveWDF JSON document
@@ -768,6 +832,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
                 loadCircuitDocument(doc, false);
             }
         }
+        updateReportedLatency();
     }
 }
 

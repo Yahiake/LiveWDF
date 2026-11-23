@@ -85,6 +85,10 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
+    reportLatencyBtn_.setTooltip("Report oversampling delay to the DAW. Turning this off keeps the audio timing the same.");
+    addAndMakeVisible(reportLatencyBtn_);
+    reportLatencyAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "report_latency", reportLatencyBtn_);
+
     oversampleExportBtn_.setTooltip("Use 4× Polyphase when the host renders offline. "
                                     "Turn off to use the playback oversampling setting.");
     addAndMakeVisible(oversampleExportBtn_);
@@ -158,7 +162,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // 9. Window configuration (spacious, wide layout)
     setSize(1080, 750);
     setResizable(true, true);
-    setResizeLimits(880, 620, 1800, 1300);
+    setResizeLimits(1000, 620, 1800, 1300);
 
     // 10. Start UI update timer at 30 Hz
     startTimerHz(30);
@@ -483,6 +487,7 @@ void LiveWDFPluginEditor::resized() {
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
+    reportLatencyBtn_.setBounds(topBar.removeFromRight(122).reduced(6, 10));
     auto oversamplingControls = topBar.removeFromRight(120).reduced(6, 3);
     oversamplingCombo_.setBounds(oversamplingControls.removeFromTop(27));
     oversampleExportBtn_.setBounds(oversamplingControls);

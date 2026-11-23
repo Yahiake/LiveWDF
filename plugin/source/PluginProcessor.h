@@ -8,6 +8,7 @@
 #include "format/ControlGroups.h"
 #include "gui/DualOscilloscope.h"
 
+#include <atomic>
 #include <future>
 #include <mutex>
 #include <memory>
@@ -34,6 +35,7 @@ public:
     void releaseResources() override;
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
     void processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
+    void processBlockBypassed(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) override;
 
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
@@ -143,8 +145,18 @@ private:
     bool attemptedGridCurrent_ = true;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
+    bool oversamplersPrepared_ = false;
     wdf::HalfBandOversampler halfBandOversamplerL_{wdf::OversamplingFactor::X1};
     wdf::HalfBandOversampler halfBandOversamplerR_{wdf::OversamplingFactor::X1};
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Thiran> halfBandPadding_{2};
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::None> dryDelay_{32};
+    std::atomic<int> processingLatencySamples_{0};
+    int dryDelaySamples_ = 0;
+
+    juce::dsp::Oversampling<float>* activePolyphaseOversampler() const noexcept;
+    void applyPendingCircuitOptions();
+    void updateReportedLatency();
+    void processDryDelay(juce::dsp::AudioBlock<float> block, bool replace, int latency) noexcept;
 
     // Engine instances (stereo pair)
     // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.

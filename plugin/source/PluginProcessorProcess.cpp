@@ -8,6 +8,55 @@
 
 namespace livewdf {
 
+namespace {
+
+void conditionInput(juce::dsp::AudioBlock<float> block, float gain, bool foldToMono) noexcept {
+    block.multiplyBy(gain);
+    if (foldToMono && block.getNumChannels() > 1) {
+        float* left = block.getChannelPointer(0);
+        float* right = block.getChannelPointer(1);
+        for (size_t i = 0; i < block.getNumSamples(); ++i) {
+            const float mono = 0.5f * (left[i] + right[i]);
+            left[i] = mono;
+            right[i] = mono;
+        }
+    }
+}
+
+}  // namespace
+
+void LiveWDFPluginProcessor::processDryDelay(juce::dsp::AudioBlock<float> block,
+                                             bool replace, int latency) noexcept {
+    if (latency != dryDelaySamples_) {
+        dryDelaySamples_ = latency;
+        dryDelay_.reset();
+        dryDelay_.setDelay(static_cast<float>(latency));
+    }
+    if (latency == 0)
+        return;
+
+    for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
+        float* data = block.getChannelPointer(ch);
+        for (size_t i = 0; i < block.getNumSamples(); ++i) {
+            dryDelay_.pushSample(static_cast<int>(ch), data[i]);
+            const float delayed = dryDelay_.popSample(static_cast<int>(ch));
+            if (replace)
+                data[i] = delayed;
+        }
+    }
+}
+
+void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buffer,
+                                                   juce::MidiBuffer& midiMessages) {
+    juce::ignoreUnused(midiMessages);
+    const int inputChannels = std::min(getMainBusNumInputChannels(), buffer.getNumChannels());
+    for (int ch = inputChannels; ch < buffer.getNumChannels(); ++ch)
+        buffer.clear(ch, 0, buffer.getNumSamples());
+    if (inputChannels > 0)
+        processDryDelay(juce::dsp::AudioBlock<float>(buffer).getSubsetChannelBlock(0, inputChannels),
+                        true, processingLatencySamples_.load(std::memory_order_relaxed));
+}
+
 void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
     // Denormals for the whole callback. The WDF state is a network of
     // capacitors and tube junctions; as a note decays the state can reach
@@ -24,10 +73,10 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     if (numChannels == 0 || numSamples == 0) return;
 
-    // Offline hosts can process immediately without running a message loop.
-    const bool offline = isNonRealtime();
-    if (offline)
-        timerCallback();
+    // A bounce can apply pending processing options itself. Host latency
+    // notifications are sent by the control thread.
+    if (isNonRealtime())
+        applyPendingCircuitOptions();
 
     const bool fastLive = !shouldForceAccurate() && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
 
@@ -42,48 +91,36 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float wetMix = mixPercent * 0.01f;
     const float dryMix = 1.0f - wetMix;
 
-    // Apply input trim
-    buffer.applyGain(inputGain);
-
-    // Mono is the default. A stereo host still hands us two channels, so fold
-    // them to one *before* the dry copy, the scope and the oversampler: then
-    // the dry path, the wet path and the scope all agree on what the mono
-    // signal is. The right channel is written from the left engine's output
-    // below, so the result is genuinely dual-mono, not a silent right channel.
     const bool wantStereo = stereoRequested && numChannels > 1;
-    if (!wantStereo && numChannels > 1) {
-        float* left = buffer.getWritePointer(0);
-        float* right = buffer.getWritePointer(1);
-        for (int i = 0; i < numSamples; ++i) {
-            const float mono = 0.5f * (left[i] + right[i]);
-            left[i] = mono;
-            right[i] = mono;
-        }
-    }
-
-    // Push input audio into circular scope buffer
-    inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
-
-    // Keep a dry copy if wetMix < 1.0f. The buffer is a member prepared before
-    // playback so the audio thread only ever copies into existing storage.
-    const bool needDry = dryMix > 0.001f;
-    bool dryAvailable = false;
-    if (needDry) {
-        // Never resize from the audio thread. A host that exceeds the block it
-        // announced in prepareToPlay gets a fully wet block for this callback
-        // instead of a possible allocation glitch.
-        if (dryBuffer_.getNumChannels() >= numChannels &&
-            dryBuffer_.getNumSamples() >= numSamples) {
-            for (int ch = 0; ch < numChannels; ++ch)
-                dryBuffer_.copyFrom(ch, 0, buffer, ch, 0, numSamples);
-            dryAvailable = true;
-        }
-    }
 
     // Try to acquire engine lock (never block audio thread)
     std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-    if (!lock.owns_lock() || !leftEngine_ || outNodeIndex_ < 0) {
-        // Fallback: pass through with master gain
+    const int latency = processingLatencySamples_.load(std::memory_order_relaxed);
+    auto* activeOversampler = lock.owns_lock() ? activePolyphaseOversampler() : nullptr;
+    juce::dsp::AudioBlock<float> block(buffer);
+    const bool canProcess = lock.owns_lock() && leftEngine_ && outNodeIndex_ >= 0
+        && !(activeOversampler && numSamples > samplesPerBlock_);
+
+    // Keep untrimmed separate channels in the history, including at Mix 100%.
+    // Host bypass can then return the delayed original input immediately.
+    const bool dryAvailable = canProcess && dryMix > 0.001f && dryBuffer_.getNumSamples() >= numSamples;
+    if (latency == 0)
+        conditionInput(block, inputGain, !wantStereo);
+    if (dryAvailable) {
+        auto dry = juce::dsp::AudioBlock<float>(dryBuffer_)
+            .getSubsetChannelBlock(0, block.getNumChannels()).getSubBlock(0, block.getNumSamples());
+        dry.copyFrom(block);
+        processDryDelay(dry, true, latency);
+        if (latency != 0)
+            conditionInput(dry, inputGain, !wantStereo);
+    } else {
+        processDryDelay(block, !canProcess, latency);
+    }
+    if (latency != 0)
+        conditionInput(block, inputGain, !wantStereo);
+
+    inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
+    if (!canProcess) {
         buffer.applyGain(outputGain);
         outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
         return;
@@ -117,15 +154,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     if (processStereo)
         rightEngine_->useMixedAffineReduction(fastLive);
 
-    // Oversampling setup
-    juce::dsp::Oversampling<float>* activeOversampler = nullptr;
-    if (!useHalfBand_) {
-        if (currentOversamplingFactor_ == 2) activeOversampler = oversampler2x_.get();
-        else if (currentOversamplingFactor_ == 4) activeOversampler = oversampler4x_.get();
-        else if (currentOversamplingFactor_ == 8) activeOversampler = oversampler8x_.get();
-    }
-
-    juce::dsp::AudioBlock<float> block(buffer);
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
     if (processStereo)
         std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svRight_.begin());
@@ -264,6 +292,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Downsample if oversampling was active
     if (activeOversampler) {
         activeOversampler->processSamplesDown(block);
+    } else if (useHalfBand_) {
+        juce::dsp::ProcessContextReplacing<float> context(block);
+        halfBandPadding_.process(context);
     }
 
     // Apply output master gain & dry/wet mix
