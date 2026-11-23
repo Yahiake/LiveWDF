@@ -193,6 +193,7 @@ public:
         gridLimitHits_ = 0;
         keptBest_ = false;
         runtimeBlockUsed_ = false;
+        lastBlockFallback_ = false;
         lastStateRejected_ = false;
         lastMaxNodeIndex_ = -1;
         lastMaxNodeVolts_ = 0.0;
