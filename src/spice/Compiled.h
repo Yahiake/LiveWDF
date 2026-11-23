@@ -46,6 +46,12 @@ struct Compiled {
         std::size_t outputCurrentIndex;
     };
     std::vector<CompiledBucketBrigade> bucketBrigades;
+    struct CompiledRmsDetector {
+        Port input;
+        RmsDetectorModel model;
+        std::size_t outputCurrentIndex;
+    };
+    std::vector<CompiledRmsDetector> rmsDetectors;
     std::vector<CompiledTube> tri;
     /// Diodes as compiled ports: each becomes a root port, after the tubes'.
     std::vector<std::pair<Port, DiodeModel>> diode;
@@ -216,6 +222,9 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         out.bucketBrigades.push_back({port(bbd.input, bbd.common),
                                      port(bbd.control, bbd.common),
                                      bbd.model, bbd.outputCurrentIndex});
+    for (const auto& detector : c.rmsDetectors)
+        out.rmsDetectors.push_back({port(detector.input, detector.common),
+                                    detector.model, detector.outputCurrentIndex});
     for (const auto& t : c.tri) {
         CompiledTube ct;
         ct.pk = port(t.p, t.k);

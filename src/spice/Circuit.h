@@ -20,6 +20,7 @@
 #include "devices/Bjt.h"
 #include "devices/BucketBrigade.h"
 #include "devices/OpAmp.h"
+#include "devices/RmsDetector.h"
 
 namespace wdf {
 
@@ -459,6 +460,13 @@ struct BucketBrigade {
     std::size_t outputCurrentIndex = 0;
 };
 
+/// A log-RMS level detector drives a Norton voltage-output equivalent.
+struct RmsDetector {
+    std::string input, common, name;
+    RmsDetectorModel model;
+    std::size_t outputCurrentIndex;
+};
+
 struct Circuit {
     std::vector<Res> res;
     std::vector<Cap> cap;
@@ -475,6 +483,7 @@ struct Circuit {
     std::vector<BjtDevice> bjt;
     std::vector<OpAmp> opamp;
     std::vector<BucketBrigade> bucketBrigades;
+    std::vector<RmsDetector> rmsDetectors;
 
     void addRes(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {
@@ -503,6 +512,17 @@ struct Circuit {
         addRes(output, common, model.outputOhms, id + "_out");
         bucketBrigades.push_back({input, control, common, id, model, isrc.size()});
         addIsrc(common, output, model.outputBias / model.outputOhms, 0.0, {}, id + "_drive");
+    }
+    void addRmsDetector(const std::string& input, const std::string& output,
+                        const std::string& common, const RmsDetectorModel& model,
+                        const std::string& name = {}) {
+        if (!model.valid())
+            throw std::invalid_argument("Invalid RMS detector parameters: " + name);
+        const auto id = name.empty() ? ("RMS" + std::to_string(rmsDetectors.size() + 1)) : name;
+        addRes(input, common, model.inputOhms, id + "_in");
+        addRes(output, common, model.outputOhms, id + "_out");
+        rmsDetectors.push_back({input, common, id, model, isrc.size()});
+        addIsrc(common, output, model.dcOutputCurrent(0.0), 0.0, {}, id + "_drive");
     }
     void addSrc(const std::string& a, const std::string& b, double dc = 0.0, double ac = 0.0,
                 std::vector<double> sin = {}, const std::string& name = {}) {

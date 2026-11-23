@@ -49,7 +49,7 @@ public:
                 node.assign(static_cast<size_t>(N_), 0.0);
                 rootV.assign(static_cast<size_t>(K_), 0.0);
             }
-        } else if (bucketBrigades_.empty()) {
+        } else if (bucketBrigades_.empty() && rmsDetectors_.empty()) {
             std::vector<double> biasNode;
             if (solveNetworkBias(biasNode)) {
                 for (int n = 0; n < N_; ++n) {
@@ -67,6 +67,10 @@ public:
                 comp_.bucketBrigades[i].model.inputBias;
             bbd.delay.reset(input);
         }
+
+        for (auto& rms : rmsDetectors_)
+            rms.detector.reset(haveDc ? rms.input.voltage(node, dcValues_.data(), dcValues_.size())
+                                     : 0.0);
 
         // The closed-form root groups use the previous sample's current as
         // their branch-continuity seed. Seed it from the DC operating point so
@@ -284,6 +288,8 @@ public:
             }
             for (const auto& bbd : bucketBrigades_)
                 isCur_[bbd.outputCurrentIndex] = bbd.delay.outputCurrent();
+            for (const auto& rms : rmsDetectors_)
+                isCur_[rms.outputCurrentIndex] = rms.detector.outputCurrent();
         }
 
         // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
@@ -516,6 +522,9 @@ public:
         for (auto& bbd : bucketBrigades_)
             bbd.delay.step(bbd.input.voltage(node_, sourceValues, sourceCount),
                            bbd.clock.voltage(node_, sourceValues, sourceCount), T_);
+
+        for (auto& rms : rmsDetectors_)
+            rms.detector.step(rms.input.voltage(node_, sourceValues, sourceCount));
 
         // Incident waves, then store the reactive states for the next sample.
         // Direct pre-compiled updates avoid acrossPort indirections and branch checks.
