@@ -2,6 +2,8 @@
 
 // Dense linear algebra (setup only -- never in the audio loop).
 
+#include "spice/FactoredTransfer.h"
+
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -17,7 +19,7 @@ using Dense = std::vector<std::vector<double>>;
 
 /// Gaussian elimination with partial pivoting on A (n x n) in place, applying
 /// the same row operations to B (n x m). Returns false if a pivot is zero.
-inline bool solveInPlace(Dense& A, Dense& B) {
+inline bool solveInPlace(Dense& A, Dense& B, FactoredTransfer* factors = nullptr) {
     const int n = static_cast<int>(A.size());
     const int m = B.empty() ? 0 : static_cast<int>(B[0].size());
     for (int k = 0; k < n; ++k) {
@@ -27,6 +29,8 @@ inline bool solveInPlace(Dense& A, Dense& B) {
                 p = i;
         if (A[p][k] == 0.0)
             return false;
+        if (factors)
+            factors->rows[k].pivot = p;
         if (p != k) {
             std::swap(A[p], A[k]);
             std::swap(B[p], B[k]);
@@ -36,11 +40,31 @@ inline bool solveInPlace(Dense& A, Dense& B) {
             const double f = A[i][k] / piv;
             if (f == 0.0)
                 continue;
+            if (factors)
+                factors->forward.push_back({i, f});
             for (int j = k; j < n; ++j)
                 A[i][j] -= f * A[k][j];
             for (int j = 0; j < m; ++j)
                 B[i][j] -= f * B[k][j];
         }
+        if (factors)
+            factors->rows[k].forwardEnd = static_cast<int>(factors->forward.size());
+    }
+    if (factors) {
+        for (int i = n - 1; i >= 0; --i) {
+            // Each RHS column is independent; update the contiguous row for
+            // each nonzero pivot coefficient, preserving its summation order.
+            for (int k = i + 1; k < n; ++k) {
+                const double coefficient = A[i][k];
+                if (coefficient == 0.0)
+                    continue;
+                for (int j = 0; j < m; ++j)
+                    B[i][j] -= coefficient * B[k][j];
+            }
+            for (int j = 0; j < m; ++j)
+                B[i][j] /= A[i][i];
+        }
+        return true;
     }
     for (int i = n - 1; i >= 0; --i) {
         for (int j = 0; j < m; ++j) {
