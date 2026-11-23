@@ -908,7 +908,35 @@ struct Circuit {
                   const std::string& vcc, const std::string& vee,
                   const OpAmpModel& model, const std::string& name = {}) {
         const std::string oName = name.empty() ? ("U" + std::to_string(opamp.size() + 1)) : name;
-        opamp.push_back({out, neg, pos, vcc, vee, model, oName});
+        if (model.type != OpAmpType::Lm358) {
+            opamp.push_back({out, neg, pos, vcc, vee, model, oName});
+            return;
+        }
+        // MiSTer-Discrete 692e777, circuits/parts/lm358.lib. Each driver
+        // returns its unused steering current to the same supply that fed it.
+        // The two buffered copies of the pole implement these current paths
+        // without a branch-current probe or another nonlinear equation.
+        const auto pole = oName + "$pole";
+        opamp.push_back({pole, neg, pos, vcc, vee, model, oName});
+        const auto high = oName + "$high", low = oName + "$low";
+        const auto bh = oName + "$sourceBase", bl = oName + "$sinkBase";
+        addVCVS(high, vcc, pole, vcc, 1.0, 0.01, oName + "$sourceDrive");
+        addVCVS(low, vee, pole, vee, 1.0, 0.01, oName + "$sinkDrive");
+        addIsrc(vcc, bh, 40e-3, 0.0, {}, oName + "$sourceBias");
+        addIsrc(bl, vee, 20e-3, 0.0, {}, oName + "$sinkBias");
+        addRes(bh, high, 100e3, oName + "$sourceReturn");
+        addRes(low, bl, 100e3, oName + "$sinkReturn");
+        const DiodeModel steering(1e-5, 1.0, 0.0, 1e12);
+        addDiode(bh, high, steering, oName + "$sourceSteer");
+        addDiode(low, bl, steering, oName + "$sinkSteer");
+        addDiode(bh, out, DiodeModel(1.2e-13, 2.0, 0.0, 1e12), oName + "$darlington");
+        addDiode(out, bl, DiodeModel(1.2e-14, 1.0, 54.0, 1e12), oName + "$pnp");
+        // The upstream floor diode and 29 µA pulldown combine into one
+        // Shockley branch: I(out→vee) = Ipd * (1 - exp(-Vout,vee / VT)).
+        addDiode(vee, out, DiodeModel(29e-6, 1.0, 0.0, 1e12), oName + "$floor");
+        addRes(out, vcc, 20e6, oName + "$loadPlus");
+        addRes(out, vee, 20e6, oName + "$loadMinus");
+        addIsrc(vcc, vee, 0.321e-3, 0.0, {}, oName + "$quiescent");
     }
 
     std::vector<std::string> allNodes() const {

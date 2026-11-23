@@ -362,6 +362,11 @@ inline const BjtEntry kBjtTable[] = {
     // Silicon PNP (LTspice standard.bjt)
     {"2N3906",  makeEM(1e-14,    200.0,  4.0,   1.0,   1.0,   true)},
     {"2N2907",  makeEM(1e-14,    250.0,  3.0,   1.0,   1.0,   true)},
+    // Fairchild 2N4403, LTspice standard.bjt: static Gummel-Poon transport.
+    // Package resistances and junction charge are outside this DC card.
+    {"2N4403", withForwardRolloff(withLowCurrentCorrections(
+                    makeEM(650.6e-18, 216.2, 3.578, 1.0, 1.0, true),
+                    115.7, 58.72e-15, 1.829), 1.079)},
     {"BC557B",  makeEM(3.83e-14, 344.4,  14.84, 1.008, 1.005, true)},
     {"2N5087",  makeEM(6.734e-15,254.1,  2.683, 1.0,   1.0,   true)},
 

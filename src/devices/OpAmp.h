@@ -69,6 +69,7 @@ enum class OpAmpType {
     Api2520,
     Lm324,
     Mci2001,
+    Lm358,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -89,6 +90,7 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "op275") return OpAmpType::Op275;
     if (lower == "mci2001" || lower == "mci-2001") return OpAmpType::Mci2001;
     if (lower == "api2520") return OpAmpType::Api2520;
+    if (lower == "lm358") return OpAmpType::Lm358;
     if (lower == "lm324" || lower == "lm324-n") return OpAmpType::Lm324;
     if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
         return OpAmpType::M5218Al;
@@ -121,6 +123,7 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Mci2001: return "MCI2001";
         case OpAmpType::Api2520: return "API2520";
         case OpAmpType::Lm324: return "LM324";
+        case OpAmpType::Lm358: return "LM358";
         case OpAmpType::M5218Al: return "M5218AL";
         case OpAmpType::Tl022: return "TL022";
         case OpAmpType::Mc33174: return "MC33174";
@@ -150,7 +153,7 @@ inline constexpr const char* kOpAmpTypeNames[] = {
     "LM308", "LM741", "NE5532", "CA3080", "OP07",
     "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
     "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275", "API2520",
-    "LM324", "MCI2001"};
+    "LM324", "MCI2001", "LM358"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
@@ -163,6 +166,7 @@ inline double opAmpSupplyMax(OpAmpType type) {
             return 50.0;  // Harris HA-911 V+ to V− absolute maximum.
         case OpAmpType::Api2520:
             return 40.0;
+        case OpAmpType::Lm358:
         case OpAmpType::Lm324:
             return 32.0;
         case OpAmpType::Ne5532:
@@ -334,6 +338,15 @@ struct OpAmpModel {
                 m.outputImpedance = 30.0;
                 // Compensate the 13.9 V swing specified into 2 kΩ for Ro.
                 m.vRailPos = m.vRailNeg = 13.9 * (1.0 + m.outputImpedance / 2000.0);
+                break;
+            case OpAmpType::Lm358:
+                // Legacy LM358, TI SLOS068AB. The named Circuit part adds
+                // the class-B output stage. These are its integrator limits
+                // at nominal ±15 V, before the load-dependent follower drop.
+                m.openLoopGain = 100000.0;
+                m.gbw = 0.7e6;
+                m.slewRate = 0.3;
+                m.setVRailBounds(-15.0 + 0.245, 15.0 - 0.47);
                 break;
             case OpAmpType::Lm324:
                 // TI LM324-N, SNOSC16D, nominal gain at 15 V with a >=2 kΩ
