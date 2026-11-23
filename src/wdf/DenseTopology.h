@@ -125,10 +125,14 @@ struct NewtonBlock {
     // rest of the network (folding, residual checks, node reconstruction).  The
     // reduced system is an internal solve detail.
     bool linearReduction = false;
+    unsigned linearSlopeMask = ~0u;
+    std::vector<NewtonBlock> alternateLinearSlopes;
     std::vector<int> linearDevices;      ///< device indices eliminated algebraically
     std::vector<int> linearPorts;        ///< their active ports, in linearDevices order
     std::vector<double> linearG;         ///< nominal d(current)/d(active voltage) per linear device
     std::vector<double> linearA;         ///< mL x mL: I + G*Z on the linear columns
+    std::vector<double> linearLU;
+    std::vector<int> linearPivots;
     std::vector<double> linearALN;       ///< mL x nN: G*Z from linear rows to nonlinear columns
     std::vector<double> linearK;         ///< mL x nN: i_L = K0 + linearK * i_N
 
@@ -146,11 +150,15 @@ struct NewtonBlock {
 
     void clearLinearReduction() {
         linearReduction = false;
+        linearSlopeMask = ~0u;
+        alternateLinearSlopes.clear();
         linearDevices.clear();
         linearPorts.clear();
         linearG.clear();
         linearA.clear();
         linearALN.clear();
+        linearLU.clear();
+        linearPivots.clear();
         linearK.clear();
         reducedDevices.clear();
         reducedPorts.clear();

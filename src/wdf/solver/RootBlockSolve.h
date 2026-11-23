@@ -91,6 +91,8 @@ struct BlockSolveContext {
     long long& jfetFallbacks;
     long long& mosfetFallbacks;
     std::vector<double>& gridLag;
+    long long& mixedAttempts;
+    long long& mixedAccepted;
 };
 
 class RootBlockSolve {
@@ -116,21 +118,25 @@ public:
     }
 
     /// F = v - base + Z*i for this block's folded linear network.
+    template<bool Reduced = false>
     static inline double blockResidual(const NewtonBlock& block, BlockSolveContext& ctx,
                                        int n) noexcept {
+        const auto& devices = Reduced ? block.reducedDevices : block.devices;
+        const auto& ports = Reduced ? block.reducedPorts : block.ports;
+        const auto& networkZ = Reduced ? block.reducedZ : block.blockZ;
         alignas(32) double currents[32];
         const int packed = std::min(n, 32);
         for (int j = 0; j < packed; ++j)
-            currents[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-        const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
+            currents[j] = ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+        const double* LIVEWDF_RESTRICT bz = networkZ.data();
         int local = 0;
         double maximum = 0.0;
-        for (int di : block.devices) {
+        for (int di : devices) {
             const auto& dev = ctx.rootDevices[di];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++local) {
                 double f = ctx.blockV[static_cast<size_t>(r)] -
                            ctx.blockBase[static_cast<size_t>(r)];
-                if (!block.blockZ.empty()) {
+                if (!networkZ.empty()) {
                     const double* LIVEWDF_RESTRICT z = bz + static_cast<size_t>(local) * n;
                     if (n == 1) {
                         f += z[0] * currents[0];
@@ -140,11 +146,11 @@ public:
                         for (int j = 0; j < packed; ++j)
                             f += z[j] * currents[j];
                         for (int j = packed; j < n; ++j)
-                            f += z[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                            f += z[j] * ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
                     }
                 } else {
                     const double* LIVEWDF_RESTRICT z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                    for (int c : block.ports)
+                    for (int c : ports)
                         f += z[c] * ctx.blockI[static_cast<size_t>(c)];
                 }
                 ctx.blockF[static_cast<size_t>(r)] = f;
@@ -155,6 +161,7 @@ public:
     }
 
     /// Solve one block by Newton on its own live columns.
+    template<bool Reduced = false>
     static inline bool solveBlockNewton(
         const BlockView& view,
         int b,
@@ -162,10 +169,14 @@ public:
         int maxIter,
         double tol,
         bool relaxed,
-        BlockSolveContext& ctx) noexcept
+        BlockSolveContext& ctx,
+        const NewtonBlock* reducedPlan = nullptr) noexcept
     {
-        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        const int n = static_cast<int>(block.ports.size());
+        const NewtonBlock& block = Reduced && reducedPlan ? *reducedPlan : (*view.blocks)[static_cast<size_t>(b)];
+        const auto& devices = Reduced ? block.reducedDevices : block.devices;
+        const auto& ports = Reduced ? block.reducedPorts : block.ports;
+        const auto& networkZ = Reduced ? block.reducedZ : block.blockZ;
+        const int n = static_cast<int>(ports.size());
         if (n <= 0 || n > ctx.nRed)
             return false;
 
@@ -180,17 +191,19 @@ public:
             }
         };
 
-        int localDevPort = 0;
-        for (int di : block.devices) {
-            const RootDevice& dev = ctx.rootDevices[di];
-            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localDevPort) {
-                ctx.blockBase[static_cast<size_t>(r)] =
-                    relaxed ? RootClosedForms::foldPortAll(view, block, localDevPort, r, b, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K)
-                            : RootClosedForms::foldPort(view, block, localDevPort, r, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
+        if constexpr (!Reduced) {
+            int localDevPort = 0;
+            for (int di : devices) {
+                const RootDevice& dev = ctx.rootDevices[di];
+                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localDevPort) {
+                    ctx.blockBase[static_cast<size_t>(r)] =
+                        relaxed ? RootClosedForms::foldPortAll(view, block, localDevPort, r, b, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K)
+                                : RootClosedForms::foldPort(view, block, localDevPort, r, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
+                }
             }
         }
 
-        for (int di : block.devices) {
+        for (int di : devices) {
             const RootDevice& dev = ctx.rootDevices[di];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                 const double v = ctx.vv[static_cast<size_t>(r)];
@@ -201,7 +214,7 @@ public:
         if (ctx.prof)
             tock(ctx.prof->predict);
 
-        const double effTol = std::max(tol, 1e-9);
+        const double effTol = std::max(tol, Reduced ? 1e-12 : 1e-9);
         // An op-amp carries a one-sample internal state (`opAmpVp`), so the
         // currents committed for the previous sample are not necessarily the
         // currents the device law produces for this sample.  The initial
@@ -209,8 +222,8 @@ public:
         // op-amp, evaluate the law first or the block will declare the last
         // sample's state converged and never advance a slewing or railed
         // stage.
-        bool hasOpAmp = false;
-        for (int di : block.devices) {
+        bool hasOpAmp = Reduced;
+        for (int di : devices) {
             if (ctx.rootDevices[di].kind == DeviceKind::OpAmp) {
                 hasOpAmp = true;
                 break;
@@ -221,7 +234,7 @@ public:
             // first iterate. Keep the guess local to the last accepted
             // voltage. All subsequent step limits and residual gates apply.
             constexpr double maxPrediction = 0.05;
-            for (int di : block.devices) {
+            for (int di : devices) {
                 const auto& dev = ctx.rootDevices[di];
                 for (int i = dev.portBase; i < dev.portBase + dev.numPorts; ++i) {
                     const size_t r = static_cast<size_t>(i);
@@ -232,12 +245,12 @@ public:
             }
         }
         if (!hasOpAmp) {
-            for (int c : block.ports) {
+            for (int c : ports) {
                 const double prev = ctx.ii[static_cast<size_t>(c)];
                 ctx.blockI[static_cast<size_t>(c)] = std::isfinite(prev) ? prev : 0.0;
             }
-            if (blockResidual(block, ctx, n) < effTol) {
-                for (int di : block.devices) {
+            if (blockResidual<Reduced>(block, ctx, n) < effTol) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                         ctx.ii[static_cast<size_t>(r)] = ctx.blockI[static_cast<size_t>(r)];
@@ -255,12 +268,12 @@ public:
         bool luValid = false;
         int luReuseCount = 0;
         alignas(16) int piv[64];
-        const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
-        const int localMax = std::min(maxIter, 24);
+        const double* LIVEWDF_RESTRICT bz = networkZ.data();
+        const int localMax = std::min(maxIter, Reduced ? 10 : 24);
         for (int it = 0; it < localMax; ++it) {
             ++ctx.newtonIters;
             if (!curValid) {
-                for (int di : block.devices) {
+                for (int di : devices) {
                     RootResidual::currentsForDevice(
                         ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
                         ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
@@ -270,7 +283,7 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->device);
 
-                maxF = blockResidual(block, ctx, n);
+                maxF = blockResidual<Reduced>(block, ctx, n);
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 if (maxF < effTol) {
@@ -287,7 +300,7 @@ public:
             if (canReuse) {
                 std::fill_n(ctx.blockRhs.data(), static_cast<size_t>(n), 0.0);
                 int row = 0;
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     const int o = dev.portBase;
                     const int nAct = activePortCount(dev);
@@ -314,7 +327,7 @@ public:
                 ++luReuseCount;
             } else {
                 if (it > 0 && n >= 3) {
-                    for (int di : block.devices) {
+                    for (int di : devices) {
                         RootResidual::currentsForDevice(
                             ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
                             ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
@@ -330,7 +343,7 @@ public:
 
                 int row = 0;
                 int devPortBase = 0;
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     const int o = dev.portBase;
                     const int nAct = activePortCount(dev);
@@ -344,7 +357,7 @@ public:
                             if (jq == 0.0)
                                 continue;
                             const int localQ = devPortBase + (q - o);
-                            if (!block.blockZ.empty()) {
+                            if (!networkZ.empty()) {
                                 const double* LIVEWDF_RESTRICT zq = bz + static_cast<size_t>(localQ) * n;
                                 if (n == 1) {
                                     mRow[0] += jq * zq[0];
@@ -358,7 +371,7 @@ public:
                             } else {
                                 const double* zq = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
                                 for (int j = 0; j < n; ++j)
-                                    mRow[j] += jq * zq[block.ports[static_cast<size_t>(j)]];
+                                    mRow[j] += jq * zq[ports[static_cast<size_t>(j)]];
                             }
                             rhs -= jq * ctx.blockF[static_cast<size_t>(q)];
                         }
@@ -393,11 +406,11 @@ public:
 
             int localR = 0;
             const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
-            for (int di : block.devices) {
+            for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR) {
                     double d = -ctx.blockF[static_cast<size_t>(r)];
-                    if (!block.blockZ.empty()) {
+                    if (!networkZ.empty()) {
                         const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR) * n;
                         if (n == 1) {
                             d -= zr[0] * rhsData[0];
@@ -410,13 +423,13 @@ public:
                     } else {
                         const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
                         for (int j = 0; j < n; ++j)
-                            d -= zr[block.ports[static_cast<size_t>(j)]] * rhsData[j];
+                            d -= zr[ports[static_cast<size_t>(j)]] * rhsData[j];
                     }
                     ctx.blockDv[static_cast<size_t>(r)] = d;
                 }
             }
 
-            for (int di : block.devices) {
+            for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 if (dev.kind == DeviceKind::Bjt) {
                     const int o = dev.portBase;
@@ -433,7 +446,7 @@ public:
             }
 
             double scale = 1.0;
-            for (int di : block.devices) {
+            for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                     const double d = ctx.blockDv[static_cast<size_t>(r)];
@@ -446,7 +459,7 @@ public:
             }
             if (scale < 1.0) {
                 ++ctx.limitHits;
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
                         ctx.blockDv[static_cast<size_t>(r)] *= scale;
@@ -455,7 +468,7 @@ public:
 
             if (n < 3) {
                 double maxStep = 0.0, maxV = 0.0;
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                         const double old = ctx.blockV[static_cast<size_t>(r)];
@@ -469,7 +482,7 @@ public:
                 }
                 for (const auto& gl : ctx.gridJunctionLimiters) {
                     bool inBlock = false;
-                    for (int di : block.devices) {
+                    for (int di : devices) {
                         const auto& dev = ctx.rootDevices[di];
                         if (gl.port >= dev.portBase && gl.port < dev.portBase + dev.numPorts) {
                             inBlock = true;
@@ -487,7 +500,7 @@ public:
                 }
                 for (const auto& jl : ctx.junctionLimiters) {
                     bool inBlock = false;
-                    for (int di : block.devices) {
+                    for (int di : devices) {
                         const auto& dev = ctx.rootDevices[di];
                         if (jl.port >= dev.portBase && jl.port < dev.portBase + dev.numPorts) {
                             inBlock = true;
@@ -517,7 +530,7 @@ public:
                 }
                 curValid = false;
             } else {
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                         ctx.blockVOld[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
@@ -529,7 +542,7 @@ public:
                 double ftNorm = 0.0;
                 const int maxLineTrials = 4;
                 for (int h = 0; h < maxLineTrials; ++h) {
-                    for (int di : block.devices) {
+                    for (int di : devices) {
                         const RootDevice& dev = ctx.rootDevices[di];
                         for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                             ctx.blockV[static_cast<size_t>(r)] =
@@ -540,7 +553,7 @@ public:
                     // Limit junctions belonging to this block
                     for (const auto& gl : ctx.gridJunctionLimiters) {
                         bool inBlock = false;
-                        for (int di : block.devices) {
+                        for (int di : devices) {
                             const auto& dev = ctx.rootDevices[di];
                             if (gl.port >= dev.portBase && gl.port < dev.portBase + dev.numPorts) {
                                 inBlock = true;
@@ -558,7 +571,7 @@ public:
                     }
                     for (const auto& jl : ctx.junctionLimiters) {
                         bool inBlock = false;
-                        for (int di : block.devices) {
+                        for (int di : devices) {
                             const auto& dev = ctx.rootDevices[di];
                             if (jl.port >= dev.portBase && jl.port < dev.portBase + dev.numPorts) {
                                 inBlock = true;
@@ -580,7 +593,7 @@ public:
                         }
                     }
 
-                    for (int di : block.devices) {
+                    for (int di : devices) {
                         RootResidual::currentsForDevice(
                             ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
                             ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
@@ -588,7 +601,7 @@ public:
                             ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                     }
 
-                    ftNorm = blockResidual(block, ctx, n);
+                    ftNorm = blockResidual<Reduced>(block, ctx, n);
 
                     if (ftNorm <= baseF || h == maxLineTrials - 1)
                         break;
@@ -598,7 +611,7 @@ public:
                     tock(ctx.prof->linesearch);
 
                 double maxStep = 0.0, maxV = 0.0;
-                for (int di : block.devices) {
+                for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                         const double d = std::abs(ctx.blockV[static_cast<size_t>(r)] - ctx.blockVOld[static_cast<size_t>(r)]);
@@ -628,9 +641,11 @@ public:
         }
         if (!converged)
             return false;
+        if constexpr (Reduced)
+            return true; // Caller reconstructs and certifies the original block.
 
 
-        for (int di : block.devices) {
+        for (int di : devices) {
             const RootDevice& dev = ctx.rootDevices[di];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
                 ctx.ii[static_cast<size_t>(r)] = ctx.blockI[static_cast<size_t>(r)];
@@ -688,9 +703,10 @@ public:
         int s,
         bool relaxed,
         BlockSolveContext& ctx,
-        double* LIVEWDF_RESTRICT k0) noexcept
+        double* LIVEWDF_RESTRICT k0,
+        const NewtonBlock* reducedPlan = nullptr) noexcept
     {
-        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        const NewtonBlock& block = reducedPlan ? *reducedPlan : (*view.blocks)[static_cast<size_t>(b)];
         const int mL = static_cast<int>(block.linearDevices.size());
         if (mL <= 0 || mL > 32)
             return false;
@@ -702,8 +718,6 @@ public:
                                  view, r, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
         };
 
-        alignas(32) double a[32 * 32];
-        std::copy(block.linearA.begin(), block.linearA.end(), a);
         alignas(32) double rhs[32];
 
         for (int d = 0; d < mL; ++d) {
@@ -739,8 +753,14 @@ public:
                 // i_o = (v_o - vSource)/Ro, with the source linearised as
                 // vSource0 + g*(vDiff - vDiff0).  The affine constant is
                 // -(vSource0 - g*vDiff0)/Ro.
-                const double h = -(vSource - g * vDiff) / ro;
-                rhs[d] = h + (oa.outputVoltageWeight() / ro) * vo - (g / ro) * vp + (g / ro) * vn;
+                if (reducedPlan) {
+                    const double intercept = g == 0.0 ? vSource :
+                        ctx.opAmpVp[dev.compIndex] / (1.0 + std::clamp(ctx.opAmpAlpha[dev.compIndex], 0.0, 1.0));
+                    rhs[d] = (std::fma(-g, vp - vn, oa.outputVoltageWeight() * vo) - intercept) / ro;
+                } else {
+                    const double h = -(vSource - g * vDiff) / ro;
+                    rhs[d] = h + (oa.outputVoltageWeight() / ro) * vo - (g / ro) * vp + (g / ro) * vn;
+                }
             } else if (dev.kind == DeviceKind::ControlledRes) {
                 const double g = block.linearG[static_cast<size_t>(d)];
                 rhs[d] = g * fold(o);
@@ -749,16 +769,24 @@ public:
             }
         }
 
-        if (!detail::solveData(a, rhs, mL))
-            return false;
+        if (reducedPlan) {
+            detail::solveLUData(block.linearLU.data(), block.linearPivots.data(), rhs, mL);
+        } else {
+            alignas(32) double a[32 * 32];
+            std::copy(block.linearA.begin(), block.linearA.end(), a);
+            if (!detail::solveData(a, rhs, mL))
+                return false;
+        }
         for (int d = 0; d < mL; ++d)
             k0[d] = rhs[d];
 
         for (int r : block.reducedRowPorts) {
             double v = fold(r);
             const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-            for (int d = 0; d < mL; ++d)
-                v -= zr[block.linearPorts[static_cast<size_t>(d)]] * k0[d];
+            for (int d = 0; d < mL; ++d) {
+                const double z = zr[block.linearPorts[static_cast<size_t>(d)]];
+                v = reducedPlan ? std::fma(-z, k0[d], v) : v - z * k0[d];
+            }
             ctx.blockBase[static_cast<size_t>(r)] = v;
         }
         return true;
@@ -775,9 +803,11 @@ public:
         bool relaxed,
         double tol,
         BlockSolveContext& ctx,
-        const double* LIVEWDF_RESTRICT k0) noexcept
+        const double* LIVEWDF_RESTRICT k0,
+        bool verifyMixed = false,
+        const NewtonBlock* reducedPlan = nullptr) noexcept
     {
-        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        const NewtonBlock& block = reducedPlan ? *reducedPlan : (*view.blocks)[static_cast<size_t>(b)];
         const int nN = static_cast<int>(block.reducedPorts.size());
 
         for (int di : block.devices) {
@@ -793,9 +823,11 @@ public:
             for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
                 ctx.ii[static_cast<size_t>(q)] = 0.0;
             double i = k0[d];
-            for (int j = 0; j < nN; ++j)
-                i += block.linearK[static_cast<size_t>(d) * nN + j] *
-                     ctx.blockI[static_cast<size_t>(block.reducedPorts[static_cast<size_t>(j)])];
+            for (int j = 0; j < nN; ++j) {
+                const double k = block.linearK[static_cast<size_t>(d) * nN + j];
+                const double current = ctx.blockI[static_cast<size_t>(block.reducedPorts[static_cast<size_t>(j)])];
+                i = verifyMixed ? std::fma(k, current, i) : i + k * current;
+            }
             ctx.ii[static_cast<size_t>(block.linearPorts[static_cast<size_t>(d)])] = i;
         }
 
@@ -834,6 +866,29 @@ public:
                 if (!std::isfinite(vSource) || !std::isfinite(vSourceUsed) ||
                     std::abs(vSource - vSourceUsed) > lawTol * scale)
                     lawValid = false;
+                if (verifyMixed) {
+                    const double g = block.linearG[static_cast<size_t>(d)];
+                    const double slopeScale = std::max(1.0, std::abs(g));
+                    if (!std::isfinite(derivative) || std::abs(derivative - g) > 1e-9 * slopeScale)
+                        lawValid = false;
+                    // Recover a representable output voltage from the
+                    // affine current where rounding in the full Z dot product
+                    // perturbs the current. This changes only the candidate
+                    // and still has to pass the original full-voltage gate.
+                    if (lawValid && !oa.outputResistanceEmbedded) {
+                        const double recovered = std::fma(oa.outputImpedance,
+                            ctx.ii[static_cast<size_t>(o)], vSource);
+                        const double delta = std::abs(recovered - ctx.vv[static_cast<size_t>(o)]);
+                        if (delta <= 0.125 * lawTol)
+                            ctx.vv[static_cast<size_t>(o)] = recovered;
+                    }
+                    double gOut = 0.0;
+                    ctx.blockI[static_cast<size_t>(o)] = oa.outputCurrent(
+                        oa.outputVoltageWeight() * ctx.vv[static_cast<size_t>(o)] - vSource, gOut);
+                    ctx.blockI[static_cast<size_t>(o + 1)] = 0.0;
+                    ctx.blockI[static_cast<size_t>(o + 2)] = 0.0;
+                    ++ctx.deviceEvals;
+                }
             } else if (dev.kind == DeviceKind::ControlledRes) {
                 const double r = ctx.ctrlResValues[dev.compIndex];
                 const double vUsed = ctx.ii[static_cast<size_t>(o)] * r;
@@ -873,6 +928,80 @@ public:
         return true;
     }
 
+    /// Try one precompiled slope pattern. Both the region and the full
+    /// original-law residual must pass before the candidate can commit.
+    static inline bool solveMixedReducedBlock(
+        const BlockView& view, int b, int s, int maxIter, double tol, bool relaxed,
+        BlockSolveContext& ctx) noexcept
+    {
+        const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        if (ctx.staticMode || relaxed || view.count != 1 || block.alternateLinearSlopes.empty())
+            return false;
+
+        unsigned slopeMask = 0;
+        for (size_t d = 0; d < block.linearDevices.size(); ++d) {
+            const auto& dev = ctx.rootDevices[static_cast<size_t>(block.linearDevices[d])];
+            const auto ci = dev.compIndex;
+            const int o = dev.portBase;
+            double derivative = 0.0;
+            OpAmpEngineLaw::sourceVoltage(
+                ctx.opAmps[ci], ctx.vv[o + 1] - ctx.vv[o + 2],
+                ctx.opAmpVp[ci], ctx.opAmpAlpha[ci], ctx.opAmpMaxDv[ci], false, &derivative);
+            if (derivative != 0.0)
+                slopeMask |= 1u << d;
+        }
+        const auto plan = std::find_if(block.alternateLinearSlopes.begin(), block.alternateLinearSlopes.end(),
+            [&](const NewtonBlock& variant) { return variant.linearSlopeMask == slopeMask; });
+        if (plan == block.alternateLinearSlopes.end())
+            return false;
+
+        ++ctx.mixedAttempts;
+        alignas(32) double k0[32];
+        if (!prepareReducedBases(view, b, s, relaxed, ctx, k0, &*plan) ||
+            !solveBlockNewton<true>(view, b, s, maxIter, tol, relaxed, ctx, &*plan) ||
+            !reconstructReducedBlock(view, b, s, relaxed, tol, ctx, k0, true, &*plan))
+            return false;
+
+        for (int r : plan->reducedRowPorts)
+            ctx.vv[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
+        for (int di : block.devices) {
+            const auto& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q) {
+                ctx.blockBase[static_cast<size_t>(q)] = ctx.vOc[static_cast<size_t>(q)];
+                ctx.blockV[static_cast<size_t>(q)] = ctx.vv[static_cast<size_t>(q)];
+            }
+        }
+        const double certifiedResidual = blockResidual(block, ctx, static_cast<int>(block.ports.size()));
+        const auto restore = [&] {
+            for (int di : block.devices) {
+                const auto& dev = ctx.rootDevices[static_cast<size_t>(di)];
+                for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q) {
+                    ctx.ii[static_cast<size_t>(q)] = ctx.blockDv[static_cast<size_t>(q)];
+                    ctx.vv[static_cast<size_t>(q)] = ctx.blockVOld[static_cast<size_t>(q)];
+                }
+            }
+            return false;
+        };
+        if (!(certifiedResidual <= std::max(tol, 1e-9)))
+            return restore();
+        for (int di : block.devices) {
+            const auto& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
+                if (!std::isfinite(ctx.blockF[static_cast<size_t>(q)]))
+                    return restore();
+        }
+        for (int di : block.devices) {
+            const auto& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
+                ctx.ii[static_cast<size_t>(q)] = ctx.blockI[static_cast<size_t>(q)];
+        }
+        // This pilot is only entered for a single block: the assembled
+        // original-law residual above is the root acceptance residual.
+        ctx.lastBlockResidual = certifiedResidual;
+        ++ctx.mixedAccepted;
+        return true;
+    }
+
     /// Solve one block after its affine devices have been eliminated.
     ///
     /// N = 0: the block is linear; `K0` is the answer.
@@ -892,8 +1021,9 @@ public:
         const int nN = static_cast<int>(block.reducedPorts.size());
         // Only these reduced systems have a solver. A mixed block with
         // several coupled nonlinear devices goes directly to block Newton.
-        if (!block.linearReduction || (nN != 0 && !block.reducedAntiParallel &&
-                                       !(block.reducedScalarDiode && nN == 1)))
+        if (!block.linearReduction)
+            return false;
+        if (nN != 0 && !block.reducedAntiParallel && !(block.reducedScalarDiode && nN == 1))
             return false;
 
         alignas(32) double k0[32];
@@ -1008,6 +1138,9 @@ public:
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
+        if (!block.alternateLinearSlopes.empty() &&
+            solveMixedReducedBlock(view, b, s, maxIter, tol, relaxed, ctx))
+            return true;
         if (block.linearReduction)
             return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
                    solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
@@ -1055,7 +1188,7 @@ public:
         if (!failed && relaxSweeps == 0 && !ctx.gridLag.empty())
             resolveMissedGrids(ctx, view, maxIter, tol, failed);
 
-        if (!failed) {
+        if (!failed && !std::isfinite(ctx.lastBlockResidual)) {
             // A later block re-solve can move the voltage of an earlier block.
             // Re-evaluate every root law at the final voltages before the
             // residual check: `ii` must describe the returned `vv`, not a
