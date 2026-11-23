@@ -5,6 +5,7 @@
 #include "wdf/Engine.h"
 #include "dsp/HalfBandOversampler.h"
 #include "format/LiveWDFFile.h"
+#include "format/ControlGroups.h"
 #include "gui/DualOscilloscope.h"
 
 #include <future>
@@ -21,7 +22,7 @@ public:
     /// the ceiling on how many document pot groups can get a knob. A document
     /// with more groups than this still loads and plays -- the extra groups
     /// keep their saved positions, they just have no parameter to drive them.
-    static constexpr int kMaxPotKnobs = 16;
+    static constexpr int kMaxPotKnobs = wdf::kLivePotSlots;
 
     LiveWDFPluginProcessor();
     ~LiveWDFPluginProcessor() override;
@@ -181,6 +182,7 @@ private:
     /// copies by this one.
     mutable std::mutex controlMutex_;
     wdf::LiveWDFDocument currentDoc_;
+    std::shared_ptr<const std::string> cacheDocument_;
 
     /// The file the circuit was loaded from, so it can be re-read. Empty when
     /// the circuit came from host state rather than a file.

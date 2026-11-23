@@ -1,5 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "FactorySchematics.h"
+#include "FastLiveCache.h"
 
 #include "format/AcSource.h"
 
@@ -82,7 +84,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         const juce::String potName = "Pot " + juce::String(i + 1);
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID{potId, 1}, potName,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.005f), 0.5f));
+            juce::NormalisableRange<float>(0.0f, 1.0f, wdf::kLivePotStep), 0.5f));
     }
 
     params.push_back(std::make_unique<juce::AudioParameterChoice>(
@@ -217,9 +219,6 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
         }
     }
 
-    if (*apvts_.getRawParameterValue("solve_quality") <= 0.5f)
-        return;
-
     std::optional<AffineResult> completed;
     std::optional<wdf::Engine::MixedAffineSetup> leftSetup, rightSetup;
     AffineKey key;
@@ -237,6 +236,11 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
                     rightEngine_->installMixedAffineSetup(*completed->right);
             }
         }
+        // Prepare a newly loaded circuit even before Fast Live is selected.
+        // Only recalibrate after live control changes while Fast Live is in use.
+        if (*apvts_.getRawParameterValue("solve_quality") <= 0.5f &&
+            requestedAffineKey_ && requestedAffineKey_->generation == key.generation)
+            return;
         // Avoid rebuilding calibration while a control is still moving.
         if (observedAffineKey_ != key) {
             observedAffineKey_ = key;
@@ -259,19 +263,19 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
     // allowing one calibration at a time across plugin instances.
     if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
         return;
-    requestedAffineKey_ = key;
-
     // The worker owns only snapshots. The timer checks the engine revision
     // again before it publishes the resulting plans.
     try {
         affineJob_ = std::async(std::launch::async,
-            [work = AffineResult{key, std::move(*leftSetup), std::move(rightSetup)}]() mutable {
+            [work = AffineResult{key, std::move(*leftSetup), std::move(rightSetup)},
+             document = cacheDocument_, file = currentFile_, grid = attemptedGridCurrent_]() mutable {
                 const AffineWorkerSlot slot;
-                work.left.build();
-                if (work.right)
-                    work.right->build();
+                const auto cacheFile = file.isAChildOf(FactorySchematics::folder()) ? juce::File{} : file;
+                buildCachedAffineSetup(work.left, work.right ? &*work.right : nullptr,
+                                       *document, cacheFile, grid);
                 return std::move(work);
             });
+        requestedAffineKey_ = key;
     } catch (const std::exception&) {
         affineWorkerBusy.clear(std::memory_order_release);
         // Leave the current solver active if the worker cannot start.
@@ -433,6 +437,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     if (!newLeft || !newRight) {
         return false;
     }
+    cacheDocument_ = std::make_shared<const std::string>(doc.toJson());
 
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
@@ -578,6 +583,7 @@ void LiveWDFPluginProcessor::syncPotParametersFromDocument(const wdf::LiveWDFDoc
 }
 
 bool LiveWDFPluginProcessor::loadCircuitFromFile(const juce::File& file) {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (!file.existsAsFile()) return false;
 
     wdf::LiveWDFDocument doc;
@@ -603,6 +609,7 @@ bool LiveWDFPluginProcessor::loadCircuitFromFile(const juce::File& file) {
 }
 
 bool LiveWDFPluginProcessor::reloadCircuit() {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (!canReload())
         return false;
 

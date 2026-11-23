@@ -29,7 +29,9 @@
 
 #include <juce_gui_extra/juce_gui_extra.h>
 
+#include <deque>
 #include <functional>
+#include <future>
 #include <memory>
 
 namespace livewdf::editor {
@@ -240,6 +242,10 @@ private:
         };
 
         void timerCallback() override;
+        void startSavedCircuitPreparation();
+
+        std::deque<juce::File> pendingPreparations_;
+        std::future<void> savedCircuitPreparation_;
 
         // ---------------------------------------------------------------------
         // Tabs

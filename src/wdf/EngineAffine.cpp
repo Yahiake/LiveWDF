@@ -6,6 +6,10 @@
 
 namespace wdf {
 
+namespace {
+constexpr size_t planLimit = 5;
+}
+
 bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
     if (blockCount_ != 1)
         return false;
@@ -40,15 +44,31 @@ std::optional<Engine::MixedAffineSetup> Engine::captureMixedAffineSetup(size_t i
     setup.circuit_ = circuit_;
     setup.rate_ = fs_;
     setup.input_ = inputSource;
+    setup.gridCurrent_ = gridCurrent_;
     setup.revision_ = linearRebuilds();
     setup.transfer_ = Z_;
     return setup;
 }
 
-void Engine::MixedAffineSetup::build() {
-    Engine engine(circuit_, rate_);
-    if (engine.Z_ == transfer_ && engine.prepareMixedAffineReduction(input_) > 0)
-        plans_ = std::move(engine.newtonBlocks_.front().alternateLinearSlopes);
+void Engine::MixedAffineSetup::build(std::optional<std::span<const unsigned>> cachedMasks) {
+    plans_.clear();
+    Engine engine(circuit_, rate_, gridCurrent_);
+    if (engine.Z_ != transfer_ || !engine.canPrepareMixedAffineReduction(input_))
+        return;
+    if (cachedMasks)
+        engine.compileMixedAffinePlans(*cachedMasks);
+    else
+        engine.prepareMixedAffineReduction(input_);
+    plans_ = std::move(engine.newtonBlocks_.front().alternateLinearSlopes);
+}
+
+std::vector<unsigned> Engine::MixedAffineSetup::slopeMasks() const {
+    std::vector<unsigned> masks;
+    masks.reserve(patterns.size());
+    masks.reserve(plans_.size());
+    for (const auto& plan : plans_)
+        masks.push_back(plan.linearSlopeMask);
+    return masks;
 }
 
 bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
@@ -68,24 +88,38 @@ size_t Engine::prepareMixedAffineReduction(size_t inputSource, double peakVolts)
         !(peakVolts > 0.0) || !std::isfinite(peakVolts * 8.0))
         return 0;
 
-    Engine calibration(circuit_, fs_);
+    Engine calibration(circuit_, fs_, gridCurrent_);
     if (calibration.blockCount_ != 1 ||
         calibration.newtonBlocks_.front().linearDevices != block.linearDevices)
         return 0;
     auto patterns = calibration.measureAffineSlopes(inputSource, peakVolts);
     std::stable_sort(patterns.begin(), patterns.end(),
         [](const auto& a, const auto& b) { return a.second > b.second; });
-    constexpr size_t planLimit = 5;
+    std::vector<unsigned> masks;
     for (const auto& [mask, count] : patterns) {
-        if (block.alternateLinearSlopes.size() == planLimit || count < 16)
+        if (count < 16)
             break;
+        masks.push_back(mask);
+    }
+    compileMixedAffinePlans(masks);
+    return block.alternateLinearSlopes.size();
+}
+
+void Engine::compileMixedAffinePlans(std::span<const unsigned> masks) {
+    auto& block = newtonBlocks_.front();
+    const size_t width = block.linearDevices.size();
+    const unsigned validBits = width == 32 ? ~0u : (1u << width) - 1u;
+    for (const unsigned mask : masks) {
+        if (block.alternateLinearSlopes.size() == planLimit)
+            break;
+        if ((mask & ~validBits) != 0)
+            continue;
         NewtonBlock plan;
         plan.devices = block.devices;
         if (solver::RootLinearPlan::build(plan, rootDevices_.data(), Z_.data(), K_,
                                          comp_, opAmps_, ctrlResValues_, fs_, mask))
             block.alternateLinearSlopes.emplace_back(std::move(plan));
     }
-    return block.alternateLinearSlopes.size();
 }
 
 std::vector<std::pair<unsigned, int>> Engine::measureAffineSlopes(size_t inputSource, double peakVolts) {
