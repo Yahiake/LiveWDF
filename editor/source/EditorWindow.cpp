@@ -55,6 +55,7 @@ EditorWindow::Content::Content() {
 
     presetFolder_ = juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
                         .getChildFile("LiveWDF");
+    presetLibrary_.setFactoryFolder(FactorySchematics::folder());
     presetLibrary_.setFolder(presetFolder_);
 
     // --- Canvas callbacks -------------------------------------------------

@@ -110,13 +110,13 @@ private:
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
-    juce::Array<juce::File> factoryFiles_;
+    juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
     bool isDraggingFile_ = false;
 
     void rebuildDynamicControls();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
-    void showFactoryMenu();
+    void showFactoryBrowser();
 
     /// Load a file and update every part of the editor that depends on it.
     /// Returns false and puts the reason in the status line when the document

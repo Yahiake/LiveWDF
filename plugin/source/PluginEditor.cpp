@@ -1,6 +1,7 @@
 #include "PluginEditor.h"
 #include "FactorySchematics.h"
 #include "Fonts.h"
+#include "PresetLibraryPanel.h"
 #include "gui/AboutDialog.h"
 
 namespace livewdf {
@@ -41,7 +42,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
         juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
 
     // 2. Factory and Load File Buttons
-    factoryBtn_.onClick = [this] { showFactoryMenu(); };
+    factoryBtn_.onClick = [this] { showFactoryBrowser(); };
     factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
     addAndMakeVisible(factoryBtn_);
 
@@ -170,6 +171,8 @@ juce::String LiveWDFPluginEditor::currentCircuitDescription() const {
 }
 
 LiveWDFPluginEditor::~LiveWDFPluginEditor() {
+    if (factoryBrowser_ != nullptr)
+        factoryBrowser_->dismiss();
     setLookAndFeel(nullptr);
     stopTimer();
 }
@@ -289,65 +292,42 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
     return true;
 }
 
-void LiveWDFPluginEditor::showFactoryMenu() {
-    factoryFiles_ = FactorySchematics::list();
+void LiveWDFPluginEditor::showFactoryBrowser() {
+    if (factoryBrowser_ != nullptr)
+        return;
 
-    // A user can delete the folder between launches. Retry once before showing
-    // an empty menu, because the archive is still in the binary.
-    if (factoryFiles_.isEmpty()) {
-        if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed()) {
-            statusLabel_.setText("Factory circuits unavailable -- " + factory.getErrorMessage(),
-                                 juce::dontSendNotification);
-            return;
-        }
-        factoryFiles_ = FactorySchematics::list();
+    if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed()) {
+        statusLabel_.setText("Factory circuits unavailable -- " + factory.getErrorMessage(),
+                             juce::dontSendNotification);
+        return;
     }
 
-    juce::PopupMenu menu;
-    juce::PopupMenu amps;
-    juce::PopupMenu pedals;
-    juce::PopupMenu other;
-    const auto root = FactorySchematics::folder();
+    using Browser = editor::PresetLibraryPanel;
+    auto browser = std::make_unique<Browser>(Browser::Mode::Factory);
+    browser->setSize(500, juce::jmax(320, juce::jmin(480, getHeight() - 100)));
+    browser->setFactoryFolder(FactorySchematics::folder());
+    browser->setCurrentFile(processor_.getCurrentCircuitFile());
 
-    for (int i = 0; i < factoryFiles_.size(); ++i) {
-        const auto file = factoryFiles_.getReference(i);
-        const auto relative = file.getRelativePathFrom(root).replaceCharacter('\\', '/');
-        auto* destination = &other;
-        if (relative.startsWithIgnoreCase("amps/"))
-            destination = &amps;
-        else if (relative.startsWithIgnoreCase("pedals_fx/"))
-            destination = &pedals;
-
-        destination->addItem(i + 1, file.getFileNameWithoutExtension());
-    }
-
-    if (amps.getNumItems() > 0)
-        menu.addSubMenu("Amps", amps);
-    if (pedals.getNumItems() > 0)
-        menu.addSubMenu("Pedals & FX", pedals);
-    if (other.getNumItems() > 0)
-        menu.addSubMenu("Other", other);
-
-    if (factoryFiles_.isEmpty())
-        menu.addItem(1, "No factory circuits installed", false, false);
-
-    menu.addSeparator();
-    menu.addItem(100000, "Open factory folder...");
-
-    juce::Component::SafePointer<LiveWDFPluginEditor> safe(this);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&factoryBtn_),
-                       [safe](int chosen) {
-                           if (safe == nullptr || chosen == 0)
-                               return;
-
-                           if (chosen == 100000) {
-                               FactorySchematics::folder().revealToUser();
-                               return;
-                           }
-
-                           if (chosen > 0 && chosen <= safe->factoryFiles_.size())
-                               safe->loadCircuitFile(safe->factoryFiles_[chosen - 1]);
-                       });
+    const juce::Component::SafePointer<Browser> panel(browser.get());
+    auto& callout = juce::CallOutBox::launchAsynchronously(std::move(browser),
+                                                           factoryBtn_.getBounds(), this);
+    callout.setDismissalMouseClicksAreAlwaysConsumed(true);
+    factoryBrowser_ = &callout;
+    panel->onDismiss = [popup = factoryBrowser_] {
+        if (popup != nullptr)
+            popup->dismiss();
+    };
+    panel->onPresetChosen = [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this),
+                             popup = factoryBrowser_](const juce::File& file) {
+        if (popup != nullptr)
+            popup->dismiss();
+        if (safe != nullptr)
+            safe->loadCircuitFile(file);
+    };
+    juce::MessageManager::callAsync([panel] {
+        if (panel != nullptr)
+            panel->focusSearch();
+    });
 }
 
 // -----------------------------------------------------------------------------

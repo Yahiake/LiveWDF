@@ -89,9 +89,9 @@ void EditorWindow::Content::addConsoleNotice(const juce::String& text) {
 
 void EditorWindow::Content::placePresetLibrary() {
     auto anchor = presetsBtn_.getBounds().translated(0, presetsBtn_.getHeight() + 6);
-    const int width = 360;
+    const int width = 500;
     const int bottomLimit = getHeight() - kStatusH - 8;
-    const int height = juce::jlimit(120, 420, bottomLimit - anchor.getY());
+    const int height = juce::jlimit(120, 480, bottomLimit - anchor.getY());
 
     juce::Rectangle<int> panel(anchor.getX(), anchor.getY(), width, height);
     if (panel.getRight() > getWidth() - 8)
