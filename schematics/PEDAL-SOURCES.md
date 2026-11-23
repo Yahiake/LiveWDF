@@ -193,8 +193,12 @@ A linked original factory scan or physical trace is a stronger starting point th
 
 ## Chorus and flanger
 
-### MXR M234 Analog Chorus — priority finding
-No complete M234 schematic, trace, identified BBD/clock chipset, or M234 SPICE deck was verified in this search. Do not claim a specific BBD or substitute the older MXR Stereo Chorus schematic as M234: matching branding/controls is not component evidence. An M234 owner explicitly reports failed attempts to locate the correct schematic and intent to trace it: https://www.diystompboxes.com/smfforum/index.php?topic=123744.0. This is evidence of search difficulty, not proof no schematic exists. Manufacturer manual, **not a schematic**, is https://www.jimdunlop.com/content/manuals/M234.pdf (manual rev D). Older manual https://medias.audiofanzine.com/files/mxr-m234-analogchorus-web-470931.pdf gives rate, depth, level and separate high/low cut, mono and thru outputs, buffered bypass, 9 V. Obtain board revision, detailed two-sided board photographs and chip markings or factory schematic before an accurate circuit implementation; otherwise label any chorus a generic surrogate, not an M234 model.
+### MXR M234 Analog Chorus, Rev C approximation
+
+- Dunlop's June 2016 Rev C drawing SC93503008195 is visible at https://www.scribd.com/document/928951400/M234-Analog-Chorus-Rev-C-1. The public preview confirms the 3207 delay, BL3102, MC33178 audio stages and TL062CP LFO. The visible schematic and component values support the input buffer, emphasis, transistor-buffered filters and state-variable low cut. Some pot-board connections and small labels remain unreadable.
+- Repair photographs independently show the 3207-family delay and BL3102, and the article locates the TL062 on the control board. https://stompboxelectronics.com/2023/07/18/repair-room-20-mxr-analog-chorus-repair/
+- The model reconstructs the high-cut and wet/dry routing using Dunlop's manual. Low is ganged and High covers approximately 660 Hz to flat. Thru Connected sends the wet signal to the main output, with the buffered Thru available as a schematic node. https://www.jimdunlop.com/content/manuals/M234.pdf
+- The RC oscillator and sampled BBD clock approximate the original TL062 pair and ultrasonic clock. The delay taps use a centered combined output, and the protection and bypass circuitry are outside the engaged signal-path model.
 
 ### Boss CE-2 original, ET-50B
 - Full Boss CE-2/CE-2B service notes, original circuit diagram and component layout: https://audioschematics.dk/wp-content/uploads/media/schematics/effects/boss-CE-2.pdf. ET-50B / 052-516B, MN3007 1024-stage BBD, MN3101 clock. Select CE-2 page rather than bass CE-2B. More accessible component-numbered analysis https://electrosmash.mas-effects.com/boss-ce-2-analysis.
