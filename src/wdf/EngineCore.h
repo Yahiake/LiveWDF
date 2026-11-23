@@ -714,6 +714,15 @@ protected:
         int start;
         int end;
     };
+    static constexpr int rootPanelWidth = 8;
+    struct RootPanel {
+        int node;
+        int colStart;
+        int colCount;
+        size_t valueStart;
+    };
+    std::vector<RootPanel> rootPanels_;
+    std::vector<double> rootPanelValues_;
     std::vector<SparseRow1> xrRows1_;
     std::vector<SparseRow2> xrRows2_;
     std::vector<SparseRowN> xrRowsN_;
@@ -752,6 +761,8 @@ protected:
             }
         }
 
+        rootPanels_.clear();
+        rootPanelValues_.clear();
         xrRows1_.clear();
         xrRows2_.clear();
         xrRowsN_.clear();
@@ -760,6 +771,26 @@ protected:
                 const int start = xrRowOffsets_[static_cast<size_t>(n)];
                 const int end = xrRowOffsets_[static_cast<size_t>(n + 1)];
                 const int deg = end - start;
+                // Adjacent nodes often depend on exactly the same root currents.
+                // Store each coefficient column contiguously across those nodes
+                // so the audio loop can accumulate independent voltages in SIMD.
+                if (deg >= 4 && n + rootPanelWidth <= N_) {
+                    bool shared = true;
+                    for (int q = 1; q < rootPanelWidth && shared; ++q) {
+                        const int first = xrRowOffsets_[n + q];
+                        shared = xrRowOffsets_[n + q + 1] - first == deg &&
+                                 std::equal(xrCols_.begin() + start, xrCols_.begin() + end,
+                                            xrCols_.begin() + first);
+                    }
+                    if (shared) {
+                        rootPanels_.push_back({n, start, deg, rootPanelValues_.size()});
+                        for (int j = 0; j < deg; ++j)
+                            for (int q = 0; q < rootPanelWidth; ++q)
+                                rootPanelValues_.push_back(xrVals_[xrRowOffsets_[n + q] + j]);
+                        n += rootPanelWidth - 1;
+                        continue;
+                    }
+                }
                 if (deg == 1) {
                     xrRows1_.push_back({n, xrCols_[static_cast<size_t>(start)], xrVals_[static_cast<size_t>(start)]});
                 } else if (deg == 2) {
