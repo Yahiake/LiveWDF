@@ -1,0 +1,4 @@
+part,izt_mA,izk_mA,factory_vz_min,factory_vz_typ,factory_vz_max,livewdf_vz,factory_zt_max,livewdf_zt,factory_zk_max,livewdf_zk,vr_test,factory_max_ir_uA,livewdf_ir_uA
+1N5231B,20,0.25,4.845,5.1,5.355,5.0999938,17,18.293863,1600,122.40981,2.0,5.0,1.999966
+1N5236B,20,0.25,7.125,7.5,7.875,7.4999905,6,7.2937653,500,112.54591,6.0,3.0,5.999964
+1N5240B,20,0.25,9.500,10.0,10.500,9.9999875,17,18.29418,600,124.5574,8.0,3.0,7.999864
