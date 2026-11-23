@@ -1,0 +1,24 @@
+part,family,x,typical,alternate_1,alternate_2,interpretation,source
+MN3005,load,10000,-2,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,load,30000,0,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,load,50000,0.7,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,load,100000,1.1,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,load,500000,1.5,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,load,1000000,1.5,,,Approximate graph readout in dB; Matsushita Gi–RL p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-curve,0.45,0.18,,,Approximate THD–Vi plot readout at 40 kHz clock and 1 kHz input; Matsushita p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-curve,0.60,0.20,,,Approximate THD–Vi plot readout at 40 kHz clock and 1 kHz input; Matsushita p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-curve,0.75,0.25,,,Approximate THD–Vi plot readout at 40 kHz clock and 1 kHz input; Matsushita p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-curve,1.0,0.30,,,Approximate THD–Vi plot readout at 40 kHz clock and 1 kHz input; Matsushita p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-curve,1.5,0.60,,,Approximate THD–Vi plot readout at 40 kHz clock and 1 kHz input; Matsushita p. 26,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+MN3005,THD-spec,0.78,1.0,2.5,,Typical and maximum tabular percent; Matsushita p. 25,https://aionfx.com/app/files/datasheets/panasonic-mn3005.pdf
+THAT2180,THD-0dB,1,0.005,0.010,0.030,Typical THD percent for A / B / C grades; p. 3,https://www.thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf
+THAT2180,THD-minus15dB,3.16227766017,0.020,0.030,0.040,Typical THD percent for A / B / C grades; p. 3,https://www.thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf
+THAT2180,THD-plus15dB,0.56234132519,0.020,0.030,0.040,Typical THD percent for A / B / C grades; p. 3,https://www.thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf
+API2520,full-power,40000,7.75,,,Factory full-power bandwidth and minimum RMS output at 15 V rails and 75 ohm minimum load; 1971 brochure,https://steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf
+API2520,THD-minimum-load,20000,0.2,,,Rated-output THD specification across 20–20 kHz; 1971 brochure,https://steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf
+MCI2001,THD-rated,1000,0.004,,,Factory THD percent at 20 dB closed-loop gain and +23 dBm output into 600 ohms; period MCI brochure,https://www.thehistoryofrecording.com/Literature/MCI/MCI%202001.pdf
+MCI2001,THD-rated,20000,0.05,,,Factory THD percent at 20 dB closed-loop gain and +23 dBm output into 600 ohms; period MCI brochure,https://www.thehistoryofrecording.com/Literature/MCI/MCI%202001.pdf
+VTL5C3,dark-adapted,1,30000,,,Typical cell ohms; current in mA; Vactec electro-optical table p. 29,https://www.experimentalistsanonymous.com/diy/Datasheets/VTL5C34.pdf
+VTL5C3,dark-adapted,10,5000,,,Typical cell ohms; current in mA; Vactec electro-optical table p. 29,https://www.experimentalistsanonymous.com/diy/Datasheets/VTL5C34.pdf
+VTL5C3,dark-adapted,40,1500,,,Typical cell ohms; current in mA; Vactec electro-optical table p. 29,https://www.experimentalistsanonymous.com/diy/Datasheets/VTL5C34.pdf
+VTL5C3,release,35,100000,,,35 ms maximum reach 100k from light adapted condition; Vactec table,https://www.experimentalistsanonymous.com/diy/Datasheets/VTL5C34.pdf
