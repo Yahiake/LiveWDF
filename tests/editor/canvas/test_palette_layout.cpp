@@ -90,12 +90,19 @@ TEST_CASE("Every palette name fits beside its shortcut", "[palette][layout]") {
                               << "column " << shortcutColumn << "px");
 
     for (const auto& spec : partPalette()) {
+        const auto name = juce::String(spec.paletteLabel());
         INFO("part: " << spec.paletteLabel());
-
-        const auto nameWidth =
-            juce::GlyphArrangement::getStringWidth(nameFont, spec.paletteLabel());
         const int reserved = displayShortcut(spec.key).isEmpty() ? 0 : shortcutColumn;
-        CHECK(nameWidth + reserved <= static_cast<float>(geometry.textWidth));
+        const auto width = static_cast<float>(geometry.textWidth - reserved);
+        juce::GlyphArrangement original;
+        original.addLineOfText(nameFont, name, 0.0f, 0.0f);
+        juce::GlyphArrangement fitted;
+        fitted.addFittedText(nameFont, name, 0.0f, 0.0f, width,
+                             static_cast<float>(geometry.symbolColumn),
+                             juce::Justification::centredLeft, 1, metrics::kNameMinimumHorizontalScale);
+        REQUIRE(fitted.getNumGlyphs() == original.getNumGlyphs());
+        for (int i = 0; i < original.getNumGlyphs(); ++i)
+            CHECK(fitted.getGlyph(i).getCharacter() == original.getGlyph(i).getCharacter());
     }
 }
 
