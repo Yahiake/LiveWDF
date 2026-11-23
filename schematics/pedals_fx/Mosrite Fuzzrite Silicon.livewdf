@@ -1,0 +1,618 @@
+{
+  "author": "LiveWDF",
+  "category": "Fuzz",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 2,
+        "y": 25
+      }
+    },
+    {
+      "id": "C1",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 12,
+        "y": 25
+      }
+    },
+    {
+      "id": "Q1",
+      "properties": {
+        "model": "2N2222"
+      },
+      "type": "bjt",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 25,
+        "y": 25
+      }
+    },
+    {
+      "id": "R1",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 26,
+        "y": 11
+      }
+    },
+    {
+      "id": "R2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 18,
+        "y": 16
+      }
+    },
+    {
+      "id": "C4",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 46,
+        "y": 25
+      }
+    },
+    {
+      "id": "Q2",
+      "properties": {
+        "model": "2N2222"
+      },
+      "type": "bjt",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 62,
+        "y": 25
+      }
+    },
+    {
+      "id": "R3",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 63,
+        "y": 11
+      }
+    },
+    {
+      "id": "R4",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 55,
+        "y": 16
+      }
+    },
+    {
+      "id": "C2",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 37,
+        "y": 37
+      }
+    },
+    {
+      "id": "C3",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 73,
+        "y": 37
+      }
+    },
+    {
+      "id": "R5",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 78,
+        "y": 50
+      }
+    },
+    {
+      "id": "P1",
+      "properties": {
+        "label": "Depth",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.75,
+        "totalR": 350000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 36
+      }
+    },
+    {
+      "id": "P2",
+      "properties": {
+        "label": "Volume",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.8,
+        "totalR": 33000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 101,
+        "y": 36
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 115,
+        "y": 36
+      }
+    },
+    {
+      "id": "B1",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 9
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 44,
+        "y": 5
+      }
+    },
+    {
+      "id": "G1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 30,
+        "y": 32
+      }
+    },
+    {
+      "id": "G2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 67,
+        "y": 32
+      }
+    },
+    {
+      "id": "G3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 56
+      }
+    },
+    {
+      "id": "G4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 105,
+        "y": 42
+      }
+    }
+  ],
+  "description": "Silicon Fuzzrite, 22 kΩ-loaded version. Two common-emitter stages use 470 kΩ collector and feedback resistors, 47 nF input/interstage capacitors and 2.2 nF blend capacitors. The 22 kΩ shunt is at the second-stage end of the 350 kΩ Depth control, as drawn on the FuzzDog Fuzz Rite v2 trace. Other drawings omit the resistor or put it on the first-stage side. The 33 kΩ Volume and 350 kΩ Depth controls use linear travel. The uncertain original transistor marking is represented by two 2N2222 models.",
+  "groundNode": "0",
+  "inputNode": "in",
+  "layout": {
+    "pots": [
+      "Depth",
+      "Volume"
+    ]
+  },
+  "name": "Mosrite Fuzzrite Silicon",
+  "outputNode": "out",
+  "version": 3,
+  "wires": [
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 28
+        },
+        {
+          "x": 30,
+          "y": 28
+        },
+        {
+          "x": 30,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 28
+        },
+        {
+          "x": 67,
+          "y": 28
+        },
+        {
+          "x": 67,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 78,
+          "y": 52
+        },
+        {
+          "x": 82,
+          "y": 52
+        },
+        {
+          "x": 82,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 101,
+          "y": 38
+        },
+        {
+          "x": 105,
+          "y": 38
+        },
+        {
+          "x": 105,
+          "y": 40
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 22
+        },
+        {
+          "x": 26,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 16
+        },
+        {
+          "x": 20,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 22
+        },
+        {
+          "x": 44,
+          "y": 22
+        },
+        {
+          "x": 44,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 22
+        },
+        {
+          "x": 35,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 22
+        },
+        {
+          "x": 63,
+          "y": 13
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 16
+        },
+        {
+          "x": 57,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 22
+        },
+        {
+          "x": 71,
+          "y": 22
+        },
+        {
+          "x": 71,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 75,
+          "y": 37
+        },
+        {
+          "x": 78,
+          "y": 37
+        },
+        {
+          "x": 78,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 78,
+          "y": 37
+        },
+        {
+          "x": 78,
+          "y": 34
+        },
+        {
+          "x": 90,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 39,
+          "y": 37
+        },
+        {
+          "x": 39,
+          "y": 39
+        },
+        {
+          "x": 90,
+          "y": 39
+        },
+        {
+          "x": 90,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 9
+        },
+        {
+          "x": 63,
+          "y": 9
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 44,
+          "y": 9
+        },
+        {
+          "x": 44,
+          "y": 5
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 4,
+          "y": 25
+        },
+        {
+          "x": 10,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 36
+        },
+        {
+          "x": 93,
+          "y": 34
+        },
+        {
+          "x": 101,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 36
+        },
+        {
+          "x": 113,
+          "y": 36
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 14,
+          "y": 25
+        },
+        {
+          "x": 22,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 16,
+          "y": 25
+        },
+        {
+          "x": 16,
+          "y": 16
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 48,
+          "y": 25
+        },
+        {
+          "x": 59,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 53,
+          "y": 25
+        },
+        {
+          "x": 53,
+          "y": 16
+        }
+      ]
+    }
+  ]
+}
