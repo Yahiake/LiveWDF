@@ -434,3 +434,71 @@ TEST_CASE("Fairchild 2N4403 input pair agrees with the full transistor card and 
         CHECK(actual / baseAmps <= pt.maxBeta);
     }
 }
+
+TEST_CASE("Legacy LM358 changes sink paths at its lower rail", "[lm358][parts-validation]") {
+    // Independent .op readings from MiSTer-Discrete 692e777 lm358.lib,
+    // 15 V supply and the non-inverting input driven to -1 V. The transition
+    // above the pulldown range is visible in TI SLOS068AB Figure 5-47.
+    struct Point { double loadAmps, spiceVolts; };
+    for (const Point pt : {Point{0, 0.0005243}, Point{10e-6, 0.011823},
+                           Point{20e-6, 0.032349}, Point{35e-6, 0.56953},
+                           Point{100e-6, 0.63445}, Point{1e-3, 0.75166}, Point{10e-3, 1.3144}}) {
+        CAPTURE(pt.loadAmps);
+        wdf::Circuit c;
+        c.addSrc("vcc", "0", 15.0);
+        c.addSrc("input", "0", -1.0);
+        auto model = wdf::OpAmpModel::fromType(wdf::opAmpTypeFromString("LM358"));
+        REQUIRE(model.type == wdf::OpAmpType::Lm358);
+        model.setVRailBounds(0.245, 14.53);
+        c.addOpAmp("out", "out", "input", "vcc", "0", model, "U1");
+        c.addIsrc("vcc", "out", pt.loadAmps);
+        wdf::Engine engine(c, sampleRate);
+        engine.reset();
+        const auto out = engine.nodeIndex("out");
+        REQUIRE(out >= 0);
+        for (int i = 0; i < 16; ++i) {
+            const auto& y = engine.step({15.0, -1.0});
+            REQUIRE(engine.lastConverged());
+            CHECK(y[out] == Approx(pt.spiceVolts).margin(0.012));
+        }
+        CHECK(engine.stateRejectCount() == 0);
+    }
+}
+
+TEST_CASE("LM358 sources load current from its positive supply and reaches its drive limit",
+          "[lm358][parts-validation]") {
+    // Full upstream SPICE model at 15 V with a 1 ohm positive-rail ammeter,
+    // a 10 kohm output load and an independently applied load current.
+    struct Point { double loadAmps, spiceOut, spiceSupply; };
+    for (const Point pt : {Point{0.0, 13.5486, 14.99829}, Point{.010, 13.4219, 14.98831},
+                           Point{.030, 13.3185, 14.96832}, Point{.041, -.08834, 14.95954}}) {
+        CAPTURE(pt.loadAmps);
+        wdf::Circuit c;
+        c.addSrc("rail", "0", 15.0);
+        c.addRes("rail", "vcc", 1.0);
+        c.addSrc("input", "0", 16.0);
+        c.addRes("out", "0", 10000.0);
+        c.addIsrc("out", "0", pt.loadAmps);
+        auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Lm358);
+        model.setVRailBounds(.245, 14.53);
+        c.addOpAmp("out", "out", "input", "vcc", "0", model, "U1");
+        wdf::Engine engine(c, sampleRate);
+        engine.reset();
+        for (int i = 0; i < 16; ++i) {
+            const auto& y = engine.step({15.0, 16.0});
+            REQUIRE(engine.lastConverged());
+            CHECK(y[engine.nodeIndex("out")] == Approx(pt.spiceOut).margin(0.050));
+            CHECK(y[engine.nodeIndex("vcc")] == Approx(pt.spiceSupply).margin(0.0001));
+        }
+        if (pt.loadAmps == .010 && lwdf_test::ngspiceAvailable()) {
+            const std::string tag = "parts_lm358_loaded_export";
+            const auto measure = lwdf_test::controlBlock({"op"}, {"v(out)", "v(vcc)"}, tag);
+            REQUIRE(lwdf_test::runDeck(exportNetwork(c) + measure + ".end\n", tag).ok);
+            const double exported = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 0)).front();
+            const double supply = lwdf_test::parseOpFile(lwdf_test::vecFile(tag, 1)).front();
+            CHECK(exported == Approx(pt.spiceOut).margin(0.050));
+            CHECK(supply == Approx(pt.spiceSupply).margin(0.0001));
+        }
+        CHECK(engine.stateRejectCount() == 0);
+    }
+}
