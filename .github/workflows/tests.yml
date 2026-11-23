@@ -58,5 +58,6 @@ jobs:
         run: |
           xvfb-run -a "build/editor/LiveWDF_Editor_artefacts/Release/LiveWDF Editor" --selftest
           for circuit in schematics/*/*.livewdf; do
-            build/plugin/LiveWDF_PluginBench_artefacts/Release/LiveWDF_PluginBench "$circuit" --audit
+            printf 'Auditing %s\n' "$circuit"
+            stdbuf -oL build/plugin/LiveWDF_PluginBench_artefacts/Release/LiveWDF_PluginBench "$circuit" --audit
           done
