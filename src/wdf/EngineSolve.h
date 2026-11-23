@@ -124,7 +124,8 @@ public:
             return false;
         if (blockCount_ == 1)
             return hasLinearReduction_ || hasAntiParallelBlock_ ||
-                   solver::RootBlockSolve::hasDirectSingleOpAmp(K_, opAmps_, Z_);
+                   solver::RootBlockSolve::hasDirectSingleton(
+                       newtonBlocks_.front(), rootDevices_, comp_, opAmps_, Z_, K_);
         return blockCount_ >= 2;
     }
 

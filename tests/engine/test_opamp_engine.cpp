@@ -487,3 +487,42 @@ TEST_CASE("single negative-feedback opamp solves rails and recovery without Newt
     }
     CHECK(engine.blockFallbackCount() == 0);
 }
+
+TEST_CASE("THAT2180 at +20 dB drives a transimpedance OP275 without Newton",
+          "[that2180][opamp][engine][block]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("ecMinus", "0", -0.122);
+    c.addSrc("vp", "0", 15.0);
+    c.addSrc("vn", "0", -15.0);
+    c.addCap("in", "coupled", 10e-6);
+    c.addRes("coupled", "cell", 20000.0);
+    c.addThat2180("cell", "sum", "0", "ecMinus", "0", 25.0, "U1");
+    c.addRes("out", "sum", 20000.0);
+    c.addCap("out", "sum", 22e-12);
+    c.addOpAmp("out", "sum", "0", "vp", "vn", opamp(wdf::OpAmpType::Op275, 14.1085, 14.1085), "U2");
+
+    for (int rate : {48000, 96000}) {
+        for (int freq : {8000, 20000}) {
+            CAPTURE(rate, freq);
+            wdf::Engine e(c, rate);
+            const int output = e.nodeIndex("out");
+            REQUIRE(output >= 0);
+            std::vector<double> drive{0.0, -0.122, 15.0, -15.0};
+            const int frames = rate / 100;
+            double sumSquares = 0.0;
+            int iterations = 0;
+            for (int n = 0; n < frames; ++n) {
+                drive[0] = std::sin(2.0 * kPi * freq * n / rate);
+                const double v = e.step(drive)[static_cast<size_t>(output)];
+                if (n >= frames / 2)
+                    sumSquares += v * v;
+                iterations += e.newtonIterations();
+            }
+            CHECK(e.stateRejectCount() == 0);
+            CHECK(e.blockFallbackCount() == 0);
+            CHECK(iterations == 0);
+            CHECK(std::sqrt(4.0 * sumSquares / frames) == Approx(10.0).margin(0.2));
+        }
+    }
+}

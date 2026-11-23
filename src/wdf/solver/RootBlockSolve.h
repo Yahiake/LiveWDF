@@ -95,12 +95,24 @@ struct BlockSolveContext {
 
 class RootBlockSolve {
 public:
-    /// One hard-rail op-amp has a monotone load line when output feedback
-    /// is negative or absent. Its three ports are ordered out, pos, neg.
-    static bool hasDirectSingleOpAmp(int rootPorts, const std::vector<OpAmpModel>& opAmps,
-                                     const std::vector<double>& z) noexcept {
-        return rootPorts == 3 && opAmps.size() == 1 && !opAmps.front().softRails &&
-               !opAmps.front().hasClassABOutput() && z[3] <= z[6];
+    /// Use the current sample's exact scalar law before cached affine reduction.
+    static bool hasDirectSingleton(const NewtonBlock& block, const std::vector<RootDevice>& devices,
+                                   const Compiled& comp, const std::vector<OpAmpModel>& opAmps,
+                                   const std::vector<double>& z, int stride) noexcept {
+        if (block.devices.size() != 1)
+            return false;
+        const auto& device = devices[static_cast<size_t>(block.devices.front())];
+        if (device.kind == DeviceKind::ControlledRes)
+            return !comp.otaCurrentLaw[device.compIndex];
+        if (device.kind != DeviceKind::OpAmp)
+            return false;
+
+        // Op-amp ports are out, pos, neg. Negative or absent feedback
+        // makes the hard-rail output equation monotone.
+        const auto& model = opAmps[device.compIndex];
+        const size_t out = static_cast<size_t>(device.portBase);
+        return !model.softRails && !model.hasClassABOutput() &&
+               z[(out + 1) * stride + out] <= z[(out + 2) * stride + out];
     }
 
     /// Solve one block by Newton on its own live columns.
@@ -1051,8 +1063,7 @@ public:
         BlockSolveContext& ctx) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        // Solve the actual slew/rail pieces before an affine elimination.
-        if (hasDirectSingleOpAmp(ctx.K, ctx.opAmps, ctx.Z))
+        if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
         if (block.linearReduction)
             return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
