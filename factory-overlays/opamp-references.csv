@@ -1,0 +1,16 @@
+title,model,old_model,load,frequency,gain,reference,source
+API 2520,API2520,,2000,50000000,0,API 50 MHz nominal GBW (unity proxy),https://www.steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf
+MCI 2001,MCI2001,,600,0.1,90,MCI DC gain shown at left edge,https://www.thehistoryofrecording.com/Literature/MCI/MCI%202001.pdf
+LM324-N,LM324,,2000,1000000,0,TI 1 MHz nominal GBW (unity proxy),https://www.ti.com/product/LM324-N
+M5218AL,M5218AL,,2000,7000000,0,Mitsubishi 7 MHz nominal GBW (unity proxy),https://static.datasheets.com/doc/14223929-mitsubishi-m5218ap-ds.pdf
+TL022,TL022,,10000,500000,0,TI typical unity-gain bandwidth,https://www.ti.com/lit/ds/symlink/tl022.pdf
+MC33174,MC33174,,10000,100000,25.10545,onsemi 1.8 MHz typical GBW at 100 kHz,https://www.onsemi.com/download/data-sheet/pdf/mc33171-d.pdf
+MC33179,MC33179,,600,20000,50,onsemi typical at 20 kHz and 600 Ω,https://www.onsemi.com/download/data-sheet/pdf/mc33178-d.pdf
+MC33179,MC33179,,600,3000000,0,onsemi typical unity-gain bandwidth,https://www.onsemi.com/download/data-sheet/pdf/mc33178-d.pdf
+BA728N,BA728N,,2000,0.1,100,ROHM typical low-frequency gain shown at left edge,https://datasheet.octopart.com/BA728N-ROHM-datasheet-181215105.pdf
+TL061,TL061,,10000,1000000,0,TI typical unity-gain bandwidth,https://www.ti.com/lit/ds/symlink/tl061.pdf
+RC4558 Class AB,RC4558-Class-AB,RC4558,2000,4000000,0,TI Rev H 4 MHz GBW (unity proxy),https://www.ti.com/lit/ds/symlink/rc4558.pdf
+NJM4558 Class AB,NJM4558-Class-AB,JRC4558,2000,3000000,0,Nisshinbo 3 MHz GBW (unity proxy),https://www.nisshinbo-microdevices.co.jp/en/products/operational-amplifier/spec/?product=njm4558
+TL082 Class AB,TL082-Class-AB,TL082,10000,3000000,0,TI Rev O 3 MHz GBW NS/PS packages (unity proxy),https://www.ti.com/lit/ds/symlink/tl082.pdf
+TL082 Class AB,TL082-Class-AB,TL082,10000,5250000,0,TI Rev O 5.25 MHz GBW other packages (unity proxy),https://www.ti.com/lit/ds/symlink/tl082.pdf
+LM741 Class AB,LM741-Class-AB,LM741,2000,0.1,106.0206,TI LM741C typical low-frequency gain shown at left edge,https://www.ti.com/lit/ds/symlink/lm741.pdf
