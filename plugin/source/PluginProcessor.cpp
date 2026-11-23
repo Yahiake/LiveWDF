@@ -351,14 +351,9 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
 
     // Build twin engines for stereo
     try {
+        // Construction already resets both engines at their DC operating point.
         left = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
         right = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
-
-        std::vector<double> nL, rL, nR, rR;
-        left->solveDc(nL, rL);
-        left->reset();
-        right->solveDc(nR, rR);
-        right->reset();
 
         // Silent pre-roll: settle dynamic states (op-amp GBW, reactive waves,
         // nonlinear predictors) at the DC operating point to eliminate
