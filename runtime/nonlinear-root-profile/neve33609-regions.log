@@ -1,0 +1,14 @@
+eligible op-amps 10/10; accepted samples 84000
+all-linear 84000; unique derivative masks 1; consecutive derivative changes 0
+model,linear_samples,clamped_samples
+U1,84000,0
+U2,84000,0
+CU1,84000,0
+CU2,84000,0
+CU3,84000,0
+CU4,84000,0
+LU1,84000,0
+LU2,84000,0
+LU3,84000,0
+LU4,84000,0
+mask 3ff : 84000

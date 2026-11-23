@@ -1,0 +1,19 @@
+eligible op-amps 11/11; accepted samples 84000
+all-linear 0; unique derivative masks 5; consecutive derivative changes 271
+model,linear_samples,clamped_samples
+IC1A,84000,0
+IC2A,84000,0
+IC2B,84000,0
+IC3A,84000,0
+IC3B,84000,0
+IC4A,84000,0
+IC4B,84000,0
+IC5A,3235,80765
+IC5B,214,83786
+IC6A,84000,0
+IC6B,37240,46760
+mask 27f : 43355
+mask 67f : 37196
+mask 2ff : 3191
+mask 37f : 214
+mask 6ff : 44
