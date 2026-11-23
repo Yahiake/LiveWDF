@@ -1,0 +1,250 @@
+[
+  {
+    "id": "api-312-vp312",
+    "name": "API 312-family preamp",
+    "media": "API-312-VP312-Clean-and-Driven.mp3",
+    "capture": "api-312-vp312.png",
+    "note": "Dry, clean and driven passes of the same synthetic drum sequence. Factory Gain is 0.75. The clean and driven passes use 21 mV and 425 mV peak at the input. All three passes are level-matched.",
+    "details": "CAPI VP312 Rev A signal path with the API 2520 model and approximate transformer winding parameters. Pad is off and polarity is normal.",
+    "source": "https://www.capi-gear.com/catalog/images/gallery/VP312/VP312-VPR-Rev-A-schematic.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/preamps/API 312 Preamp VP312 Rev A.livewdf",
+    "circuit_sha256": "652ec18ee94653a8f3da9a7116a61fbab11c94d3719beb7df473c65d0327712f",
+    "verification": [
+      "samples=240000 inputPeakV=0.02125 outputPeakV=2.6718 outputRmsV=0.26133 nonconverged=0 rejected=0 audibleRejects=0",
+      "samples=240000 inputPeakV=0.425 outputPeakV=25.302 outputRmsV=5.013 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "ssl-82e242",
+    "name": "SSL 4000 E 82E242 Black EQ",
+    "media": "SSL-82E242-Black-EQ-Dry-Wet.mp3",
+    "capture": "ssl-82e242.png",
+    "note": "Dry, then level-matched EQ on the same synthetic drums. Lower-mid Gain is 0.18 and upper-mid Gain is 0.78. The frequency, Q and Bell controls use factory settings.",
+    "details": "Four-band rev 5 circuit with ganged frequency and Q controls, linked shelf/bell switches and a limited NE5532 model for the NE5534N. The original center-tapped pots use three-terminal proxies.",
+    "source": "https://www.ka-electronics.com/images/SSL/ssl_82E242.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf",
+    "circuit_sha256": "69599c52aed632fb2f62fb234ef0e0dc5d13fbefd993f460e2979e6bcf1babed",
+    "verification": [
+      "samples=240000 inputPeakV=0.4675 outputPeakV=0.43038 outputRmsV=0.03846 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "teletronix-la2a",
+    "name": "Teletronix LA-2A",
+    "media": "Teletronix-LA-2A-Dry-Wet.mp3",
+    "capture": "teletronix-la2a.png",
+    "note": "Dry, then level-matched compression on synthetic drums at a 2.8 V peak line input. Peak Reduction and Gain use the factory settings in Compress mode.",
+    "details": "C-10953 rev C signal path with the original tube types and a T4 optical response approximation. The verification tests measured a longer release after sustained drive.",
+    "source": "https://audiocircuit.dk/downloads/urei/Urei-LA2A-lim-sch.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/dynamics/Teletronix-LA-2A.livewdf",
+    "circuit_sha256": "d81fb4debc0ededfbb89e0f2b1c31bcff622d7cdc08fe925970e08fe12b975ef",
+    "verification": [
+      "samples=240000 inputPeakV=2.805 outputPeakV=5.0949 outputRmsV=0.35246 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "urei545",
+    "name": "UREI 545 Parametric Equalizer",
+    "media": "UREI-545-Dry-Wet.mp3",
+    "capture": "urei545.png",
+    "note": "Dry, then level-matched EQ on synthetic drums. Mid Gain is 0.83 around 1.02 kHz and Low Gain is 0.25 around 145 Hz. Frequencies and bandwidth use factory settings.",
+    "details": "Four original state-variable filters, input and output filtering, three frequency ranges and a discrete transformer output driver. Transformer winding parameters and unavailable devices use documented approximations.",
+    "source": "https://thehistoryofrecording.com/Manuals/UREI/UREI-545_Manual.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/eq/UREI 545 Parametric Equalizer.livewdf",
+    "circuit_sha256": "710eaf2cc58f1c8e4c33df00f5075579bf179df16e90bfd57e60fb426ee10d01",
+    "verification": [
+      "samples=240000 inputPeakV=0.4675 outputPeakV=0.32462 outputRmsV=0.026265 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "pultec-eqp1a",
+    "name": "Pultec EQP-1A Program Equalizer",
+    "media": "Pultec-EQP-1A-Dry-Wet.mp3",
+    "capture": "pultec-eqp1a.png",
+    "note": "Dry, then level-matched EQ on synthetic drums. The low band uses 60 Hz with Boost 0.64 and Attenuation 0.21. The high band adds 8 kHz boost at 0.40.",
+    "details": "Original passive LC filter interaction and 12AX7/12AU7 makeup amplifier. The input, feedback and output transformers use linear equivalents.",
+    "source": "https://civade.com/AudioPro/PultecEQP.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/eq/Pultec EQP-1A Program Equalizer.livewdf",
+    "circuit_sha256": "014833247ec8761ad41fee36381f733456b22f0bfd85b78d02b43b1a588d53d9",
+    "verification": [
+      "samples=240000 inputPeakV=0.4675 outputPeakV=0.58167 outputRmsV=0.07429 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "urei-1176lnd",
+    "name": "UREI 1176LN Rev D",
+    "media": "UREI-1176-Rev-D-Dry-Wet.mp3",
+    "capture": "urei-1176lnd.png",
+    "note": "Dry, then level-matched compression on synthetic drums. Input, Output, Attack, Release and Ratio use the factory document positions.",
+    "details": "Rev D feedback compressor with a JFET gain element and discrete output. The Ratio control approximates the detector drive continuously. Factory button positions still need calibration.",
+    "source": "https://www.sowter.co.uk/schematics/1176manual.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf",
+    "circuit_sha256": "09aa56679e266f22c52e15a3855af18cf1dc88367e61393e24a208d56c84be85",
+    "verification": [
+      "samples=240000 inputPeakV=2.125 outputPeakV=7.7088 outputRmsV=0.40795 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "pultec-meq5",
+    "name": "Pultec MEQ-5 Mid-Range Equalizer",
+    "media": "Pultec-MEQ-5-Dry-Wet.mp3",
+    "capture": "pultec-meq5.png",
+    "note": "Dry, then level-matched EQ on synthetic drums, with 500 Hz and 4 kHz boost and a dip at 1.5 kHz.",
+    "details": "Switched passive midrange network and valve makeup amplifier. The 6AQ5 stage uses a related triode-strapped valve model and estimated transformer parameters.",
+    "source": "https://funkwerkes.com/web/wp-content/techdocs/MixedProAudio/Pultec-MEQ5-Manual.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/eq/Pultec MEQ-5 Mid-Range Equalizer.livewdf",
+    "circuit_sha256": "e24fa14876dd115202d4477d474924367c5baee5ce326cf4a6e7777d8ef1d277",
+    "verification": [
+      "samples=240000 inputPeakV=0.4675 outputPeakV=0.49515 outputRmsV=0.050217 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "neve-1073",
+    "name": "Neve 1073 line preamp",
+    "media": "neve-1073-dry-wet.mp3",
+    "capture": "neve-1073.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "EH10023 discrete line path through the amplifier and output transformer.",
+    "source": "https://www.technicalaudio.com/neve/neve_pdf/1073-fullpak.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/preamps/Neve 1073 Line Preamp EH10023.livewdf",
+    "circuit_sha256": "87d08c77d7ff386ce62b85adb9c504de9b4a73f9f31e83192fedb818edab9ffc",
+    "verification": [
+      "samples=240000 inputPeakV=0.85 outputPeakV=0.71943 outputRmsV=0.071696 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "mci-43e241",
+    "name": "MCI JH-400B 43E241 microphone preamp",
+    "media": "mci-43e241-dry-wet.mp3",
+    "capture": "mci-43e241.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "Balanced microphone input and pad through the 43E241 stage using the MCI 2001 op-amp model.",
+    "source": "https://thehistoryofrecording.com/Manuals/MCI/MCI_JH-400b_Manual_Schematics.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/preamps/MCI JH-400B Mic Preamp 43E241.livewdf",
+    "circuit_sha256": "e7abc16676c645825e5a79c29f4e3b615093c7b03a5e37094ce52dc483a5b1fa",
+    "verification": [
+      "samples=240000 inputPeakV=0.0051 outputPeakV=0.33495 outputRmsV=0.030899 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "api-560",
+    "name": "API 560 graphic equalizer",
+    "media": "api-560-dry-wet.mp3",
+    "capture": "api-560.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "The model uses gyrator equivalents for the inductor bands. Lower mids are boosted and upper mids are cut in the clip.",
+    "source": "https://www.steampoweredradio.com/pdf/api/manuals/api%201972%20schematics.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/eq/API 560 Graphic EQ Gyrator Model.livewdf",
+    "circuit_sha256": "0f536a8df8455f5d5e6699dc8088960c4f6d33305c78b2d348733e69cca83fa0",
+    "verification": [
+      "samples=240000 inputPeakV=0.4675 outputPeakV=0.48397 outputRmsV=0.046097 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "dbx-160-vu",
+    "name": "dbx 160 VU compressor",
+    "media": "dbx-160-vu-dry-wet.mp3",
+    "capture": "dbx-160-vu.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "The original Blackmer module and RMS detector are represented by THAT2180 and log-RMS models, respectively.",
+    "source": "https://www.lost-manuals.com/pdf/dbx--160--service--ID11749.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/dynamics/dbx-160-VU.livewdf",
+    "circuit_sha256": "80b11141a157d9f267a38ed531b35905cad550a338cef025b740e223717e614c",
+    "verification": [
+      "samples=240000 inputPeakV=2.125 outputPeakV=1.9426 outputRmsV=0.18871 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "urei-la3a",
+    "name": "UREI LA-3A optical compressor",
+    "media": "urei-la3a-dry-wet.mp3",
+    "capture": "urei-la3a.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "Factory C/1186 Rev E transistor stages and a dual-time-constant T4B model.",
+    "source": "https://www.steampoweredradio.com/pdf/urei/manuals/UREI%20LA-3A%20Leveling%20Amplifier%20Manual.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/dynamics/UREI-LA-3A.livewdf",
+    "circuit_sha256": "df5c58128ff279e34d937590d768b2d410d95a54fa57aa3aac71abe8f5fc459a",
+    "verification": [
+      "samples=240000 inputPeakV=2.125 outputPeakV=6.2357 outputRmsV=0.3927 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  },
+  {
+    "id": "fairchild-660",
+    "name": "Fairchild 660 limiter",
+    "media": "fairchild-660-dry-wet.mp3",
+    "capture": "fairchild-660.png",
+    "note": "Dry, then level-matched processing on the same synthetic drum sequence.",
+    "details": "Factory feedback topology, GE 6386 curve fits and a continuous Release control.",
+    "source": "https://www.benmook.com/tech/documents/Schematics%202/Schematics%201/Fairchild%20660%20sch1.pdf",
+    "renderer": {
+      "commit": "cfd3e920103728069452c9dc9b04b4cffb01cb54",
+      "engine_tree": "65d41dd97c25ecc256b577394af91e36b576ae43",
+      "renderer_sha256": "a8d7e212fdbb3d06ba90f7afbe770fbc66abff965d35c9a0e5f2bbb3972534a6"
+    },
+    "circuit": "schematics/studio/dynamics/Fairchild-660.livewdf",
+    "circuit_sha256": "4a49dfdfbbc231d5760eee220eec60653a572f1f3c8aaed91b32d47c8db0b4ce",
+    "verification": [
+      "samples=240000 inputPeakV=2.125 outputPeakV=3.7528 outputRmsV=0.34802 nonconverged=0 rejected=0 audibleRejects=0"
+    ]
+  }
+]
