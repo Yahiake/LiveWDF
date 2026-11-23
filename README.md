@@ -2,108 +2,47 @@
 
 [![Tests](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/tests.yml) [![Nightly](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml/badge.svg?branch=main)](https://github.com/Yahiake/LiveWDF/actions/workflows/nightly.yml)
 
-**An open-source, real-time Wave Digital Filter circuit simulator for audio.**
+LiveWDF simulates analog audio circuits in real time with Wave Digital Filters (WDFs). Play through a factory amp, pedal or piece of studio gear, or build your own circuit.
 
-LiveWDF is a C++ project focused on simulating analog audio circuits using Wave Digital Filters (WDFs). The goal is to make circuit-level simulation practical for real-time audio processing, with guitar amplifiers and effects as a primary application.
+## Download
 
-The project is being developed around three parts: a simulation engine, a circuit editor, and an audio plugin.
+The nightly workflow builds the editor, VST3 plug-in and standalone player for Windows, macOS and Linux. Nightlies appear as prereleases on [GitHub Releases](https://github.com/Yahiake/LiveWDF/releases).
 
-## What is LiveWDF?
+![The Fuzz Face schematic in the editor, then the factory preset browser and Fuzz Factory in the VST3 plug-in](media/livewdf.gif)
 
-Rather than recreating an amplifier's sound with EQ curves or neural models, LiveWDF takes a circuit-based approach. You build a circuit from its components, and the engine simulates how that circuit behaves.
+## Play or build a circuit
 
-The project has two main applications built around the same simulation core:
+- **Editor** — Wire up a circuit, change component values and save it as a `.livewdf` file.
+- **VST3** — Load the same file in your DAW, play through it and adjust its controls. Open the standalone player to do the same with an audio interface.
 
-- **Circuit Editor:** Design, modify and save circuits. The idea is to work directly with components and their values, rather than being limited to a collection of fixed amplifier models.
-- **Audio Plugin:** Load circuits created in the editor and run them on live audio inside a DAW.
+Search the factory library by name and filter by collection or effect type. Use the arrows beside the loaded preset to step through the results. See the [pedal](schematics/PEDAL-SOURCES.md) and [studio](schematics/STUDIO-SOURCES.md) circuit notes for references.
 
-At the center of both is the WDF engine, which handles the circuit simulation.
+New plug-in instances use **Fast Live** for playback. Offline rendering defaults to **Accurate** and 4× oversampling.
 
-## Who is it for?
+## Build from source
 
-LiveWDF is being built with a few different audiences in mind:
-
-- **Musicians and guitar players** who want to experiment with circuit-based amplifier and effect simulations without having to design circuits themselves. Ready-made circuits are part of the plan.
-- **Circuit enthusiasts and tinkerers** who want to build their own circuits and experiment with analog components.
-- **Developers and researchers** interested in Wave Digital Filters, real-time simulation, numerical methods, and audio software development.
-
-You don't need to understand circuit theory to eventually use the plugin. But if you want to understand or contribute to the engine, some C++ and electronics knowledge will certainly help.
-
-## Project status
-
-LiveWDF is open source and under active development. There are currently no official releases.
-
-The C++ simulation core builds and its test suite passes. Some tests can also compare results against ngspice, when it is installed.
-
-The editor and audio plugin are still being worked on, and their builds have not yet been fully confirmed across platforms.
-
-**Contributions, testing, bug reports and ideas are welcome.** There is still a lot to build, and the project would benefit from people interested in working on it.
-
-## Getting started
-
-For now, the simulation core is the part you can build and test reliably.
-
-### Requirements
-
-**Windows**
-- Visual Studio Build Tools with the *Desktop development with C++* workload
-- CMake 3.22 or newer
-- Git
-
-**Linux**
-- GCC or Clang with C++20 support
-- CMake 3.22 or newer
-- Git
-
-### Clone the repository
+Use CMake 3.22 or newer and a C++20 compiler. On Windows, install the Visual Studio Build Tools with the *Desktop development with C++* workload. Linux audio and GUI dependencies are listed in the [build workflow](.github/workflows/build.yml).
 
 ```bash
-git clone https://github.com/Yahiake/LiveWDF.git
+git clone --recurse-submodules https://github.com/Yahiake/LiveWDF.git
 cd LiveWDF
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_TESTS=OFF
+cmake --build build --config Release --target LiveWDF_Editor LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone
 ```
 
-### Initialize JUCE
+### Run the core tests
 
-JUCE is used by the editor and audio plugin. It is not required to build the simulation core alone.
-
-```bash
-git submodule update --init modules/JUCE
-```
-
-### Build the core and run the tests
-
-**Windows (PowerShell or terminal)**
+The simulation core builds without JUCE. Some tests use ngspice as an external reference when it is installed.
 
 ```bash
-cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF
-
-cmake --build build/core --config Release --target livewdf livewdf_tests
-
+cmake -S . -B build/core -DCMAKE_BUILD_TYPE=Release -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF
+cmake --build build/core --config Release --target livewdf_tests
 ctest --test-dir build/core -C Release --output-on-failure
 ```
 
-**Linux**
-
-```bash
-cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF -DCMAKE_BUILD_TYPE=Release
-
-cmake --build build/core --target livewdf livewdf_tests
-
-ctest --test-dir build/core --output-on-failure
-```
-
-The first build may take several minutes. Some tests use ngspice as an external reference simulator. They are skipped automatically when ngspice is not installed.
-
 ## Contributing
 
-LiveWDF is still taking shape, and there's plenty of room to get involved.
-
-Whether you're interested in the WDF engine, circuit models, numerical methods, audio processing, the editor, or plugin development, contributions are welcome.
-
-Found a bug? Have an idea? Want to work on something? Open an issue or join the discussion.
-
-- **GitHub:** [Yahiake/LiveWDF](https://github.com/Yahiake/LiveWDF)
-- **Discord:** [Join the LiveWDF community](https://discord.gg/ZJtGJQaPWh)
+Open an issue for bugs or ideas, or join the [LiveWDF Discord](https://discord.gg/ZJtGJQaPWh).
 
 ## License
 
