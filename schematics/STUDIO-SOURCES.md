@@ -51,7 +51,7 @@ The factory collection already packages nested directories. Place these circuits
 | 31 | Sontec MES-432C | |
 | 32 | Mäag EQ4 | |
 | 33 | Manley Massive Passive | |
-| 34 | UREI 545 | [UREI 545 manual and schematic](https://thehistoryofrecording.com/Manuals/UREI/UREI-545_Manual.pdf) |
+| 34 | UREI 545 | [UREI 545 manual and schematic](https://thehistoryofrecording.com/Manuals/UREI/UREI-545_Manual.pdf) and [Diodes Inc. 1N4003 bias diode SPICE model](https://www.diodes.com/spice/download/337/1N4003.spice.txt) |
 
 ## De-essing, enhancement and saturation
 

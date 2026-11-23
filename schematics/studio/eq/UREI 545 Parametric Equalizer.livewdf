@@ -3326,7 +3326,7 @@
     {
       "id": "CR13",
       "properties": {
-        "model": "1N4007"
+        "model": "1N4003"
       },
       "type": "diode",
       "values": {},
@@ -3340,7 +3340,7 @@
     {
       "id": "CR14",
       "properties": {
-        "model": "1N4007"
+        "model": "1N4003"
       },
       "type": "diode",
       "values": {},
@@ -3521,7 +3521,7 @@
       }
     }
   ],
-  "description": "The UREI 545 circuit from service drawing 12759, including four 4741 state-variable sections, variable high and low cuts, EQ bypass, class-AB line driver and transformer. Single-ended connection with COM grounded. LM741 and TL071 stand in for the 4741 and LF356N. Generic BJT and diode models and estimated transformer parameters are used, with the ratio set for the published nominal unity gain. Latching x10 and x100 switches emulate the original range selector, with x100 taking precedence. The mains power supply and overload detector are omitted.",
+  "description": "The UREI 545 circuit from service drawing 12759, including four 4741 state-variable sections, variable high and low cuts, EQ bypass, class-AB line driver and transformer. Single-ended connection with COM grounded. LM741 and TL071 stand in for the 4741 and LF356N. CR13 and CR14 use the static Diodes Inc. 1N4003 SPICE fit. The output transistors are BJT proxies and transformer parameters are estimated. The transformer ratio sets the nominal unity gain. Latching x10 and x100 switches emulate the original range selector, with x100 taking precedence. The mains power supply and overload detector are omitted.",
   "groundNode": "0",
   "inputNode": "in",
   "layout": {
