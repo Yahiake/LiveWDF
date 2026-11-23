@@ -24,18 +24,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     if (numChannels == 0 || numSamples == 0) return;
 
-    // An offline bounce applies an oversampling or grid current change now, not on the next timer tick.
+    // Offline hosts can process immediately without running a message loop.
     const bool offline = isNonRealtime();
     if (offline)
         timerCallback();
 
-    // Fast Live saves Newton refinements while keeping the same device laws
-    // and oversampling. Switching precision at a block boundary preserves
-    // the circuit state. Host-declared offline bounces always use Accurate.
-    constexpr double kFastLiveTolerance = 1e-7;
-    const bool fastLive = !offline && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
-    const double solveTolerance = fastLive ? kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
-    constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
+    const bool forceAccurate = shouldForceAccurate();
+    const bool useLiveQuality = !forceAccurate && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
 
     // Read audio gain parameters
     const float inputTrimDb = *apvts_.getRawParameterValue("input_trim");
@@ -88,12 +83,19 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // Try to acquire engine lock (never block audio thread)
     std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-    if (!lock.owns_lock() || !leftEngine_ || outNodeIndex_ < 0) {
+    if (!lock.owns_lock() || !leftEngine_ || outNodeIndex_ < 0 || (forceAccurate && usingPreview_)) {
         // Fallback: pass through with master gain
         buffer.applyGain(outputGain);
         outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
         return;
     }
+
+    // A supported preview uses the fitted model at the ordinary solve
+    // tolerance. Unsupported preview sheets use the Fast Live tolerance.
+    constexpr double kFastLiveTolerance = 1e-7;
+    const double solveTolerance = useLiveQuality && !usingPreview_
+        ? kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
+    constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
     // The output scale: the volts the circuit makes at full input, read off
     // the Output terminal, and the reciprocal of it.

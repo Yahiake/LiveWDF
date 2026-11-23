@@ -147,9 +147,12 @@ private:
     // Engine instances (stereo pair)
     // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.
     std::recursive_mutex loadMutex_;
+    bool previewAvailable_ = false;
+    bool attemptedPreview_ = false;
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
+    bool usingPreview_ = false;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
     /// throws and the live positions the editor draws.
@@ -246,10 +249,13 @@ private:
     int samplesPerBlock_ = 512;
 
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
+    bool shouldForceAccurate() const;
+    bool wantsLivePreview() const;
+    int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
     void applyLiveControlsToEngines();
-    void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
+    void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs, bool preview,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
                             int& inSrcIdx, int& outIdx,

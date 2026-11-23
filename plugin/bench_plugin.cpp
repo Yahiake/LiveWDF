@@ -1862,7 +1862,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
+                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -1872,7 +1872,7 @@ int main(int argc, char** argv) {
     bool wiring = false;
     bool sweep = false;
     bool runtimeCheck = false;
-    bool fastLive = false;
+    float solveQuality = 0.0f;
     std::string spiceDir;
     std::string probeCsv;
     std::string pluginProbeCsv;
@@ -1897,7 +1897,9 @@ int main(int argc, char** argv) {
         else if (arg == "--runtime-check")
             runtimeCheck = true;
         else if (arg == "--fast-live")
-            fastLive = true;
+            solveQuality = 1.0f;
+        else if (arg == "--live-preview")
+            solveQuality = 2.0f;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)
@@ -1955,11 +1957,11 @@ int main(int argc, char** argv) {
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
-    if (fastLive)
-        processor.getAPVTS().getParameter("solve_quality")->setValueNotifyingHost(1.0f);
+    auto* quality = processor.getAPVTS().getParameter("solve_quality");
+    quality->setValueNotifyingHost(quality->convertTo0to1(solveQuality));
 
     std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  quality=%s  circuit=%s\n",
-                kSampleRate, fastLive ? "Fast Live" : "Accurate", file.getFileName().toRawUTF8());
+                kSampleRate, quality->getCurrentValueAsText().toRawUTF8(), file.getFileName().toRawUTF8());
     std::printf("  block   OS   us/block   ns/in-sample   %% of one 48k core   groups(p/s)\n");
     std::printf("  --------------------------------------------------------------------------\n");
 

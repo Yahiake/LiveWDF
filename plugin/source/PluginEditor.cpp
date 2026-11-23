@@ -84,12 +84,26 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
+    oversampleExportBtn_.setTooltip("Use 4× Polyphase when the host renders offline. "
+                                    "Turn off to use the playback oversampling setting.");
+    addAndMakeVisible(oversampleExportBtn_);
+    oversampleExportAttach_ = std::make_unique<ButtonAttachment>(
+        processor_.getAPVTS(), "export_4x", oversampleExportBtn_);
+
     solveQualityCombo_.addItem("Accurate", 1);
     solveQualityCombo_.addItem("Fast Live", 2);
-    solveQualityCombo_.setTooltip("Fast Live relaxes circuit solver precision during playback. Offline renders use Accurate.");
+    solveQualityCombo_.addItem("Live Preview", 3);
+    solveQualityCombo_.setTooltip("Fast Live relaxes solver precision during playback. "
+                                  "Live Preview uses a compact model on the factory Boss BD-2 and Fast Live elsewhere.");
     addAndMakeVisible(solveQualityCombo_);
     solveQualityAttach_ = std::make_unique<ComboBoxAttachment>(
         processor_.getAPVTS(), "solve_quality", solveQualityCombo_);
+
+    accurateExportBtn_.setTooltip("Use Accurate when the host renders offline. "
+                                  "Turn off to render with the selected Solve Quality.");
+    addAndMakeVisible(accurateExportBtn_);
+    accurateExportAttach_ = std::make_unique<ButtonAttachment>(
+        processor_.getAPVTS(), "accurate_export", accurateExportBtn_);
 
     // 4b. Mono / stereo. Off (mono) is the default; the processor runs one
     // engine and folds the input to mono. Turning it on runs the right-hand
@@ -488,8 +502,12 @@ void LiveWDFPluginEditor::resized() {
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
-    oversamplingCombo_.setBounds(topBar.removeFromRight(120).reduced(6, 10));
-    solveQualityCombo_.setBounds(topBar.removeFromRight(104).reduced(6, 10));
+    auto oversamplingControls = topBar.removeFromRight(120).reduced(6, 3);
+    oversamplingCombo_.setBounds(oversamplingControls.removeFromTop(27));
+    oversampleExportBtn_.setBounds(oversamplingControls);
+    auto qualityControls = topBar.removeFromRight(128).reduced(6, 3);
+    solveQualityCombo_.setBounds(qualityControls.removeFromTop(27));
+    accurateExportBtn_.setBounds(qualityControls);
     stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
     reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
     loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
