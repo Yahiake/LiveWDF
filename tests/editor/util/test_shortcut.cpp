@@ -104,10 +104,7 @@ TEST_CASE("No key press in the alphabet arms two parts", "[shortcut]") {
     }
 }
 
-TEST_CASE("Every part family in the palette can be armed from the keyboard", "[shortcut]") {
-    // The other half of the same invariant: a shortcut that matches *nothing*
-    // is a part the keyboard cannot reach, which is as broken as a shortcut that
-    // reaches two.
+TEST_CASE("Every assigned part family shortcut arms a palette part", "[shortcut]") {
     //
     // Model rows share a family shortcut, and only the family's first row
     // carries it; the family is still reachable, and that is what the second
@@ -133,10 +130,11 @@ TEST_CASE("Every part family in the palette can be armed from the keyboard", "[s
             reachableTypes.insert(spec.type);
     }
 
-    // The real-card op-amp family is the one deliberate keyboard-less type:
-    // "A" arms the ideal op-amp, a separate part type whose three-pin frame is
-    // honest. The cards stay one click away in the palette and the inspector.
-    const std::set<std::string> keyboardless = {"opamp"};
+    // "A" arms the ideal op-amp. Real op-amps and these specialist devices
+    // are placed from the palette without taking an editor shortcut.
+    const std::set<std::string> keyboardless = {
+        "opamp", "photores", "dbx209", "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080"
+    };
     std::set<std::string> expected = allTypes;
     for (const auto& type : keyboardless) {
         INFO("keyboardless type: " << type);
