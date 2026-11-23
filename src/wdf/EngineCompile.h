@@ -127,6 +127,7 @@ public:
     }
 
     bool hasAdjustedLiveTransfer() const noexcept { return adjustableTransfer_.active(); }
+    long long liveControlRevision() const noexcept { return liveControlRevision_; }
 
     /// Apply the same taper and resistor values as setParametersByIndex.
     /// A failed update leaves both the old settings and the old transfer live.
@@ -162,6 +163,7 @@ public:
             if (transferFailed)
                 return false;
             compileZred();
+            ++liveControlRevision_;
             return true;
         };
         if (engine::DenseParameters::setParametersByIndex(ctx, pots, rheostats, noFixedResistors, update))
@@ -258,6 +260,7 @@ protected:
     std::vector<int> adjustableResistors_;
     std::vector<std::pair<int, double>> previousPots_, previousRheostats_, previousResistors_;
     long long linearRebuilds_ = 0;
+    long long liveControlRevision_ = 0;
 };
 
 }  // namespace wdf

@@ -149,6 +149,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
 
     readLivePotTargets();
+    applySettledLiveTransfer(processStereo);
     leftEngine_->useMixedAffineReduction(fastLive);
     if (processStereo)
         rightEngine_->useMixedAffineReduction(fastLive);

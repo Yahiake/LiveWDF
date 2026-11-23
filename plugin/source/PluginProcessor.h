@@ -181,6 +181,18 @@ private:
     std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
     std::optional<AffineResult> readyAffine_;
     std::future<AffineResult> affineJob_;
+    struct SettledTransfer {
+        unsigned long long generation = 0;
+        wdf::Engine::LiveTransferSetup left, right;
+        bool affine = false;
+        long long installedRevision = 0;
+        bool stereo = false;
+    };
+    std::future<SettledTransfer> settledTransferJob_;
+    std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
+    bool settledTransferPublished_ = false;
+    long long observedControlRevision_ = -1, preparedControlRevision_ = -1;
+    wdf::Circuit settledControlCircuit_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
     /// throws and the live positions the editor draws.
@@ -292,6 +304,8 @@ private:
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
     void prepareFastLiveAffine();
+    void prepareSettledLiveTransfer();
+    void applySettledLiveTransfer(bool stereo) noexcept;
     void readLivePotTargets();
     void advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
@@ -300,7 +314,8 @@ private:
                             std::unique_ptr<wdf::Engine>& right,
                             int& inSrcIdx, int& outIdx,
                             std::vector<double>& baseSources,
-                            std::vector<AcSource>& acSourcesOut);
+                            std::vector<AcSource>& acSourcesOut,
+                            wdf::Circuit& settledControlCircuit);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LiveWDFPluginProcessor)
 };

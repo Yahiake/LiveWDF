@@ -165,6 +165,44 @@ TEST_CASE("prepared controls match rebuilt transfers without resetting waves", "
     REQUIRE(worst < 1e-7);
 }
 
+TEST_CASE("settled control transfer keeps running state and rejects stale work", "[varres][engine][controls]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", .1);
+    circuit.addPot("in", "out", "0", 100e3, .37, wdf::PotTaper::Log, "Gain");
+    circuit.addCap("out", "0", 22e-9);
+    circuit.addDiode("out", "0", wdf::DiodeModel(1e-12, 1.5, 1.0));
+    wdf::Engine live(circuit, 48000), reference(circuit, 48000);
+    live.prepareLiveControls();
+    reference.prepareLiveControls();
+    REQUIRE(live.setLiveControls({{0, .42}}, {}));
+    wdf::Engine::LiveTransferSetup stale(circuit);
+    REQUIRE(live.captureLiveTransferSetup(stale));
+    stale.build(0, false);
+
+    REQUIRE(live.setLiveControls({{0, .61}}, {}));
+    REQUIRE_FALSE(live.installLiveTransferSetup(stale));
+    REQUIRE(live.hasAdjustedLiveTransfer());
+    REQUIRE(reference.setLiveControls({{0, .61}}, {}));
+    wdf::Engine::LiveTransferSetup settled(circuit);
+    REQUIRE(live.captureLiveTransferSetup(settled));
+    settled.build(0, false);
+    REQUIRE_FALSE(reference.installLiveTransferSetup(settled));
+    REQUIRE(reference.rebuild());
+    const int output = live.nodeIndex("out");
+    REQUIRE(output >= 0);
+    for (int i = 0; i < 256; ++i) {
+        const double input = .8 * std::sin(i * .13);
+        if (i == 128) {
+            const auto before = live.capacitorStates();
+            REQUIRE(live.installLiveTransferSetup(settled));
+            CHECK_FALSE(live.hasAdjustedLiveTransfer());
+            CHECK(live.capacitorStates() == before);
+        }
+        const auto expected = reference.step(&input, 1)[output];
+        CHECK(live.step(&input, 1)[output] == Approx(expected).margin(1e-7));
+    }
+}
+
 TEST_CASE("ControlledRes dynamic audio-rate modulation solved in closed form", "[ctrlres][engine]") {
     // A 5 V DC source feeding a 1k fixed resistor and a ControlledRes to ground
     const auto c = wdf::buildFromString(

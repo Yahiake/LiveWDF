@@ -21,6 +21,7 @@
 
 #include "wdf/EngineStep.h"
 
+#include <memory>
 #include <optional>
 #include <span>
 
@@ -76,6 +77,27 @@ public:
 
     long long mixedAffineAttempts() const { return mixedAffineAttempts_; }
     long long mixedAffineAccepted() const { return mixedAffineAccepted_; }
+
+    class LiveTransferSetup {
+    public:
+        explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
+        void build(size_t inputSource, bool prepareAffine);
+
+    private:
+        friend class Engine;
+        const Engine* owner_ = nullptr;
+        Circuit circuit_;
+        double rate_ = 0.0;
+        bool gridCurrent_ = true;
+        long long linearRevision_ = 0, controlRevision_ = 0;
+        std::unique_ptr<Engine> prepared_;
+    };
+
+    /// Copy live numeric settings into a setup created from this engine's
+    /// original circuit. Build on a worker; installation keeps live DSP state.
+    bool captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept;
+    bool canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept;
+    bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 
 private:
     bool gridCurrent_;
