@@ -104,6 +104,34 @@ TEST_CASE("BJT common-emitter NPN compiles and solves via Engine", "[bjt][engine
     REQUIRE(comp.bjt[0].model.valid());
 }
 
+TEST_CASE("An engine retains its validated BJT snapshot across a linear rebuild",
+          "[bjt][engine]") {
+    using namespace wdf;
+    Circuit circuit;
+    circuit.addSrc("VCC", "0", 5.0);
+    circuit.addSrc("B", "0", 0.65);
+    circuit.addRes("VCC", "C", 1000.0, "load");
+    circuit.addBjt("C", "B", "0", findBjtByName("2N3904")->model, "Q1");
+
+    Engine accepted(circuit, 48000.0);
+    const auto collector = accepted.nodeIndex("C");
+    REQUIRE(collector >= 0);
+    const std::vector<double> sources{5.0, 0.65};
+    const double conducting = accepted.step(sources)[collector];
+    REQUIRE(conducting < 4.9);
+
+    // The raw netlist is mutable. Recompiling it must use its current card,
+    // while an already running engine owns an immutable model snapshot.
+    circuit.bjt.front().model.Ne = -1.0;
+    REQUIRE_THROWS_AS(circuit.addBjt("C", "B", "0", circuit.bjt.front().model),
+                      std::invalid_argument);
+    Engine invalid(circuit, 48000.0);
+    CHECK(invalid.step(sources)[collector] == Approx(5.0));
+
+    REQUIRE(accepted.setResistance("load", 2000.0));
+    CHECK(accepted.step(sources)[collector] < conducting);
+}
+
 TEST_CASE("BJT deep-saturation DC agrees with ngspice at matched temperature",
           "[bjt][engine][dc]") {
     using namespace wdf;
