@@ -130,6 +130,79 @@ TEST_CASE("a control write that did not move does not rebuild the network", "[va
     REQUIRE(engine.linearRebuilds() == initial + 1);
 }
 
+TEST_CASE("prepared controls match rebuilt transfers without resetting waves", "[varres][engine][controls]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 0.1);
+    circuit.addPot("in", "wiper", "0", 100e3, .37, wdf::PotTaper::Log, "Gain");
+    circuit.addVarRes("wiper", "out", 22e3, .71, wdf::PotTaper::RevLog, "Tone");
+    circuit.addRes("out", "0", 33e3, "Load");
+    circuit.addCap("out", "0", 22e-9);
+    circuit.addDiode("out", "0", wdf::DiodeModel(1e-12, 1.5, 1.0));
+    wdf::Engine reference(circuit, 48000.0), prepared(circuit, 48000.0);
+    prepared.prepareLiveControls();
+    const auto initialRebuilds = prepared.linearRebuilds();
+    const int output = reference.nodeIndex("out");
+    REQUIRE(output >= 0);
+    double worst = 0.0;
+    for (int sample = 0; sample < 1024; ++sample) {
+        if (sample == 512) {
+            REQUIRE(reference.setResistance("Load", 100e3));
+            REQUIRE(prepared.setResistance("Load", 100e3));
+        }
+        const double ramp = static_cast<double>(sample % 256) / 255.0;
+        const std::vector<std::pair<int, double>> pots{{0, ramp}};
+        const std::vector<std::pair<int, double>> rheostats{{0, 1.0 - ramp}};
+        REQUIRE(reference.setParametersByIndex(pots, rheostats, {}));
+        REQUIRE(prepared.setLiveControls(pots, rheostats));
+        const double input = .7 * std::sin(.081 * sample);
+        const double expected = reference.step(&input, 1)[output];
+        const double actual = prepared.step(&input, 1)[output];
+        REQUIRE(std::isfinite(actual));
+        REQUIRE_FALSE(prepared.lastStateRejected());
+        worst = std::max(worst, std::abs(expected - actual));
+    }
+    REQUIRE(prepared.linearRebuilds() == initialRebuilds + 1);
+    REQUIRE(worst < 1e-7);
+}
+
+TEST_CASE("settled control transfer keeps running state and rejects stale work", "[varres][engine][controls]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", .1);
+    circuit.addPot("in", "out", "0", 100e3, .37, wdf::PotTaper::Log, "Gain");
+    circuit.addCap("out", "0", 22e-9);
+    circuit.addDiode("out", "0", wdf::DiodeModel(1e-12, 1.5, 1.0));
+    wdf::Engine live(circuit, 48000), reference(circuit, 48000);
+    live.prepareLiveControls();
+    reference.prepareLiveControls();
+    REQUIRE(live.setLiveControls({{0, .42}}, {}));
+    wdf::Engine::LiveTransferSetup stale(circuit);
+    REQUIRE(live.captureLiveTransferSetup(stale));
+    stale.build(0, false);
+
+    REQUIRE(live.setLiveControls({{0, .61}}, {}));
+    REQUIRE_FALSE(live.installLiveTransferSetup(stale));
+    REQUIRE(live.hasAdjustedLiveTransfer());
+    REQUIRE(reference.setLiveControls({{0, .61}}, {}));
+    wdf::Engine::LiveTransferSetup settled(circuit);
+    REQUIRE(live.captureLiveTransferSetup(settled));
+    settled.build(0, false);
+    REQUIRE_FALSE(reference.installLiveTransferSetup(settled));
+    REQUIRE(reference.rebuild());
+    const int output = live.nodeIndex("out");
+    REQUIRE(output >= 0);
+    for (int i = 0; i < 256; ++i) {
+        const double input = .8 * std::sin(i * .13);
+        if (i == 128) {
+            const auto before = live.capacitorStates();
+            REQUIRE(live.installLiveTransferSetup(settled));
+            CHECK_FALSE(live.hasAdjustedLiveTransfer());
+            CHECK(live.capacitorStates() == before);
+        }
+        const auto expected = reference.step(&input, 1)[output];
+        CHECK(live.step(&input, 1)[output] == Approx(expected).margin(1e-7));
+    }
+}
+
 TEST_CASE("ControlledRes dynamic audio-rate modulation solved in closed form", "[ctrlres][engine]") {
     // A 5 V DC source feeding a 1k fixed resistor and a ControlledRes to ground
     const auto c = wdf::buildFromString(

@@ -8,6 +8,7 @@
 #include "format/ControlGroups.h"
 #include "gui/DualOscilloscope.h"
 
+#include <array>
 #include <atomic>
 #include <future>
 #include <mutex>
@@ -180,6 +181,18 @@ private:
     std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
     std::optional<AffineResult> readyAffine_;
     std::future<AffineResult> affineJob_;
+    struct SettledTransfer {
+        unsigned long long generation = 0;
+        wdf::Engine::LiveTransferSetup left, right;
+        bool affine = false;
+        long long installedRevision = 0;
+        bool stereo = false;
+    };
+    std::future<SettledTransfer> settledTransferJob_;
+    std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
+    bool settledTransferPublished_ = false;
+    long long observedControlRevision_ = -1, preparedControlRevision_ = -1;
+    wdf::Circuit settledControlCircuit_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
     /// throws and the live positions the editor draws.
@@ -236,8 +249,17 @@ private:
 
     /// Engine indices of every grouped member, resolved at load, and the
     /// per-block batch built from them (reserved at load, so no allocation).
-    struct PotTarget { std::atomic<float>* knob; int index; bool varRes; };
+    struct PotControl {
+        const std::atomic<float>* knob = nullptr;
+        juce::SmoothedValue<double> position;
+    };
+    struct PotTarget { int group; int index; bool varRes; };
     struct SwitchTarget { size_t group; int resA; int resB; };
+    std::array<PotControl, kMaxPotKnobs> potControls_;
+    int potControlCount_ = 0;
+    int samplesUntilPotUpdate_ = 0;
+    bool potsMoving_ = false;
+    std::atomic<bool> liveControlUpdateFailed_{false};
     std::vector<PotTarget> potTargets_;
     std::vector<SwitchTarget> switchTargets_;
     std::vector<std::pair<int, double>> potMoves_, varResMoves_, resistorMoves_;
@@ -282,13 +304,18 @@ private:
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
     void prepareFastLiveAffine();
-    void applyLiveControlsToEngines();
+    void prepareSettledLiveTransfer();
+    void applySettledLiveTransfer(bool stereo) noexcept;
+    void readLivePotTargets();
+    void advanceLivePots();
+    void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
                             int& inSrcIdx, int& outIdx,
                             std::vector<double>& baseSources,
-                            std::vector<AcSource>& acSourcesOut);
+                            std::vector<AcSource>& acSourcesOut,
+                            wdf::Circuit& settledControlCircuit);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LiveWDFPluginProcessor)
 };

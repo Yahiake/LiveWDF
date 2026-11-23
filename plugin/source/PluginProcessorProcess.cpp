@@ -148,8 +148,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // which is where the CPU saving comes from: one engine instead of two.
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
 
-    // Update grouped pots and switches
-    applyLiveControlsToEngines();
+    readLivePotTargets();
+    applySettledLiveTransfer(processStereo);
     leftEngine_->useMixedAffineReduction(fastLive);
     if (processStereo)
         rightEngine_->useMixedAffineReduction(fastLive);
@@ -167,6 +167,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float* rightData = (numChannels > 1) ? buffer.getWritePointer(1) : nullptr;
 
         for (int s = 0; s < numSamples; ++s) {
+            advanceLivePots();
             const double inL = static_cast<double>(leftData[s]);
             const double outL = halfBandOversamplerL_.process(inL, [&](double osIn) -> double {
                 std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
@@ -229,7 +230,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float* rightData = (numChannels > 1) ? oversampledBlock.getChannelPointer(1) : nullptr;
 
         // Process sample by sample through WDF engine
+        const int oversampling = activeOversampler ? currentOversamplingFactor_ : 1;
+        int phase = 0;
         for (size_t s = 0; s < osSamples; ++s) {
+            if (phase == 0)
+                advanceLivePots();
+            if (++phase == oversampling)
+                phase = 0;
             if (!acSources_.empty()) {
                 for (const auto& ac : acSources_) {
                     if (ac.index < 0 || ac.index >= static_cast<int>(svLeft_.size()))

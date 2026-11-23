@@ -144,9 +144,12 @@ TEST_CASE("prepared affine regions preserve a coupled root through clipping and 
     c.addDiode("sum", "out", wdf::DiodeModel(1e-11, 2.0, 10.0), "D2");
     c.addRes("out", "load", 1e3);
     c.addDiode("load", "0", wdf::DiodeModel(1e-11, 2.0, 10.0), "D3");
+    c.addVarRes("in", "aux", 22e3, 0.5, wdf::PotTaper::Linear, "Aux");
+    c.addRes("aux", "0", 10e3);
 
     wdf::Engine full(c, kFs);
     wdf::Engine reduced(c, kFs);
+    reduced.prepareLiveControls();
     REQUIRE(reduced.prepareMixedAffineReduction(0) > 0);
     const auto verify = [&](int first, int end) {
         std::vector<double> input(1);
@@ -172,6 +175,22 @@ TEST_CASE("prepared affine regions preserve a coupled root through clipping and 
     REQUIRE(stale);
     stale->build();
     CHECK_FALSE(full.installMixedAffineSetup(*stale));
+
+    // This resistor changes the network but leaves the root impedance
+    // untouched, so a matrix comparison alone cannot detect the live edit.
+    const auto revision = reduced.linearRebuilds();
+    REQUIRE(reduced.setLiveControls({}, {{0, 0.75}}));
+    REQUIRE(full.setVarResPosition(0, 0.75));
+    CHECK(reduced.linearRebuilds() == revision);
+    CHECK_FALSE(reduced.captureMixedAffineSetup(0));
+    CHECK_FALSE(reduced.installMixedAffineSetup(*stale));
+    verify(3000, 3250);
+    CHECK(reduced.mixedAffineAttempts() == attempts);
+    REQUIRE(reduced.setLiveControls({}, {{0, 0.5}}));
+    REQUIRE(full.setVarResPosition(0, 0.5));
+    REQUIRE(reduced.captureMixedAffineSetup(0));
+    REQUIRE(reduced.installMixedAffineSetup(*stale));
+
     REQUIRE(reduced.setResistance("Feedback", 47e3));
     REQUIRE(full.setResistance("Feedback", 47e3));
     CHECK_FALSE(reduced.installMixedAffineSetup(*stale));

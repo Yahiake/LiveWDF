@@ -99,7 +99,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         const juce::String potName = "Pot " + juce::String(i + 1);
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID{potId, 1}, potName,
-            juce::NormalisableRange<float>(0.0f, 1.0f, wdf::kLivePotStep), 0.5f));
+            juce::NormalisableRange<float>(0.0f, 1.0f), 0.5f));
     }
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
@@ -141,7 +141,11 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     // a `.livewdf` file (or a host session that restores one).
 }
 
-LiveWDFPluginProcessor::~LiveWDFPluginProcessor() { stopTimer(); }
+LiveWDFPluginProcessor::~LiveWDFPluginProcessor() {
+    stopTimer();
+    delete pendingSettledTransfer_.exchange(nullptr);
+    delete retiredSettledTransfer_.exchange(nullptr);
+}
 
 bool LiveWDFPluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
     const auto& mainIn = layouts.getMainInputChannelSet();
@@ -238,9 +242,13 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
+    if (liveControlUpdateFailed_.exchange(false, std::memory_order_relaxed))
+        lastError_ = "Could not apply a live control setting";
     applyPendingCircuitOptions();
-    if (!isNonRealtime() && !currentDoc_.components.empty())
+    if (!isNonRealtime() && !currentDoc_.components.empty()) {
+        prepareSettledLiveTransfer();
         prepareFastLiveAffine();
+    }
     updateReportedLatency();
 }
 
@@ -255,6 +263,97 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
         loadCircuitDocument(currentDoc_, false);
         currentFile_ = circuitFile;
     }
+}
+
+void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
+    if (settledTransferPublished_) {
+        const std::unique_ptr<SettledTransfer> retired(
+            retiredSettledTransfer_.exchange(nullptr, std::memory_order_acquire));
+        if (!retired)
+            return;
+        settledTransferPublished_ = false;
+        if (retired->installedRevision != 0 && retired->affine &&
+            retired->generation == engineGeneration_)
+            requestedAffineKey_ = {retired->generation, retired->installedRevision, retired->stereo};
+    }
+    if (settledTransferJob_.valid()) {
+        if (settledTransferJob_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+            return;
+        try {
+            auto result = std::make_unique<SettledTransfer>(settledTransferJob_.get());
+            if (result->generation == engineGeneration_) {
+                pendingSettledTransfer_.store(result.release(), std::memory_order_release);
+                settledTransferPublished_ = true;
+            }
+        } catch (const std::exception&) {
+            // The adjusted transfer remains active.
+        }
+        return;
+    }
+    long long revision = 0;
+    {
+        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
+        if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
+            return;
+        if (potsMoving_ || !leftEngine_->hasAdjustedLiveTransfer() ||
+            !rightEngine_->hasAdjustedLiveTransfer()) {
+            observedControlRevision_ = -1;
+            return;
+        }
+        revision = leftEngine_->liveControlRevision();
+        if (observedControlRevision_ != revision) {
+            observedControlRevision_ = revision;
+            return;
+        }
+        if (preparedControlRevision_ == revision || affineWorkerBusy.test(std::memory_order_relaxed))
+            return;
+    }
+    SettledTransfer job{engineGeneration_,
+                        wdf::Engine::LiveTransferSetup(settledControlCircuit_),
+                        wdf::Engine::LiveTransferSetup(settledControlCircuit_),
+                        *apvts_.getRawParameterValue("solve_quality") > 0.5f};
+    size_t input = 0;
+    {
+        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
+        if (!lock.owns_lock() || potsMoving_ || leftEngine_->liveControlRevision() != revision ||
+            !leftEngine_->captureLiveTransferSetup(job.left) ||
+            !rightEngine_->captureLiveTransferSetup(job.right))
+            return;
+        input = static_cast<size_t>(inSourceIndex_);
+    }
+    if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
+        return;
+    try {
+        settledTransferJob_ = std::async(std::launch::async,
+            [work = std::move(job), input]() mutable {
+                const AffineWorkerSlot slot;
+                work.left.build(input, work.affine);
+                work.right.build(input, work.affine);
+                return std::move(work);
+            });
+        preparedControlRevision_ = revision;
+    } catch (const std::exception&) {
+        affineWorkerBusy.clear(std::memory_order_release);
+    }
+}
+
+void LiveWDFPluginProcessor::applySettledLiveTransfer(bool stereo) noexcept {
+    if (!pendingSettledTransfer_.load(std::memory_order_relaxed))
+        return;
+    auto* ready = pendingSettledTransfer_.exchange(nullptr, std::memory_order_acquire);
+    if (!ready)
+        return;
+    if (!potsMoving_ && rightEngine_ && ready->generation == engineGeneration_ &&
+        leftEngine_->canInstallLiveTransferSetup(ready->left) &&
+        rightEngine_->canInstallLiveTransferSetup(ready->right)) {
+        leftEngine_->installLiveTransferSetup(ready->left);
+        rightEngine_->installLiveTransferSetup(ready->right);
+        ready->installedRevision = leftEngine_->linearRebuilds();
+        ready->stereo = stereo;
+    }
+    // Publish the old transfer for destruction by the timer. The timer
+    // cannot submit another job before taking this result back.
+    retiredSettledTransfer_.store(ready, std::memory_order_release);
 }
 
 void LiveWDFPluginProcessor::prepareFastLiveAffine() {
@@ -276,6 +375,14 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
         if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
             return;
         const bool stereo = *apvts_.getRawParameterValue("stereo") > 0.5f;
+        if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() ||
+            (stereo && rightEngine_->hasAdjustedLiveTransfer())) {
+            if (readyAffine_) {
+                completed.swap(readyAffine_);
+                requestedAffineKey_.reset();
+            }
+            return;
+        }
         key = {engineGeneration_, leftEngine_->linearRebuilds(), stereo};
         if (readyAffine_) {
             completed.swap(readyAffine_);
@@ -290,7 +397,7 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
         if (*apvts_.getRawParameterValue("solve_quality") <= 0.5f &&
             requestedAffineKey_ && requestedAffineKey_->generation == key.generation)
             return;
-        // Avoid rebuilding calibration while a control is still moving.
+        // Wait for the same transfer on two timer ticks.
         if (observedAffineKey_ != key) {
             observedAffineKey_ = key;
             return;
@@ -336,7 +443,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
                                                std::unique_ptr<wdf::Engine>& right,
                                                int& inSrcIdx, int& outIdx,
                                                std::vector<double>& baseSources,
-                                               std::vector<AcSource>& acSourcesOut) {
+                                               std::vector<AcSource>& acSourcesOut,
+                                               wdf::Circuit& settledControlCircuit) {
     // **A document can be rejected before there is an engine.** `toCircuit`
     // throws for a rail wired to ground, for example, and that is a drawing
     // error the user can fix -- not a reason to take the plugin down. The
@@ -435,6 +543,7 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         // Where the audio leaves: the Output terminal's pin, or the document's
         // named output node when the sheet has no Output terminal.
         outIdx = left->nodeIndex(doc.outputNet());
+        settledControlCircuit = std::move(c);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -464,6 +573,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                                                  bool initializePotParameters) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     lastError_.clear();
+    liveControlUpdateFailed_.store(false, std::memory_order_relaxed);
 
     // A document loaded from anywhere but a file has no file to reload. The
     // callers that *do* have a file set `currentFile_` again afterwards, so
@@ -484,12 +594,16 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::vector<double> baseSources;
     std::vector<AcSource> acSources;
 
-    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources, acSources);
+    wdf::Circuit newSettledControlCircuit;
+    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources,
+                       acSources, newSettledControlCircuit);
 
     if (!newLeft || !newRight) {
         return false;
     }
     cacheDocument_ = std::make_shared<const std::string>(doc.toJson());
+    settledControlCircuit_ = std::move(newSettledControlCircuit);
+    observedControlRevision_ = preparedControlRevision_ = -1;
 
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
@@ -580,15 +694,16 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         }
 
         potTargets_.clear();
-        const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
-        for (int i = 0; i < potLimit; ++i) {
-            auto* knob = apvts_.getRawParameterValue("pot_" + juce::String(i));
+        potControlCount_ = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
+        for (int i = 0; i < potControlCount_; ++i) {
+            potControls_[static_cast<size_t>(i)].knob =
+                apvts_.getRawParameterValue("pot_" + juce::String(i));
             for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
                 const bool varRes = member.type == "varres";
                 const int index = varRes ? leftEngine_->varResIndexByName(member.id)
                                          : leftEngine_->potIndexByName(member.id);
                 if (index >= 0)
-                    potTargets_.push_back({knob, index, varRes});
+                    potTargets_.push_back({i, index, varRes});
             }
         }
         switchTargets_.clear();
@@ -611,10 +726,19 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         if (initializePotParameters)
             syncPotParametersFromDocument(doc);
 
-        // Apply under the same lock: the new engine is already visible to the
-        // audio thread, and touching its pots or switch resistors outside this
-        // lock would race a block that is just starting.
-        applyLiveControlsToEngines();
+        // Start at the saved knob positions. Measure ramp progress in host
+        // samples so oversampling does not change the feel of the controls.
+        samplesUntilPotUpdate_ = 0;
+        potsMoving_ = false;
+        for (int i = 0; i < potControlCount_; ++i) {
+            auto& control = potControls_[static_cast<size_t>(i)];
+            const float value = control.knob->load(std::memory_order_relaxed);
+            control.position.reset(sampleRate_, .015);
+            control.position.setCurrentAndTargetValue(std::isfinite(value) ? value : 0.5);
+        }
+        applyLiveControlsToEngines(true, true);
+        leftEngine_->prepareLiveControls();
+        rightEngine_->prepareLiveControls();
     }
 
     return true;
@@ -778,10 +902,44 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
 
-    applyLiveControlsToEngines();
+    applyLiveControlsToEngines(false, true);
 }
 
-void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
+void LiveWDFPluginProcessor::readLivePotTargets() {
+    for (int i = 0; i < potControlCount_; ++i) {
+        auto& control = potControls_[static_cast<size_t>(i)];
+        const double value = control.knob->load(std::memory_order_relaxed);
+        if (std::isfinite(value))
+            control.position.setTargetValue(value);
+        potsMoving_ |= control.position.isSmoothing();
+    }
+}
+
+void LiveWDFPluginProcessor::advanceLivePots() {
+    if (!potsMoving_)
+        return;
+
+    // Use a host-sample interval so oversampling and block boundaries have
+    // no effect on the control curve. Batch ganged and simultaneous changes.
+    constexpr int interval = 8;
+    potsMoving_ = false;
+    for (int i = 0; i < potControlCount_; ++i) {
+        auto& position = potControls_[static_cast<size_t>(i)].position;
+        position.getNextValue();
+        potsMoving_ |= position.isSmoothing();
+    }
+    if (potsMoving_ && samplesUntilPotUpdate_ > 0) {
+        --samplesUntilPotUpdate_;
+        return;
+    }
+
+    samplesUntilPotUpdate_ = interval - 1;
+    applyLiveControlsToEngines(true, false);
+    if (!potsMoving_)
+        samplesUntilPotUpdate_ = 0;
+}
+
+void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches) {
     if (!leftEngine_) return;
 
     // Every pot and switch member goes to the engine in one batch, so a moved
@@ -789,17 +947,29 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines() {
     potMoves_.clear();
     varResMoves_.clear();
     resistorMoves_.clear();
-    for (const auto& t : potTargets_)
-        (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, static_cast<double>(t.knob->load()));
-    for (const auto& t : switchTargets_) {
-        const bool throwB = switchGroupStates_[t.group];
-        resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
-        resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+    if (pots) {
+        for (const auto& t : potTargets_) {
+            const auto& control = potControls_[static_cast<size_t>(t.group)];
+            (t.varRes ? varResMoves_ : potMoves_).emplace_back(t.index, control.position.getCurrentValue());
+        }
+    }
+    if (switches) {
+        for (const auto& t : switchTargets_) {
+            const bool throwB = switchGroupStates_[t.group];
+            resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+            resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+        }
     }
 
-    leftEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+    const auto apply = [&](wdf::Engine& engine) {
+        if (switches)
+            engine.setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+        else if (!engine.setLiveControls(potMoves_, varResMoves_))
+            liveControlUpdateFailed_.store(true, std::memory_order_relaxed);
+    };
+    apply(*leftEngine_);
     if (rightEngine_)
-        rightEngine_->setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
+        apply(*rightEngine_);
 }
 
 // ==============================================================================

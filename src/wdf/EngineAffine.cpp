@@ -11,7 +11,7 @@ constexpr size_t planLimit = 5;
 }
 
 bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
-    if (blockCount_ != 1)
+    if (hasAdjustedLiveTransfer() || blockCount_ != 1)
         return false;
     const auto& block = newtonBlocks_.front();
     // Reconstructing the original voltages costs more than removing a
