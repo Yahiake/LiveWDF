@@ -7,6 +7,7 @@
 
 #include "source/PluginProcessor.h"
 
+#include "format/AcSource.h"
 #include "format/Document.h"
 #include "compiler/Compiler.h"
 #include "runtime/Runtime.h"
@@ -384,6 +385,9 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
 
     livewdf::LiveWDFPluginProcessor processor;
     setOversampling(processor, 0);
+    // The direct reference steps with the engine's Accurate tolerance.
+    auto* quality = processor.getAPVTS().getParameter("solve_quality");
+    quality->setValueNotifyingHost(quality->convertTo0to1(0.0f));
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         st.error = "load failed: " + processor.lastError();
@@ -456,6 +460,7 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     juce::MidiBuffer midi;
     std::vector<float> blockIn(static_cast<size_t>(blockSize));
     std::vector<double> sv = ref.base;
+    const auto acSources = doc.sourceAcSettings();
 
     double phase = 0.0;
     double sumSq = 0.0;
@@ -476,6 +481,11 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
 
         for (int i = 0; i < blockSize; ++i) {
             const int n = b * blockSize + i;
+            for (size_t source = 0; source < std::min(acSources.size(), sv.size()); ++source) {
+                const auto& ac = acSources[source];
+                if (ac.ac != 0.0 && ac.freq != 0.0)
+                    sv[source] = wdf::sourceValueAt(ref.base[source], ac.ac, ac.freq, kSampleRate, n);
+            }
             sv[static_cast<size_t>(ref.inIdx)] = static_cast<double>(blockIn[static_cast<size_t>(i)]);
 
             const auto& nodes = ref.engine->step(sv);
