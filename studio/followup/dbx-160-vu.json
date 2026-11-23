@@ -1,0 +1,40 @@
+{
+  "circuit": "schematics/studio/dynamics/dbx-160-VU.livewdf",
+  "renderer": {
+    "commit": "dcefe3f12f49ab0e6d062fc39835fc3ca5650569",
+    "engine_tree": "0e24afb38da5a29d6b883ef3fc9f3092d968780c",
+    "renderer_sha256": "c354f033c285d861ce050489cd15fa7777c0c79ce4fe5e6368d8b03941ab5203"
+  },
+  "input_scale": 2.5,
+  "input_peak": 2.125,
+  "timings_sec": [
+    0,
+    4.3,
+    8.6
+  ],
+  "crest_dB": [
+    23.943319172594528,
+    23.39821594800678,
+    27.96049236157838
+  ],
+  "loud_to_quiet_dB": [
+    14.894549897933826,
+    14.905688967761478,
+    6.34022027386367
+  ],
+  "conditions": [
+    {
+      "setting": "factory",
+      "controls": {},
+      "report": "samples=240000 inputPeakV=2.125 outputPeakV=1.9312 outputRmsV=0.11537 nonconverged=0 rejected=0 audibleRejects=0"
+    },
+    {
+      "setting": "strong",
+      "controls": {
+        "Threshold": 0.38,
+        "Ratio": 0.9
+      },
+      "report": "samples=240000 inputPeakV=2.125 outputPeakV=1.3449 outputRmsV=0.047344 nonconverged=0 rejected=0 audibleRejects=0"
+    }
+  ]
+}
