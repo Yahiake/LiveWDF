@@ -156,8 +156,13 @@ struct BjtModel {
         const double dvbc_dev = p * (dvbe - dvce);
 
         // 1. DAFx-23 logarithmic step damping
-        const double dvbe_d = dampStep(dvbe_dev, nfVt);
-        const double dvbc_d = dampStep(dvbc_dev, nrVt);
+        const auto dampJunction = [](double v, double dv, double nVt) {
+            // A step that stays reverse-biased cannot overshoot the
+            // exponentially rising forward-current region.
+            return v <= 0.0 && v + dv <= 0.0 ? dv : dampStep(dv, nVt);
+        };
+        const double dvbe_d = dampJunction(vbe_dev, dvbe_dev, nfVt);
+        const double dvbc_d = dampJunction(vbc_dev, dvbc_dev, nrVt);
 
         // 2. Proposed trial voltages
         const double vbe_trial = vbe_dev + dvbe_d;
