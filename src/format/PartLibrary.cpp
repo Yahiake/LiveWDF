@@ -109,6 +109,9 @@ const std::vector<PartSpec>& basePaletteStorage() {
         {"vca",        "Linear VCA",   "VCA", {"in", "out", "control", "reference"}, {0, 1, 2, 3},
          {{-3, 0}, {3, 0}, {0, -3}, {0, 3}}, 2200.0, "inputOhms", "", 0, false,
          "Active/Gain Blocks"},
+        {"that2180",   "THAT2180 VCA", "VCA", {"in", "out", "ecPlus", "ecMinus", "reference"},
+         {0, 1, 2, 2, 3}, {{-3, 0}, {3, 0}, {-1, -3}, {1, -3}, {0, 3}}, 25.0, "inputOhms", "", 0, false,
+         "Active/Gain Blocks"},
         // The ideal op-amp: infinite gain, no bandwidth limit, no slew, no
         // clipping and **no supply terminals**. A real card's V+/V- are how its
         // headroom is set; this part has no headroom to set, so it exposes the

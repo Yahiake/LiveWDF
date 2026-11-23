@@ -130,12 +130,21 @@ SpiceExportResult spiceExport(const Circuit& c,
             const auto a = nodeOrGround(e.a);
             const auto b = nodeOrGround(e.b);
             const auto& vca = *e.vca;
+            const auto sense = "V(" + nodeOrGround(vca.control) + "," +
+                               nodeOrGround(vca.reference) + ")";
             f << spiceUnique("B_" + spiceSafe(base), used) << " " << a << " " << b
-              << " I=V(" << a << "," << b << ")*min(max(V("
-              << nodeOrGround(vca.control) << "," << nodeOrGround(vca.reference) << ")/"
-              << spiceNum(vca.fullGainVolts) << "," << spiceNum(VcaControl::minimumGain)
-              << ")," << spiceNum(VcaControl::maximumGain) << ")/"
-              << spiceNum(e.initialOhms * VcaControl::minimumGain) << "\n";
+              << " I=V(" << a << "," << b << ")*";
+            if (vca.blackmer) {
+                f << "exp(" << spiceNum(std::log(10.0) / 20.0) << "*min(max("
+                  << sense << "/" << spiceNum(VcaControl::blackmerVoltsPerDb) << ","
+                  << spiceNum(VcaControl::blackmerMinimumDb) << "),"
+                  << spiceNum(VcaControl::blackmerMaximumDb) << "))";
+            } else {
+                f << "min(max(" << sense << "/" << spiceNum(vca.fullGainVolts) << ","
+                  << spiceNum(VcaControl::minimumGain) << "),"
+                  << spiceNum(VcaControl::maximumGain) << ")";
+            }
+            f << "/" << spiceNum(e.initialOhms * vca.initialGain()) << "\n";
             continue;
         }
         if (e.ota) {

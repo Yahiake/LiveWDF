@@ -65,6 +65,7 @@ enum class OpAmpType {
     Tl082ClassAB,
     Lm741ClassAB,
     Tl061,
+    Op275,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -82,6 +83,7 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "ne5532" || lower == "njm5532" || lower == "5532") return OpAmpType::Ne5532;
     if (lower == "ca3080" || lower == "lm3080") return OpAmpType::Ca3080;
     if (lower == "op07" || lower == "op07c") return OpAmpType::Op07;
+    if (lower == "op275") return OpAmpType::Op275;
     if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
         return OpAmpType::M5218Al;
     if (lower == "tl022" || lower == "tl022c") return OpAmpType::Tl022;
@@ -109,6 +111,7 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Ne5532: return "NE5532";
         case OpAmpType::Ca3080: return "CA3080";
         case OpAmpType::Op07: return "OP07";
+        case OpAmpType::Op275: return "OP275";
         case OpAmpType::M5218Al: return "M5218AL";
         case OpAmpType::Tl022: return "TL022";
         case OpAmpType::Mc33174: return "MC33174";
@@ -137,7 +140,7 @@ inline constexpr const char* kOpAmpTypeNames[] = {
     "TL071", "TL072", "TL082", "JRC4558", "RC4558",
     "LM308", "LM741", "NE5532", "CA3080", "OP07",
     "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
-    "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061"};
+    "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
@@ -148,6 +151,7 @@ inline double opAmpSupplyMax(OpAmpType type) {
             return 18.0;
         case OpAmpType::Ne5532:
         case OpAmpType::Op07:
+        case OpAmpType::Op275:
         case OpAmpType::Mc33174:
             return 44.0;
         default:
@@ -281,6 +285,16 @@ struct OpAmpModel {
                 m.slewRate = 50.0;
                 m.outputImpedance = 75.0;
                 m.outputCapacitance = 20e-12;
+                break;
+            case OpAmpType::Op275:
+                // Analog Devices OP275 Rev. C, ±15 V and 25 °C typical.
+                // https://www.analog.com/media/en/technical-documentation/data-sheets/OP275.pdf
+                m.openLoopGain = 250000.0;
+                m.gbw = 9.0e6;
+                m.slewRate = 22.0;
+                m.outputImpedance = 30.0;
+                // Compensate the 13.9 V swing specified into 2 kΩ for Ro.
+                m.vRailPos = m.vRailNeg = 13.9 * (1.0 + m.outputImpedance / 2000.0);
                 break;
             case OpAmpType::Op07:
                 m.openLoopGain = 400000.0;

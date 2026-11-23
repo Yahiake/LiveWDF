@@ -590,7 +590,7 @@ protected:
                 (vca.reference >= 0 ? nodes[static_cast<size_t>(vca.reference)] : 0.0) +
                 vca.controlOffset.eval(sources, sourceCount);
             const auto& ctrl = circuit_.ctrlRes[vca.index];
-            ctrlResValues_[vca.index] = ctrl.initialOhms * VcaControl::minimumGain /
+            ctrlResValues_[vca.index] = ctrl.initialOhms * ctrl.vca->initialGain() /
                                        ctrl.vca->normalizedGain(control);
         }
     }

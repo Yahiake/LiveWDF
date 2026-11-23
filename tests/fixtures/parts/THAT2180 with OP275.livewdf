@@ -1,0 +1,426 @@
+{
+  "author": "LiveWDF",
+  "category": "Gain Block",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 6,
+        "y": 23
+      }
+    },
+    {
+      "id": "C001",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 15,
+        "y": 23
+      }
+    },
+    {
+      "id": "R001",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 20000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 25,
+        "y": 23
+      }
+    },
+    {
+      "id": "U1",
+      "properties": {},
+      "type": "that2180",
+      "values": {
+        "inputOhms": 25
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 23
+      }
+    },
+    {
+      "id": "GND2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 33,
+        "y": 14
+      }
+    },
+    {
+      "id": "GND3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 32
+      }
+    },
+    {
+      "id": "VC",
+      "properties": {
+        "label": "EC\u2212 (10 dB attenuation)"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 0.061
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 44,
+        "y": 12
+      }
+    },
+    {
+      "id": "VCC",
+      "properties": {
+        "label": "+15 V"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 15
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 56,
+        "y": 14
+      }
+    },
+    {
+      "id": "VEE",
+      "properties": {
+        "label": "\u221215 V"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -15
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 37
+      }
+    },
+    {
+      "id": "U2",
+      "properties": {
+        "model": "OP275"
+      },
+      "type": "opamp",
+      "values": {
+        "vRailMax": 14.1085,
+        "vRailMin": -14.1085
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 55,
+        "y": 24
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 49,
+        "y": 36
+      }
+    },
+    {
+      "id": "R002",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 20000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 65,
+        "y": 9
+      }
+    },
+    {
+      "id": "C002",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 65,
+        "y": 17
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 24
+      }
+    }
+  ],
+  "description": "Signal path of THAT2180 datasheet Figure 2, including the 20 k\u03a9 input and transimpedance resistors and the 22 pF feedback capacitor. The gain cell is a room-temperature current-transfer macromodel with implicit nominal bias. Change the EC\u2212 rail to sweep gain. Leave symmetry adjustment open on the hardware.",
+  "io": {
+    "groundNode": "0",
+    "inputNode": "in",
+    "outputNode": "out"
+  },
+  "layout": {
+    "pots": []
+  },
+  "name": "THAT2180 with OP275",
+  "version": 3,
+  "wires": [
+    {
+      "points": [
+        {
+          "x": 34,
+          "y": 20
+        },
+        {
+          "x": 35,
+          "y": 20
+        },
+        {
+          "x": 35,
+          "y": 12
+        },
+        {
+          "x": 33,
+          "y": 12
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 26
+        },
+        {
+          "x": 35,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 25
+        },
+        {
+          "x": 52,
+          "y": 34
+        },
+        {
+          "x": 49,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 55,
+          "y": 21
+        },
+        {
+          "x": 56,
+          "y": 21
+        },
+        {
+          "x": 56,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 23
+        },
+        {
+          "x": 8,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 23
+        },
+        {
+          "x": 27,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 23,
+          "y": 23
+        },
+        {
+          "x": 17,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 44,
+          "y": 12
+        },
+        {
+          "x": 44,
+          "y": 20
+        },
+        {
+          "x": 36,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 55,
+          "y": 27
+        },
+        {
+          "x": 65,
+          "y": 27
+        },
+        {
+          "x": 65,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 17
+        },
+        {
+          "x": 67,
+          "y": 24
+        },
+        {
+          "x": 58,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 9
+        },
+        {
+          "x": 67,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 80,
+          "y": 24
+        },
+        {
+          "x": 67,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 23
+        },
+        {
+          "x": 38,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 17
+        },
+        {
+          "x": 52,
+          "y": 17
+        },
+        {
+          "x": 52,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 63,
+          "y": 9
+        },
+        {
+          "x": 63,
+          "y": 17
+        }
+      ]
+    }
+  ]
+}

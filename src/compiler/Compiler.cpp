@@ -140,6 +140,7 @@ std::string fingerprint(const wdf::Circuit& c) {
             mixString(hash, e.vca->control);
             mixString(hash, e.vca->reference);
             mixDouble(hash, e.vca->fullGainVolts);
+            mixDouble(hash, e.vca->blackmer ? 1.0 : 0.0);
         }
         if (e.ota) {
             mixString(hash, e.ota->bias);

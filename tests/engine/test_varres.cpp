@@ -229,3 +229,43 @@ TEST_CASE("linear VCA follows differential control and external load", "[vca][en
         CHECK(engine.linearRebuilds() == linearRebuilds);
     }
 }
+
+TEST_CASE("THAT2180 tracks both control pins without rebuilding the signal path",
+          "[vca][that2180][engine]") {
+    constexpr double inputOhms = 25.0;
+    constexpr double feedOhms = 20000.0;
+    const double signalVolts = 0.015;
+    const double referenceVolts = 0.25;
+    for (const double load : {1000.0, 20000.0}) {
+        wdf::Circuit circuit;
+        circuit.addSrc("signal", "0", signalVolts + referenceVolts);
+        circuit.addSrc("ecPlus", "0", 0.0305);
+        circuit.addSrc("ecMinus", "0", 0.0305);
+        circuit.addSrc("reference", "0", referenceVolts);
+        circuit.addRes("signal", "in", feedOhms);
+        circuit.addThat2180("in", "out", "ecPlus", "ecMinus", "reference", inputOhms, "IC1");
+        circuit.addRes("out", "reference", load);
+
+        wdf::Engine engine(circuit, 48000.0);
+        const auto out = engine.nodeIndex("out");
+        REQUIRE(out >= 0);
+        const auto rebuilds = engine.linearRebuilds();
+        struct GainCase { double plus, minus, decibels; };
+        for (const auto& [plus, minus, decibels] : {
+                 GainCase{.0305, .0305, 0}, {.061, 0, 10}, {0, .061, -10},
+                 {.0915, .0305, 10}, {0, .366, -60}, {.183, 0, 30},
+                 {.8, 0, 40}, {0, .8, -110}}) {
+            const std::vector<double> sources{signalVolts + referenceVolts, plus, minus,
+                                              referenceVolts};
+            engine.step(sources);
+            CHECK(engine.lastConverged());
+            const double expected = signalVolts / (feedOhms + inputOhms) *
+                                    std::pow(10.0, decibels / 20.0);
+            const double actual = (referenceVolts - engine.step(sources)[out]) / load;
+            CHECK(actual == Approx(expected).epsilon(0.001).margin(1e-12));
+            CHECK(engine.lastConverged());
+        }
+        CHECK(engine.stateRejectCount() == 0);
+        CHECK(engine.linearRebuilds() == rebuilds);
+    }
+}

@@ -93,6 +93,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addLinearVca(getPin("in"), getPin("out"), getVal("inputOhms", 2200.0),
                                {getPin("control"), getPin("reference"),
                                 getVal("fullGainVolts", 1.0)}, comp.id);
+            } else if (comp.type == "that2180") {
+                c.addThat2180(getPin("in"), getPin("out"), getPin("ecPlus"),
+                              getPin("ecMinus"), getPin("reference"),
+                              getVal("inputOhms", 25.0), comp.id);
             } else if (comp.type == "photores") {
                 PhotoresistorControl photo;
                 photo.sensePos = getPin("sensePos");
