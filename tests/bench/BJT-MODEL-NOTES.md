@@ -11,6 +11,25 @@ same-law ngspice card before comparing it to full Gummel–Poon or measurements.
 Match temperature, model revision, terminal convention and source impedance.
 A correct solve of reduced equations can disagree with full-device behavior.
 
+## onsemi gain options
+
+The optional `2N3904-onsemi` and `2N3906-onsemi` cards use the existing
+transport law with forward gain roll-off. The 2N3906 also uses base-emitter
+recombination. The 2N3904 fit uses the typical absolute gain in onsemi
+figure 1 at 5 V. The 2N3906 fit uses the typical gain shape in figure 13 at
+−1 V, normalized to 10 mA. Its nominal gain at 10 mA is about 200, within
+onsemi's 100–300 limit.
+
+Mean absolute relative gain error over 121 log-spaced points drops from
+37.47% to 0.37% over 0.1–100 mA for the 2N3904 and from 12.61% to 4.46%
+over 0.102–44.85 mA for the 2N3906. The plots are specified at 25 °C. The
+comparison uses the native fixed thermal voltage, equivalent to 26.83 °C.
+These fits cover forward DC gain. Saturation, junction charge and temperature
+behavior require separate measurements. Existing presets retain their cards.
+
+[onsemi 2N3904](https://www.onsemi.com/pdf/datasheet/2n3904-d.pdf) ·
+[onsemi 2N3906](https://www.onsemi.com/pdf/datasheet/2n3906-d.pdf)
+
 ## Physical changes to measure
 
 1. Measure bias, forward and reverse Gummel curves, collector families and

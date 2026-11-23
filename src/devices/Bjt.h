@@ -402,6 +402,14 @@ inline const BjtEntry kBjtTable[] = {
     {"2N3906-MiSTer", kMiSTer2N3906},
     {"2N3904-MiSTer-IKF", withForwardRolloff(kMiSTer2N3904, 66.78e-3)},
     {"2N3906-MiSTer-IKF", withForwardRolloff(kMiSTer2N3906, 80e-3)},
+    // onsemi typical forward gain: 2N3904 Fig. 1 and 2N3906 Fig. 13.
+    // The PNP figure is normalized. Use about 200 at 10 mA within its 100–300 limit.
+    {"2N3904-onsemi", withForwardRolloff(withLowCurrentCorrections(
+                        makeEM(6.734e-15, 218.45, 0.7371, 1.0, 1.0),
+                        74.03, 0.0, 1.5), 0.2368)},
+    {"2N3906-onsemi", withForwardRolloff(withLowCurrentCorrections(
+                        makeEM(1.41e-15, 350.0, 4.977, 1.0, 1.0, true),
+                        18.7, 2.513e-15, 1.318), 0.04462)},
 };
 
 inline constexpr int kNumBjts =
