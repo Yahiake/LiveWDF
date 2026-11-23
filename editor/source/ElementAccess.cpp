@@ -116,6 +116,7 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "totalR")         return "Total resistance";
     if (key == "maxR")           return "Max resistance";
     if (key == "initialOhms")    return "Initial resistance";
+    if (key == "initialVolts")   return "Initial capacitor voltage (V)";
     if (key == "turnsPrimary")   return "Primary turns";
     if (key == "turnsSecondary") return "Secondary turns";
     if (key == "Lm")             return "Magnetizing Lm (H)";

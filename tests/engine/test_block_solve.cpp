@@ -239,6 +239,12 @@ TEST_CASE("block solver falls back when the static graph is stale",
                                          joint.rootVoltages()[static_cast<size_t>(r)]));
     CAPTURE(worst, block.lastResidual(), joint.lastResidual());
     REQUIRE(worst < 1e-8);
+
+    REQUIRE(block.setExplicitRoots(false));
+    REQUIRE_FALSE(block.blockRoots());
+    block.step(sv);
+    REQUIRE(block.blockFallbackCount() == 1);
+    REQUIRE_FALSE(block.lastBlockFallback());
 }
 
 class CascadeAuditProbe : public wdf::Engine {
@@ -650,3 +656,38 @@ TEST_CASE("two-stage cascade grid conduction convergence investigation", "[repro
     }
 }
 
+
+TEST_CASE("nodes with common root currents retain the scalar transfer", "[engine][transfer]") {
+    struct Probe : wdf::Engine {
+        using Engine::Engine;
+        bool hasSharedRows() const { return !rootPanels_.empty(); }
+        double scalarDifference() const {
+            double error = 0.0;
+            for (int n = 0; n < N_; ++n) {
+                double drop = 0.0;
+                for (int j = xrRowOffsets_[n]; j < xrRowOffsets_[n + 1]; ++j)
+                    drop += xrVals_[j] * ii_[xrCols_[j]];
+                error = std::max(error, std::abs(node_[n] - (u_[n] - drop)));
+            }
+            return error;
+        }
+    };
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 0.0);
+    std::string previous = "in";
+    for (int i = 0; i < 24; ++i) {
+        const std::string node = "n" + std::to_string(i);
+        circuit.addRes(previous, node, 1000.0);
+        circuit.addRes(node, "0", 20000.0);
+        if (i % 6 == 0)
+            circuit.addDiode(node, "0", wdf::DiodeModel(1e-9, 1.0, 0.0), "D" + node);
+        previous = node;
+    }
+    Probe engine(circuit, kFs);
+    REQUIRE(engine.hasSharedRows());
+    for (int n = 0; n < 48; ++n) {
+        engine.step({0.6 * std::sin(n * 0.2)});
+        REQUIRE(engine.lastConverged());
+        CHECK(engine.scalarDifference() < 1e-12);
+    }
+}

@@ -2,6 +2,7 @@
 
 // Circuit description: the flat element list and the named-node netlist.
 
+#include <optional>
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -130,6 +131,9 @@ struct Cap {
     std::string a, b;
     double value = 0.0;
     std::string name;
+    /// Optional reset seed for self-starting oscillators and other charged
+    /// capacitors. Voltage is measured from a to b.
+    std::optional<double> initialVolts = std::nullopt;
 };
 
 /// An inductor (LiveWDF phase-1 addition). In the time domain it becomes a
@@ -406,8 +410,8 @@ struct Circuit {
         res.push_back({a, b, v, name});
     }
     void addCap(const std::string& a, const std::string& b, double v,
-                const std::string& name = {}) {
-        cap.push_back({a, b, v, name});
+                const std::string& name = {}, std::optional<double> initialVolts = std::nullopt) {
+        cap.push_back({a, b, v, name, initialVolts});
     }
     void addInd(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {

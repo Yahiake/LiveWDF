@@ -101,7 +101,8 @@ target_link_libraries(livewdf_tests PRIVATE livewdf_test_support)
 target_include_directories(livewdf_tests SYSTEM PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/catch2")
 
-add_test(NAME livewdf_tests COMMAND livewdf_tests)
+add_test(NAME livewdf_tests COMMAND livewdf_tests
+    WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
 # ------------------------------------------------------------------------------
 # Manual instruments

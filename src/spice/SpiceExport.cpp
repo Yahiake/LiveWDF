@@ -1,6 +1,7 @@
 #include "spice/SpiceExport.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -32,12 +33,17 @@ std::string spiceNum(double v) {
     return std::string(buf);
 }
 
+std::string spiceKey(std::string name) {
+    for (char& c : name)
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    return name;
+}
+
 std::string spiceUnique(const std::string& base, std::set<std::string>& used) {
     std::string name = base;
     int n = 2;
-    while (used.count(name) != 0)
+    while (!used.insert(spiceKey(name)).second)
         name = base + "_" + std::to_string(n++);
-    used.insert(name);
     return name;
 }
 
@@ -55,6 +61,9 @@ SpiceExportResult spiceExport(const Circuit& c,
     SpiceExportResult r;
     std::ostringstream f;
     std::set<std::string> used;
+    std::set<std::string> usedNodes;
+    for (const auto& node : c.allNodes())
+        usedNodes.insert(spiceKey(node));
 
     f << "* LiveWDF netlist exported by SpiceExport (core)\n";
     f << ".title LiveWDF\n";
@@ -80,6 +89,9 @@ SpiceExportResult spiceExport(const Circuit& c,
     for (size_t i = 0; i < c.cap.size(); ++i) {
         const auto& e = c.cap[i];
         const std::string base = e.name.empty() ? ("C" + std::to_string(i)) : e.name;
+        if (e.initialVolts)
+            f << "* " << spiceSafe(base) << " LiveWDF initial voltage "
+              << spiceNum(*e.initialVolts) << " V omitted; transient uses DC operating point\n";
         f << spiceUnique("C_" + spiceSafe(base), used) << " "
           << nodeOrGround(e.a) << " " << nodeOrGround(e.b) << " "
           << spiceNum(e.value) << "\n";
@@ -166,7 +178,7 @@ SpiceExportResult spiceExport(const Circuit& c,
         const std::string base = v.name.empty() ? ("E" + std::to_string(i)) : v.name;
         const std::string en = spiceUnique("E_" + spiceSafe(base), used);
         const std::string rn = spiceUnique("R_" + spiceSafe(base) + "_ro", used);
-        const std::string mid = "x_" + spiceSafe(base) + "_out";
+        const std::string mid = spiceUnique("x_" + spiceSafe(base) + "_out", usedNodes);
         f << en << " " << mid << " " << v.outB << " " << v.inA << " " << v.inB
           << " " << spiceNum(v.gain) << "\n";
         f << rn << " " << mid << " " << v.outA << " " << spiceNum(v.ro) << "\n";
@@ -179,7 +191,7 @@ SpiceExportResult spiceExport(const Circuit& c,
         const auto& m = o.model;
         const std::string en = spiceUnique("E_" + spiceSafe(base), used);
         const std::string rn = spiceUnique("R_" + spiceSafe(base) + "_ro", used);
-        const std::string mid = "x_" + spiceSafe(base) + "_out";
+        const std::string mid = spiceUnique("x_" + spiceSafe(base) + "_out", usedNodes);
         // Ideal VCVS: mid = openLoopGain * (pos - neg)
         f << en << " " << mid << " 0 " << o.pos << " " << o.neg
           << " " << spiceNum(m.openLoopGain) << "\n";
@@ -514,6 +526,10 @@ SpiceExportResult spiceExport(const Circuit& c,
     if (shortMutual)
         d << "; NOT exported: " << shortMutual
           << " MutualInd with fewer than two inductors";
+    const auto initialCapCount = std::count_if(
+        c.cap.begin(), c.cap.end(), [](const auto& e) { return e.initialVolts.has_value(); });
+    if (initialCapCount)
+        d << "; " << initialCapCount << " capacitor startup override(s) omitted (DC operating point)";
     r.diagnostics = d.str();
     r.ok = (shortMutual == 0);
     return r;

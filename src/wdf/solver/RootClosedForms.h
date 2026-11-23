@@ -518,18 +518,21 @@ public:
         }
 
         const double Ro = oa.outputImpedance;
+        const double outWeight = oa.outputVoltageWeight();
+        const double vOutTerm = outWeight * voOut;
+        const double zOutTerm = outWeight * Zoo;
         double i0 = 0.0;
         if (G > 1e4 && std::abs(dZ) > 1e-12) {
             const double invG = 1.0 / G;
-            const double num = -dVo + (voOut - vBias) * invG;
-            const double den = -dZ + (Ro + Zoo) * invG;
+            const double num = -dVo + (vOutTerm - vBias) * invG;
+            const double den = -dZ + (Ro + zOutTerm) * invG;
             if (std::abs(den) > 1e-15) {
                 i0 = num / den;
             }
         } else {
-            const double linDenom = Ro + Zoo - G * dZ;
+            const double linDenom = Ro + zOutTerm - G * dZ;
             if (std::abs(linDenom) > 1e-15) {
-                i0 = (voOut - vBias - G * dVo) / linDenom;
+                i0 = (vOutTerm - vBias - G * dVo) / linDenom;
             }
         }
 
@@ -541,30 +544,30 @@ public:
             const double maxDv = opAmpMaxDv[ci];
             if (vSource > vPrev + maxDv) {
                 vSource = vPrev + maxDv;
-                const double denom = Ro + Zoo;
-                i0 = (std::abs(denom) > 1e-15) ? (voOut - vSource) / denom : 0.0;
+                const double denom = Ro + zOutTerm;
+                i0 = (std::abs(denom) > 1e-15) ? (vOutTerm - vSource) / denom : 0.0;
             } else if (vSource < vPrev - maxDv) {
                 vSource = vPrev - maxDv;
-                const double denom = Ro + Zoo;
-                i0 = (std::abs(denom) > 1e-15) ? (voOut - vSource) / denom : 0.0;
+                const double denom = Ro + zOutTerm;
+                i0 = (std::abs(denom) > 1e-15) ? (vOutTerm - vSource) / denom : 0.0;
             }
         }
 
         if (oa.softRails) {
             vSource = oa.applyRails(vSource);
-            const double denom = Ro + Zoo;
-            i0 = (std::abs(denom) > 1e-15) ? (voOut - vSource) / denom : 0.0;
+            const double denom = Ro + zOutTerm;
+            i0 = (std::abs(denom) > 1e-15) ? (vOutTerm - vSource) / denom : 0.0;
         } else {
             const double hi = oa.railHigh();
             const double lo = oa.railLow();
             if (vSource > hi) {
                 vSource = hi;
-                const double denom = Ro + Zoo;
-                i0 = (std::abs(denom) > 1e-15) ? (voOut - hi) / denom : 0.0;
+                const double denom = Ro + zOutTerm;
+                i0 = (std::abs(denom) > 1e-15) ? (vOutTerm - hi) / denom : 0.0;
             } else if (vSource < lo) {
                 vSource = lo;
-                const double denom = Ro + Zoo;
-                i0 = (std::abs(denom) > 1e-15) ? (voOut - lo) / denom : 0.0;
+                const double denom = Ro + zOutTerm;
+                i0 = (std::abs(denom) > 1e-15) ? (vOutTerm - lo) / denom : 0.0;
             }
         }
 

@@ -63,7 +63,10 @@ Circuit LiveWDFDocument::toCircuit() const {
             if (comp.type == "res") {
                 c.addRes(getPin("a"), getPin("b"), getVal("value", 1000.0), comp.id);
             } else if (comp.type == "cap") {
-                c.addCap(getPin("a"), getPin("b"), getVal("value", 1e-6), comp.id);
+                const auto initial = comp.values.find("initialVolts");
+                c.addCap(getPin("a"), getPin("b"), getVal("value", 1e-6), comp.id,
+                         initial != comp.values.end() ? std::optional<double>(initial->second)
+                                                      : std::nullopt);
             } else if (comp.type == "ind") {
                 c.addInd(getPin("a"), getPin("b"), getVal("value", 1e-3), comp.id);
             } else if (comp.type == "pot") {

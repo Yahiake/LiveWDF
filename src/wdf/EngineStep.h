@@ -65,9 +65,8 @@ public:
                         continue;
                     const size_t ci = dev.compIndex;
                     const int o = dev.portBase;
-                    opAmpVp_[ci] = rootV[static_cast<size_t>(o)] -
-                                   opAmps_[ci].outputImpedance *
-                                       i[static_cast<size_t>(o)];
+                    opAmpVp_[ci] = opAmps_[ci].sourceVoltageFromSolverCurrent(
+                        rootV[static_cast<size_t>(o)], i[static_cast<size_t>(o)]);
                 }
             }
             vv_ = rootV;
@@ -88,8 +87,10 @@ public:
         for (int j = 0; j < P_; ++j) {
             if (net_.capOf[j] < 0)
                 continue;
-            capState_[static_cast<size_t>(net_.capOf[j])] =
-                acrossPort(static_cast<size_t>(j), node) + net_.eoffAff[static_cast<size_t>(j)].eval(dcValues_);
+            const auto k = static_cast<size_t>(net_.capOf[j]);
+            capState_[k] = circuit_.cap[k].initialVolts.value_or(
+                acrossPort(static_cast<size_t>(j), node) +
+                net_.eoffAff[static_cast<size_t>(j)].eval(dcValues_));
         }
         // Inductor state is the incident wave `a = i * 2L/T` (the port resistance
         // is 2L/T), or `a = R_L * i` for coupled groups. Seeding it is what makes
@@ -151,6 +152,7 @@ public:
         gridLimitHits_ = 0;
         keptBest_ = false;
         runtimeBlockUsed_ = false;
+        lastBlockFallback_ = false;
         lastStateRejected_ = false;
         lastMaxNodeIndex_ = -1;
         lastMaxNodeVolts_ = 0.0;
@@ -271,20 +273,24 @@ public:
         // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
         double* LIVEWDF_RESTRICT uData = u_.data();
         std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
-        for (const auto& e : xeRows1_) {
-            uData[e.node] = e.val * wData[e.col];
-        }
-        for (const auto& e : xeRows2_) {
-            uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
-        }
-        if (!xeRowsN_.empty()) {
-            const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
-            const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-            for (const auto& e : xeRowsN_) {
-                double s = 0.0;
-                for (int idx = e.start; idx < e.end; ++idx)
-                    s += xeVals[idx] * wData[xeCols[idx]];
-                uData[e.node] = s;
+        if (networkFactors_.active) {
+            networkFactors_.apply(wData, uData);
+        } else {
+            for (const auto& e : xeRows1_) {
+                uData[e.node] = e.val * wData[e.col];
+            }
+            for (const auto& e : xeRows2_) {
+                uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
+            }
+            if (!xeRowsN_.empty()) {
+                const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
+                const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
+                for (const auto& e : xeRowsN_) {
+                    double s = 0.0;
+                    for (int idx = e.start; idx < e.end; ++idx)
+                        s += xeVals[idx] * wData[xeCols[idx]];
+                    uData[e.node] = s;
+                }
             }
         }
 
@@ -364,6 +370,18 @@ public:
         std::memcpy(nodeData, uData, static_cast<size_t>(N_) * sizeof(double));
         if (K_ > 0) {
             const double* LIVEWDF_RESTRICT iiData = ii_.data();
+            for (const auto& panel : rootPanels_) {
+                double sums[rootPanelWidth]{};
+                const double* coeff = rootPanelValues_.data() + panel.valueStart;
+                for (int j = 0; j < panel.colCount; ++j) {
+                    const double current = iiData[xrCols_[panel.colStart + j]];
+                    for (int q = 0; q < rootPanelWidth; ++q)
+                        sums[q] += coeff[q] * current;
+                    coeff += rootPanelWidth;
+                }
+                for (int q = 0; q < rootPanelWidth; ++q)
+                    nodeData[panel.node + q] -= sums[q];
+            }
             for (const auto& e : xrRows1_) {
                 nodeData[e.node] -= e.val * iiData[e.col];
             }
@@ -455,7 +473,8 @@ public:
                 if (ci >= opAmpSagActive_.size() || !opAmpSagActive_[ci])
                     continue;
                 const int o = dev.portBase;
-                const double iOut = ii_[static_cast<size_t>(o)];
+                const double iOut = opAmps_[ci].physicalOutputCurrent(
+                    vv_[static_cast<size_t>(o)], ii_[static_cast<size_t>(o)]);
                 const double iPos = std::max(0.0, iOut);
                 const double iNeg = std::max(0.0, -iOut);
                 const double vPos = opAmpPsuPos_[ci].tick(iPos);

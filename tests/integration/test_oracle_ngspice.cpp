@@ -874,6 +874,40 @@ TEST_CASE("ngspice transient oracle: Valvestate 8100 Boost preamp, 1 kHz sine",
     REQUIRE(maxErr <= 0.05);
 }
 
+TEST_CASE("SPICE export keeps auxiliary nodes of similarly named sources distinct",
+          "[spice-export][ngspice]") {
+    LWDF_REQUIRE_NGSPICE("VCVS auxiliary node names");
+    wdf::Circuit c;
+    c.addSrc("in", "0", 3.0);
+    c.addSrc("X_EL__out", "0", 4.0);
+    c.addVCVS("positive", "0", "in", "0", 0.08, 10.0, "EL+");
+    c.addVCVS("negative", "0", "in", "0", -0.08, 10.0, "EL-");
+    c.addRes("positive", "0", 1000.0);
+    c.addRes("negative", "0", 1000.0);
+
+    const auto exported = wdf::spiceExport(c, kFs, 0.0);
+    REQUIRE(exported.ok);
+    const auto control = exported.netlist.find(".control");
+    REQUIRE(control != std::string::npos);
+    const std::string tag = "vcvs_auxiliary_names";
+    const std::string deck = exported.netlist.substr(0, control)
+        + lwdf_test::controlBlock({"op"}, {"v(positive)", "v(negative)", "v(X_EL__out)"}, tag)
+        + ".end\n";
+    REQUIRE(lwdf_test::runDeck(deck, tag).ok);
+
+    const double expected = 3.0 * 0.08 * 1000.0 / 1010.0;
+    const auto values = [&](size_t index) { return lwdf_test::parseOpFile(lwdf_test::vecFile(tag, index)); };
+    const auto positive = values(0);
+    const auto negative = values(1);
+    const auto existing = values(2);
+    REQUIRE(positive.size() == 1);
+    REQUIRE(negative.size() == 1);
+    REQUIRE(existing.size() == 1);
+    CHECK(positive.front() == Approx(expected));
+    CHECK(negative.front() == Approx(-expected));
+    CHECK(existing.front() == Approx(4.0));
+}
+
 // The whole factory library through the exporter: every `.livewdf` under the
 // repo's `schematics/` tree is exported, loaded by ngspice, and compared with
 // the LiveWDF engine node for node in both the DC operating point and the

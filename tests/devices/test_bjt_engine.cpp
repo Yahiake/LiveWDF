@@ -104,77 +104,45 @@ TEST_CASE("BJT common-emitter NPN compiles and solves via Engine", "[bjt][engine
     REQUIRE(comp.bjt[0].model.valid());
 }
 
-#if 0
-// Parked: at this deep-saturation point vC and iC match the ngspice reference,
-// but its iB is 1.9% below the EM law. Both junctions are forward biased and
-// iB is dominated by the BC exponential, so the oracle's iB contract needs to
-// be re-derived before this case can assert equality.
-TEST_CASE("BJT deep-saturation DC solve converges with junction compensation",
+TEST_CASE("BJT deep-saturation DC agrees with ngspice at matched temperature",
           "[bjt][engine][dc]") {
     using namespace wdf;
-    constexpr double kFs = 48000.0;
 
     BjtModel model;
-    model.Is = 1e-14;
     model.Bf = 100.0;
     model.Br = 1.0;
-    model.Nf = 1.0;
-    model.Nr = 1.0;
+    // ngspice uses kT/q at 27 C. The rounded default changes both forward
+    // junction currents by about 1.7% at this high base voltage.
+    model.Vt = kThermalVoltage;
     model.prepare();
 
-    // Directly driven base, 5 V through a 1 k collector resistor. At 0.75 V
-    // and 0.8 V both junctions are forward biased; the latter draws 136 mA of
-    // base current. The reference values are ngspice-46 with the same
-    // equation-matched card (IS/BF/BR/NF/NR), not a tuned preset.
-    struct Point {
-        double vb;
-        double vc;
-        double ic;
-        double ib;
-    };
-    const Point points[] = {
-        {0.75, 0.0214424, 0.00497856, 0.0174966}
-    };
+    Circuit circuit;
+    circuit.addSrc("vcc", "0", 5.0);
+    circuit.addSrc("b", "0", 0.75);
+    circuit.addRes("vcc", "c", 1000.0);
+    circuit.addBjt("c", "b", "0", model, "Q1");
 
-    for (const Point& p : points) {
-        INFO("base bias " << p.vb);
-        Circuit c;
-        c.addSrc("vcc", "0", 5.0);
-        c.addSrc("b", "0", p.vb);
-        c.addRes("vcc", "c", 1000.0);
-        c.addBjt("c", "b", "0", model, "Q1");
+    Engine engine(circuit, 48000.0);
+    std::vector<double> nodes, roots, currents, jacobian;
+    REQUIRE(engine.solveDc(nodes, roots));
+    REQUIRE(roots.size() == 3);
+    const int collector = engine.nodeIndex("c");
+    REQUIRE(collector >= 0);
+    const double vC = nodes[static_cast<size_t>(collector)];
+    CHECK(roots[0] == Approx(vC).margin(1e-9));
+    CHECK(roots[1] == Approx(0.75).margin(1e-12));
+    CHECK(roots[2] == Approx(0.0).margin(1e-12));
 
-        Engine e(c, kFs);
-        std::vector<double> node, rootV;
-        REQUIRE(e.solveDc(node, rootV));
-        REQUIRE(rootV.size() == 3);
+    engine.currents(roots, currents, jacobian);
+    REQUIRE(currents.size() == 3);
+    CHECK(currents[0] + currents[1] + currents[2] == Approx(0.0).margin(1e-12));
+    CHECK(currents[0] == Approx((5.0 - vC) / 1000.0).margin(1e-10));
 
-        const int cIdx = e.nodeIndex("c");
-        REQUIRE(cIdx >= 0);
-        const double vC = node[static_cast<size_t>(cIdx)];
-
-        // The base is held by an ideal source, so it is a potential rather than
-        // a reconstructed node; its root voltage is still the source value.
-        REQUIRE(rootV[1] == Approx(p.vb).margin(1e-12));
-        REQUIRE(std::abs((vC - 0.0) - rootV[0]) < 1e-9);
-        REQUIRE(std::abs(rootV[2]) < 1e-9);
-
-        std::vector<double> current, jac;
-        e.currents(rootV, current, jac);
-        REQUIRE(current.size() == 3);
-        const double iC = current[0];
-        const double iB = current[1];
-        const double iE = current[2];
-        REQUIRE(std::abs(iC + iB + iE) < 1e-12);
-        REQUIRE(std::abs((5.0 - vC) / 1000.0 - iC) < 1e-12);
-
-        // Agreement with the external reference, at the oracle's tolerances.
-        REQUIRE(vC == Approx(p.vc).margin(5e-4));
-        REQUIRE(iC == Approx(p.ic).margin(1e-6));
-        REQUIRE(iB == Approx(p.ib).margin(1e-6));
-    }
+    // ngspice-46, LEVEL=1 with only IS/BF/BR/NF/NR and TNOM=TEMP=27 C.
+    CHECK(vC == Approx(0.0214424).margin(5e-6));
+    CHECK(currents[0] == Approx(0.00497856).margin(1e-7));
+    CHECK(currents[1] == Approx(0.0174966).margin(1e-6));
 }
-#endif
 
 TEST_CASE("PNP with an ideal base source uses the mirrored MNR path",
           "[bjt][pnp][engine][dc]") {
@@ -463,5 +431,42 @@ TEST_CASE("BJT transient step settles at DC and responds to base bias", "[bjt][e
     for (int n = 0; n < 10; ++n) {
         const std::vector<double> v = e2.step({5.0, 5.0});
         REQUIRE(std::abs(v[static_cast<size_t>(cIdx)] - vCdc) < 1e-6);
+    }
+}
+
+TEST_CASE("floating-emitter BJT DC Jacobian differentiates the root residual",
+          "[bjt][engine][dc][jacobian]") {
+    struct Probe : wdf::Engine {
+        using Engine::Engine;
+        using Engine::jacobian;
+        using Engine::residual;
+    };
+
+    wdf::Circuit c;
+    c.addRes("c", "0", 1000);
+    c.addRes("b", "0", 3300);
+    c.addRes("e", "0", 470);
+    c.addBjt("c", "b", "e", wdf::findBjtByName("2N3904")->model, "Q1");
+    Probe engine(c, 48000);
+    const std::vector<double> v{0.01, 0.58, 0.2}, open(3, 0.0);
+    std::vector<double> currents, deviceJ;
+    engine.currents(v, currents, deviceJ);
+    const auto analytic = engine.jacobian(engine.rootImpedance(), deviceJ);
+    const auto evaluate = [&](const auto& point) {
+        engine.currents(point, currents, deviceJ);
+        return engine.residual(point, open, engine.rootImpedance(), currents);
+    };
+
+    constexpr double h = 1e-6;
+    for (size_t col = 0; col < v.size(); ++col) {
+        auto lo = v, hi = v;
+        lo[col] -= h;
+        hi[col] += h;
+        const auto fLo = evaluate(lo), fHi = evaluate(hi);
+        for (size_t row = 0; row < v.size(); ++row) {
+            CAPTURE(row, col);
+            const double slope = (fHi[row] - fLo[row]) / (2 * h);
+            CHECK(analytic[row * v.size() + col] == Approx(slope).epsilon(1e-7).margin(1e-8));
+        }
     }
 }

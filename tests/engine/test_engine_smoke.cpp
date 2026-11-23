@@ -80,3 +80,28 @@ C1 out 0 1u
     const double expected = 1.0 / std::sqrt(1.0 + std::pow(freq / fc, 2.0));
     REQUIRE(std::abs(peakOut - expected) < 0.01);
 }
+
+TEST_CASE("Capacitor startup voltage preserves polarity and repeats on reset",
+          "[engine][cap_seed]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 1.0);
+    circuit.addRes("in", "out", 1000.0);
+    circuit.addCap("0", "out", 1e-6, "C1", 0.25);
+    const std::vector<double> sources{1.0};
+
+    wdf::Engine seeded(circuit, 48000.0);
+    const int out = seeded.nodeIndex("out");
+    REQUIRE(out >= 0);
+    CHECK(seeded.getCapacitorState(0) == 0.25);
+    const double first = seeded.step(sources).at(out);
+    CHECK(first == Approx((-0.25 + 1.0 / 96.0) / (1.0 + 1.0 / 96.0)));
+    for (int n = 0; n < 64; ++n)
+        seeded.step(sources);
+    seeded.reset();
+    CHECK(seeded.step(sources).at(out) == first);
+
+    circuit.cap[0].initialVolts.reset();
+    wdf::Engine dc(circuit, 48000.0);
+    CHECK(dc.getCapacitorState(0) == Approx(-1.0));
+    CHECK(dc.step(sources).at(out) == Approx(1.0));
+}
