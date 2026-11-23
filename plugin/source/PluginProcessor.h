@@ -7,6 +7,7 @@
 #include "format/LiveWDFFile.h"
 #include "gui/DualOscilloscope.h"
 
+#include <future>
 #include <mutex>
 #include <memory>
 #include <map>
@@ -150,6 +151,22 @@ private:
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
+    unsigned long long engineGeneration_ = 0;
+
+    struct AffineKey {
+        unsigned long long generation = 0;
+        long long revision = 0;
+        bool stereo = false;
+        bool operator==(const AffineKey&) const = default;
+    };
+    struct AffineResult {
+        AffineKey key;
+        wdf::Engine::MixedAffineSetup left;
+        std::optional<wdf::Engine::MixedAffineSetup> right;
+    };
+    std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
+    std::optional<AffineResult> readyAffine_;
+    std::future<AffineResult> affineJob_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
     /// throws and the live positions the editor draws.
@@ -250,6 +267,7 @@ private:
     int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
+    void prepareFastLiveAffine();
     void applyLiveControlsToEngines();
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                             std::unique_ptr<wdf::Engine>& left,

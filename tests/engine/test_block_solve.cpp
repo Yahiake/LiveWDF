@@ -168,13 +168,26 @@ TEST_CASE("prepared affine regions preserve a coupled root through clipping and 
     CHECK(reduced.mixedAffineAccepted() <= reduced.mixedAffineAttempts());
 
     const auto attempts = reduced.mixedAffineAttempts();
+    auto stale = reduced.captureMixedAffineSetup(0);
+    REQUIRE(stale);
+    stale->build();
+    CHECK_FALSE(full.installMixedAffineSetup(*stale));
     REQUIRE(reduced.setResistance("Feedback", 47e3));
     REQUIRE(full.setResistance("Feedback", 47e3));
+    CHECK_FALSE(reduced.installMixedAffineSetup(*stale));
     verify(3000, 3500);
     CHECK(reduced.mixedAffineAttempts() == attempts);
 
-    REQUIRE(reduced.prepareMixedAffineReduction(0) > 0);
-    verify(3500, 4000);
+    auto current = reduced.captureMixedAffineSetup(0);
+    REQUIRE(current);
+    current->build();
+    REQUIRE(reduced.installMixedAffineSetup(*current));
+    reduced.useMixedAffineReduction(false);
+    verify(3500, 3750);
+    CHECK(reduced.mixedAffineAttempts() == attempts);
+
+    reduced.useMixedAffineReduction(true);
+    verify(3750, 4000);
     CHECK(reduced.mixedAffineAttempts() > attempts);
 }
 

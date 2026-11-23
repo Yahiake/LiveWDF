@@ -21,6 +21,8 @@
 
 #include "wdf/EngineStep.h"
 
+#include <optional>
+
 namespace wdf {
 
 class Engine : public EngineStep {
@@ -45,10 +47,32 @@ public:
     /// to the linear network discards the plans along with the root partition.
     size_t prepareMixedAffineReduction(size_t inputSource, double peakVolts = 0.36);
 
+    /// Snapshot setup data on the control side. The job can be built without
+    /// touching the live engine and installed with a short buffer swap.
+    class MixedAffineSetup {
+    public:
+        void build();
+
+    private:
+        friend class Engine;
+        const Engine* owner_ = nullptr;
+        Circuit circuit_;
+        double rate_ = 0.0;
+        size_t input_ = 0;
+        long long revision_ = 0;
+        std::vector<double> transfer_;
+        std::vector<NewtonBlock> plans_;
+    };
+
+    std::optional<MixedAffineSetup> captureMixedAffineSetup(size_t inputSource) const;
+    bool installMixedAffineSetup(MixedAffineSetup& setup);
+    void useMixedAffineReduction(bool enabled) noexcept { mixedAffineEnabled_ = enabled; }
+
     long long mixedAffineAttempts() const { return mixedAffineAttempts_; }
     long long mixedAffineAccepted() const { return mixedAffineAccepted_; }
 
 private:
+    bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
 };
 

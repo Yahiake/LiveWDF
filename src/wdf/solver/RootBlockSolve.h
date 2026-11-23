@@ -91,6 +91,7 @@ struct BlockSolveContext {
     long long& jfetFallbacks;
     long long& mosfetFallbacks;
     std::vector<double>& gridLag;
+    bool mixedEnabled;
     long long& mixedAttempts;
     long long& mixedAccepted;
 };
@@ -1138,7 +1139,7 @@ public:
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
-        if (!block.alternateLinearSlopes.empty() &&
+        if (ctx.mixedEnabled && !block.alternateLinearSlopes.empty() &&
             solveMixedReducedBlock(view, b, s, maxIter, tol, relaxed, ctx))
             return true;
         if (block.linearReduction)

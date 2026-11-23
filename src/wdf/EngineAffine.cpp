@@ -6,30 +6,67 @@
 
 namespace wdf {
 
-size_t Engine::prepareMixedAffineReduction(size_t inputSource, double peakVolts) {
+bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
     if (blockCount_ != 1)
-        return 0;
-    auto& block = newtonBlocks_.front();
-    block.alternateLinearSlopes.clear();
+        return false;
+    const auto& block = newtonBlocks_.front();
     // Reconstructing the original voltages costs more than removing a
     // single row in a large coupled block. Skip small reductions.
     if (!explicitRootsAllowed_ || inputSource >= circuit_.src.size() ||
-        !(peakVolts > 0.0) || !std::isfinite(peakVolts * 8.0) ||
         !block.linearReduction || block.linearDevices.empty() || block.reducedPorts.size() < 3 ||
         block.linearDevices.size() * 8 < block.ports.size())
-        return 0;
+        return false;
     for (int index : block.linearDevices) {
         const auto& dev = rootDevices_[static_cast<size_t>(index)];
         if (dev.kind != DeviceKind::OpAmp || opAmps_[dev.compIndex].hasClassABOutput() ||
             opAmps_[dev.compIndex].softRails)
-            return 0;
+            return false;
     }
     for (int index : block.reducedDevices) {
         const auto kind = rootDevices_[static_cast<size_t>(index)].kind;
         if (kind != DeviceKind::Diode && kind != DeviceKind::Bjt &&
             kind != DeviceKind::Jfet && kind != DeviceKind::Mosfet)
-            return 0;
+            return false;
     }
+
+    return true;
+}
+
+std::optional<Engine::MixedAffineSetup> Engine::captureMixedAffineSetup(size_t inputSource) const {
+    if (!canPrepareMixedAffineReduction(inputSource))
+        return std::nullopt;
+    MixedAffineSetup setup;
+    setup.owner_ = this;
+    setup.circuit_ = circuit_;
+    setup.rate_ = fs_;
+    setup.input_ = inputSource;
+    setup.revision_ = linearRebuilds();
+    setup.transfer_ = Z_;
+    return setup;
+}
+
+void Engine::MixedAffineSetup::build() {
+    Engine engine(circuit_, rate_);
+    if (engine.Z_ == transfer_ && engine.prepareMixedAffineReduction(input_) > 0)
+        plans_ = std::move(engine.newtonBlocks_.front().alternateLinearSlopes);
+}
+
+bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
+    if (setup.owner_ != this || setup.revision_ != linearRebuilds() || setup.rate_ != fs_ ||
+        !canPrepareMixedAffineReduction(setup.input_) || setup.transfer_ != Z_)
+        return false;
+    newtonBlocks_.front().alternateLinearSlopes.swap(setup.plans_);
+    return true;
+}
+
+size_t Engine::prepareMixedAffineReduction(size_t inputSource, double peakVolts) {
+    if (blockCount_ != 1)
+        return 0;
+    auto& block = newtonBlocks_.front();
+    block.alternateLinearSlopes.clear();
+    if (!canPrepareMixedAffineReduction(inputSource) ||
+        !(peakVolts > 0.0) || !std::isfinite(peakVolts * 8.0))
+        return 0;
 
     Engine calibration(circuit_, fs_);
     if (calibration.blockCount_ != 1 ||

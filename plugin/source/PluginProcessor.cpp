@@ -4,10 +4,18 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 
 namespace livewdf {
 
 namespace {
+
+std::atomic_flag affineWorkerBusy;
+
+struct AffineWorkerSlot {
+    ~AffineWorkerSlot() { affineWorkerBusy.clear(std::memory_order_release); }
+};
 
 /// The sentence the plugin shows when it cannot build the circuit.
 ///
@@ -183,15 +191,91 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
-    if (currentDoc_.components.empty()
-        || (effectiveOversamplingChoice() == attemptedOversamplingChoice_
-            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_))
+    if (currentDoc_.components.empty())
         return;
 
-    // Keep the file path and the host's live knob values through the rebuild.
-    const juce::File circuitFile = currentFile_;
-    loadCircuitDocument(currentDoc_, false);
-    currentFile_ = circuitFile;
+    if (effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
+        (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_) {
+        const juce::File circuitFile = currentFile_;
+        loadCircuitDocument(currentDoc_, false);
+        currentFile_ = circuitFile;
+    }
+
+    // Offline processBlock may call this timer directly for oversampling.
+    if (!isNonRealtime())
+        prepareFastLiveAffine();
+}
+
+void LiveWDFPluginProcessor::prepareFastLiveAffine() {
+    if (affineJob_.valid()) {
+        if (affineJob_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+            return;
+        try {
+            readyAffine_ = affineJob_.get();
+        } catch (const std::exception&) {
+            return; // The ordinary Fast Live solver is already running.
+        }
+    }
+
+    if (*apvts_.getRawParameterValue("solve_quality") <= 0.5f)
+        return;
+
+    std::optional<AffineResult> completed;
+    std::optional<wdf::Engine::MixedAffineSetup> leftSetup, rightSetup;
+    AffineKey key;
+    {
+        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
+        if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
+            return;
+        const bool stereo = *apvts_.getRawParameterValue("stereo") > 0.5f;
+        key = {engineGeneration_, leftEngine_->linearRebuilds(), stereo};
+        if (readyAffine_) {
+            completed.swap(readyAffine_);
+            if (completed->key == key) {
+                leftEngine_->installMixedAffineSetup(completed->left);
+                if (completed->right)
+                    rightEngine_->installMixedAffineSetup(*completed->right);
+            }
+        }
+        // Avoid rebuilding calibration while a control is still moving.
+        if (observedAffineKey_ != key) {
+            observedAffineKey_ = key;
+            return;
+        }
+        if (requestedAffineKey_ == key)
+            return;
+        if (affineWorkerBusy.test(std::memory_order_relaxed))
+            return;
+        const auto input = static_cast<size_t>(inSourceIndex_);
+        leftSetup = leftEngine_->captureMixedAffineSetup(input);
+        if (leftSetup && stereo)
+            rightSetup = rightEngine_->captureMixedAffineSetup(input);
+    }
+    if (!leftSetup) {
+        requestedAffineKey_ = key;
+        return;
+    }
+    // Sessions can load several instances together. Give audio priority by
+    // allowing one calibration at a time across plugin instances.
+    if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
+        return;
+    requestedAffineKey_ = key;
+
+    // The worker owns only snapshots. The timer checks the engine revision
+    // again before it publishes the resulting plans.
+    try {
+        affineJob_ = std::async(std::launch::async,
+            [work = AffineResult{key, std::move(*leftSetup), std::move(rightSetup)}]() mutable {
+                const AffineWorkerSlot slot;
+                work.left.build();
+                if (work.right)
+                    work.right->build();
+                return std::move(work);
+            });
+    } catch (const std::exception&) {
+        affineWorkerBusy.clear(std::memory_order_release);
+        // Leave the current solver active if the worker cannot start.
+    }
 }
 
 void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
@@ -364,6 +448,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
         rightEngine_ = std::move(newRight);
+        ++engineGeneration_;
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;

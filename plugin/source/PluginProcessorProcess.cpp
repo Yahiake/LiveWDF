@@ -113,6 +113,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // Update grouped pots and switches
     applyLiveControlsToEngines();
+    leftEngine_->useMixedAffineReduction(fastLive);
+    if (processStereo)
+        rightEngine_->useMixedAffineReduction(fastLive);
 
     // Oversampling setup
     juce::dsp::Oversampling<float>* activeOversampler = nullptr;
