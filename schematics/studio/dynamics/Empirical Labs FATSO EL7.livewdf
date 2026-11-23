@@ -1041,7 +1041,7 @@
     {
       "id": "U5",
       "properties": {
-        "model": "NE5532"
+        "model": "TL071"
       },
       "type": "opamp",
       "values": {
@@ -2586,7 +2586,7 @@
       }
     }
   ],
-  "description": "Single-channel terminal-behavior reconstruction of the original EL7 signal flow. The differential receiver and levels feed a feedback VCA, asymmetric soft clipper, dynamic high-frequency Warmth shelf, buffered transformer and output stage. The compressor and Warmth sense the post-Warmth node as in the EL7 manual. Buss, G.P., Tracking and standalone or combined Spank use fitted curves and timings. The transformer has an approximate low-frequency saturation network. Warmth uses continuous threshold control and separate switches select modes and Tranny. The part values, saturation shape and detector settings are calibrated approximations. External sidechain insert, stereo link and metering are outside this one-channel model.",
+  "description": "Single-channel terminal-behavior reconstruction of the original EL7 signal flow. The differential receiver and levels feed a feedback VCA, asymmetric soft clipper, dynamic high-frequency Warmth shelf, buffered transformer and output stage. The compressor and Warmth sense the post-Warmth node as in the EL7 manual. Buss, G.P., Tracking and standalone or combined Spank use fitted curves and timings. The transformer has an approximate low-frequency saturation network. Warmth uses continuous threshold control and separate switches select modes and Tranny. The part values, saturation shape and detector settings are calibrated approximations. The TL071 output follower is a finite-bandwidth simulation proxy. External sidechain insert, stereo link and metering are outside this one-channel model.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
