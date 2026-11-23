@@ -213,7 +213,8 @@ protected:
             lastBlockFallback_, lastBlockResidual_, blockFallbacks_,
             runtimeBlockFallbacks_, runtimeBlockUsed_, lastConverged_,
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
-            jfetFallbacks_, mosfetFallbacks_, gridLag_
+            jfetFallbacks_, mosfetFallbacks_, gridLag_,
+            mixedAffineEnabled_, mixedAffineAttempts_, mixedAffineAccepted_
         };
     }
 

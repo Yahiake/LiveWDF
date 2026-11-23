@@ -1,9 +1,13 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "FactorySchematics.h"
+#include "FastLiveCache.h"
 
 #include "format/AcSource.h"
 
 #include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cmath>
 
 namespace livewdf {
@@ -23,6 +27,12 @@ float halfBandLatency(wdf::OversamplingFactor factor) {
     }
     return static_cast<float>(moment / gain);
 }
+
+std::atomic_flag affineWorkerBusy;
+
+struct AffineWorkerSlot {
+    ~AffineWorkerSlot() { affineWorkerBusy.clear(std::memory_order_release); }
+};
 
 /// The sentence the plugin shows when it cannot build the circuit.
 ///
@@ -89,12 +99,22 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         const juce::String potName = "Pot " + juce::String(i + 1);
         params.push_back(std::make_unique<juce::AudioParameterFloat>(
             juce::ParameterID{potId, 1}, potName,
-            juce::NormalisableRange<float>(0.0f, 1.0f, 0.005f), 0.5f));
+            juce::NormalisableRange<float>(0.0f, 1.0f, wdf::kLivePotStep), 0.5f));
     }
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"report_latency", 1}, "Report Latency", true,
         juce::AudioParameterBoolAttributes().withAutomatable(false)));
+
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"solve_quality", 1}, "Solve Quality",
+        juce::StringArray{"Accurate", "Fast Live"}, 1));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"accurate_export", 1}, "Accurate export", true));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"export_4x", 1}, "4x export", true));
 
     return { params.begin(), params.end() };
 }
@@ -205,25 +225,110 @@ void LiveWDFPluginProcessor::updateReportedLatency() {
     setLatencySamples(report ? processingLatencySamples_.load(std::memory_order_relaxed) : 0);
 }
 
-// The oversampling and grid current choices rebuild the engines, so they are applied here on the
-// message thread and never in the realtime audio callback.
+bool LiveWDFPluginProcessor::shouldForceAccurate() const {
+    return isNonRealtime() && *apvts_.getRawParameterValue("accurate_export") > 0.5f;
+}
+
+int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
+    constexpr int polyphase4x = 2;
+    return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f
+        ? polyphase4x : static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
+}
+
+// Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     applyPendingCircuitOptions();
+    if (!isNonRealtime() && !currentDoc_.components.empty())
+        prepareFastLiveAffine();
     updateReportedLatency();
 }
 
 void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
-    if (currentDoc_.components.empty()
-        || (static_cast<int>(*apvts_.getRawParameterValue("oversampling")) == attemptedOversamplingChoice_
-            && (*apvts_.getRawParameterValue("grid_current") > 0.5f) == attemptedGridCurrent_))
+    if (currentDoc_.components.empty())
         return;
 
-    // `loadCircuitDocument` clears the reload path; an oversampling change must
-    // not make the Reload button go dead.
-    const juce::File circuitFile = currentFile_;
-    loadCircuitDocument(currentDoc_, false);
-    currentFile_ = circuitFile;
+    if (effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
+        (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_) {
+        const juce::File circuitFile = currentFile_;
+        loadCircuitDocument(currentDoc_, false);
+        currentFile_ = circuitFile;
+    }
+}
+
+void LiveWDFPluginProcessor::prepareFastLiveAffine() {
+    if (affineJob_.valid()) {
+        if (affineJob_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+            return;
+        try {
+            readyAffine_ = affineJob_.get();
+        } catch (const std::exception&) {
+            return; // The ordinary Fast Live solver is already running.
+        }
+    }
+
+    std::optional<AffineResult> completed;
+    std::optional<wdf::Engine::MixedAffineSetup> leftSetup, rightSetup;
+    AffineKey key;
+    {
+        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
+        if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
+            return;
+        const bool stereo = *apvts_.getRawParameterValue("stereo") > 0.5f;
+        key = {engineGeneration_, leftEngine_->linearRebuilds(), stereo};
+        if (readyAffine_) {
+            completed.swap(readyAffine_);
+            if (completed->key == key) {
+                leftEngine_->installMixedAffineSetup(completed->left);
+                if (completed->right)
+                    rightEngine_->installMixedAffineSetup(*completed->right);
+            }
+        }
+        // Prepare a newly loaded circuit even before Fast Live is selected.
+        // Only recalibrate after live control changes while Fast Live is in use.
+        if (*apvts_.getRawParameterValue("solve_quality") <= 0.5f &&
+            requestedAffineKey_ && requestedAffineKey_->generation == key.generation)
+            return;
+        // Avoid rebuilding calibration while a control is still moving.
+        if (observedAffineKey_ != key) {
+            observedAffineKey_ = key;
+            return;
+        }
+        if (requestedAffineKey_ == key)
+            return;
+        if (affineWorkerBusy.test(std::memory_order_relaxed))
+            return;
+        const auto input = static_cast<size_t>(inSourceIndex_);
+        leftSetup = leftEngine_->captureMixedAffineSetup(input);
+        if (leftSetup && stereo)
+            rightSetup = rightEngine_->captureMixedAffineSetup(input);
+    }
+    if (!leftSetup) {
+        requestedAffineKey_ = key;
+        return;
+    }
+    // Sessions can load several instances together. Give audio priority by
+    // allowing one calibration at a time across plugin instances.
+    if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
+        return;
+    // The worker owns only snapshots. The timer checks the engine revision
+    // again before it publishes the resulting plans.
+    try {
+        affineJob_ = std::async(std::launch::async,
+            [work = AffineResult{key, std::move(*leftSetup), std::move(rightSetup)},
+             document = cacheDocument_, file = currentFile_, grid = attemptedGridCurrent_]() mutable {
+                const AffineWorkerSlot slot;
+                const auto cacheFile = file.isAChildOf(FactorySchematics::folder()) ? juce::File{} : file;
+                buildCachedAffineSetup(work.left, work.right ? &*work.right : nullptr,
+                                       *document, cacheFile, grid);
+                return std::move(work);
+            });
+        requestedAffineKey_ = key;
+    } catch (const std::exception&) {
+        affineWorkerBusy.clear(std::memory_order_release);
+        // Leave the current solver active if the worker cannot start.
+    }
 }
 
 void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
@@ -315,14 +420,9 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
 
     // Build twin engines for stereo
     try {
+        // Construction already resets both engines at their DC operating point.
         left = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
         right = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
-
-        std::vector<double> nL, rL, nR, rR;
-        left->solveDc(nL, rL);
-        left->reset();
-        right->solveDc(nR, rR);
-        right->reset();
 
         // Silent pre-roll: settle dynamic states (op-amp GBW, reactive waves,
         // nonlinear predictors) at the DC operating point to eliminate
@@ -371,7 +471,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     // restored from host state.
     currentFile_ = juce::File();
 
-    attemptedOversamplingChoice_ = static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
+    attemptedOversamplingChoice_ = effectiveOversamplingChoice();
     attemptedGridCurrent_ = *apvts_.getRawParameterValue("grid_current") > 0.5f;
     constexpr int kFactors[] = {1, 2, 4, 8, 2, 4};
     const int factor = kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
@@ -384,12 +484,12 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::vector<double> baseSources;
     std::vector<AcSource> acSources;
 
-    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources,
-                        acSources);
+    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources, acSources);
 
     if (!newLeft || !newRight) {
         return false;
     }
+    cacheDocument_ = std::make_shared<const std::string>(doc.toJson());
 
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
@@ -405,6 +505,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
         rightEngine_ = std::move(newRight);
+        ++engineGeneration_;
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
@@ -545,6 +646,7 @@ void LiveWDFPluginProcessor::syncPotParametersFromDocument(const wdf::LiveWDFDoc
 }
 
 bool LiveWDFPluginProcessor::loadCircuitFromFile(const juce::File& file) {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (!file.existsAsFile()) return false;
 
     wdf::LiveWDFDocument doc;
@@ -570,6 +672,7 @@ bool LiveWDFPluginProcessor::loadCircuitFromFile(const juce::File& file) {
 }
 
 bool LiveWDFPluginProcessor::reloadCircuit() {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (!canReload())
         return false;
 
