@@ -145,6 +145,47 @@ public:
         return RootResidual::limitBjtJunctions(v, vOld, ctx.rootLayout, ctx.bjts.data());
     }
 
+    // Select a trial just beyond the last hard-clamp boundary on a
+    // rejected Newton step. The residual still certifies the trial using
+    // the original device law.
+    static inline double clampAwareStep(const NewtonContext& ctx, double rejected) noexcept {
+        if (ctx.opAmps.empty())
+            return rejected * .5;
+        double boundary = 0.0;
+        for (const RootDevice& dev : ctx.rootDevices) {
+            if (dev.kind != DeviceKind::OpAmp)
+                continue;
+            const auto j = dev.compIndex;
+            const OpAmpModel& amp = ctx.opAmps[j];
+            const int o = dev.portBase;
+            const double prev = ctx.opAmpVp[j];
+            const double alpha = std::clamp(ctx.opAmpAlpha[j], 0.0, 1.0);
+            const double gain = ctx.staticMode ? amp.openLoopGain : alpha * amp.openLoopGain / (1.0 + alpha);
+            const double bias = ctx.staticMode ? 0.0 : prev / (1.0 + alpha);
+            const double raw = bias + gain * (ctx.vv[o + 1] - ctx.vv[o + 2]);
+            const double delta = gain * (ctx.dv[o + 1] - ctx.dv[o + 2]);
+            if (delta == 0.0)
+                continue;
+            const double maxDv = ctx.opAmpMaxDv[j];
+            double lo = amp.softRails ? -std::numeric_limits<double>::infinity() : amp.railLow();
+            double hi = amp.softRails ? std::numeric_limits<double>::infinity() : amp.railHigh();
+            if (!ctx.staticMode) {
+                lo = std::max(lo, prev - maxDv);
+                hi = std::min(hi, prev + maxDv);
+            }
+            if (lo >= hi)
+                continue;
+            for (double limit : {lo, hi}) {
+                const double hit = (limit - raw) / delta;
+                if (hit > boundary && hit < rejected * .95)
+                    boundary = hit;
+            }
+        }
+        if (boundary < 1e-6)
+            return rejected * .5;
+        return std::min(boundary * 1.01, rejected * .95);
+    }
+
     /// One pass of `solveRootsNewton`, with or without the extrapolated seed.
     static inline void solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
                                            bool usePrediction, bool useCurrentSeed = false) noexcept {
@@ -274,7 +315,7 @@ public:
                 ftNorm = maxAbs(ctx.ft, ctx.K);
                 if (ftNorm <= base || h == 3)
                     break;
-                stepSize *= 0.5;
+                stepSize = clampAwareStep(ctx, stepSize);
             }
             if (ctx.prof)
                 tock(ctx.prof->linesearch);

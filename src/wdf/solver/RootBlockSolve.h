@@ -115,6 +115,45 @@ public:
                z[(out + 1) * stride + out] <= z[(out + 2) * stride + out];
     }
 
+    /// F = v - base + Z*i for this block's folded linear network.
+    static inline double blockResidual(const NewtonBlock& block, BlockSolveContext& ctx,
+                                       int n) noexcept {
+        alignas(32) double currents[32];
+        const int packed = std::min(n, 32);
+        for (int j = 0; j < packed; ++j)
+            currents[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+        const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
+        int local = 0;
+        double maximum = 0.0;
+        for (int di : block.devices) {
+            const auto& dev = ctx.rootDevices[di];
+            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++local) {
+                double f = ctx.blockV[static_cast<size_t>(r)] -
+                           ctx.blockBase[static_cast<size_t>(r)];
+                if (!block.blockZ.empty()) {
+                    const double* LIVEWDF_RESTRICT z = bz + static_cast<size_t>(local) * n;
+                    if (n == 1) {
+                        f += z[0] * currents[0];
+                    } else if (n == 2) {
+                        f += z[0] * currents[0] + z[1] * currents[1];
+                    } else {
+                        for (int j = 0; j < packed; ++j)
+                            f += z[j] * currents[j];
+                        for (int j = packed; j < n; ++j)
+                            f += z[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
+                    }
+                } else {
+                    const double* LIVEWDF_RESTRICT z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                    for (int c : block.ports)
+                        f += z[c] * ctx.blockI[static_cast<size_t>(c)];
+                }
+                ctx.blockF[static_cast<size_t>(r)] = f;
+                maximum = std::max(maximum, std::abs(f));
+            }
+        }
+        return maximum;
+    }
+
     /// Solve one block by Newton on its own live columns.
     static inline bool solveBlockNewton(
         const BlockView& view,
@@ -151,10 +190,6 @@ public:
             }
         }
 
-        for (int c : block.ports) {
-            const double prev = ctx.ii[static_cast<size_t>(c)];
-            ctx.blockI[static_cast<size_t>(c)] = std::isfinite(prev) ? prev : 0.0;
-        }
         for (int di : block.devices) {
             const RootDevice& dev = ctx.rootDevices[di];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -181,49 +216,36 @@ public:
                 break;
             }
         }
-        int localR0 = 0;
-        const double* LIVEWDF_RESTRICT bz0 = block.blockZ.data();
-        double initialMaxF = 0.0;
-        alignas(32) double iPorts[32];
-        const int nPorts = std::min(n, 32);
-        for (int j = 0; j < nPorts; ++j)
-            iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-
-        for (int di : block.devices) {
-            const RootDevice& dev = ctx.rootDevices[di];
-            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR0) {
-                double f = ctx.blockV[static_cast<size_t>(r)] -
-                           ctx.blockBase[static_cast<size_t>(r)];
-                if (!block.blockZ.empty()) {
-                    const double* LIVEWDF_RESTRICT zr = bz0 + static_cast<size_t>(localR0) * n;
-                    if (n == 1) {
-                        f += zr[0] * iPorts[0];
-                    } else if (n == 2) {
-                        f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
-                    } else {
-                        for (int j = 0; j < nPorts; ++j)
-                            f += zr[j] * iPorts[j];
-                        for (int j = nPorts; j < n; ++j)
-                            f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-                    }
-                } else {
-                    const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                    for (int c : block.ports)
-                        f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
+        if (hasOpAmp && n >= 4 && !relaxed) {
+            // In coupled stages the preceding two samples give a useful
+            // first iterate. Keep the guess local to the last accepted
+            // voltage. All subsequent step limits and residual gates apply.
+            constexpr double maxPrediction = 0.05;
+            for (int di : block.devices) {
+                const auto& dev = ctx.rootDevices[di];
+                for (int i = dev.portBase; i < dev.portBase + dev.numPorts; ++i) {
+                    const size_t r = static_cast<size_t>(i);
+                    const double delta = ctx.vvPrev[r] - ctx.vvPrev2[r];
+                    if (std::isfinite(delta))
+                        ctx.blockV[r] += std::clamp(delta, -maxPrediction, maxPrediction);
                 }
-                ctx.blockF[static_cast<size_t>(r)] = f;
-                initialMaxF = std::max(initialMaxF, std::abs(f));
             }
         }
-        if (!hasOpAmp && initialMaxF < effTol) {
-            for (int di : block.devices) {
-                const RootDevice& dev = ctx.rootDevices[di];
-                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
-                    ctx.ii[static_cast<size_t>(r)] = ctx.blockI[static_cast<size_t>(r)];
-                    ctx.vv[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
-                }
+        if (!hasOpAmp) {
+            for (int c : block.ports) {
+                const double prev = ctx.ii[static_cast<size_t>(c)];
+                ctx.blockI[static_cast<size_t>(c)] = std::isfinite(prev) ? prev : 0.0;
             }
-            return true;
+            if (blockResidual(block, ctx, n) < effTol) {
+                for (int di : block.devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                        ctx.ii[static_cast<size_t>(r)] = ctx.blockI[static_cast<size_t>(r)];
+                        ctx.vv[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
+                    }
+                }
+                return true;
+            }
         }
 
         bool converged = false;
@@ -232,7 +254,6 @@ public:
         double prevF = 0.0;
         bool luValid = false;
         int luReuseCount = 0;
-        alignas(32) double luFactors[64 * 64];
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = block.blockZ.data();
         const int localMax = std::min(maxIter, 24);
@@ -249,42 +270,7 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->device);
 
-                for (int j = 0; j < nPorts; ++j)
-                    iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-
-                int localR = 0;
-                for (int di : block.devices) {
-                    const RootDevice& dev = ctx.rootDevices[di];
-                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR) {
-                        double f = ctx.blockV[static_cast<size_t>(r)] -
-                                   ctx.blockBase[static_cast<size_t>(r)];
-                        if (!block.blockZ.empty()) {
-                            const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR) * n;
-                            if (n == 1) {
-                                f += zr[0] * iPorts[0];
-                            } else if (n == 2) {
-                                f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
-                            } else {
-                                for (int j = 0; j < nPorts; ++j)
-                                    f += zr[j] * iPorts[j];
-                                for (int j = nPorts; j < n; ++j)
-                                    f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-                            }
-                        } else {
-                            const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                            for (int c : block.ports)
-                                f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
-                        }
-                        ctx.blockF[static_cast<size_t>(r)] = f;
-                    }
-                }
-
-                maxF = 0.0;
-                for (int di : block.devices) {
-                    const RootDevice& dev = ctx.rootDevices[di];
-                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
-                        maxF = std::max(maxF, std::abs(ctx.blockF[static_cast<size_t>(r)]));
-                }
+                maxF = blockResidual(block, ctx, n);
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 if (maxF < effTol) {
@@ -321,7 +307,7 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->jacobian);
 
-                detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
+                detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
                 solveOk = true;
                 if (ctx.prof)
                     tock(ctx.prof->lu);
@@ -387,20 +373,17 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->jacobian);
 
-                if (n < 3) {
+                if (n < 3 || n > 64) {
                     solveOk = detail::solveData(ctx.blockM.data(), ctx.blockRhs.data(), n);
-                } else if (n <= 64) {
-                    std::memcpy(luFactors, ctx.blockM.data(), static_cast<size_t>(n) * n * sizeof(double));
-                    solveOk = detail::factorLUData(luFactors, piv, n);
+                } else {
+                    // The assembled matrix is scratch. Retain its factors
+                    // here for the subsequent modified-Newton steps.
+                    solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
                     if (solveOk) {
                         luValid = true;
                         luReuseCount = 0;
-                        detail::solveLUData(luFactors, piv, ctx.blockRhs.data(), n);
-                    }
-                } else {
-                    solveOk = detail::factorLUData(ctx.blockM.data(), piv, n);
-                    if (solveOk)
                         detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), n);
+                    }
                 }
                 if (ctx.prof)
                     tock(ctx.prof->lu);
@@ -605,42 +588,7 @@ public:
                             ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                     }
 
-                    for (int j = 0; j < nPorts; ++j)
-                        iPorts[j] = ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-
-                    int localR2 = 0;
-                    for (int di : block.devices) {
-                        const RootDevice& dev = ctx.rootDevices[di];
-                        for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localR2) {
-                            double f = ctx.blockV[static_cast<size_t>(r)] -
-                                       ctx.blockBase[static_cast<size_t>(r)];
-                            if (!block.blockZ.empty()) {
-                                const double* LIVEWDF_RESTRICT zr = bz + static_cast<size_t>(localR2) * n;
-                                if (n == 1) {
-                                    f += zr[0] * iPorts[0];
-                                } else if (n == 2) {
-                                    f += (zr[0] * iPorts[0] + zr[1] * iPorts[1]);
-                                } else {
-                                    for (int j = 0; j < nPorts; ++j)
-                                        f += zr[j] * iPorts[j];
-                                    for (int j = nPorts; j < n; ++j)
-                                        f += zr[j] * ctx.blockI[static_cast<size_t>(block.ports[static_cast<size_t>(j)])];
-                                }
-                            } else {
-                                const double* zr = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                                for (int c : block.ports)
-                                    f += zr[c] * ctx.blockI[static_cast<size_t>(c)];
-                            }
-                            ctx.blockF[static_cast<size_t>(r)] = f;
-                        }
-                    }
-
-                    ftNorm = 0.0;
-                    for (int di : block.devices) {
-                        const RootDevice& dev = ctx.rootDevices[di];
-                        for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
-                            ftNorm = std::max(ftNorm, std::abs(ctx.blockF[static_cast<size_t>(r)]));
-                    }
+                    ftNorm = blockResidual(block, ctx, n);
 
                     if (ftNorm <= baseF || h == maxLineTrials - 1)
                         break;
@@ -931,7 +879,7 @@ public:
     /// N = 1 diode: one Wright omega call with `Z'` absorbed into `Rs`.
     /// N = 2 anti-parallel diodes: the scalar pair solve on `Z'` (equal or
     /// unequal branch models).
-    /// otherwise: a Newton loop on the reduced nonlinear ports.
+    /// Otherwise the caller solves the original block by Newton.
     static inline bool solveReducedBlock(
         const BlockView& view,
         int b,
@@ -941,14 +889,17 @@ public:
         BlockSolveContext& ctx) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        if (!block.linearReduction)
+        const int nN = static_cast<int>(block.reducedPorts.size());
+        // Only these reduced systems have a solver. A mixed block with
+        // several coupled nonlinear devices goes directly to block Newton.
+        if (!block.linearReduction || (nN != 0 && !block.reducedAntiParallel &&
+                                       !(block.reducedScalarDiode && nN == 1)))
             return false;
 
         alignas(32) double k0[32];
         if (!prepareReducedBases(view, b, s, relaxed, ctx, k0))
             return false;
 
-        const int nN = static_cast<int>(block.reducedPorts.size());
         if (nN == 0) {
             // Pure affine block.  `K0` already includes the op-amp state and
             // the folded open-circuit voltages.
@@ -973,7 +924,7 @@ public:
             }
             ctx.blockI[static_cast<size_t>(p0)] = i1;
             ctx.blockI[static_cast<size_t>(p1)] = i2;
-        } else if (block.reducedScalarDiode && nN == 1) {
+        } else {
             const int p = block.reducedScalarPort;
             for (int di : block.reducedDevices) {
                 const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
@@ -985,14 +936,6 @@ public:
             if (!std::isfinite(i))
                 return false;
             ctx.blockI[static_cast<size_t>(p)] = i;
-        } else {
-            // A mixed block with more than a scalar diode or an anti-parallel
-            // pair has no closed form on the Schur complement.  The reduced
-            // Newton iterates the nonlinear ports but holds the affine devices
-            // at a single linearisation, so its eliminated rows can miss the
-            // gate even when the reduced residual looks converged.  The full
-            // block Newton owns every device law and every row; use it.
-            return false;
         }
 
         return reconstructReducedBlock(view, b, s, relaxed, tol, ctx, k0);
