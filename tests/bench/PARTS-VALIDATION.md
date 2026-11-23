@@ -11,7 +11,7 @@ specified fixtures.
 | CA3080 | ±15 V, 100 µV differential input, 5 µA–1 mA bias | Maximum difference 0.0304% from exported ngspice. At 500 µA, 9.413 mS against 9.6 mS typical (−1.95%). |
 | Log RMS detector | 1 V to 2 V step, 16 ms power averaging | 4.64 nV RMS and 23.3 nV peak difference from exported ngspice. The nominal 16 ms model uses an external timing setting. |
 | MN3005 | Held-charge step, nine clock settings from 10–100 kHz, sampled at 48 kHz | Maximum delay difference 116.7 µs from 2048 / f_clock, including frame and clock-edge timing. |
-| OP275 | Noninverting gain of 100, 10 mV peak, ±15 V, 2 kΩ load, 192 kHz | At 1 kHz, −0.0038 dB and −0.28° against the corrected ngspice deck. At 20 kHz, −0.699 dB and −3.81°. The time-aligned 20 kHz residual is 80.9 mV RMS including the vendor deck's DC offset. |
+| OP275 | Noninverting gain of 100, 10 mV peak, ±15 V, 2 kΩ load, 192 kHz | At 1 kHz, −0.0027 dB and −0.010° against the corrected ngspice deck. At 20 kHz, −0.349 dB and +0.606°. The time-aligned 20 kHz residual is 49.1 mV RMS including the vendor deck's DC offset. |
 
 The THAT2180 factory trace uses equation 2. The CA3080 nominal line is
 proportional to bias and anchored at the table's 500 µA typical value. The RMS
@@ -27,8 +27,16 @@ uses R8 = 1 kΩ and R9 = 1.25 kΩ, which recover both labels with the given
 47.2 pF capacitor. These are inferred corrections. The factory trace is read
 as approximately 40 dB through the plotted audio band in TPC 5. The ngspice
 deck retains its input offset and higher poles. LiveWDF uses a compact
-backward-Euler dominant-pole model. The high-frequency difference in this
-fixture remains open.
+backward-Euler dominant-pole model. TPC 4 marks 60.115 dB at 15.309 kHz,
+which sets the audio-band gain product to 15.51 MHz. The 9 MHz data-sheet
+value describes the unity-gain crossover. Backward Euler still attenuates
+the 20 kHz tone in the gain-of-100 fixture.
+
+In the THAT2180 application fixture at its saved −10 dB control setting,
+the corrected ngspice deck gives −10.024 dB and −3.235° at 20 kHz. The
+native engine gives −10.029 dB and −3.349° at 192 kHz and −10.126 dB and
+−8.972° at 48 kHz. The 20 kΩ / 22 pF feedback network accounts for most
+of the additional phase shift at 48 kHz.
 
 [THAT2180, Eq. 2](https://thatcorp.com/datashts/THAT_2180-Series_Datasheet.pdf) ·
 [Intersil CA3080, FN475](https://media.digikey.com/pdf/Data%20Sheets/Intersil%20PDFs/CA3080%28A%29.pdf) ·
