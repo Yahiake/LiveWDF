@@ -256,7 +256,7 @@
     {
       "id": "TR1",
       "properties": {
-        "model": "2N2907"
+        "model": "2N4403"
       },
       "type": "bjt",
       "values": {},
@@ -270,7 +270,7 @@
     {
       "id": "TR2",
       "properties": {
-        "model": "2N2907"
+        "model": "2N4403"
       },
       "type": "bjt",
       "values": {},
@@ -1851,7 +1851,7 @@
       }
     }
   ],
-  "description": "Single-ended line path of the Soundcraft S500/S600 standard mono input module, factory ED2162 revision 8. Includes the differential transistor preamp and DC servo, low-cut section, four-band EQ with both linked mid sweeps, EQ bypass and channel fader amplifier. The line source uses a 600 ohm source model, with J11 engaged for the +4 dBu line setting. The 2N2907 and NE5532 cards substitute for the 2N4403 and NE5534. The raw microphone connector, phantom supply, insert jack, buses and meters are outside this line-channel model.",
+  "description": "Single-ended line path of the Soundcraft S500/S600 standard mono input module, factory ED2162 revision 8. Includes the differential transistor preamp and DC servo, low-cut section, four-band EQ with both linked mid sweeps, EQ bypass and channel fader amplifier. The line source uses a 600 ohm source model, with J11 engaged for the +4 dBu line setting. TR1 and TR2 use the Fairchild 2N4403 card. The NE5532 card substitutes for the NE5534. The raw microphone connector, phantom supply, insert jack, buses and meters are outside this line-channel model.",
   "groundNode": "0",
   "inputNode": "in",
   "layout": {
