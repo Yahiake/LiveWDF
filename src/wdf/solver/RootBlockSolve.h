@@ -95,6 +95,14 @@ struct BlockSolveContext {
 
 class RootBlockSolve {
 public:
+    /// One hard-rail op-amp has a monotone load line when output feedback
+    /// is negative or absent. Its three ports are ordered out, pos, neg.
+    static bool hasDirectSingleOpAmp(int rootPorts, const std::vector<OpAmpModel>& opAmps,
+                                     const std::vector<double>& z) noexcept {
+        return rootPorts == 3 && opAmps.size() == 1 && !opAmps.front().softRails &&
+               z[3] <= z[6];
+    }
+
     /// Solve one block by Newton on its own live columns.
     static inline bool solveBlockNewton(
         const BlockView& view,
@@ -1043,6 +1051,9 @@ public:
         BlockSolveContext& ctx) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        // Solve the actual slew/rail pieces before an affine elimination.
+        if (hasDirectSingleOpAmp(ctx.K, ctx.opAmps, ctx.Z))
+            return solveScalarBlock(view, b, s, relaxed, ctx);
         if (block.linearReduction)
             return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
                    solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx);
