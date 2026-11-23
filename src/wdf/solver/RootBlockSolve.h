@@ -100,7 +100,7 @@ public:
     static bool hasDirectSingleOpAmp(int rootPorts, const std::vector<OpAmpModel>& opAmps,
                                      const std::vector<double>& z) noexcept {
         return rootPorts == 3 && opAmps.size() == 1 && !opAmps.front().softRails &&
-               z[3] <= z[6];
+               !opAmps.front().hasClassABOutput() && z[3] <= z[6];
     }
 
     /// Solve one block by Newton on its own live columns.
