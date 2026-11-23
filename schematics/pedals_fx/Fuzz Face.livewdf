@@ -150,7 +150,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.8,
+        "pos": 0.546,
         "totalR": 500000
       },
       "visual": {
@@ -194,7 +194,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.9,
+        "pos": 0.05,
         "totalR": 1000
       },
       "visual": {
