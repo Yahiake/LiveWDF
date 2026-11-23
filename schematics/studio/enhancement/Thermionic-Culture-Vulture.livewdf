@@ -3,7 +3,7 @@
   "name": "Thermionic Culture Vulture Model",
   "category": "Enhancement",
   "author": "LiveWDF",
-  "description": "One channel of the original transformerless Culture Vulture reconstructed from Thermionic Culture\u2019s documentation and valve data. The EF86 drives a cathode-biased 6AS6 stage, with a strapped-screen triode mode, pentode mode, and an approximate dual-control P2 mode. An equivalent 5963 output stage follows the selectable low-pass filters. Component values, P2 wiring and filter topology are estimated. The mains supply and meter are excluded.",
+  "description": "One channel of the original transformerless Culture Vulture reconstructed from Thermionic Culture\u2019s documentation and valve data. The EF86 drives a cathode-biased 6AS6 stage, with a strapped-screen triode mode, pentode mode, and an approximate dual-control P2 mode. The ganged Bias controls calibrate the modeled stage currents over the shared panel range. An equivalent 5963 output stage follows the selectable low-pass filters. Component values, P2 wiring and filter topology are estimated. The mains supply and meter are excluded.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -11,20 +11,17 @@
   },
   "layout": {
     "pots": [
-      "DRIVE",
-      "BIAS",
-      "OUTPUT"
+      "Drive",
+      "Bias",
+      "Output"
     ],
     "switches": [
-      "OD",
-      "ODBIAS",
-      "PENTODE",
-      "P1BIAS",
-      "P1LEVEL",
-      "P2",
-      "FIL9",
-      "FIL5",
-      "BYPASS"
+      "Overdrive",
+      "Pentode P1",
+      "Pentode P2",
+      "Low-pass 9 kHz",
+      "Low-pass 5 kHz",
+      "Bypass"
     ]
   },
   "components": [
@@ -389,23 +386,6 @@
       }
     },
     {
-      "id": "VP1BIAS",
-      "type": "src",
-      "properties": {
-        "mode": "DC",
-        "label": "P1 bias offset"
-      },
-      "values": {
-        "dc": 0.31
-      },
-      "visual": {
-        "x": 26,
-        "y": 102,
-        "rotation": 90,
-        "flipped": false
-      }
-    },
-    {
       "id": "P1BIAS",
       "type": "switch_res",
       "properties": {
@@ -463,6 +443,170 @@
       "visual": {
         "x": 58,
         "y": 104,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P1BH",
+      "type": "rail",
+      "properties": {
+        "label": "+4.1664 V"
+      },
+      "values": {
+        "dc": 4.1664
+      },
+      "visual": {
+        "x": 15,
+        "y": 116,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P1BL",
+      "type": "rail",
+      "properties": {
+        "label": "+2.618 V"
+      },
+      "values": {
+        "dc": 2.618
+      },
+      "visual": {
+        "x": 15,
+        "y": 134,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P1BIASPOT",
+      "type": "pot",
+      "properties": {
+        "label": "Bias",
+        "taper": "Log"
+      },
+      "values": {
+        "totalR": 100000,
+        "pos": 0.5
+      },
+      "visual": {
+        "x": 27,
+        "y": 125,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P1ODSHIFT",
+      "type": "src",
+      "properties": {
+        "mode": "DC",
+        "label": "Overdrive bias offset"
+      },
+      "values": {
+        "dc": 0.32
+      },
+      "visual": {
+        "x": 41,
+        "y": 133,
+        "rotation": 90,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P1ODBIAS",
+      "type": "switch_res",
+      "properties": {
+        "select": "0",
+        "label": "Overdrive"
+      },
+      "values": {},
+      "visual": {
+        "x": 51,
+        "y": 125,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P2BH",
+      "type": "rail",
+      "properties": {
+        "label": "+5.16 V"
+      },
+      "values": {
+        "dc": 5.16
+      },
+      "visual": {
+        "x": 76,
+        "y": 116,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P2BL",
+      "type": "rail",
+      "properties": {
+        "label": "+3.356 V"
+      },
+      "values": {
+        "dc": 3.356
+      },
+      "visual": {
+        "x": 76,
+        "y": 134,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P2BIASPOT",
+      "type": "pot",
+      "properties": {
+        "label": "Bias",
+        "taper": "Log"
+      },
+      "values": {
+        "totalR": 100000,
+        "pos": 0.5
+      },
+      "visual": {
+        "x": 88,
+        "y": 125,
+        "rotation": 0,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P2ODSHIFT",
+      "type": "src",
+      "properties": {
+        "mode": "DC",
+        "label": "Overdrive bias offset"
+      },
+      "values": {
+        "dc": 0.32
+      },
+      "visual": {
+        "x": 102,
+        "y": 133,
+        "rotation": 90,
+        "flipped": false
+      }
+    },
+    {
+      "id": "P2ODBIAS",
+      "type": "switch_res",
+      "properties": {
+        "select": "0",
+        "label": "Overdrive"
+      },
+      "values": {},
+      "visual": {
+        "x": 112,
+        "y": 125,
         "rotation": 0,
         "flipped": false
       }
@@ -1693,6 +1837,22 @@
     {
       "points": [
         {
+          "x": 43,
+          "y": 89
+        },
+        {
+          "x": 43,
+          "y": 78
+        },
+        {
+          "x": 44,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 34,
           "y": 16
         },
@@ -1715,6 +1875,26 @@
         {
           "x": 17,
           "y": 28
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 51,
+          "y": 127
+        },
+        {
+          "x": 46,
+          "y": 127
+        },
+        {
+          "x": 46,
+          "y": 89
+        },
+        {
+          "x": 45,
+          "y": 89
         }
       ]
     },
@@ -1857,11 +2037,11 @@
           "y": 76
         },
         {
-          "x": 46,
+          "x": 47,
           "y": 76
         },
         {
-          "x": 46,
+          "x": 47,
           "y": 93
         },
         {
@@ -1883,6 +2063,70 @@
         {
           "x": 244,
           "y": 59
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 27,
+          "y": 123
+        },
+        {
+          "x": 15,
+          "y": 123
+        },
+        {
+          "x": 15,
+          "y": 116
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 27,
+          "y": 127
+        },
+        {
+          "x": 15,
+          "y": 127
+        },
+        {
+          "x": 15,
+          "y": 134
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 88,
+          "y": 123
+        },
+        {
+          "x": 76,
+          "y": 123
+        },
+        {
+          "x": 76,
+          "y": 116
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 88,
+          "y": 127
+        },
+        {
+          "x": 76,
+          "y": 127
+        },
+        {
+          "x": 76,
+          "y": 134
         }
       ]
     },
@@ -1919,6 +2163,46 @@
         {
           "x": 86,
           "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 123
+        },
+        {
+          "x": 52,
+          "y": 122
+        },
+        {
+          "x": 39,
+          "y": 122
+        },
+        {
+          "x": 39,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 113,
+          "y": 123
+        },
+        {
+          "x": 113,
+          "y": 122
+        },
+        {
+          "x": 100,
+          "y": 122
+        },
+        {
+          "x": 100,
+          "y": 133
         }
       ]
     },
@@ -1995,26 +2279,6 @@
         {
           "x": 24,
           "y": 84
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 45,
-          "y": 89
-        },
-        {
-          "x": 45,
-          "y": 88
-        },
-        {
-          "x": 24,
-          "y": 88
-        },
-        {
-          "x": 24,
-          "y": 102
         }
       ]
     },
@@ -2441,6 +2705,70 @@
     {
       "points": [
         {
+          "x": 43,
+          "y": 133
+        },
+        {
+          "x": 43,
+          "y": 125
+        },
+        {
+          "x": 30,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 50,
+          "y": 123
+        },
+        {
+          "x": 43,
+          "y": 123
+        },
+        {
+          "x": 43,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 133
+        },
+        {
+          "x": 104,
+          "y": 125
+        },
+        {
+          "x": 91,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 111,
+          "y": 123
+        },
+        {
+          "x": 104,
+          "y": 123
+        },
+        {
+          "x": 104,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 123,
           "y": 13
         },
@@ -2643,6 +2971,42 @@
         {
           "x": 213,
           "y": 75
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 55,
+          "y": 104
+        },
+        {
+          "x": 55,
+          "y": 90
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 112,
+          "y": 127
+        },
+        {
+          "x": 105,
+          "y": 127
+        },
+        {
+          "x": 105,
+          "y": 107
+        },
+        {
+          "x": 55,
+          "y": 107
+        },
+        {
+          "x": 55,
+          "y": 104
         }
       ]
     },
@@ -3003,62 +3367,6 @@
         {
           "x": 190,
           "y": 66
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 43,
-          "y": 89
-        },
-        {
-          "x": 43,
-          "y": 78
-        },
-        {
-          "x": 44,
-          "y": 78
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 55,
-          "y": 90
-        },
-        {
-          "x": 55,
-          "y": 87
-        },
-        {
-          "x": 43,
-          "y": 87
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 55,
-          "y": 104
-        },
-        {
-          "x": 55,
-          "y": 90
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 28,
-          "y": 102
-        },
-        {
-          "x": 55,
-          "y": 102
         }
       ]
     }

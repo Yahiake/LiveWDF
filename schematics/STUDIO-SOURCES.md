@@ -61,7 +61,7 @@ The factory collection already packages nested directories. Place these circuits
 | 36 | Aphex Aural Exciter Type B | |
 | 37 | BBE 482i Sonic Maximizer | [Schematic-derived Channel B model](https://guitar-gear.ru/forum/index.php?app=core&attach_id=29567&module=attach&section=attach) |
 | 38 | SPL Transient Designer 9842 | [SPL 9842 owner’s manual](https://spl.audio/wp-content/uploads/TransientDesigner4_9842_OM_E.pdf) |
-| 39 | Thermionic Culture Vulture | |
+| 39 | [Thermionic Culture Vulture](studio/enhancement/Thermionic-Culture-Vulture.livewdf) | [October 2005 manufacturer manual](https://www.thermionicculture.com/images/stories/virtuemart/product/CultureVultureValveDistortionUnitManual9.pdf) and [production review](https://www.soundonsound.com/reviews/thermionic-culture-culture-vulture) |
 | 40 | [Empirical Labs FATSO EL7](studio/dynamics/Empirical%20Labs%20FATSO%20EL7.livewdf) | [Original EL7 manual and block diagram](https://www.empiricallabs.com/wp-content/uploads/fatso_manual.pdf) |
 
 ## API 312 verification
@@ -69,6 +69,16 @@ The factory collection already packages nested directories. Place these circuits
 The VP312 Rev A model uses the signal path with pad off, normal polarity and full output. The API 2520 card is based on published typical gain, bandwidth and slew. Transformer ratios follow the chosen winding connections. Winding resistance, inductance and leakage are approximate linear parameters pending measurements.
 
 At the factory Gain position with a 150 Ω source and 600 Ω load, a 1 mV peak sine measured +42.77 dB at 1 kHz. The native overload sweep through 0.85 V peak at 48 kHz produced zero rejected steps on the direct op-amp path. No hardware response or saturation measurement was used.
+
+## Thermionic Culture Vulture
+
+The October 2005 manual documents EF86 input, 6AS6 distortion and 5963 output valves, the three distortion modes, 5/9 kHz low-pass filters and an Overdrive gain and bias change. The model uses a 12AU7 equivalent of the 5963. The factory component drawing and production P2 wiring are unavailable. The two opposed 6AS6 contributions approximate one P2 stage. Its operating current is the sum of both contributions. Component values and the 6AS6 control voltages are fitted estimates.
+
+The shared Bias knob uses calibrated ranges per mode. With Overdrive off, the estimated cathode currents in mA at minimum, midpoint and maximum knob settings are 0.542, 0.249 and 0.063 in T, 0.608, 0.350 and 0.032 in P1, and 0.630, 0.308 and 0.018 in P2. This keeps the normal operating points near the manual's guidance and leaves room for both overfeeding and starvation. At Bias 0.65, the P2 equivalent draws 0.189 mA. Its second harmonic was 1.10 dB above the fundamental at 1.737 V peak and 9.35 dB above at 5 V peak on a 1 kHz tone.
+
+At 1.737 V peak with Drive 0.49 and Bias 0.50, T gave +0.09 dB gain, with H2 at −68.0 dBc. P1's H3 was −34.9 dBc and 5.8 dB above its H2. The 48 kHz guitar comparison uses the same input excerpt and the same knob settings in T, P1 and P2 at 1.737 and 5 V peak. The clips are matched in RMS after rendering. Overdrive is demonstrated separately. All seven 192,000-frame renders completed with zero rejected steps.
+
+The model's default T path approached the rated +17 dBV output at 1 kHz with a 20 kΩ load. The passive input pad and output stage approximate the line interfaces. The modeled input is about 100 kΩ and the small-signal output is about 0.86 kΩ at 1 kHz, compared with the manual's 30 kΩ and 2 kΩ. Measured low-drive T response is down about 3.8 dB at 50 Hz relative to 1 kHz. The host Output terminal uses an 8 V peak scale, so a unity-voltage test renders about 18 dB below host dry at 1 V per full scale. It reserves digital level for higher-drive settings and does not limit peaks.
 
 ## Empirical Labs FATSO EL7
 
