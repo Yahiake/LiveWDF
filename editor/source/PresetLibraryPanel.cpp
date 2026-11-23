@@ -25,6 +25,14 @@ void sortFiles(juce::Array<juce::File>& files, const juce::File& root) {
         return order != 0 ? order < 0 : relativeA < relativeB;
     });
 }
+
+int phraseMatch(const juce::String& name, const juce::String& phrase) {
+    if (name.equalsIgnoreCase(phrase))
+        return 3;
+    if (name.startsWithIgnoreCase(phrase))
+        return 2;
+    return name.containsIgnoreCase(phrase) ? 1 : 0;
+}
 }  // namespace
 
 FactoryPresetStepper::FactoryPresetStepper(juce::Component& parent, juce::Label& name)
@@ -473,6 +481,19 @@ void PresetLibraryPanel::applyFilter() {
             lastScope = entry.scope;
         }
         shown_.push_back(entry);
+    }
+
+    if (!words.isEmpty()) {
+        const auto phrase = words.joinIntoString(" ");
+        const auto rank = [&phrase, &words](const Entry& entry) {
+            const auto nameHits = std::count_if(words.begin(), words.end(), [&entry](const auto& word) {
+                return entry.label.containsIgnoreCase(word);
+            });
+            return std::pair{phraseMatch(entry.label, phrase), nameHits};
+        };
+        std::stable_sort(shown_.begin(), shown_.end(), [&rank](const Entry& a, const Entry& b) {
+            return rank(a) > rank(b);
+        });
     }
 
     if (shown_.size() == beforeFiles) {

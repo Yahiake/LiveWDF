@@ -105,6 +105,10 @@ file(GLOB_RECURSE LIVEWDF_FACTORY_SCHEMATICS CONFIGURE_DEPENDS
 list(SORT LIVEWDF_FACTORY_SCHEMATICS)
 
 if(LIVEWDF_FACTORY_SCHEMATICS AND COMMAND juce_add_binary_data)
+    set(factory_visibility "${CMAKE_CURRENT_SOURCE_DIR}/schematics/.factory-hidden")
+    list(APPEND LIVEWDF_FACTORY_SCHEMATICS "${factory_visibility}")
+    set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${LIVEWDF_FACTORY_SCHEMATICS})
+
     # Hash the source paths and bytes, not the generated zip: the archive's
     # timestamps may change when it is rebuilt, while the circuits a user sees
     # have not. The hash is the version marker the runtime compares.

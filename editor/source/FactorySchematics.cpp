@@ -65,9 +65,8 @@ bool isFeatured(std::string_view name, FactorySchematics::Collection collection)
     return false;
 }
 
-FactorySchematics::Preset describe(const juce::File& file, const juce::File& root) {
+FactorySchematics::Preset describe(const juce::File& file, const juce::String& relative) {
     using Collection = FactorySchematics::Collection;
-    const auto relative = file.getRelativePathFrom(root).replaceCharacter('\\', '/');
     const auto parts = juce::StringArray::fromTokens(relative, "/", {});
     const auto collection = parts[0].toLowerCase();
     const auto effect = parts.size() > 2 ? parts[1] : juce::String();
@@ -129,11 +128,18 @@ std::vector<FactorySchematics::Preset> FactorySchematics::list(const juce::File&
     if (!root.isDirectory())
         return files;
 
+    juce::StringArray hiddenPaths;
+    hiddenPaths.addLines(root.getChildFile(".factory-hidden").loadFileAsString());
+    hiddenPaths.trim();
+
     for (const auto& entry :
          juce::RangedDirectoryIterator(root, true, "*.livewdf", juce::File::findFiles)) {
         const auto file = entry.getFile();
-        if (!file.getFileName().startsWithChar('.'))
-            files.push_back(describe(file, root));
+        if (file.getFileName().startsWithChar('.'))
+            continue;
+        const auto relative = file.getRelativePathFrom(root).replaceCharacter('\\', '/');
+        if (!hiddenPaths.contains(relative))
+            files.push_back(describe(file, relative));
     }
 
     std::sort(files.begin(), files.end(), [](const Preset& a, const Preset& b) {

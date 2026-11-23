@@ -91,6 +91,7 @@ TEST_CASE("Factory schematics install into a folder and are idempotent") {
     CHECK(factoryFolder.getChildFile("amps").isDirectory());
     CHECK(factoryFolder.getChildFile("pedals_fx").isDirectory());
     CHECK(factoryFolder.getChildFile(".factory-version").existsAsFile());
+    CHECK(factoryFolder.getChildFile(".factory-hidden").existsAsFile());
 
     const auto userPreset = temp.root.getChildFile("User Preset.livewdf");
     REQUIRE(userPreset.replaceWithText("{}"));
@@ -200,16 +201,21 @@ TEST_CASE("Factory preset chevrons follow the visible factory rows") {
     const auto first = factory.getChildFile("studio/eq/EQ 2.livewdf");
     const auto middle = factory.getChildFile("studio/eq/EQ 10.livewdf");
     const auto last = factory.getChildFile("studio/eq/EQ 11.livewdf");
+    const auto hidden = factory.getChildFile("studio/eq/EQ 9.livewdf");
     const auto other = factory.getChildFile("amps/Amp.livewdf");
     const auto custom = temp.root.getChildFile("User EQ.livewdf");
-    for (const auto& file : {first, middle, last, other, custom}) {
+    for (const auto& file : {first, middle, last, hidden, other, custom}) {
         REQUIRE(file.getParentDirectory().createDirectory().wasOk());
         REQUIRE(file.replaceWithText("{}"));
     }
+    REQUIRE(factory.getChildFile(".factory-hidden").replaceWithText(
+        "# Hidden factory presets\nstudio/eq/EQ 9.livewdf\n"));
 
     PresetLibraryPanel browser;
     browser.setFolder(temp.root);
     CHECK(browser.visibleFactoryOrder().size() == 4);
+    CHECK(rowWithText(browser, "EQ 9") == -1);
+    CHECK(hidden.existsAsFile());
     selectCollection(browser, "Studio");
     selectFilter(browser, "Effect type", "EQ");
     browser.setSearchText("eq");
@@ -243,6 +249,9 @@ TEST_CASE("Factory preset chevrons follow the visible factory rows") {
     REQUIRE(previous->isEnabled());
     previous->onClick();
     CHECK(chosen == other);
+    stepper.setCurrentFile(first);
+    next->onClick();
+    CHECK(chosen == middle);
 
     stepper.setBrowseOrder(order);
     stepper.setCurrentFile(first);
@@ -263,8 +272,42 @@ TEST_CASE("Factory preset chevrons follow the visible factory rows") {
     previous->onClick();
     CHECK(chosen == first);
 
+    stepper.setCurrentFile(hidden);
+    CHECK_FALSE(previous->isVisible());
+    CHECK_FALSE(next->isVisible());
+
     stepper.setCurrentFile(custom);
     CHECK_FALSE(previous->isVisible());
     CHECK_FALSE(next->isVisible());
     CHECK(label.getBounds().getWidth() == 260);
+}
+
+TEST_CASE("Preset search ranks exact names before broader matches") {
+    TempFolder temp;
+    const auto user = temp.root.getChildFile("User");
+    const auto factory = temp.root.getChildFile("Factory");
+    for (const auto* file : {"pedals_fx/A Vintage Fuzz Face.livewdf",
+                             "pedals_fx/Face Silicon Fuzz.livewdf",
+                             "pedals_fx/Fuzz Face Bright.livewdf",
+                             "pedals_fx/Fuzz Face.livewdf"}) {
+        const auto preset = factory.getChildFile(file);
+        REQUIRE(preset.getParentDirectory().createDirectory().wasOk());
+        REQUIRE(preset.replaceWithText("{}"));
+    }
+    const auto custom = user.getChildFile("Face collection/Fuzz Companion.livewdf");
+    REQUIRE(custom.getParentDirectory().createDirectory().wasOk());
+    REQUIRE(custom.replaceWithText("{}"));
+
+    PresetLibraryPanel browser;
+    browser.setFactoryFolder(factory);
+    browser.setFolder(user);
+    browser.setSearchText("fuZZ FACE");
+
+    REQUIRE(browser.getRowCount() == 5);
+    CHECK(browser.getRowText(0) == "Fuzz Face");
+    CHECK(browser.getRowText(1) == "Fuzz Face Bright");
+    CHECK(browser.getRowText(2) == "A Vintage Fuzz Face");
+    CHECK(browser.getRowText(3) == "Face Silicon Fuzz");
+    CHECK(browser.getRowText(4) == "Fuzz Companion");
+    CHECK(browser.visibleFactoryOrder().front() == factory.getChildFile("pedals_fx/Fuzz Face.livewdf"));
 }
