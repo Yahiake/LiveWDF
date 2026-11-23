@@ -56,7 +56,8 @@ inline bool rootTransferInto(const std::vector<ElemPort>& elements,
                              Dense& rhs, Dense& Xe, Dense& Xr,
                              const std::vector<MutualPortPair>& mutual = {},
                              const std::vector<VCVSTransconductance>& vcvs = {},
-                             double* backwardError = nullptr) {
+                             double* backwardError = nullptr, FactoredTransfer* factors = nullptr,
+                             const std::vector<int>& liveCols = {}) {
     const int P = static_cast<int>(elements.size());
     const int K = static_cast<int>(roots.size());
 
@@ -127,23 +128,30 @@ inline bool rootTransferInto(const std::vector<ElemPort>& elements,
         }
     }
 
+    if (factors)
+        factors->orderSystem(Y, rhs);
     Dense yOriginal, rhsOriginal;
     if (backwardError) {
         yOriginal = Y;      // setup-only diagnostic: keep the unfactored system
         rhsOriginal = rhs;
     }
-    if (!solveInPlace(Y, rhs))
+    if (factors)
+        factors->prepare(rhs, liveCols);
+    if (!solveInPlace(Y, rhs, factors))
         return false;
+    if (factors)
+        factors->finish(Y);
     if (backwardError)
         *backwardError = maxBackwardError(yOriginal, rhsOriginal, rhs);
 
     resetDense(Xe, N, P);
     resetDense(Xr, N, K);
     for (int n = 0; n < N; ++n) {
+        const int node = factors ? factors->order[n] : n;
         for (int j = 0; j < P; ++j)
-            Xe[n][j] = rhs[n][j];
+            Xe[node][j] = rhs[n][j];
         for (int r = 0; r < K; ++r)
-            Xr[n][r] = rhs[n][P + r];
+            Xr[node][r] = rhs[n][P + r];
     }
     return true;
 }

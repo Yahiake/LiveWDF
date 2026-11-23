@@ -1046,6 +1046,7 @@ protected:
     // point. The op-amp uses its full open-loop DC gain with no slew clamp.
     mutable bool staticMode_ = false;
     std::vector<BjtModel> bjts_;
+    FactoredTransfer networkFactors_;
     int nLive_ = 0;
 
     Network net_;
