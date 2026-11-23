@@ -300,9 +300,6 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
 
     try {
         ref.engine = std::make_unique<wdf::Engine>(c, fs);
-        std::vector<double> node, root;
-        ref.engine->solveDc(node, root);
-        ref.engine->reset();
 
         // Silent pre-roll: match PluginProcessor's settling pass at DC
         for (int p = 0; p < 64; ++p) {
@@ -319,33 +316,28 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
         return false;
     }
 
-    // The same pot / rheostat positions the plugin applies every block.
-    for (const auto& comp : doc.components) {
-        if (comp.type == "pot") {
-            const auto it = pots.find(comp.id);
-            if (it != pots.end())
-                ref.engine->setPotPosition(comp.id, it->second);
-        } else if (comp.type == "varres") {
-            const auto it = pots.find(comp.id);
-            if (it != pots.end())
-                ref.engine->setVarResPosition(comp.id, it->second);
-        }
+    // Match the plug-in's single transfer rebuild at document load.
+    std::vector<std::pair<int, double>> potUpdates, varResUpdates, resistorUpdates;
+    for (const auto& [id, position] : pots) {
+        if (const int pot = ref.engine->potIndexByName(id); pot >= 0)
+            potUpdates.emplace_back(pot, position);
+        else if (const int varRes = ref.engine->varResIndexByName(id); varRes >= 0)
+            varResUpdates.emplace_back(varRes, position);
     }
 
     // The same SPDT throws: one label is one switch, both resistor branches.
-    std::vector<std::pair<std::string, double>> updates;
-    for (const auto& comp : doc.components) {
-        if (comp.type != "switch_res")
+    for (const auto& [id, throwB] : switches) {
+        const int resA = ref.engine->resIndexByName(id + "_A");
+        const int resB = ref.engine->resIndexByName(id + "_B");
+        if (resA < 0 || resB < 0)
             continue;
-        const auto it = switches.find(comp.id);
-        if (it == switches.end())
-            continue;
-        const bool throwB = it->second;
-        updates.emplace_back(comp.id + "_A", throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
-        updates.emplace_back(comp.id + "_B", throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+        resistorUpdates.emplace_back(resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
+        resistorUpdates.emplace_back(resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
     }
-    if (!updates.empty())
-        ref.engine->setResistances(updates);
+    if (!ref.engine->setParametersByIndex(potUpdates, varResUpdates, resistorUpdates)) {
+        why = "reference control settings could not be applied";
+        return false;
+    }
 
     return true;
 }
@@ -479,6 +471,7 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
 
         processor.processBlock(buffer, midi);
 
+        juce::ScopedNoDenormals noDenormals;
         for (int i = 0; i < blockSize; ++i) {
             const int n = b * blockSize + i;
             for (size_t source = 0; source < std::min(acSources.size(), sv.size()); ++source) {
