@@ -307,7 +307,7 @@ private:
     void prepareFastLiveAffine();
     void prepareSettledLiveTransfer();
     void applySettledLiveTransfer(bool stereo) noexcept;
-    void readLivePotTargets();
+    void readLivePotTargets(int rampSamples);
     void advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,

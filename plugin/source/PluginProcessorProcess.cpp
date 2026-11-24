@@ -147,7 +147,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // which is where the CPU saving comes from: one engine instead of two.
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
 
-    readLivePotTargets();
+    // In Fast Live, finish a gesture in the callback that first receives it.
+    // Measure the ramp in host frames for every oversampling setting.
+    const int normalRamp = std::max(1, static_cast<int>(sampleRate_ * .015));
+    const int rampSamples = fastLive && !isNonRealtime() ? std::min(numSamples, normalRamp) : normalRamp;
+    readLivePotTargets(rampSamples);
     applySettledLiveTransfer(processStereo);
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);

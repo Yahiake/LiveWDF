@@ -746,7 +746,6 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         for (int i = 0; i < potControlCount_; ++i) {
             auto& control = potControls_[static_cast<size_t>(i)];
             const float value = control.knob->load(std::memory_order_relaxed);
-            control.position.reset(sampleRate_, .015);
             control.position.setCurrentAndTargetValue(std::isfinite(value) ? value : 0.5);
         }
         applyLiveControlsToEngines(true, true);
@@ -918,12 +917,18 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     applyLiveControlsToEngines(false, true);
 }
 
-void LiveWDFPluginProcessor::readLivePotTargets() {
+void LiveWDFPluginProcessor::readLivePotTargets(int rampSamples) {
     for (int i = 0; i < potControlCount_; ++i) {
         auto& control = potControls_[static_cast<size_t>(i)];
         const double value = control.knob->load(std::memory_order_relaxed);
-        if (std::isfinite(value))
+        if (std::isfinite(value) && !juce::approximatelyEqual(value, control.position.getTargetValue())) {
+            // JUCE resets to the old target. Keep the physical wiper continuous
+            // when automation changes direction before its ramp is complete.
+            const double current = control.position.getCurrentValue();
+            control.position.reset(rampSamples);
+            control.position.setCurrentAndTargetValue(current);
             control.position.setTargetValue(value);
+        }
         potsMoving_ |= control.position.isSmoothing();
     }
 }
