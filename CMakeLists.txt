@@ -48,6 +48,10 @@ set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 add_executable(livewdf_codegen tools/codegen/main.cpp)
 target_link_libraries(livewdf_codegen PRIVATE livewdf livewdf_options)
 
+include(tools/preview/fingerprint.cmake)
+add_executable(livewdf_preview_probe EXCLUDE_FROM_ALL tools/preview/probe.cpp)
+target_link_libraries(livewdf_preview_probe PRIVATE livewdf livewdf_options)
+
 # --- Symbol artwork -----------------------------------------------------------
 # The parts' shapes live as SVG files and are embedded into the binary, exactly as
 # Celine does it -- so redrawing a resistor is editing a file, not a C++ edit,
@@ -106,7 +110,8 @@ endif()
 # change). A zip keeps the `amps/` and `pedals_fx/` paths; individual binary
 # resources would flatten them and need a second manifest.
 file(GLOB_RECURSE LIVEWDF_FACTORY_SCHEMATICS CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/schematics/*.livewdf")
+    "${CMAKE_CURRENT_SOURCE_DIR}/schematics/*.livewdf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/schematics/*.livewdf.*.preview.json")
 list(SORT LIVEWDF_FACTORY_SCHEMATICS)
 
 if(LIVEWDF_FACTORY_SCHEMATICS AND COMMAND juce_add_binary_data)
