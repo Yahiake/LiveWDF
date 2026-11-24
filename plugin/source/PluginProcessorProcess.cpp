@@ -153,6 +153,15 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int rampSamples = fastLive && !isNonRealtime() ? std::min(numSamples, normalRamp) : normalRamp;
     readLivePotTargets(rampSamples);
     applySettledLiveTransfer(processStereo);
+    const bool compiledPreview = previewPrepared_ && fastLive &&
+        *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+    const bool tryBipolar = compiledPreview && outputOnlyPreviewAllowed_ && !potsMoving_;
+    if (!tryBipolar) {
+        leftEngine_->releaseBipolarPreview();
+        if (rightEngine_) rightEngine_->releaseBipolarPreview();
+    }
+    leftEngine_->useLoadedJunctionPreview(compiledPreview);
+    if (processStereo) rightEngine_->useLoadedJunctionPreview(compiledPreview);
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
     if (processStereo) {
@@ -165,7 +174,20 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svRight_.begin());
     const int inIdx = inSourceIndex_;
     const int outIdx = outNodeIndex_;
-    const std::vector<double>* lastNodesL = nullptr;
+    struct OutputSample {
+        double volts;
+        const std::vector<double>* nodes;
+    };
+    const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double input) -> OutputSample {
+        if (inIdx >= 0)
+            sources[static_cast<size_t>(inIdx)] = input;
+        double volts;
+        if (tryBipolar && engine.stepBipolarPreview(input, volts))
+            return {volts, nullptr};
+        const auto& nodes = engine.step(sources, maxIterations, solveTolerance);
+        return {nodes[static_cast<size_t>(outIdx)], &nodes};
+    };
+    OutputSample lastLeft{};
     float maxAbsOut = 0.0f;
 
     if (useHalfBand_) {
@@ -187,13 +209,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     }
                     ++acSampleCounter_;
                 }
-                if (inIdx >= 0 && inIdx < static_cast<int>(svLeft_.size()))
-                    svLeft_[static_cast<size_t>(inIdx)] = osIn;
-                const auto& nodesL = leftEngine_->step(svLeft_, maxIterations, solveTolerance);
-                lastNodesL = &nodesL;
-                return (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
-                    ? nodesL[static_cast<size_t>(outIdx)] * outputScale
-                    : 0.0;
+                lastLeft = solve(*leftEngine_, svLeft_, osIn);
+                return lastLeft.volts * outputScale;
             });
             leftData[s] = static_cast<float>(outL);
             maxAbsOut = std::max(maxAbsOut, std::abs(leftData[s]));
@@ -211,12 +228,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                                 acSampleRate_, acSampleCounter_);
                         }
                     }
-                    if (inIdx >= 0 && inIdx < static_cast<int>(svRight_.size()))
-                        svRight_[static_cast<size_t>(inIdx)] = osIn;
-                    const auto& nodesR = rightEngine_->step(svRight_, maxIterations, solveTolerance);
-                    return (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
-                        ? nodesR[static_cast<size_t>(outIdx)] * outputScale
-                        : 0.0;
+                    return solve(*rightEngine_, svRight_, osIn).volts * outputScale;
                 });
                 rightData[s] = static_cast<float>(outR);
                 maxAbsOut = std::max(maxAbsOut, std::abs(rightData[s]));
@@ -258,26 +270,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 ++acSampleCounter_;
             }
 
-            // Left Channel
-            if (inIdx >= 0 && inIdx < static_cast<int>(svLeft_.size())) {
-                svLeft_[static_cast<size_t>(inIdx)] = static_cast<double>(leftData[s]);
-            }
-            const auto& nodesL = leftEngine_->step(svLeft_, maxIterations, solveTolerance);
-            lastNodesL = &nodesL;
-            const float outL = (outIdx >= 0 && outIdx < static_cast<int>(nodesL.size()))
-                                   ? static_cast<float>(nodesL[static_cast<size_t>(outIdx)]) * outputScale
-                                   : 0.0f;
+            lastLeft = solve(*leftEngine_, svLeft_, leftData[s]);
+            const float outL = static_cast<float>(lastLeft.volts) * outputScale;
             leftData[s] = outL;
             maxAbsOut = std::max(maxAbsOut, std::abs(outL));
 
             if (processStereo && rightData) {
-                if (inIdx >= 0 && inIdx < static_cast<int>(svRight_.size())) {
-                    svRight_[static_cast<size_t>(inIdx)] = static_cast<double>(rightData[s]);
-                }
-                const auto& nodesR = rightEngine_->step(svRight_, maxIterations, solveTolerance);
-                const float outR = (outIdx >= 0 && outIdx < static_cast<int>(nodesR.size()))
-                                       ? static_cast<float>(nodesR[static_cast<size_t>(outIdx)]) * outputScale
-                                       : 0.0f;
+                const float outR = static_cast<float>(solve(*rightEngine_, svRight_, rightData[s]).volts) * outputScale;
                 rightData[s] = outR;
                 maxAbsOut = std::max(maxAbsOut, std::abs(outR));
             } else if (rightData) {
@@ -291,11 +290,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // makes the probe readout a different circuit from the one just heard.
     {
         std::unique_lock<std::mutex> pLock(probeMutex_, std::try_to_lock);
-        if (pLock.owns_lock() && lastNodesL != nullptr) {
+        if (pLock.owns_lock()) {
             for (size_t i = 0; i < probeNodes_.size(); ++i) {
                 const auto node = static_cast<size_t>(probeNodes_[i].second);
-                if (node < lastNodesL->size())
-                    probeVoltages_[i] = (*lastNodesL)[node];
+                if (lastLeft.nodes != nullptr && node < lastLeft.nodes->size())
+                    probeVoltages_[i] = (*lastLeft.nodes)[node];
+                else if (probeNodes_[i].second == outIdx)
+                    probeVoltages_[i] = lastLeft.volts;
             }
         }
     }

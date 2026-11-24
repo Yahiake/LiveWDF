@@ -45,6 +45,17 @@ void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
         prepared_->compileMixedAffinePlans(std::span(affineMasks_).first(maskCount_));
 }
 
+void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly) {
+    if (!prepared_)
+        return;
+    compiledPreview_ = true;
+    // Performance screening may leave the worker at the end of its test signal.
+    // Compile each channel at its physical DC point. Live histories stay on the recipient.
+    prepared_->reset();
+    if (!allowOutputOnly || !prepared_->prepareBipolarPreview(inputSource, outputNode))
+        prepared_->prepareLoadedJunctionPreview();
+}
+
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
     const auto& prepared = setup.prepared_;
     return setup.owner_ == this && prepared && (hasAdjustedLiveTransfer() != setup.planOnly_) &&
@@ -67,6 +78,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     if (!canInstallLiveTransferSetup(setup))
         return false;
 
+    releaseBipolarPreview();
     setup.owner_ = nullptr;
     auto& preparedEngine = *setup.prepared_;
     driveCoefficients_.swap(preparedEngine.driveCoefficients_);
@@ -80,8 +92,15 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     rootPivots_.swap(preparedEngine.rootPivots_);
     circuitPlanCooldown_ = 0;
     circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
+    const auto installPreview = [&] {
+        if (setup.compiledPreview_) {
+            adoptBipolarPreview(preparedEngine);
+            swapLoadedJunctionPreview(preparedEngine);
+        }
+    };
     if (setup.planOnly_) {
         circuitPlanRevision_ = linearRebuilds();
+        installPreview();
         return true;
     }
 
@@ -104,6 +123,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     live.swap(prepared);
     ++linearRebuilds_;
     circuitPlanRevision_ = preparedEngine.circuitPlanPrepared() ? linearRebuilds() : -1;
+    installPreview();
     return true;
 }
 

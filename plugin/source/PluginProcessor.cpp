@@ -116,6 +116,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"export_4x", 1}, "4x export", true));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"compiled_preview", 1}, "Compiled Preview", false));
+
     return { params.begin(), params.end() };
 }
 
@@ -233,6 +236,11 @@ bool LiveWDFPluginProcessor::shouldForceAccurate() const {
     return isNonRealtime() && *apvts_.getRawParameterValue("accurate_export") > 0.5f;
 }
 
+bool LiveWDFPluginProcessor::compiledPreviewRequested() const {
+    return !shouldForceAccurate() && *apvts_.getRawParameterValue("solve_quality") > 0.5f
+           && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+}
+
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
     constexpr int polyphase4x = 2;
     return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f
@@ -290,9 +298,10 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         }
         return;
     }
-    const auto revisions = [this]() -> TransferRevision {
+    const bool compilePreview = compiledPreviewRequested();
+    const auto revisions = [this, compilePreview]() -> TransferRevision {
         return {leftEngine_->linearRebuilds(), leftEngine_->liveControlRevision(),
-                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision()};
+                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision(), compilePreview};
     };
     TransferRevision revision;
     bool planOnly = false;
@@ -302,8 +311,11 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
             return;
         planOnly = !leftEngine_->hasAdjustedLiveTransfer();
+        const bool needsPreview = compilePreview && (!previewPrepared_ ||
+            previewLinearRevision_ != leftEngine_->linearRebuilds() ||
+            previewControlRevision_ != leftEngine_->liveControlRevision());
         if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() != rightEngine_->hasAdjustedLiveTransfer() ||
-            (planOnly && (!fastLive || (leftEngine_->circuitPlanPrepared() && rightEngine_->circuitPlanPrepared())))) {
+            (planOnly && !needsPreview && (!fastLive || (leftEngine_->circuitPlanPrepared() && rightEngine_->circuitPlanPrepared())))) {
             observedTransferRevision_.reset();
             return;
         }
@@ -320,6 +332,8 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         fastLive && !planOnly};
+    job.compilePreview = compilePreview;
+    bool allowOutputOnly = false;
     size_t input = 0;
     int output = -1;
     {
@@ -331,17 +345,22 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
             return;
         input = static_cast<size_t>(inSourceIndex_);
         output = outNodeIndex_;
+        allowOutputOnly = outputOnlyPreviewAllowed_;
     }
     if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
         return;
     try {
         settledTransferJob_ = std::async(std::launch::async,
-            [work = std::move(job), input, output, fastLive]() mutable {
+            [work = std::move(job), input, output, fastLive, allowOutputOnly]() mutable {
                 const AffineWorkerSlot slot;
                 work.left.build(input, work.affine);
                 work.right.build(input, work.affine);
                 if (fastLive)
                     work.left.screenCircuitPlan(work.right, input, output);
+                if (work.compilePreview) {
+                    work.left.prepareCompiledPreview(input, output, allowOutputOnly);
+                    work.right.prepareCompiledPreview(input, output, allowOutputOnly);
+                }
                 return std::move(work);
             });
         preparedTransferRevision_ = revision;
@@ -362,6 +381,9 @@ void LiveWDFPluginProcessor::applySettledLiveTransfer(bool stereo) noexcept {
         rightEngine_->canInstallLiveTransferSetup(ready->right)) {
         leftEngine_->installLiveTransferSetup(ready->left);
         rightEngine_->installLiveTransferSetup(ready->right);
+        previewPrepared_ = ready->compilePreview;
+        previewLinearRevision_ = leftEngine_->linearRebuilds();
+        previewControlRevision_ = leftEngine_->liveControlRevision();
         ready->installedRevision = leftEngine_->linearRebuilds();
         ready->stereo = stereo;
     }
@@ -634,6 +656,9 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         std::lock_guard<std::mutex> lock(engineMutex_);
         leftEngine_ = std::move(newLeft);
         rightEngine_ = std::move(newRight);
+        previewPrepared_ = false;
+        outputOnlyPreviewAllowed_ = acSources.empty() &&
+            std::all_of(probeNodes.begin(), probeNodes.end(), [&](const auto& probe) { return probe.second == outIdx; });
         ++engineGeneration_;
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
@@ -990,6 +1015,7 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
     }
 
     const auto apply = [&](wdf::Engine& engine) {
+        engine.releaseBipolarPreview();
         if (switches)
             engine.setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
         else if (!engine.setLiveControls(potMoves_, varResMoves_))
@@ -1017,7 +1043,12 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
     std::unique_ptr<juce::XmlElement> xmlState(getXmlFromBinary(data, sizeInBytes));
     if (xmlState != nullptr && xmlState->hasTagName(apvts_.state.getType())) {
         std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
-        apvts_.replaceState(juce::ValueTree::fromXml(*xmlState));
+        // Earlier session files contain no Preview parameter. Reloading them
+        // into an existing instance must restore the original playback mode.
+        auto state = juce::ValueTree::fromXml(*xmlState);
+        if (!state.getChildWithProperty("id", "compiled_preview").isValid())
+            state.appendChild(juce::ValueTree{"PARAM", {{"id", "compiled_preview"}, {"value", 0.0f}}}, nullptr);
+        apvts_.replaceState(state);
 
         // Restore custom LiveWDF JSON document
         if (xmlState->hasAttribute("livewdf_json")) {

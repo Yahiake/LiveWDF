@@ -85,6 +85,10 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
+    compiledPreviewBtn_.setTooltip("Use compiled circuit approximations in Fast Live when available.");
+    addAndMakeVisible(compiledPreviewBtn_);
+    compiledPreviewAttach_ = std::make_unique<ButtonAttachment>(
+        processor_.getAPVTS(), "compiled_preview", compiledPreviewBtn_);
     reportLatencyBtn_.setTooltip("Report oversampling delay to the DAW. Turning this off keeps the audio timing the same.");
     addAndMakeVisible(reportLatencyBtn_);
     reportLatencyAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "report_latency", reportLatencyBtn_);
@@ -138,6 +142,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // 6. Dual-Trace Oscilloscope
     oscilloscope_.setBuffers(&processor_.getInputScopeBuffer(), &processor_.getOutputScopeBuffer());
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
     addAndMakeVisible(oscilloscope_);
 
     // 7. Input Trim & Output Knobs
@@ -398,6 +403,7 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
 
     // The parameter can move from automation or host state restore, not only
     // from the button, so the label follows the parameter rather than the click.
@@ -487,7 +493,9 @@ void LiveWDFPluginEditor::resized() {
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
-    reportLatencyBtn_.setBounds(topBar.removeFromRight(122).reduced(6, 10));
+    auto playbackOptions = topBar.removeFromRight(122).reduced(6, 3);
+    compiledPreviewBtn_.setBounds(playbackOptions.removeFromTop(24));
+    reportLatencyBtn_.setBounds(playbackOptions);
     auto oversamplingControls = topBar.removeFromRight(120).reduced(6, 3);
     oversamplingCombo_.setBounds(oversamplingControls.removeFromTop(27));
     oversampleExportBtn_.setBounds(oversamplingControls);

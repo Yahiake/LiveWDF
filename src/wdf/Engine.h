@@ -94,6 +94,7 @@ public:
     public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
         void build(size_t inputSource, bool prepareAffine);
+        void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly);
         /// Compare the prepared channels on the worker and drop unprofitable plans.
         bool screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode);
 
@@ -102,7 +103,7 @@ public:
         const Engine* owner_ = nullptr;
         Circuit circuit_;
         double rate_ = 0.0;
-        bool gridCurrent_ = true, planOnly_ = false;
+        bool gridCurrent_ = true, planOnly_ = false, compiledPreview_ = false;
         std::array<unsigned, planLimit> affineMasks_{};
         size_t maskCount_ = 0;
         long long linearRevision_ = 0, controlRevision_ = 0, affineRevision_ = 0;

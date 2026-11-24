@@ -187,12 +187,16 @@ private:
         bool affine = false;
         long long installedRevision = 0;
         bool stereo = false;
+        bool compilePreview = false;
     };
     std::future<SettledTransfer> settledTransferJob_;
     std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
     bool settledTransferPublished_ = false;
     bool initialTransferPending_ = false;
-    using TransferRevision = std::array<long long, 4>; // transfer, controls, channel affine plans
+    bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
+    long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
+    bool outputOnlyPreviewAllowed_ = false;
+    using TransferRevision = std::array<long long, 5>; // transfer, controls, channel affine plans, preview request
     std::optional<TransferRevision> observedTransferRevision_, preparedTransferRevision_;
     wdf::Circuit settledControlCircuit_;
 
@@ -302,6 +306,7 @@ private:
 
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
     bool shouldForceAccurate() const;
+    bool compiledPreviewRequested() const;
     int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
