@@ -121,10 +121,13 @@ struct PhotoresistorControl {
     double attackSeconds = 0.002;
     double releaseSeconds = 0.020;
 
+    double illumination(double volts) const {
+        return std::pow(std::clamp(volts / referenceVolts, 0.0, 1.0), gamma);
+    }
+
     double targetConductance(double volts, double darkOhms) const {
-        const double light = std::clamp(volts / referenceVolts, 0.0, 1.0);
         const double dark = 1.0 / darkOhms;
-        return dark + (1.0 / brightOhms - dark) * std::pow(light, gamma);
+        return dark + (1.0 / brightOhms - dark) * illumination(volts);
     }
 };
 

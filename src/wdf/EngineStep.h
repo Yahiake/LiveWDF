@@ -17,6 +17,9 @@ namespace wdf {
 
 class EngineStep : public EngineCompile {
 public:
+    bool hasCompiledOptical() const noexcept { return sharedLamps_; }
+    void useCompiledOptical(bool enabled) noexcept { compiledOptical_ = enabled && sharedLamps_; }
+
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
         circuitPlanCooldown_ = 0;
@@ -270,15 +273,19 @@ protected:
         }
     }
 
+    double photoSenseVoltage(const PhotoresistorState& state, const std::vector<double>& nodes,
+                             const double* sources, size_t sourceCount) const {
+        return (state.sensePos >= 0 ? nodes[static_cast<size_t>(state.sensePos)] : 0.0) -
+            (state.senseNeg >= 0 ? nodes[static_cast<size_t>(state.senseNeg)] : 0.0) +
+            state.senseOffset.eval(sources, sourceCount);
+    }
+
     double photoTargetConductance(const PhotoresistorState& state,
                                   const std::vector<double>& nodes,
                                   const double* sources, size_t sourceCount) const {
-        const double sense =
-            (state.sensePos >= 0 ? nodes[static_cast<size_t>(state.sensePos)] : 0.0) -
-            (state.senseNeg >= 0 ? nodes[static_cast<size_t>(state.senseNeg)] : 0.0) +
-            state.senseOffset.eval(sources, sourceCount);
         const auto& ctrl = circuit_.ctrlRes[state.index];
-        return ctrl.photo->targetConductance(sense, ctrl.initialOhms);
+        return ctrl.photo->targetConductance(photoSenseVoltage(state, nodes, sources, sourceCount),
+                                             ctrl.initialOhms);
     }
 
     /// A sample may only commit reactive state after a verified solve.

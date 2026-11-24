@@ -49,6 +49,45 @@ TEST_CASE("Photoresistor responds to differential light drive with separate atta
     CHECK(engine.step(dc)[out] == Approx(1.0 / (1.0 + 10000.0 * dcConductance)));
 }
 
+TEST_CASE("Co-illuminated optical cells preserve independent attack and release across mode changes",
+          "[engine][photores]") {
+    wdf::Circuit c;
+    c.addSrc("signal", "0", 1.0);
+    c.addSrc("lamp", "0", 0.0);
+    c.addRes("signal", "out", 12000.0);
+    wdf::PhotoresistorControl cell;
+    cell.sensePos = "lamp";
+    cell.senseNeg = "0";
+    cell.referenceVolts = 1.2;
+    cell.gamma = 1.65;
+    c.addPhotoresistor("out", "0", 1e7, cell, "fast");
+    cell.attackSeconds = 0.32;
+    cell.releaseSeconds = 2.0;
+    cell.brightOhms = 2700.0;
+    c.addPhotoresistor("out", "0", 1e7, cell, "slow");
+    cell.gamma = 2.75;
+    c.addPhotoresistor("out", "0", 2e6, cell, "different response");
+
+    for (const double rate : {48000.0, 96000.0}) {
+        wdf::Engine exact(c, rate), preview(c, rate);
+        REQUIRE(preview.hasCompiledOptical());
+        auto drive = exact.dcValues();
+        int output = exact.nodeIndex("out");
+        double maxAudioError = 0.0, maxOhmsError = 0.0;
+        for (int i = 0; i < 2048; ++i) {
+            preview.useCompiledOptical((i / 353) % 2 == 0);
+            drive[1] = i < 1200 ? 0.8 + 0.7 * std::sin(i * 0.07) : -0.25;
+            maxAudioError = std::max(maxAudioError, std::abs(exact.step(drive)[output] -
+                                                             preview.step(drive)[output]));
+            for (size_t k = 0; k < c.ctrlRes.size(); ++k)
+                maxOhmsError = std::max(maxOhmsError, std::abs(exact.controlledResistanceValues()[k] -
+                                                               preview.controlledResistanceValues()[k]));
+        }
+        CHECK(maxAudioError < 1e-12);
+        CHECK(maxOhmsError < 1e-8);
+    }
+}
+
 // Increment 18: Variable Resistors (VarRes rheostats) & Controlled Resistors (audio-rate root elements).
 
 TEST_CASE("VarRes taper curves and resistance scaling", "[varres]") {

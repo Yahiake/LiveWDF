@@ -543,10 +543,24 @@ protected:
         photoresistors_.reserve(comp_.photoSensePorts.size());
         for (const auto& [index, port] : comp_.photoSensePorts) {
             const auto& photo = *circuit_.ctrlRes[index].photo;
+            const size_t cell = photoresistors_.size();
+            size_t lamp = cell;
+            for (size_t j = 0; j < cell; ++j) {
+                const auto& [otherIndex, otherPort] = comp_.photoSensePorts[j];
+                const auto& other = *circuit_.ctrlRes[otherIndex].photo;
+                if (port.a == otherPort.a && port.b == otherPort.b && port.off == otherPort.off &&
+                    photo.referenceVolts == other.referenceVolts && photo.gamma == other.gamma) {
+                    lamp = j;
+                    sharedLamps_ = true;
+                    break;
+                }
+            }
+            const double dark = 1.0 / circuit_.ctrlRes[index].initialOhms;
             photoresistors_.push_back({
                 index, port.a, port.b, makeAffine(port.off),
                 -std::expm1(-T_ / photo.attackSeconds),
                 -std::expm1(-T_ / photo.releaseSeconds),
+                lamp, dark, 1.0 / photo.brightOhms - dark,
             });
         }
         vcas_.reserve(comp_.vcaSensePorts.size());
@@ -1102,8 +1116,11 @@ protected:
         int sensePos, senseNeg;
         AffineOffset senseOffset;
         double attack, release;
+        size_t lamp;
+        double dark, span, illumination = 0.0;
     };
     std::vector<PhotoresistorState> photoresistors_;
+    bool sharedLamps_ = false, compiledOptical_ = false;
     struct VcaState {
         size_t index;
         int control, reference;

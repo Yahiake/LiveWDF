@@ -369,8 +369,19 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
 
     // Optical response is slower than one sample. Read the accepted
     // electrical state, then update the LDRs for the next root solve.
-    for (const auto& photo : photoresistors_) {
-        const double target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
+    for (auto& photo : photoresistors_) {
+        double target;
+        if (compiledOptical_) {
+            // Cells illuminated by the same lamp still have independent time constants.
+            auto& lamp = photoresistors_[photo.lamp];
+            if (&lamp == &photo) {
+                const auto& control = *circuit_.ctrlRes[photo.index].photo;
+                lamp.illumination = control.illumination(photoSenseVoltage(photo, node_, sourceValues, sourceCount));
+            }
+            target = photo.dark + photo.span * lamp.illumination;
+        } else {
+            target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
+        }
         double& ohms = ctrlResValues_[photo.index];
         const double conductance = 1.0 / ohms;
         const double mix = target > conductance ? photo.attack : photo.release;
