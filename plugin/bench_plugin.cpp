@@ -2022,6 +2022,72 @@ bool checkLivePreviewCapture(const juce::File& file) {
     return installed;
 }
 
+// Exercise the audio-rate control path while the background compiler is idle.
+bool checkLivePreviewPotMotion(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    auto& parameters = processor.getAPVTS();
+    parameters.getParameter("solve_quality")->setValueNotifyingHost(0.f);
+    processor.setPlayConfigDetails(2, 2, 48000, 128);
+    processor.prepareToPlay(48000, 128);
+    if (!processor.loadCircuitFromFile(file)) return false;
+
+    const auto switches = processor.getSwitchGroups();
+    const auto pots = processor.getPotGroups();
+    const auto band = std::find_if(switches.begin(), switches.end(),
+        [](const auto& control) { return control.name == "Upper Presence 1.5 kHz"; });
+    const auto gain = std::find_if(pots.begin(), pots.end(),
+        [](const auto& control) { return control.name == "Upper Presence Gain"; });
+    if (band == switches.end() || gain == pots.end()) {
+        std::fprintf(stderr, "Missing the presence EQ controls in the regression fixture.\n");
+        return false;
+    }
+    processor.setSwitchGroupB(static_cast<int>(band - switches.begin()), true);
+    auto* knob = parameters.getParameter("pot_" + juce::String(static_cast<int>(gain - pots.begin())));
+    parameters.getParameter("solve_quality")->setValueNotifyingHost(1.f);
+    parameters.getParameter("compiled_preview")->setValueNotifyingHost(1.f);
+    juce::AudioBuffer<float> block(2, 128);
+    juce::MidiBuffer midi;
+    const auto render = [&] {
+        for (int i = 0; i < block.getNumSamples(); ++i) {
+            const float sample = .15f * std::sin(i * juce::MathConstants<float>::twoPi / 32);
+            block.setSample(0, i, sample);
+            block.setSample(1, i, sample);
+        }
+        processor.processBlock(block, midi);
+    };
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+    while (!processor.leftEngine_->bipolarPreviewActive()) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            std::fprintf(stderr, "Compiled Preview did not become active.\n");
+            return false;
+        }
+        processor.timerCallback();
+        render();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    for (int i = 0; i < 64; ++i) render();
+    for (const float target : {.55f, .45f, .50f}) {
+        const juce::AudioBuffer<float> before(block);
+        knob->setValueNotifyingHost(target);
+        render();
+        if (!processor.leftEngine_->bipolarPreviewActive()) {
+            std::fprintf(stderr, "Compiled Preview fell back while moving gain to %.2f.\n", target);
+            return false;
+        }
+        float peakChange = 0.f;
+        for (int i = 0; i < block.getNumSamples(); ++i) {
+            const float sample = block.getSample(0, i);
+            if (!std::isfinite(sample)) return false;
+            peakChange = std::max(peakChange, std::abs(sample - before.getSample(0, i)));
+        }
+        if (peakChange <= 1e-4f) {
+            std::fprintf(stderr, "Gain %.2f had no measurable effect during the first block.\n", target);
+            return false;
+        }
+    }
+    return true;
+}
+
 } // namespace livewdf
 
 int main(int argc, char** argv) {
@@ -2037,6 +2103,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    if (argc == 3 && std::string(argv[2]) == "--check-live-preview-pot-motion")
+        return livewdf::checkLivePreviewPotMotion(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")
         return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
 

@@ -147,6 +147,7 @@ public:
 
 private:
     friend bool checkLivePreviewCapture(const juce::File& file);
+    friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)

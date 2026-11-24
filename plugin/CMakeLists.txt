@@ -92,4 +92,7 @@ if(LIVEWDF_BUILD_TESTS)
     add_test(NAME livewdf_live_preview_capture COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf"
         --check-live-preview-capture)
+    add_test(NAME livewdf_live_preview_pot_motion COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
+        --check-live-preview-pot-motion)
 endif()

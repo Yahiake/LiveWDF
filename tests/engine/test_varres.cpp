@@ -507,3 +507,55 @@ TEST_CASE("Port impedance stamps series and shunt fixtures without duplicating a
         CHECK_FALSE(wdf::portImpedanceRange(doc, true));
     }
 }
+
+TEST_CASE("Settled bipolar preview continues a moving control through a live transient", "[engine][controls][preview]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addSrc("supply", "0", 9.);
+    c.addRes("in", "base", 330000.);
+    c.addRes("supply", "base", 22000.);
+    c.addRes("base", "0", 4700.);
+    c.addRes("supply", "collector", 3300.);
+    c.addRes("emitter", "0", 820.);
+    c.addBjt("collector", "base", "emitter", wdf::findBjtByName("2N3904")->model, "Q1");
+    c.addCap("collector", "level", 1.e-6);
+    c.addPot("level", "wiper", "0", 10000., .5, wdf::PotTaper::Linear, "Level");
+    c.addInd("wiper", "out", 10.e-3);
+    c.addRes("out", "0", 4700.);
+    wdf::Engine updated(c, 48000.), uninterrupted(c, 48000.), physical(c, 48000.);
+    const int out = updated.nodeIndex("out");
+    for (auto* e : {&updated, &uninterrupted, &physical})
+        e->prepareLiveControls();
+    for (auto* e : {&updated, &uninterrupted})
+        REQUIRE(e->prepareBipolarPreview(0, out));
+
+    wdf::Engine::LiveTransferSetup settled(c);
+    auto sources = physical.dcValues();
+    double atChange = 0.;
+    for (int n = 0; n < 320; ++n) {
+        if (n == 64) {
+            for (auto* e : {&updated, &uninterrupted, &physical})
+                REQUIRE(e->setLiveControls({{0, .65}}, {}));
+            REQUIRE(updated.captureLiveTransferSetup(settled));
+            settled.build(0, false);
+            settled.prepareCompiledPreview(0, out, true, 1.2, false);
+        }
+        if (n == 192) {
+            REQUIRE(updated.bipolarPreviewActive());
+            REQUIRE(updated.installLiveTransferSetup(settled));
+        }
+
+        // The input changes on the first sample processed by the new coefficients.
+        sources[0] = .12 * std::sin(n * .063) + (n >= 192 ? .18 : 0.);
+        double actual, prior;
+        REQUIRE(updated.stepBipolarPreview(sources[0], actual));
+        REQUIRE(uninterrupted.stepBipolarPreview(sources[0], prior));
+        const double reference = physical.step(sources)[out];
+        REQUIRE(actual == Approx(prior).margin(1e-7));
+        REQUIRE(actual == Approx(reference).margin(2e-5));
+        if (n == 191)
+            atChange = actual;
+        if (n == 192)
+            CHECK(std::abs(actual - atChange) > 1e-4);
+    }
+}

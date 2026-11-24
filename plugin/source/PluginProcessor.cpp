@@ -1144,11 +1144,12 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
     }
 
     const auto apply = [&](wdf::Engine& engine) {
-        engine.releaseBipolarPreview();
-        if (switches)
+        if (switches) {
+            engine.releaseBipolarPreview();
             engine.setParametersByIndex(potMoves_, varResMoves_, resistorMoves_);
-        else if (!engine.setLiveControls(potMoves_, varResMoves_))
+        } else if (!engine.setLiveControls(potMoves_, varResMoves_)) {
             liveControlUpdateFailed_.store(true, std::memory_order_relaxed);
+        }
     };
     apply(*leftEngine_);
     if (rightEngine_)

@@ -158,7 +158,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
     leftEngine_->useCompiledOptical(compiledPreview);
     if (processStereo) rightEngine_->useCompiledOptical(compiledPreview);
-    const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_ && !potsMoving_;
+    const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_;
     if (!tryBipolar) {
         leftEngine_->releaseBipolarPreview();
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
