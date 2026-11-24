@@ -271,6 +271,23 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
         loadCircuitDocument(currentDoc_, false);
         currentFile_ = circuitFile;
     }
+    // A headless export can start before the UI timer has prepared a live plan.
+    // Only offline processing may perform setup here.
+    if (isNonRealtime() && compiledPreviewRequested()) {
+        const std::lock_guard lock(engineMutex_);
+        if (leftEngine_ && rightEngine_ && inSourceIndex_ >= 0 && outNodeIndex_ >= 0 &&
+            !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer() && (!previewPrepared_ ||
+                previewLinearRevision_ != leftEngine_->linearRebuilds() ||
+                previewControlRevision_ != leftEngine_->liveControlRevision())) {
+            for (auto* engine : {leftEngine_.get(), rightEngine_.get()})
+                if (!outputOnlyPreviewAllowed_ ||
+                    !engine->prepareBipolarPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_))
+                    engine->prepareLoadedJunctionPreview();
+            previewPrepared_ = true;
+            previewLinearRevision_ = leftEngine_->linearRebuilds();
+            previewControlRevision_ = leftEngine_->liveControlRevision();
+        }
+    }
 }
 
 void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
@@ -299,19 +316,19 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         return;
     }
     const bool compilePreview = compiledPreviewRequested();
-    const auto revisions = [this, compilePreview]() -> TransferRevision {
+    const auto revisions = [this](bool needsPreview) -> TransferRevision {
         return {leftEngine_->linearRebuilds(), leftEngine_->liveControlRevision(),
-                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision(), compilePreview};
+                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision(), needsPreview};
     };
     TransferRevision revision;
-    bool planOnly = false;
+    bool planOnly = false, needsPreview = false;
     const bool fastLive = *apvts_.getRawParameterValue("solve_quality") > 0.5f;
     {
         std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
         if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
             return;
         planOnly = !leftEngine_->hasAdjustedLiveTransfer();
-        const bool needsPreview = compilePreview && (!previewPrepared_ ||
+        needsPreview = compilePreview && (!previewPrepared_ ||
             previewLinearRevision_ != leftEngine_->linearRebuilds() ||
             previewControlRevision_ != leftEngine_->liveControlRevision());
         if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() != rightEngine_->hasAdjustedLiveTransfer() ||
@@ -319,7 +336,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
             observedTransferRevision_.reset();
             return;
         }
-        revision = revisions();
+        revision = revisions(needsPreview);
         if (observedTransferRevision_ != revision) {
             observedTransferRevision_ = revision;
             if (!initialTransferPending_)
@@ -332,14 +349,14 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         fastLive && !planOnly};
-    job.compilePreview = compilePreview;
+    job.compilePreview = needsPreview;
     bool allowOutputOnly = false;
     size_t input = 0;
     int output = -1;
     {
         std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
         if (!lock.owns_lock() || potsMoving_ ||
-            revisions() != revision ||
+            revisions(needsPreview) != revision ||
             !leftEngine_->captureLiveTransferSetup(job.left, planOnly) ||
             !rightEngine_->captureLiveTransferSetup(job.right, planOnly))
             return;
@@ -381,9 +398,11 @@ void LiveWDFPluginProcessor::applySettledLiveTransfer(bool stereo) noexcept {
         rightEngine_->canInstallLiveTransferSetup(ready->right)) {
         leftEngine_->installLiveTransferSetup(ready->left);
         rightEngine_->installLiveTransferSetup(ready->right);
-        previewPrepared_ = ready->compilePreview;
-        previewLinearRevision_ = leftEngine_->linearRebuilds();
-        previewControlRevision_ = leftEngine_->liveControlRevision();
+        if (ready->compilePreview) {
+            previewPrepared_ = true;
+            previewLinearRevision_ = leftEngine_->linearRebuilds();
+            previewControlRevision_ = leftEngine_->liveControlRevision();
+        }
         ready->installedRevision = leftEngine_->linearRebuilds();
         ready->stereo = stereo;
     }
