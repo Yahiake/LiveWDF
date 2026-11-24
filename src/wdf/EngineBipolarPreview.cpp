@@ -1,7 +1,10 @@
 #include "wdf/Engine.h"
 
+#include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numbers>
+#include <numeric>
 
 namespace wdf {
 namespace {
@@ -52,6 +55,7 @@ struct Engine::BipolarPreview {
     Rows voltage, transition, handoffNodes, handoffRoots;
     Values drive, next, terminals, actualCurrent, acceptedDrive;
     Values defectLimit, stateLimit;
+    std::vector<size_t> devices;
 };
 
 bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode) {
@@ -183,49 +187,122 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode) {
     p.handoffRoots = std::move(roots);
     bipolarPreview_ = std::move(work);
 
-    // Qualify this fixed control snapshot against the native nonlinear circuit
-    // at two drive levels. The fitted quantities are guard ranges only.
+    p.devices.resize(rootDevices_.size());
+    std::iota(p.devices.begin(), p.devices.end(), size_t(0));
+
+    // The native circuit supplies reference responses, never coefficients.
     bias.reset();
     auto sources = bias.dcValues();
-    p.qualifying = true;
-    p.active = true;
-    p.defectLimit.assign(independent, std::numeric_limits<double>::infinity());
-    p.stateLimit.assign(nx, std::numeric_limits<double>::infinity());
-    Values observedDefect(independent), observedState(nx);
-    double peakError = 0., signalEnergy = 0., errorEnergy = 0.;
     constexpr int samples = 1152;
+    Values inputs(samples), reference(samples);
     for (int i = 0; i < samples; ++i) {
         const double phase = 2. * std::numbers::pi * i / fs_;
         const double level = i < 64 ? 0. : i < 384 ? .15 : i < 896 ? qualificationPeak : .25;
-        const double x = p.biasInput + level * (.64 * std::sin(137. * phase)
-                                               + .24 * std::sin(937. * phase)
-                                               + .12 * std::sin(std::min(5999., .17 * fs_) * phase));
-        sources[inputSource] = x;
-        const double reference = bias.step(sources)[outputNode];
-        double output;
-        if (!stepBipolarPreview(x, output) || bias.lastStateRejected() || !std::isfinite(reference)) {
+        inputs[i] = p.biasInput + level * (.64 * std::sin(137. * phase)
+                                          + .24 * std::sin(937. * phase)
+                                          + .12 * std::sin(std::min(5999., .17 * fs_) * phase));
+        sources[inputSource] = inputs[i];
+        reference[i] = bias.step(sources)[outputNode];
+        if (bias.lastStateRejected() || !std::isfinite(reference[i])) {
             bipolarPreview_.reset();
             return false;
         }
-        const double error = output - reference;
-        peakError = std::max(peakError, std::abs(error));
-        errorEnergy += error * error;
-        signalEnergy += (reference - p.biasOutput) * (reference - p.biasOutput);
-        for (int j = 0; j < independent; ++j)
-            observedDefect[j] = std::max(observedDefect[j], std::abs(p.drive[defect + j]));
-        for (int j = 0; j < nx; ++j)
-            observedState[j] = std::max(observedState[j], std::abs(p.drive[j]));
     }
-    if (signalEnergy < 1e-12 || peakError > .002 || errorEnergy > 1e-5 * signalEnergy) {
+    Values measuredDefect;
+    const auto qualify = [&](BipolarPreview& candidate) {
+        const int terms = candidate.transition.width - defect;
+        Values observedDefect(terms), observedState(nx);
+        double peakError = 0., signalEnergy = 0., errorEnergy = 0.;
+        candidate.qualifying = true;
+        candidate.active = true;
+        candidate.tripped = false;
+        std::fill_n(candidate.drive.begin(), nx, 0.);
+        candidate.defectLimit.assign(terms, std::numeric_limits<double>::infinity());
+        candidate.stateLimit.assign(nx, std::numeric_limits<double>::infinity());
+        for (int i = 0; i < samples; ++i) {
+            double output;
+            if (!stepBipolarPreview(inputs[i], output)) return false;
+            const double error = output - reference[i];
+            peakError = std::max(peakError, std::abs(error));
+            errorEnergy += error * error;
+            signalEnergy += (reference[i] - p.biasOutput) * (reference[i] - p.biasOutput);
+            for (int j = 0; j < terms; ++j)
+                observedDefect[j] = std::max(observedDefect[j], std::abs(candidate.drive[defect + j]));
+            for (int j = 0; j < nx; ++j)
+                observedState[j] = std::max(observedState[j], std::abs(candidate.drive[j]));
+        }
+        if (signalEnergy < 1e-12 || peakError > .002 || errorEnergy > 1e-5 * signalEnergy)
+            return false;
+        if (&candidate == &p) measuredDefect = observedDefect;
+        candidate.active = false;
+        candidate.qualifying = false;
+        for (int j = 0; j < terms; ++j)
+            candidate.defectLimit[j] = std::max(1e-6, 4. * observedDefect[j]);
+        for (int j = 0; j < nx; ++j)
+            candidate.stateLimit[j] = std::max(.01, 8. * observedState[j]);
+        return true;
+    };
+    if (!qualify(p)) {
         bipolarPreview_.reset();
         return false;
     }
-    p.active = false;
-    p.qualifying = false;
-    for (int j = 0; j < independent; ++j)
-        p.defectLimit[j] = std::max(1e-6, 4. * observedDefect[j]);
-    for (int j = 0; j < nx; ++j)
-        p.stateLimit[j] = std::max(.01, 8. * observedState[j]);
+
+    // Rank nonlinear current injections by their actual path to the selected
+    // output through the reactive network. Every device keeps its DC Jacobian.
+    // Reducing only the large-signal corrections needs another qualification.
+    constexpr size_t keepDevices = 4;
+    if (p.devices.size() > keepDevices) {
+        Values projection(p.transition[nx], p.transition[nx] + nx), next(nx);
+        Values weight(p.transition[nx] + defect, p.transition[nx] + columns);
+        for (double& w : weight) w = std::abs(w);
+        for (int lag = 0; lag < 128; ++lag) {
+            std::fill(next.begin(), next.end(), 0.);
+            for (int r = 0; r < nx; ++r)
+                for (int c = 0; c < nx; ++c) next[c] += projection[r] * p.transition[r][c];
+            for (int c = 0; c < independent; ++c) {
+                double value = 0.;
+                for (int r = 0; r < nx; ++r) value += projection[r] * p.transition[r][defect + c];
+                weight[c] += std::abs(value);
+            }
+            projection.swap(next);
+        }
+        Values rank(rootDevices_.size());
+        int term = 0;
+        for (size_t d = 0; d < rank.size(); ++d)
+            for (int r = 0; r < rootDevices_[d].numActiveRows; ++r, ++term)
+                rank[d] += weight[term] * measuredDefect[term];
+
+        auto full = bipolarPreview_;
+        auto reduced = std::make_shared<BipolarPreview>(p);
+        auto& selected = reduced->devices;
+        std::stable_sort(selected.begin(), selected.end(), [&](size_t a, size_t b) { return rank[a] > rank[b]; });
+        selected.resize(keepDevices);
+        std::sort(selected.begin(), selected.end());
+        std::vector<int> use;
+        term = 0;
+        for (size_t d = 0; d < rootDevices_.size(); ++d) {
+            const bool chosen = std::binary_search(selected.begin(), selected.end(), d);
+            for (int r = 0; r < rootDevices_[d].numActiveRows; ++r, ++term)
+                if (chosen) use.push_back(defect + term);
+        }
+        const auto compress = [&](const Rows& from) {
+            const int n = int(from.data.size()) / from.width;
+            Rows result(n, defect + int(use.size()));
+            for (int r = 0; r < n; ++r) {
+                std::copy_n(from[r], defect, result[r]);
+                for (size_t i = 0; i < use.size(); ++i)
+                    result[r][defect + i] = from[r][use[i]];
+            }
+            return result;
+        };
+        reduced->transition = compress(p.transition);
+        reduced->handoffRoots = compress(p.handoffRoots);
+        reduced->handoffNodes = compress(p.handoffNodes);
+        reduced->drive.resize(reduced->transition.width);
+        reduced->acceptedDrive.resize(reduced->transition.width);
+        bipolarPreview_ = std::move(reduced);
+        if (!qualify(*bipolarPreview_)) bipolarPreview_ = std::move(full);
+    }
     return true;
 }
 
@@ -253,7 +330,8 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
     }
     p.drive[nx] = inputVolts - p.biasInput;
     int column = 0;
-    for (const auto& dev : rootDevices_) {
+    for (size_t index : p.devices) {
+        const auto& dev = rootDevices_[index];
         const int base = dev.portBase;
         // The BJT law uses Vce and Vbe. Its third current is their return path.
         for (int r = base; r < base + dev.numActiveRows; ++r)
