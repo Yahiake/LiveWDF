@@ -53,7 +53,7 @@ void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int o
     // Compile each channel at its physical DC point. Live histories stay on the recipient.
     prepared_->reset();
     if (!allowOutputOnly || !prepared_->prepareBipolarPreview(inputSource, outputNode))
-        prepared_->prepareLoadedJunctionPreview();
+        prepared_->prepareLoadedJunctionPreview(inputSource);
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {

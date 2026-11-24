@@ -282,7 +282,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
             for (auto* engine : {leftEngine_.get(), rightEngine_.get()})
                 if (!outputOnlyPreviewAllowed_ ||
                     !engine->prepareBipolarPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_))
-                    engine->prepareLoadedJunctionPreview();
+                    engine->prepareLoadedJunctionPreview(static_cast<size_t>(inSourceIndex_));
             previewPrepared_ = true;
             previewLinearRevision_ = leftEngine_->linearRebuilds();
             previewControlRevision_ = leftEngine_->liveControlRevision();
