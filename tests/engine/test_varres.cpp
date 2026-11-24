@@ -165,6 +165,32 @@ TEST_CASE("prepared controls match rebuilt transfers without resetting waves", "
     REQUIRE(worst < 1e-7);
 }
 
+TEST_CASE("live emitter resistor reconstructs the same BJT voltages as a rebuild", "[varres][engine][controls][bjt]") {
+    wdf::Circuit c;
+    c.addSrc("supply", "0", 9.0);
+    c.addRes("supply", "base", 1e6);
+    c.addRes("supply", "collector", 4700.0);
+    c.addVarRes("emitter", "0", 2200.0, 0.5, wdf::PotTaper::Linear, "Re");
+    const auto* transistor = wdf::findBjtByName("2N3904");
+    REQUIRE(transistor);
+    c.addBjt("collector", "base", "emitter", transistor->model, "Q1");
+
+    wdf::Engine live(c, 48000.0), rebuilt(c, 48000.0);
+    live.prepareLiveControls();
+    REQUIRE(live.setLiveControls({}, {{0, 0.75}}));
+    REQUIRE(rebuilt.setVarResPosition(0, 0.75));
+    const auto& expected = rebuilt.step(rebuilt.dcValues());
+    const auto& actual = live.step(live.dcValues());
+    REQUIRE_FALSE(live.lastStateRejected());
+    REQUIRE_FALSE(rebuilt.lastStateRejected());
+    for (const auto* name : {"collector", "emitter"}) {
+        const auto n = live.nodeIndex(name);
+        REQUIRE(n >= 0);
+        REQUIRE(expected[n] > 0.1);
+        CHECK(actual[n] == Approx(expected[n]).margin(1e-7));
+    }
+}
+
 TEST_CASE("settled control transfer keeps running state and rejects stale work", "[varres][engine][controls]") {
     wdf::Circuit circuit;
     circuit.addSrc("in", "0", .1);

@@ -284,7 +284,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         }
     }
     if (adjustedTransfer && K_ > 0)
-        adjustableTransfer_.correctLoadedNodes(ii_.data(), nodeData);
+        adjustableTransfer_.correctLoadedNodes(ii_.data(), rootLayout_.nodeCol, nodeData);
 
     bool stateOk = stateAcceptable();
     if (stateOk) {
