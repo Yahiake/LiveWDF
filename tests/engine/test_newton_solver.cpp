@@ -353,3 +353,31 @@ TEST_CASE("Shared Newton eliminates only identity rows with zero current correct
         for (int i = 0; i < ports; ++i) REQUIRE(std::abs(actual[i] - expected[i]) < 1.e-13);
     }
 }
+
+TEST_CASE("Preview skips a failed Newton retry only for identical starting voltages", "[newton][preview]") {
+    const auto circuit = lwdf_test::diodeClipper();
+    wdf::Engine reference(circuit, kFs), preview(circuit, kFs);
+    reference.setExplicitRoots(false);
+    preview.setExplicitRoots(false);
+    preview.useLoadedJunctionPreview(true);
+
+    auto drive = reference.dcValues();
+    const bool changedHistory = GENERATE(false, true);
+    if (changedHistory) {
+        drive[0] = 0.1;
+        reference.step(drive);
+        preview.step(drive);
+        REQUIRE(reference.lastConverged());
+        REQUIRE(preview.lastConverged());
+    }
+
+    drive[0] = 2.0;
+    const auto& expected = reference.step(drive, 1, 1e-12);
+    const auto& actual = preview.step(drive, 1, 1e-12);
+    REQUIRE(reference.lastStateRejected());
+    REQUIRE(preview.lastStateRejected());
+    CHECK(actual == expected);
+    CHECK(preview.lastResidual() == reference.lastResidual());
+    CHECK(reference.newtonIterations() == 2);
+    CHECK(preview.newtonIterations() == (changedHistory ? 2 : 1));
+}

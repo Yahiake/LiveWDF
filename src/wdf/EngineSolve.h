@@ -196,7 +196,7 @@ protected:
             opAmps_, opAmpVp_, opAmpAlpha_, opAmpMaxDv_, triodeDomainPin_,
             staticMode_, K_, nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
-            jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_
+            jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_, loadedJunctionEnabled_
         };
     }
 

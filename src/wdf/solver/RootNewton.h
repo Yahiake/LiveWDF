@@ -84,6 +84,7 @@ struct NewtonContext {
     bool& keptBest;
     bool& lastConverged;
     double& lastResidual;
+    bool skipIdenticalRetry = false;
 };
 
 class RootNewton {
@@ -188,6 +189,19 @@ public:
         return std::min(boundary * 1.01, rejected * .95);
     }
 
+    static double predict(double last, double older, double down, double up) noexcept {
+        return last + std::clamp(last - older, -down, up);
+    }
+
+    static bool predictionChangesSeed(const NewtonContext& ctx) noexcept {
+        for (int r = 0; r < ctx.K; ++r) {
+            const double seed = predict(ctx.vvPrev[r], ctx.vvPrev2[r], ctx.predDown[r], ctx.predUp[r]);
+            if (std::memcmp(&seed, &ctx.vvPrev[r], sizeof(seed)) != 0)
+                return true;
+        }
+        return false;
+    }
+
     /// One pass of `solveRootsNewton`, with or without the extrapolated seed.
     static inline void solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
                                            bool usePrediction, bool useCurrentSeed = false) noexcept {
@@ -213,8 +227,7 @@ public:
                 std::memcpy(vCur, vPrev, static_cast<size_t>(ctx.K) * sizeof(double));
             } else {
                 for (int r = 0; r < ctx.K; ++r) {
-                    const double d = std::clamp(vPrev[r] - vPrev2[r], -pDown[r], pUp[r]);
-                    vCur[r] = vPrev[r] + d;
+                    vCur[r] = predict(vPrev[r], vPrev2[r], pDown[r], pUp[r]);
                 }
             }
         }
@@ -415,7 +428,8 @@ public:
             const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
             ctx.comp, ctx.rootDevices.data(), ctx.K);
         solveRootsNewtonPass(ctx, maxIter, tol, true, false);
-        if (!ctx.lastConverged) {
+        // The device laws and pinned domains stay fixed between these two passes.
+        if (!ctx.lastConverged && (!ctx.skipIdenticalRetry || predictionChangesSeed(ctx))) {
             solveRootsNewtonPass(ctx, maxIter, tol, false, false);
         }
         resolveTriodeDomains(ctx, maxIter, tol, view);
