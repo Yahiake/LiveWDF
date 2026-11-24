@@ -148,6 +148,8 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
+    friend bool waitForBenchmarkPlan(LiveWDFPluginProcessor&, juce::AudioBuffer<float>&,
+                                     juce::MidiBuffer&, bool preview);
     friend bool checkLivePreviewCapture(const juce::File& file);
     friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;

@@ -30,6 +30,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -40,6 +41,7 @@ struct ThreadUsage {
     double cpuNs = 0.0;
     long long allocs = 0;
     long long faults = 0;
+    long long preemptions = 0;
 };
 
 #ifdef __GLIBC__
@@ -65,18 +67,91 @@ static ThreadUsage threadUsage() {
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
     rusage ru{};
     getrusage(RUSAGE_THREAD, &ru);
-    return {ts.tv_sec * 1e9 + static_cast<double>(ts.tv_nsec), tAllocs, ru.ru_minflt + ru.ru_majflt};
+    return {ts.tv_sec * 1e9 + static_cast<double>(ts.tv_nsec), tAllocs, ru.ru_minflt + ru.ru_majflt, ru.ru_nivcsw};
 }
 #else
 static ThreadUsage threadUsage() { return {}; }
 #endif
 
+namespace livewdf {
+
+// Pump the same capture, worker and callback installation used when playing.
+bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<float>& block,
+                          juce::MidiBuffer& midi, bool preview) {
+    const char* mode = preview ? "Compiled Preview" : "Fast Live";
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    while (std::chrono::steady_clock::now() < deadline) {
+        processor.timerCallback();
+        if (processor.pendingSettledTransfer_.load(std::memory_order_acquire)) {
+            block.clear();
+            processor.processBlock(block, midi);
+        }
+        const bool installed = preview ? processor.previewPrepared_ :
+            processor.leftEngine_->circuitPlanPrepared() && processor.rightEngine_->circuitPlanPrepared();
+        if (installed) {
+            std::printf("  %s worker installed\n", mode);
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    std::fprintf(stderr, "%s worker did not install within 30 s\n", mode);
+    return false;
+}
+
+}  // namespace livewdf
+
 namespace {
+
+enum class BenchMode { Accurate, FastLive, CompiledPreview };
+
+const char* selectMode(livewdf::LiveWDFPluginProcessor& processor, BenchMode mode) {
+    auto& params = processor.getAPVTS();
+    params.getParameter("solve_quality")->setValueNotifyingHost(mode == BenchMode::Accurate ? 0.f : 1.f);
+    params.getParameter("compiled_preview")->setValueNotifyingHost(mode == BenchMode::CompiledPreview ? 1.f : 0.f);
+    if (mode == BenchMode::CompiledPreview) return "Compiled Preview";
+    return mode == BenchMode::FastLive ? "Fast Live" : "Accurate";
+}
+
+struct CallbackCost {
+    double wallNs, cpuNs;
+    long long allocs, faults, preemptions;
+};
+
+CallbackCost measureBlock(livewdf::LiveWDFPluginProcessor& processor,
+                          juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) {
+    const auto u0 = threadUsage();
+    const auto w0 = std::chrono::steady_clock::now();
+    processor.processBlock(buffer, midi);
+    const auto w1 = std::chrono::steady_clock::now();
+    const auto u1 = threadUsage();
+    return {std::chrono::duration<double, std::nano>(w1 - w0).count(),
+            u1.cpuNs - u0.cpuNs, u1.allocs - u0.allocs, u1.faults - u0.faults,
+            u1.preemptions - u0.preemptions};
+}
+
+struct DeadlineMisses {
+    int wall = 0, cpu = 0, wallOnlyPreempted = 0;
+
+    void count(const CallbackCost& cost, double budgetNs) {
+        wall += cost.wallNs > budgetNs;
+        cpu += cost.cpuNs > budgetNs;
+        wallOnlyPreempted += cost.wallNs > budgetNs && cost.cpuNs <= budgetNs && cost.preemptions > 0;
+    }
+
+    void print(size_t blocks) const {
+        std::printf("  missed wall %d/%zu", wall, blocks);
+#ifdef __GLIBC__
+        std::printf(", CPU %d/%zu, wall-only with involuntary switch %d", cpu, blocks, wallOnlyPreempted);
+#endif
+        std::printf("\n");
+    }
+};
 
 constexpr double kSampleRate = 48000.0;
 constexpr double kPi = 3.14159265358979323846;
 
 struct Result {
+    DeadlineMisses missed;
     double usPerBlock = 0.0;
     double nsPerInputSample = 0.0;
     double realtimePercent = 0.0;
@@ -95,7 +170,7 @@ double setOversampling(livewdf::LiveWDFPluginProcessor& processor, int choice) {
 }
 
 Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& file,
-               int blockSize, int oversamplingChoice, int blocks) {
+               int blockSize, int oversamplingChoice, int blocks, BenchMode mode) {
     setOversampling(processor, oversamplingChoice);
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
@@ -113,6 +188,9 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
         input.setSample(0, i, v);
         input.setSample(1, i, v);
     }
+    if (mode != BenchMode::Accurate &&
+        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        return {};
     buffer.makeCopyOf(input);
     processor.processBlock(buffer, midi);
 
@@ -123,13 +201,17 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
         processor.processBlock(buffer, midi);
     }
 
-    const auto start = std::chrono::steady_clock::now();
+    Result r;
+    const double budgetNs = blockSize / kSampleRate * 1e9;
+    double elapsedNs = 0.0;
     double checksum = 0.0;
     bool finite = true;
     double peak = 0.0;
     for (int b = 0; b < blocks; ++b) {
         buffer.makeCopyOf(input);
-        processor.processBlock(buffer, midi);
+        const auto cost = measureBlock(processor, buffer, midi);
+        elapsedNs += cost.wallNs;
+        r.missed.count(cost, budgetNs);
         checksum += buffer.getSample(0, blockSize / 2);
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
             for (int i = 0; i < blockSize; ++i) {
@@ -138,12 +220,9 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
                 peak = std::max(peak, static_cast<double>(std::abs(x)));
             }
     }
-    const auto end = std::chrono::steady_clock::now();
-
-    const double seconds = std::chrono::duration<double>(end - start).count();
+    const double seconds = elapsedNs * 1e-9;
     const double audioSeconds = static_cast<double>(blocks) * blockSize / kSampleRate;
 
-    Result r;
     r.usPerBlock = seconds / blocks * 1.0e6;
     r.nsPerInputSample = seconds / (static_cast<double>(blocks) * blockSize) * 1.0e9;
     r.realtimePercent = 100.0 * seconds / audioSeconds;
@@ -168,12 +247,17 @@ bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurr
 
 // Plays a WAV through processBlock() one callback at a time and reports the
 // spread of callback cost against the block's real-time budget (--wav).
-int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent) {
+int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent, BenchMode mode) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
     if (reader == nullptr) {
         std::printf("cannot read %s\n", wav.getFullPathName().toRawUTF8());
+        return 1;
+    }
+    if (blockSize <= 0 || reader->lengthInSamples < blockSize ||
+        reader->lengthInSamples > std::numeric_limits<int>::max()) {
+        std::fprintf(stderr, "WAV length and block size must allow at least one complete callback\n");
         return 1;
     }
     const double fs = reader->sampleRate;
@@ -184,6 +268,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
+    std::printf("quality=%s\n", selectMode(processor, mode));
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -191,23 +276,24 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     }
     juce::AudioBuffer<float> buffer(2, blockSize);
     juce::MidiBuffer midi;
+    if (mode != BenchMode::Accurate &&
+        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        return 1;
     const double budgetNs = blockSize / fs * 1.0e9;
+    DeadlineMisses missed;
     std::vector<double> wall, cpu;
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
     for (int start = 0; start + blockSize <= frames; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
-        const ThreadUsage u0 = threadUsage();
-        const auto w0 = std::chrono::steady_clock::now();
-        processor.processBlock(buffer, midi);
-        const auto w1 = std::chrono::steady_clock::now();
-        const ThreadUsage u1 = threadUsage();
-        wall.push_back(100.0 * std::chrono::duration<double, std::nano>(w1 - w0).count() / budgetNs);
-        cpu.push_back(100.0 * (u1.cpuNs - u0.cpuNs) / budgetNs);
-        allocs += u1.allocs - u0.allocs;
-        allocBlocks += u1.allocs != u0.allocs;
-        faults += u1.faults - u0.faults;
-        faultBlocks += u1.faults != u0.faults;
+        const auto cost = measureBlock(processor, buffer, midi);
+        missed.count(cost, budgetNs);
+        wall.push_back(100.0 * cost.wallNs / budgetNs);
+        cpu.push_back(100.0 * cost.cpuNs / budgetNs);
+        allocs += cost.allocs;
+        allocBlocks += cost.allocs != 0;
+        faults += cost.faults;
+        faultBlocks += cost.faults != 0;
     }
     const auto spread = [](std::vector<double>& v) {
         std::sort(v.begin(), v.end());
@@ -223,6 +309,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
                 allocs, allocBlocks, faults, faultBlocks);
 #endif
     std::printf("\n");
+    missed.print(wall.size());
     return 0;
 }
 
@@ -2253,7 +2340,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--fast-live]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2276,7 +2363,7 @@ int main(int argc, char** argv) {
     bool wiring = false;
     bool sweep = false;
     bool runtimeCheck = false;
-    float solveQuality = 0.0f;
+    std::optional<BenchMode> mode;
     std::string spiceDir;
     std::string probeCsv;
     std::string pluginProbeCsv;
@@ -2300,8 +2387,12 @@ int main(int argc, char** argv) {
             sweep = true;
         else if (arg == "--runtime-check")
             runtimeCheck = true;
-        else if (arg == "--fast-live" || arg == "--live-preview")
-            solveQuality = 1.0f;
+        else if (arg == "--accurate")
+            mode = BenchMode::Accurate;
+        else if (arg == "--fast-live")
+            mode = BenchMode::FastLive;
+        else if (arg == "--live-preview")
+            mode = BenchMode::CompiledPreview;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)
@@ -2354,16 +2445,16 @@ int main(int argc, char** argv) {
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
     if (!wavPath.empty())
-        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent);
+        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent, mode.value_or(BenchMode::FastLive));
 
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
-    auto* quality = processor.getAPVTS().getParameter("solve_quality");
-    quality->setValueNotifyingHost(quality->convertTo0to1(solveQuality));
+    const auto benchmarkMode = mode.value_or(BenchMode::Accurate);
+    const char* quality = selectMode(processor, benchmarkMode);
 
     std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  quality=%s  circuit=%s\n",
-                kSampleRate, quality->getCurrentValueAsText().toRawUTF8(), file.getFileName().toRawUTF8());
+                kSampleRate, quality, file.getFileName().toRawUTF8());
     std::printf("  block   OS   us/block   ns/in-sample   %% of one 48k core   groups(p/s)\n");
     std::printf("  --------------------------------------------------------------------------\n");
 
@@ -2373,12 +2464,13 @@ int main(int argc, char** argv) {
     for (int choice : choices) {
         for (int blockSize : blockSizes) {
             const int blocks = std::max(128, 400000 / blockSize);
-            const Result r = measure(processor, file, blockSize, choice, blocks);
-            if (r.usPerBlock <= 0.0) continue;
+            const Result r = measure(processor, file, blockSize, choice, blocks, benchmarkMode);
+            if (r.usPerBlock <= 0.0) return 1;
             std::printf("  %5d   %dx   %8.2f   %12.1f   %15.2f%%   %d/%d   peak=%.6g %s\n",
                         blockSize, 1 << choice, r.usPerBlock, r.nsPerInputSample,
                         r.realtimePercent, r.potGroups, r.switchGroups, r.peak,
                         r.finite ? "finite" : "NON-FINITE");
+            r.missed.print(static_cast<size_t>(blocks));
         }
     }
 
