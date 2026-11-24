@@ -354,6 +354,56 @@ TEST_CASE("Shared Newton eliminates only identity rows with zero current correct
     }
 }
 
+TEST_CASE("The op-amp sensing ports retain their solved voltages when their zero currents are removed",
+          "[engine][newton][preview]") {
+    constexpr int ports = 12;
+    std::vector<wdf::RootDevice> devices;
+    std::vector<int> columns;
+    std::vector<double> z(ports * ports), jac(ports * ports), f(ports);
+    for (int port = 0; port < ports; ++port) {
+        columns.push_back(port);
+        f[port] = std::sin(.4 + port);
+        for (int col = 0; col < ports; ++col)
+            z[port * ports + col] = .15 * std::cos((1 + port) * (1 + col));
+        if (port % 3 != 0) continue;
+        devices.push_back({wdf::DeviceKind::OpAmp, port, 3, port, 3, devices.size()});
+        jac[port * ports + port] = .1;
+        jac[port * ports + port + 1] = -.75;
+        jac[port * ports + port + 2] = .75;
+    }
+    wdf::solver::SharedNewtonColumns plan;
+    plan.prepare(z, ports, ports, devices);
+    for (int step = 0; step < 2; ++step) {
+        // A knob may change the physical sensing columns, even though no
+        // correction current is injected along them.
+        z[2] += .07;
+        plan.refresh(z, ports, ports);
+        REQUIRE(plan.available());
+        std::vector<double> current(ports), physicalResidual(ports), packedResidual(ports), open(ports);
+        for (int port = 0; port < ports; port += 3) current[port] = .0005 * (port + 1.);
+        REQUIRE(plan.residual(f.data(), open.data(), current.data(), columns.data(), ports, packedResidual.data()));
+        wdf::solver::RootResidual::residualInto(f.data(), open.data(), z.data(), current.data(),
+            physicalResidual.data(), columns.data(), ports, ports);
+        for (int port = 0; port < ports; ++port)
+            REQUIRE(std::abs(packedResidual[port] - physicalResidual[port]) < 1.e-13);
+        // A future stamp could draw constant input bias while its incremental
+        // input conductance stays zero. Preserve it in the full physical residual.
+        current[1] = 0.2e-6;
+        REQUIRE_FALSE(plan.residual(f.data(), open.data(), current.data(), columns.data(), ports, packedResidual.data()));
+        std::vector<double> matrix(ports * ports), rhs(ports), expected(ports), actual(ports);
+        wdf::solver::RootJacobian::reducedAssembleFast(z.data(), jac.data(), f.data(), ports, ports,
+            devices.data(), devices.size(), matrix.data(), rhs.data());
+        REQUIRE(wdf::solver::RootJacobian::reducedFinishFast(matrix.data(), rhs.data(), ports,
+            z.data(), f.data(), ports, expected.data()));
+        plan.assemble(jac.data(), f.data(), ports, columns.data(), devices);
+        REQUIRE(plan.finish(f.data(), ports, actual.data()));
+        for (int port = 0; port < ports; ++port)
+            REQUIRE(std::abs(actual[port] - expected[port]) < 1.e-12);
+        // On the next sample the first amp is at a rail and has no differential gain.
+        jac[1] = jac[2] = 0.;
+    }
+}
+
 TEST_CASE("Preview skips a failed Newton retry only for identical starting voltages", "[newton][preview]") {
     const auto circuit = lwdf_test::diodeClipper();
     wdf::Engine reference(circuit, kFs), preview(circuit, kFs);
@@ -381,6 +431,7 @@ TEST_CASE("Preview skips a failed Newton retry only for identical starting volta
     CHECK(reference.newtonIterations() == 2);
     CHECK(preview.newtonIterations() == (changedHistory ? 2 : 1));
 }
+
 
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
     constexpr int rows = 35, cols = 12, groups = 4;

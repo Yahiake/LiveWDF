@@ -4,6 +4,7 @@
 #include "wdf/DenseTopology.h"
 #include <algorithm>
 #include <cmath>
+#include <span>
 #include <vector>
 
 namespace wdf::solver {
@@ -13,11 +14,24 @@ namespace wdf::solver {
 // This preserves the device laws and the full-network Newton residual.
 class SharedNewtonColumns {
 public:
-    void prepare(const std::vector<double>& z, int rows, int cols) {
+    void prepare(const std::vector<double>& z, int rows, int cols, std::span<const RootDevice> devices = {}) {
         *this = {};
         if (cols <= 8 || z.size() != size_t(rows) * cols)
             return;
+        // The two sensing terminals of the op-amp stamp draw identically zero
+        // current. Their voltages still enter its output law and the full residual.
+        std::vector<bool> zeroCurrent(cols);
+        for (const auto& device : devices) {
+            if (device.kind == DeviceKind::OpAmp && device.numActiveRows == 3) {
+                zeroCurrent[device.activeRowBase + 1] = true;
+                zeroCurrent[device.activeRowBase + 2] = true;
+            }
+        }
         for (int j = 0; j < cols; ++j) {
+            if (zeroCurrent[j]) {
+                members_.push_back({-1, 0});
+                continue;
+            }
             auto matches = [&](int column, int sign) {
                 for (int i = 0; i < rows; ++i) {
                     const double* row = z.data() + size_t(i) * cols;
@@ -63,7 +77,7 @@ public:
             for (int g = 0; g < groups; ++g) compact[g] = row[representatives_[g]];
             for (int j = 0; j < cols; ++j) {
                 const auto [group, sign] = members_[j];
-                if (row[j] != (sign ? sign * compact[group] : 0.0)) return;
+                if (group >= 0 && row[j] != (sign ? sign * compact[group] : 0.0)) return;
             }
         }
         // Each group supplies one scalar current to several independent voltage
@@ -106,14 +120,16 @@ public:
 
     // F = v - vOc + C (S i). Use the same grouping for residual checks and
     // Newton corrections, including each line-search trial.
-    void residual(const double* v, const double* vOc, const double* currents,
+    bool residual(const double* v, const double* vOc, const double* currents,
                   const int* activePorts, int rows, double* f) noexcept {
         std::fill(rhs_.begin(), rhs_.end(), 0.);
         for (size_t j = 0; j < members_.size(); ++j) {
             const auto [group, sign] = members_[j];
             if (sign) rhs_[group] += sign * currents[activePorts[j]];
+            else if (group < 0 && currents[activePorts[j]] != 0.) return false;
         }
         multiply(packed_.data(), rhs_.data(), int(rhs_.size()), v, vOc, rows, f);
+        return true;
     }
 
     bool finish(const double* f, int rows, double* dv) noexcept {

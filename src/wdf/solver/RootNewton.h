@@ -127,9 +127,10 @@ public:
     static inline void residualInto(const NewtonContext& ctx, const std::vector<double>& v,
                                     const std::vector<double>& vOc, const std::vector<double>& Z,
                                     const std::vector<double>& i, std::vector<double>& F) noexcept {
-        if (ctx.sharedColumns) {
-            ctx.sharedColumns->residual(v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data());
-        } else if (!ctx.Zred.empty()) {
+        if (ctx.sharedColumns && ctx.sharedColumns->residual(
+                v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data()))
+            return;
+        if (!ctx.Zred.empty()) {
             RootResidual::residualIntoFast(
                 v.data(), vOc.data(), ctx.Zred.data(), i.data(), F.data(),
                 ctx.redCol.data(), ctx.nRed, ctx.K);
@@ -326,7 +327,10 @@ public:
             tPhase = tick();
             bool stepHasJ = false;
             double ftNorm = 0.0;
-            for (int h = 0; h < 4; ++h) {
+            // Near a hard op-amp rail the fourth trial can still worsen the
+            // full residual. A few more backtracks avoid a discarded sample.
+            const int maxTrials = ctx.sharedColumns && !ctx.opAmps.empty() ? 10 : 4;
+            for (int h = 0; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
                 for (int r = 0; r < ctx.K; ++r)
                     ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + stepSize * ctx.dv[static_cast<size_t>(r)];
@@ -342,7 +346,7 @@ public:
                 }
                 residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
                 ftNorm = maxAbs(ctx.ft, ctx.K);
-                if (ftNorm <= base || h == 3)
+                if (ftNorm <= base || h + 1 == maxTrials)
                     break;
                 stepSize = clampAwareStep(ctx, stepSize);
             }

@@ -98,7 +98,7 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode, requestedPeak, allowPad))
         return;
     prepareLoadedJunctionPreview(inputSource);
-    sharedNewtonColumns_.prepare(Zred_, K_, nRed_);
+    sharedNewtonColumns_.prepare(Zred_, K_, nRed_, rootDevices_);
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
