@@ -20,10 +20,10 @@ double profileSeconds() noexcept {
 
 // The two worker-owned engines start at their DC point with the same controls.
 // Compare the existing Fast Live solver to exactly the plan being published.
-bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int output) {
+bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int output,
+                        bool referenceCompiled, std::chrono::steady_clock::time_point stop) {
     constexpr size_t blocks = 32, frames = 128;
     using Clock = std::chrono::steady_clock;
-    const auto stop = Clock::now() + std::chrono::milliseconds(350);
     std::array<std::array<double, blocks>, 2> elapsed{};
     std::array<std::array<double, frames>, 2> audio{};
     std::array<double, frames> drive{};
@@ -32,7 +32,7 @@ bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int 
     const double rate = reference.fs();
     std::array<Engine*, 2> engines{&reference, &candidate};
     candidate.useCircuitPlan(true);
-    reference.useCircuitPlan(false);
+    reference.useCircuitPlan(referenceCompiled);
     const double secondsPerBlock = frames / rate;
     int misses[2]{};
     for (size_t b = 0; b < blocks; ++b) {
@@ -81,24 +81,44 @@ bool Engine::LiveTransferSetup::screenCircuitPlan(LiveTransferSetup& peer, size_
         return false;
     auto& candidate = *prepared_;
     auto& reference = *peer.prepared_;
-    const bool eligible = !candidate.rootFactors_.empty() || candidate.hasLinearDrivePlan();
+    const bool eligible = !candidate.rootFactors_.empty() || candidate.hasLinearDrivePlan() ||
+                          candidate.hasAffineRootPlan();
     if (eligible && maskCount_ == peer.maskCount_ &&
         std::equal(affineMasks_.begin(), affineMasks_.begin() + maskCount_, peer.affineMasks_.begin()) &&
         rate_ == peer.rate_ && candidate.net_.eG == reference.net_.eG &&
         inputSource < candidate.dcValues().size() && candidate.dcValues() == reference.dcValues() &&
-        outputNode >= 0 && outputNode < candidate.N_ && outputNode < reference.N_ &&
-        winsPlaybackScreen(candidate, reference, inputSource, outputNode)) {
-        // Screening can refactor the candidate at a hot sample. Publish the
-        // same initial tangent to both channels; the reference never used it.
-        candidate.rootFactors_ = reference.rootFactors_;
-        candidate.rootPivots_ = reference.rootPivots_;
-        candidate.circuitPlanRetry_ = reference.circuitPlanRetry_;
-        return true;
+        outputNode >= 0 && outputNode < candidate.N_ && outputNode < reference.N_) {
+        const auto stop = std::chrono::steady_clock::now() + std::chrono::milliseconds(350);
+        if (candidate.hasAffineRootPlan()) {
+            // Pay for a direct candidate only if it beats the already prepared
+            // nonlinear predictor. Compare both from the same physical reset.
+            auto direct = std::move(reference.affineRoot_);
+            const auto initialFactors = reference.rootFactors_;
+            const auto initialPivots = reference.rootPivots_;
+            if (winsPlaybackScreen(candidate, reference, inputSource, outputNode, true, stop))
+                reference.affineRoot_ = std::move(direct);
+            else
+                candidate.affineRoot_ = {};
+            for (auto* engine : {&candidate, &reference}) {
+                engine->rootFactors_ = initialFactors;
+                engine->rootPivots_ = initialPivots;
+                engine->reset();
+            }
+        }
+        if (winsPlaybackScreen(candidate, reference, inputSource, outputNode, false, stop)) {
+            // Screening can refactor the candidate at a hot sample. Publish
+            // the same initial tangent to both newly installed channels.
+            candidate.rootFactors_ = reference.rootFactors_;
+            candidate.rootPivots_ = reference.rootPivots_;
+            candidate.circuitPlanRetry_ = reference.circuitPlanRetry_;
+            return true;
+        }
     }
 
     for (auto* engine : {&candidate, &reference}) {
         engine->driveCoefficients_.clear();
         engine->driveInputs_.clear();
+        engine->affineRoot_ = {};
         engine->rootFactors_.clear();
         engine->circuitResidualColumns_.clear();
         engine->rootPivots_.clear();

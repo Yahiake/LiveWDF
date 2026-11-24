@@ -20,6 +20,8 @@ public:
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
         circuitPlanCooldown_ = 0;
+        affineRootCooldown_ = 0;
+        affineRootRetry_ = 8;
         circuitPlanRetry_ = 8;
         resetControlledDevices();
         std::vector<double> node, rootV;
@@ -177,6 +179,11 @@ public:
     bool hasLinearDrivePlan() const noexcept {
         return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
     }
+    bool hasAffineRootPlan() const noexcept {
+        return circuitPlanPrepared() && !hasAdjustedLiveTransfer() && !affineRoot_.rows.empty();
+    }
+    long long affineRootAttempts() const noexcept { return affineRootAttempts_; }
+    long long affineRootHits() const noexcept { return affineRootHits_; }
     long long circuitPlanAttempts() const noexcept { return circuitPlanAttempts_; }
     long long circuitPlanHits() const noexcept { return circuitPlanHits_; }
 
@@ -195,6 +202,23 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    struct AffineRootPlan {
+        struct CurrentRow {
+            int port, pole;
+            double conductance, differential, poleGain;
+        };
+        std::vector<CurrentRow> rows;
+        std::vector<double> inverse, impedance, drive, current;
+    };
+    void prepareAffineRoot();
+    bool opAmpsOnLinearBranch(const std::vector<double>& voltage) const noexcept;
+    bool tryAffineRoot(double tolerance) noexcept;
+    bool circuitRootContinuous() const noexcept;
+    void acceptCircuitRoot(double error) noexcept;
+    AffineRootPlan affineRoot_;
+    std::vector<double> certifiedResistance_;
+    long long affineRootAttempts_ = 0, affineRootHits_ = 0;
+    int affineRootCooldown_ = 0, affineRootRetry_ = 8;
     bool factorCircuitTangent(const std::vector<double>& jacobian) noexcept;
     bool tryCompiledRoot(double tolerance) noexcept;
     bool applyCompiledDrive(const double* sources, size_t count) noexcept;

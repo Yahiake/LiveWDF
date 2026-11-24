@@ -71,6 +71,10 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     auto& preparedEngine = *setup.prepared_;
     driveCoefficients_.swap(preparedEngine.driveCoefficients_);
     driveInputs_.swap(preparedEngine.driveInputs_);
+    std::swap(affineRoot_, preparedEngine.affineRoot_);
+    certifiedResistance_.swap(preparedEngine.certifiedResistance_);
+    affineRootCooldown_ = 0;
+    affineRootRetry_ = 8;
     rootFactors_.swap(preparedEngine.rootFactors_);
     circuitResidualColumns_.swap(preparedEngine.circuitResidualColumns_);
     rootPivots_.swap(preparedEngine.rootPivots_);

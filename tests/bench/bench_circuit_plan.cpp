@@ -108,6 +108,7 @@ void run(const std::string& name, bool screen) {
     std::array<double, frames> stimulus{};
     double peakError = 0.0, squaredError = 0.0, peak = 0.0;
     long long attempts = 0, hits = 0;
+    long long affineAttempts = 0, affineHits = 0;
     for (int b = -warmup; b < blocks; ++b) {
         // Quiet passage, 360 mV hard attack, release and silence. Identical input
         // for each engine. Sample generation and comparison are outside timing.
@@ -123,6 +124,8 @@ void run(const std::string& name, bool screen) {
         if (b == 0) {
             attempts = candidate.circuitPlanAttempts();
             hits = candidate.circuitPlanHits();
+            affineAttempts = candidate.affineRootAttempts();
+            affineHits = candidate.affineRootHits();
             for (int m = 0; m < 2; ++m)
                 rejects[m] = engines[m]->stateRejectCount();
         }
@@ -153,13 +156,14 @@ void run(const std::string& name, bool screen) {
     }
     for (auto& side : times)
         std::sort(side.ms.begin(), side.ms.end());
-    std::printf("%s | %s | %d | %.4f %.4f | %.4f %.4f | %zu %zu | %lld/%lld | %lld %lld %d | %.7g %.7g %.7g\n",
+    std::printf("%s | %s | %d | %.4f %.4f | %.4f %.4f | %zu %zu | %lld/%lld | %lld %lld %d | %.7g %.7g %.7g | %lld/%lld\n",
                 name.c_str(), policy, int(drive), times[0].quantile(.5), times[1].quantile(.5),
                 times[0].quantile(.99), times[1].quantile(.99), times[0].missed(), times[1].missed(),
                 candidate.circuitPlanHits() - hits, candidate.circuitPlanAttempts() - attempts,
                 reference.stateRejectCount() - rejects[0], candidate.stateRejectCount() - rejects[1],
                 rejectionMismatches,
-                peakError, std::sqrt(squaredError / (blocks * frames)), peak);
+                peakError, std::sqrt(squaredError / (blocks * frames)), peak,
+                candidate.affineRootHits() - affineHits, candidate.affineRootAttempts() - affineAttempts);
     std::fflush(stdout);
 }
 } // namespace
@@ -171,7 +175,7 @@ int main(int argc, char** argv) {
     std::puts("Wall clock time (engine only)");
 #endif
     std::puts("48 kHz mono 1x | 128 frames | 375 paired blocks | times in ms, reference then compiled");
-    std::puts("fixture | policy | drive plan | median | p99 | missed | root hits/attempts | rejected reference/compiled/mismatched | peak error / RMS error / reference peak (V)");
+    std::puts("fixture | policy | drive plan | median | p99 | missed | root hits/attempts | rejected reference/compiled/mismatched | peak error / RMS error / reference peak (V) | affine hits/attempts");
     try {
         const bool screen = argc > 1 && std::string(argv[1]) == "--screen";
         const int first = screen ? 2 : 1;

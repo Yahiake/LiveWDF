@@ -184,7 +184,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     tock(prof_.network);
 
     const long long fallbacksBefore = blockFallbacks_;
-    const bool compiledRoot = compiled && maxIter >= 4 && !rootFactors_.empty() && explicitRootsAllowed_ &&
+    const bool compiledRoot = compiled && maxIter >= 4 && (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol);
     if (K_ > 0 && !compiledRoot) {
         // The runtime partition is an experiment on top of the reference

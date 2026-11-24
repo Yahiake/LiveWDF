@@ -110,3 +110,99 @@ TEST_CASE("Screened worker plans follow switch revisions without replacing live 
     REQUIRE(live.linearRebuilds() == revision);
     REQUIRE_FALSE(live.installLiveTransferSetup(updated));
 }
+
+TEST_CASE("Prepared op-amp roots follow physical rails and pole memory across solver changes",
+          "[engine][circuit-plan][opamp]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "inv1", 10000);
+    c.addRes("out1", "inv1", 33000);
+    c.addRes("out1", "inv2", 10000);
+    c.addRes("out2", "inv2", 22000);
+    c.addRes("out2", "inv1", 330000);
+    c.addCap("out2", "inv2", 100e-12);
+    c.addRes("out2", "0", 10000);
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(5.0, 5.0);
+    c.addOpAmp("out1", "inv1", "0", "0", "0", model, "U1");
+    c.addOpAmp("out2", "inv2", "0", "0", "0", model, "U2");
+
+    wdf::Engine compiled(c, 48000), reference(c, 48000);
+    compiled.prepareCircuitPlan();
+    REQUIRE(compiled.hasAffineRootPlan());
+    compiled.useCircuitPlan(true);
+    const auto out = compiled.nodeIndex("out2");
+    double peak = 0.0;
+    long long hitsBeforeRecovery = 0, attemptsWhileDisabled = 0;
+    for (int n = 0; n < 2048; ++n) {
+        if (n == 1024 || n == 1536) {
+            reference.setAllOpAmpSoftRails(n == 1024);
+            compiled.setAllOpAmpSoftRails(n == 1024);
+        }
+        if (n == 1280 || n == 1408)
+            compiled.useCircuitPlan(n == 1408);
+        const double amplitude = (n >= 512 && n < 1024) ? 1.6 : 0.02;
+        const double input = amplitude * std::sin(0.026 * n);
+        const auto& expected = reference.step(&input, 1);
+        const auto& actual = compiled.step(&input, 1, 60, wdf::Engine::kFastLiveTolerance);
+        REQUIRE_FALSE(reference.lastStateRejected());
+        REQUIRE_FALSE(compiled.lastStateRejected());
+        for (size_t node = 0; node < actual.size(); ++node)
+            REQUIRE(actual[node] == Approx(expected[node]).margin(2e-6));
+        peak = std::max(peak, std::abs(expected[out]));
+        if (n == 511)
+            REQUIRE(compiled.affineRootHits() > 0);
+        if (n == 1023) {
+            hitsBeforeRecovery = compiled.affineRootHits();
+            REQUIRE(compiled.affineRootAttempts() > hitsBeforeRecovery);
+        }
+        if (n == 1279)
+            attemptsWhileDisabled = compiled.affineRootAttempts();
+        if (n == 1407)
+            REQUIRE(compiled.affineRootAttempts() == attemptsWhileDisabled);
+    }
+    REQUIRE(peak > 4.9);
+    REQUIRE(compiled.affineRootHits() > hitsBeforeRecovery);
+}
+
+TEST_CASE("Enabling a circuit plan preserves hysteresis through positive feedback",
+          "[engine][circuit-plan][opamp]") {
+    const bool coupled = GENERATE(false, true);
+    for (const double initial : {-1.0, 1.0}) {
+        CAPTURE(initial, coupled);
+        wdf::Circuit c;
+        c.addSrc("in", "0", initial);
+        c.addRes("positive", "0", 1000);
+        c.addRes("out", "0", 10000);
+        auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+        model.setVRails(5.0, 5.0);
+        if (!coupled) {
+            c.addRes("out", "positive", 19000);
+        } else {
+            c.addRes("out2", "positive", 4000);
+            c.addRes("out", "positive2", 4000);
+            c.addRes("positive2", "0", 1000);
+            c.addRes("out2", "0", 10000);
+            c.addOpAmp("out2", "0", "positive2", "0", "0", model, "U2");
+        }
+        c.addOpAmp("out", "in", "positive", "0", "0", model, "U1");
+        wdf::Engine candidate(c, 48000), reference(c, 48000);
+        const int out = reference.nodeIndex("out");
+        candidate.prepareCircuitPlan();
+        for (int n = 0; n < 512; ++n) {
+            candidate.useCircuitPlan(n >= 128);
+            double input = 0.0;
+            if (n < 32)
+                input = initial;
+            else if (n >= 256 && n < 288)
+                input = -initial;
+            const auto expected = reference.step(&input, 1, 60, wdf::Engine::kFastLiveTolerance)[out];
+            const auto actual = candidate.step(&input, 1, 60, wdf::Engine::kFastLiveTolerance)[out];
+            REQUIRE(actual == Approx(expected).margin(2e-6));
+            if (n == 255)
+                REQUIRE(actual * initial < -4.8);
+            if (n == 511)
+                REQUIRE(actual * initial > 4.8);
+        }
+    }
+}
