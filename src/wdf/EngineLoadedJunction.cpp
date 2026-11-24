@@ -331,6 +331,8 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
             p.revision = -1;
             return false;
         }
+        for (auto& guard : p.reverseCutoffs)
+            guard.maxVbc = reverseCutoffVoltage(bjts_[guard.device], Z_, K_, guard.port, kFastLiveTolerance / nBjt_);
         p.seed = true;
         p.cooldown = p.misses = 0;
     }

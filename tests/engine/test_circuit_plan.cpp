@@ -541,6 +541,18 @@ struct ReversePlanProbe : wdf::Engine {
     using Engine::Engine;
     size_t cutoffCount() const { return loadedJunction_.reverseCutoffs.size(); }
     double cutoffVoltage() const { return loadedJunction_.reverseCutoffs.at(0).maxVbc; }
+    double omittedVoltageResidual() const {
+        const auto& guard = loadedJunction_.reverseCutoffs.at(0);
+        const auto& bjt = bjts_[guard.device];
+        const double reverse = bjt.Is * std::exp(guard.maxVbc / bjt.nrVt);
+        double worst = 0.;
+        for (int i = 0; i < K_; ++i) {
+            const auto* row = Z_.data() + i * K_;
+            const double omitted = reverse * (row[guard.port] / bjt.alphaR - row[guard.port + 1] / bjt.Br);
+            worst = std::max(worst, std::abs(omitted));
+        }
+        return worst;
+    }
     bool prepareGuardedVariant() {
         bool negativeReverse = false;
         return buildLoadedJunctionPlan(std::vector<bool>(nOpAmp_, false),
@@ -602,21 +614,25 @@ TEST_CASE("High leakage and resistance narrow the permissible reverse-junction r
           "[engine][circuit-plan][reverse-cutoff]") {
     wdf::Circuit c;
     c.addSrc("rail", "0", 9.);
-    c.addRes("rail", "collector", 1e6);
+    c.addVarRes("rail", "collector", 2e6, .5);
     c.addRes("base", "0", 1000.);
-    wdf::BjtModel model;
-    model.Is = 1e-7;
+    const wdf::BjtModel model{1e-7, 100., 1., 1., 1.};
     c.addBjt("collector", "base", "0", model, "Q");
     c.addDiode("base", "0", wdf::DiodeModel(1e-14, 1.6, 4.0), "D");
     ReversePlanProbe preview(c, 48000.);
+    preview.prepareLiveControls();
     REQUIRE(preview.prepareGuardedVariant());
     REQUIRE(preview.cutoffCount() == 1);
     // Even through the 1 MΩ collector, the omitted IC contribution stays
     // below the Fast Live root residual budget.
     const double cutoff = preview.cutoffVoltage();
     REQUIRE(cutoff < -12. * model.Nr * model.Vt);
-    REQUIRE(1e6 * model.Is * (1. + 1. / model.Br) * std::exp(cutoff / (model.Nr * model.Vt))
-            <= wdf::Engine::kFastLiveTolerance);
+    REQUIRE(preview.omittedVoltageResidual() <= wdf::Engine::kFastLiveTolerance + 1e-18);
+    preview.useLoadedJunctionPreview(true);
+    REQUIRE(preview.setLiveControls({}, {{0, 1.}}));
+    preview.step(preview.dcValues());
+    REQUIRE(preview.cutoffVoltage() < cutoff);
+    REQUIRE(preview.omittedVoltageResidual() <= wdf::Engine::kFastLiveTolerance + 1e-18);
 }
 
 TEST_CASE("The loaded solver retries a negative reverse-branch resistance on a compressor",
