@@ -208,8 +208,10 @@ public:
     }
 
     /// One pass of `solveRootsNewton`, with or without the extrapolated seed.
-    static inline void solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
-                                           bool usePrediction, bool useCurrentSeed = false) noexcept {
+    static inline bool solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
+                                           bool usePrediction, bool useCurrentSeed = false,
+                                           bool allowExtraBacktracking = true) noexcept {
+        bool usedExtraBacktracking = false;
         const long long jointIt0 = ctx.newtonIters;
         const long long jointTr0 = ctx.lineTrials;
         using clk = std::chrono::steady_clock;
@@ -332,8 +334,9 @@ public:
             double ftNorm = 0.0;
             // Near a hard op-amp rail the fourth trial can still worsen the
             // full residual. A few more backtracks avoid a discarded sample.
-            const int maxTrials = compact && !ctx.opAmps.empty() ? 10 : 4;
-            for (int h = 0; h < maxTrials; ++h) {
+            const int maxTrials = allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4;
+            int h = 0;
+            for (; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
                 for (int r = 0; r < ctx.K; ++r)
                     ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + stepSize * ctx.dv[static_cast<size_t>(r)];
@@ -353,6 +356,7 @@ public:
                     break;
                 stepSize = clampAwareStep(ctx, stepSize);
             }
+            usedExtraBacktracking |= h >= 4;
             if (ctx.prof)
                 tock(ctx.prof->linesearch);
 
@@ -411,6 +415,7 @@ public:
         ctx.lastConverged = reached || ((kept_best ? ctx.bestFn : finalFn) < tol);
         ctx.jointLastIters = ctx.newtonIters - jointIt0;
         ctx.jointLastTrials = ctx.lineTrials - jointTr0;
+        return usedExtraBacktracking;
     }
 
     static bool pinDomains(NewtonContext& ctx, const BlockView& view) noexcept {
@@ -439,11 +444,11 @@ public:
                                         const BlockView& view, std::vector<double>& vvPrev,
                                         std::vector<double>& vvPrev2) noexcept {
         pinDomains(ctx, view);
-        solveRootsNewtonPass(ctx, maxIter, tol, true, false);
-        // The device laws and pinned domains stay fixed between these two passes.
-        if (!ctx.lastConverged && (!ctx.skipIdenticalRetry || predictionChangesSeed(ctx))) {
-            solveRootsNewtonPass(ctx, maxIter, tol, false, false);
-        }
+        const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
+        // A failed deeply damped search can stall near a switching boundary.
+        // With the usual four trials, the retry takes a different path even from the same voltage.
+        if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || predictionChangesSeed(ctx)))
+            solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
@@ -454,9 +459,9 @@ public:
                                               const BlockView& view, std::vector<double>& vvPrev,
                                               std::vector<double>& vvPrev2) noexcept {
         pinDomains(ctx, view);
-        solveRootsNewtonPass(ctx, maxIter, tol, false, true);
+        const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, false, true);
         if (!ctx.lastConverged)
-            solveRootsNewtonPass(ctx, maxIter, tol, false, false);
+            solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
