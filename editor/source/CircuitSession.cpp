@@ -3,6 +3,8 @@
 #include "format/PartLibrary.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <set>
 
 namespace livewdf::editor {
@@ -172,6 +174,63 @@ bool CircuitSession::compile(const wdf::LiveWDFDocument& doc, double fs) {
     solveDcNow();
     reset();
     return true;
+}
+
+CircuitSession::OutputCalibration CircuitSession::measureOutputReference(
+    const wdf::LiveWDFDocument& doc, const std::atomic_bool& cancel) {
+    constexpr int rate = 48000;
+    if (cancel.load()) return {0., "Cancelled"};
+    CircuitSession session;
+    if (!session.compile(doc, rate)) return {0., session.lastError()};
+    if (session.inputSourceIndex() < 0 || session.outputIndex() < 0)
+        return {0., "Connect the audio input and output."};
+    if (!session.dcConverged()) return {0., "DC operating point did not converge."};
+
+    // One period of a broadband, -9 dBFS peak drive. Integer cycles give an
+    // exact RMS reference and identical measurements on repeated runs.
+    constexpr int period = rate / 125;
+    std::array<double, period> signal{};
+    constexpr int harmonics[] = {1, 3, 7, 15, 31, 63};
+    constexpr double weights[] = {1., .8, .6, .45, .32, .22};
+    for (int i = 0; i < period; ++i) {
+        const double phase = 2. * std::acos(-1.) * i / period;
+        for (int k = 0; k < 6; ++k)
+            signal[i] += weights[k] * std::cos(harmonics[k] * phase);
+        signal[i] *= std::pow(10., -9. / 20.) / 3.39;
+    }
+
+    constexpr int warm = 32 * period;
+    constexpr int active = 96 * period;
+    constexpr int measureFrom = warm + 16 * period;
+    constexpr int tail = 64 * period;
+    const double inputScale = doc.inputVoltsPerFullScale();
+    double inputPower = 0., outputPower = 0., mean = 0., peak = 0.;
+    for (int n = 0; n < warm + active + tail; ++n) {
+        if (n % 64 == 0 && cancel.load()) return {0., "Cancelled"};
+        const int i = n - warm;
+        double dry = 0.;
+        if (i >= 0 && i < active) {
+            const double envelope = std::min({1., double(i) / period, double(active - i) / period});
+            dry = signal[i % period] * envelope;
+        }
+        const double wet = session.step(inputScale * dry)[session.outputIndex()];
+        if (session.engine_->lastStateRejected() || !std::isfinite(wet))
+            return {0., "Circuit rejected a test sample."};
+        peak = std::max(peak, std::abs(wet));
+        if (n >= measureFrom && n < warm + active - period) {
+            inputPower += dry * dry;
+            // Welford's AC energy excludes the quiescent output voltage.
+            const double delta = wet - mean;
+            mean += delta / (n - measureFrom + 1);
+            outputPower += delta * (wet - mean);
+        }
+    }
+    if (!(outputPower > (warm + active - period - measureFrom) * 1e-18))
+        return {0., "No measurable AC output."};
+    const double divisor = std::max(std::sqrt(outputPower / inputPower),
+                                    peak * std::pow(10., 1. / 20.));
+    if (!std::isfinite(divisor)) return {0., "Output level is out of range."};
+    return {divisor, {}};
 }
 
 void CircuitSession::clear() {

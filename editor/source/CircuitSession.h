@@ -19,6 +19,7 @@
 #include "dsp/HalfBandOversampler.h"
 #include "wdf/Engine.h"
 
+#include <atomic>
 #include <map>
 #include <memory>
 #include <string>
@@ -41,6 +42,13 @@ public:
     /// A successful compile also solves DC once, so the tables are populated
     /// immediately after an edit rather than on the next audio callback.
     bool compile(const wdf::LiveWDFDocument& doc, double fs);
+
+    struct OutputCalibration {
+        double voltsPerFullScale = 0.;
+        std::string error;
+    };
+    static OutputCalibration measureOutputReference(const wdf::LiveWDFDocument& doc,
+                                                    const std::atomic_bool& cancel);
 
     /// Drop the engine (no circuit / failed circuit).
     void clear();

@@ -1,4 +1,5 @@
 #include "InspectorPanel.h"
+#include "CircuitSession.h"
 #include "DiagLog.h"
 #include "ElementAccess.h"
 #include "devices/Jfet.h"
@@ -12,6 +13,7 @@
 #include "gui/glow/Glow.h"
 
 #include <algorithm>
+#include <future>
 
 namespace livewdf::editor {
 
@@ -49,6 +51,75 @@ juce::String propertyLabel(const std::string& key) {
 
 }  // namespace
 
+struct InspectorPanel::CalibrationJob {
+    std::atomic_bool cancelled{false};
+    std::string sheet;
+    std::future<CircuitSession::OutputCalibration> result;
+};
+
+InspectorPanel::~InspectorPanel() {
+    stopTimer();
+    cancelOutputCalibration();
+}
+
+void InspectorPanel::cancelOutputCalibration() {
+    if (calibration_) calibration_->cancelled = true;
+    calibrationMessage_.clear();
+}
+
+void InspectorPanel::startOutputCalibration() {
+    if (calibration_ || !doc_) return;
+    const auto* output = doc_->terminal("out");
+    if (!output || output->id != id_) return;
+    auto job = std::make_unique<CalibrationJob>();
+    try {
+        job->sheet = doc_->toJson();
+        job->result = std::async(std::launch::async, [doc = *doc_, work = job.get()] {
+            return CircuitSession::measureOutputReference(doc, work->cancelled);
+        });
+        calibration_ = std::move(job);
+        startTimerHz(10);
+    } catch (const std::exception& error) {
+        calibrationMessage_ = error.what();
+    }
+    refreshCalibrationControls();
+}
+
+void InspectorPanel::refreshCalibrationControls() {
+    if (calibrationButton_) {
+        calibrationButton_->setButtonText(calibration_ ? "Measuring..." : "Calibrate output");
+        calibrationButton_->setEnabled(!calibration_);
+    }
+    if (calibrationLabel_) {
+        const auto text = calibrationMessage_.isEmpty() ? juce::String("Output level calibration") : calibrationMessage_;
+        calibrationLabel_->setText(text, juce::dontSendNotification);
+        calibrationLabel_->setTooltip(text);
+    }
+}
+
+void InspectorPanel::timerCallback() {
+    if (!calibration_ || calibration_->result.wait_for(std::chrono::seconds(0)) != std::future_status::ready) return;
+    stopTimer();
+    auto job = std::move(calibration_);
+    CircuitSession::OutputCalibration result;
+    try {
+        result = job->result.get();
+    } catch (const std::exception& error) {
+        result.error = error.what();
+    }
+    if (!job->cancelled && doc_ && doc_->toJson() == job->sheet) {
+        if (result.error.empty()) {
+            commitEdit("fullScaleVolts", juce::String(result.voltsPerFullScale, 15));
+            if (outputReferenceField_)
+                outputReferenceField_->setText(formatValue(doc_->outputFullScaleVolts(), ""), false);
+            calibrationMessage_ = "Measured at -9 dBFS";
+        } else {
+            calibrationMessage_ = result.error;
+        }
+    }
+    refreshCalibrationControls();
+}
+
 InspectorPanel::InspectorPanel() {
     // The rows scroll; the title and Delete button do not. See the member note
     // in the header for why the rows cannot stay direct children of the panel.
@@ -84,6 +155,7 @@ void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id)
     // model change) should not jump away from the row the user is using.
     const bool sameTarget = (doc == doc_ && id == id_);
 
+    if (!sameTarget) cancelOutputCalibration();
     doc_ = doc;
     id_ = id;
     wire_ = {};          // a part target and a wire target are mutually exclusive
@@ -96,6 +168,7 @@ void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id)
 }
 
 void InspectorPanel::setWireTarget(const WireInfo& wire) {
+    cancelOutputCalibration();
     doc_ = nullptr;
     id_.clear();
     wire_ = wire;
@@ -527,8 +600,30 @@ void InspectorPanel::rebuild() {
             commitEdit(captured, e->getText());
         };
         ed->onFocusLost = [ed, this, captured] { commitEdit(captured, ed->getText()); };
+        if (comp.type == "out" && key == "fullScaleVolts") {
+            outputReferenceField_ = ed;
+            ed->onTextChange = [this] {
+                cancelOutputCalibration();
+                refreshCalibrationControls();
+            };
+        }
 
         ++row;
+    }
+
+    const auto* playbackOutput = doc_->terminal("out");
+    if (comp.type == "out" && playbackOutput && playbackOutput->id == comp.id) {
+        auto* label = labels.add(new juce::Label());
+        label->setFont(Fonts::semiBold(11.5f));
+        content_.addAndMakeVisible(label);
+        auto* button = new juce::TextButton();
+        button->setTooltip("Match output to a -9 dBFS multitone at the saved controls. You can edit the measured voltage above.");
+        button->onClick = [this] { startOutputCalibration(); };
+        content_.addAndMakeVisible(button);
+        calibrationButton_ = button;
+        calibrationLabel_ = label;
+        refreshCalibrationControls();
+        editors.add(button);
     }
 
     // **The SPDT throw is an intrinsic control, not a generic property field.**
@@ -713,7 +808,10 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
                 const double original = stored != it->values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
                 if (text == juce::String(formatValue(original, ""))) return;
             }
-            if (outputReference && stored == it->values.end() && value == 1.0) return;
+            if (outputReference) {
+                const double original = stored == it->values.end() ? 1. : stored->second;
+                if (value == original || text == juce::String(formatValue(original, ""))) return;
+            }
             if (stored != it->values.end() && value == stored->second)
                 return;   // nothing changed: nothing to tell the host
             it->values[key] = value;
