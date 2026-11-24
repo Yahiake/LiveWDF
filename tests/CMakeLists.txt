@@ -144,3 +144,17 @@ target_link_libraries(livewdf_bench_parts PRIVATE livewdf_test_support)
 
 add_executable(livewdf_bench_semiconductors bench/bench_semiconductors.cpp)
 target_link_libraries(livewdf_bench_semiconductors PRIVATE livewdf_test_support)
+
+# Compile the generated C++ and compare its stateful output through clipping.
+if(NOT CMAKE_CROSSCOMPILING)
+    add_executable(livewdf_generate_fixtures codegen/generate_fixtures.cpp)
+    target_link_libraries(livewdf_generate_fixtures PRIVATE livewdf livewdf_options)
+    set(generated_steps generated_rlc.h generated_diode.h generated_external.h)
+    add_custom_command(OUTPUT ${generated_steps}
+        COMMAND livewdf_generate_fixtures ${generated_steps}
+        DEPENDS livewdf_generate_fixtures VERBATIM)
+    add_executable(livewdf_test_generated codegen/test_generated.cpp ${generated_steps})
+    target_include_directories(livewdf_test_generated PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(livewdf_test_generated PRIVATE livewdf livewdf_options)
+    add_test(NAME livewdf_test_generated COMMAND livewdf_test_generated)
+endif()

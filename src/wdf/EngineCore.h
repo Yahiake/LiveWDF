@@ -202,6 +202,7 @@ public:
     // re-derived on a pot move; these are read-only views for oracles and tools.
     // ------------------------------------------------------------------ //
     const std::vector<std::array<int, 2>>& rootPorts() const { return net_.rp; }
+    const std::vector<double>& rootCurrents() const { return ii_; }
     const std::vector<double>& rootImpedance() const { return Z_; }
     /// The element-to-node transfer, **column-compacted**: `nLive_ <= P_` columns,
     /// row-major, column `t` belonging to element port `liveElementPorts()[t]`.

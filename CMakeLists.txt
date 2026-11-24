@@ -45,6 +45,9 @@ target_link_libraries(livewdf PRIVATE livewdf_options)
 target_compile_definitions(livewdf PRIVATE LIVEWDF_VERSION_STRING="${PROJECT_VERSION}")
 set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+add_executable(livewdf_codegen tools/codegen/main.cpp)
+target_link_libraries(livewdf_codegen PRIVATE livewdf livewdf_options)
+
 # --- Symbol artwork -----------------------------------------------------------
 # The parts' shapes live as SVG files and are embedded into the binary, exactly as
 # Celine does it -- so redrawing a resistor is editing a file, not a C++ edit,
