@@ -433,6 +433,30 @@ TEST_CASE("Preview skips a failed Newton retry only for identical starting volta
 }
 
 
+TEST_CASE("Preview Newton recovers through repeated compressor overloads", "[newton][preview]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/studio/dynamics/ADR-Compex-F760X-RS.livewdf", error));
+    const auto circuit = document.toCircuit();
+    const auto input = std::find_if(circuit.src.begin(), circuit.src.end(), [&](const auto& source) {
+        return source.name == document.inputId();
+    });
+    REQUIRE(input != circuit.src.end());
+    const auto port = static_cast<size_t>(input - circuit.src.begin());
+
+    wdf::Engine preview(circuit, kFs);
+    preview.prepareCompiledPreview(port, preview.nodeIndex(document.outputNet()), false,
+                                   2.0 * document.inputVoltsPerFullScale(), false);
+    preview.useLoadedJunctionPreview(true);
+    auto sources = preview.dcValues();
+    // Repeated overloads drive the gain-control diodes and op-amps through a switching boundary.
+    for (int sample = 0; sample < 7 * 40; ++sample) {
+        sources[port] = sample % 40 < 14 ? 16.0 : 0.0;
+        preview.step(sources, preview.kDefaultMaxIterations, preview.kFastLiveTolerance);
+    }
+    CHECK(preview.stateRejectCount() == 0);
+}
+
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
     constexpr int rows = 35, cols = 12, groups = 4;
     std::vector<double> z(rows * cols), v(rows), open(rows), current(rows), actual(rows);
