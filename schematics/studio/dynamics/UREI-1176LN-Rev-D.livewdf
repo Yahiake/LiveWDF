@@ -980,8 +980,12 @@
     {
       "id": "OUT",
       "type": "out",
-      "properties": {},
+      "properties": {
+        "externalResistor": "RL"
+      },
       "values": {
+        "externalMinOhms": 600,
+        "externalMaxOhms": 100000,
         "fullScaleVolts": 7.9885537
       },
       "visual": {

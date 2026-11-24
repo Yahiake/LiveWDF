@@ -6,6 +6,7 @@
 #include "dsp/HalfBandOversampler.h"
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
+#include "format/PortImpedance.h"
 #include "gui/DualOscilloscope.h"
 
 #include <array>
@@ -63,6 +64,7 @@ public:
     // -------------------------------------------------------------------------
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc);
     bool loadCircuitFromFile(const juce::File& file);
+    std::uint64_t getRestoredDocumentRevision() const noexcept { return restoredDocumentRevision_.load(); }
 
     /// Why the last load failed, in the user's words. Empty when it did not.
     ///
@@ -87,12 +89,19 @@ public:
 
     /// The file the circuit was loaded from, or an empty file when it came from
     /// host state rather than a file.
-    juce::File getCurrentCircuitFile() const { return currentFile_; }
+    juce::File getCurrentCircuitFile() const {
+        std::lock_guard<std::recursive_mutex> lock(loadMutex_);
+        return currentFile_;
+    }
 
     /// True when there is a file to reload -- what the Reload button's enabled
     /// state follows.
-    bool canReload() const { return currentFile_.existsAsFile(); }
+    bool canReload() const { return getCurrentCircuitFile().existsAsFile(); }
 
+    wdf::LiveWDFDocument getDocumentSnapshot() const {
+        std::lock_guard<std::recursive_mutex> lock(loadMutex_);
+        return currentDoc_;
+    }
     const wdf::LiveWDFDocument& getCurrentDocument() const { return currentDoc_; }
 
     /// The pots and rheostats grouped by their visible name. One entry is one
@@ -162,7 +171,7 @@ private:
 
     // Engine instances (stereo pair)
     // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.
-    std::recursive_mutex loadMutex_;
+    mutable std::recursive_mutex loadMutex_;
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
@@ -260,10 +269,22 @@ private:
     struct PotControl {
         const std::atomic<float>* knob = nullptr;
         juce::SmoothedValue<double> position;
+        const wdf::PortImpedanceRange* impedance = nullptr;
+        double targetPosition() const;
     };
     struct PotTarget { int group; int index; bool varRes; };
     struct SwitchTarget { size_t group; int resA; int resB; };
-    std::array<PotControl, kMaxPotKnobs> potControls_;
+    static constexpr size_t numPorts = 2;
+    static constexpr std::array<const char*, numPorts> portParameterIds{"source_impedance", "load_impedance"};
+    struct PortControl {
+        std::optional<wdf::PortImpedanceRange> range;
+        const std::atomic<float>* parameter = nullptr;
+        bool enabled = false;
+    };
+    std::array<PortControl, numPorts> ports_;
+    std::optional<std::array<float, numPorts>> rejectedPortRequest_;
+    std::atomic<std::uint64_t> restoredDocumentRevision_{0};
+    std::array<PotControl, kMaxPotKnobs + numPorts> potControls_;
     int potControlCount_ = 0;
     int samplesUntilPotUpdate_ = 0;
     bool potsMoving_ = false;
@@ -319,6 +340,8 @@ private:
     void advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
+                            const std::array<double, numPorts>& portPositions,
+                            std::array<std::string, numPorts>& fixtureNames,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
                             int& inSrcIdx, int& outIdx,

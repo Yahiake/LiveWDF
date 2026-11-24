@@ -4,9 +4,13 @@
   "components": [
     {
       "id": "IN1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "Rsource"
+      },
       "type": "in",
       "values": {
+        "externalMinOhms": 10,
+        "externalMaxOhms": 600,
         "referenceMillivoltsRms": 775.0
       },
       "visual": {
@@ -1331,9 +1335,13 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "Rload"
+      },
       "type": "out",
       "values": {
+        "externalMinOhms": 600,
+        "externalMaxOhms": 100000,
         "fullScaleVolts": 8.0735604
       },
       "visual": {

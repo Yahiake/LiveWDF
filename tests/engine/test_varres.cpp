@@ -6,6 +6,7 @@
 
 #include <math.h>
 
+#include "format/PortImpedance.h"
 #include "spice/Net.h"
 #include "spice/SpiceNet.h"
 #include "wdf/Engine.h"
@@ -444,5 +445,65 @@ TEST_CASE("THAT2180 tracks both control pins without rebuilding the signal path"
         }
         CHECK(engine.stateRejectCount() == 0);
         CHECK(engine.linearRebuilds() == rebuilds);
+    }
+}
+
+TEST_CASE("Port impedance stamps series and shunt fixtures without duplicating an existing termination",
+          "[impedance][engine]") {
+    wdf::LiveWDFDocument doc;
+    wdf::SchematicComponent in, out, series, load;
+    in.id = "IN"; in.type = "in"; in.pins = {{"sig", "signal"}};
+    out.id = "OUT"; out.type = "out"; out.pins = {{"sig", "output"}};
+    in.values = out.values = {{"externalMinOhms", 100}, {"externalMaxOhms", 1000}};
+    series.id = "RS"; series.type = "res"; series.pins = {{"a","signal"}, {"b","output"}};
+    series.values = {{"value", 100}};
+    load.id = "RL"; load.type = "res"; load.pins = {{"a","0"}, {"b","output"}};
+    load.values = {{"value", 1000}};
+    doc.components = {in, out, series, load};
+    auto& source = doc.components[0];
+    auto& output = doc.components[1];
+    SECTION("Existing source and load have their actual values replaced; live changes preserve the transfer") {
+        source.properties["externalResistor"] = "RS";
+        output.properties["externalResistor"] = "RL";
+        auto circuit = doc.toCircuit();
+        CHECK(wdf::applyPortImpedance(circuit, doc, true, 0.).empty());
+        REQUIRE(circuit.varRes.empty());
+        REQUIRE(wdf::applyPortImpedance(circuit, doc, true, 1.) == "RS");
+        REQUIRE(wdf::applyPortImpedance(circuit, doc, false, .001) == "RL");
+        REQUIRE(circuit.res.size() == 2);
+        wdf::Engine engine(circuit, 48000.);
+        const int index = engine.nodeIndex("output");
+        REQUIRE(index >= 0);
+        CHECK(engine.step({1.})[index] == Approx(100. / 1100.));
+        engine.prepareLiveControls();
+        const auto rebuilds = engine.linearRebuilds();
+        REQUIRE(engine.setLiveControls({}, {{engine.varResIndexByName("RS"), .1},
+                                             {engine.varResIndexByName("RL"), 1.}}));
+        CHECK(engine.step({1.})[index] == Approx(1000. / 1100.));
+        CHECK(engine.linearRebuilds() == rebuilds);
+    }
+    SECTION("An added source and added load form the expected series and parallel network") {
+        auto circuit = doc.toCircuit();
+        circuit.addVarRes("output", "0", 1000., 1., wdf::PotTaper::Linear, "$external_source");
+        circuit.addRes("$external_source__drive", "0", 1000.);
+        const auto sourceName = wdf::applyPortImpedance(circuit, doc, true, .001);
+        REQUIRE(sourceName == "$external_source_");
+        CHECK(circuit.src.front().a != "$external_source__drive");
+        REQUIRE_FALSE(wdf::applyPortImpedance(circuit, doc, false, 1.).empty());
+        wdf::Engine engine(circuit, 48000.);
+        const int index = engine.nodeIndex("output");
+        REQUIRE(index >= 0);
+        const double parallel = 1000. / 3.;
+        CHECK(engine.step({1.})[index] == Approx(parallel / (100. + 100. + parallel)));
+    }
+    SECTION("A stale reference, internal shunt on the driven pin, or loaded source branch is rejected") {
+        source.properties["externalResistor"] = "missing";
+        CHECK_FALSE(wdf::portImpedanceRange(doc, true));
+        output.properties["externalResistor"] = "RS";
+        CHECK_FALSE(wdf::portImpedanceRange(doc, false));
+        source.properties["externalResistor"] = "RS";
+        load.id = "Rtap"; load.pins["b"] = "signal";
+        doc.components.push_back(load);
+        CHECK_FALSE(wdf::portImpedanceRange(doc, true));
     }
 }

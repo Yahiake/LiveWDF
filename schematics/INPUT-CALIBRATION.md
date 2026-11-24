@@ -8,6 +8,24 @@ With **Input from → Track** and **Output to → Track (level matched)** (the d
 
 To connect inserts at their simulated terminal voltages, choose **Output to → Next LiveWDF** on the sending instance and **Input from → Previous LiveWDF** on the receiving instance. Both use 13.8 V peak per full-scale sample. This places a +4 dBu studio alignment tone (1.228 V RMS) at −18 dBFS. Floating-point samples above 1.0 can carry higher terminal voltages between inserts. For example, 100 mV peak leaving a pedal arrives as 100 mV peak at the next preset, even if its native input alignment is different. Use unity DAW gain and zero output master/input trim between the two. Choose **Output to → Track (level matched)** at the end to return to the preset’s audition level. The controls also apply in standalone and offline rendering.
 
+## Source impedance and output load
+
+Presets with an adjustable external connection show **Source Z** or **Output Load** in the player. Both default to **As wired**. Source Z is the series resistance of what drives the input. Output Load is the resistance connected across the output. Turning either control changes the electrical circuit, so its tone and gain can change together. Output level matching continues to use the preset’s saved gain.
+
+Moving between resistance values is smoothed during playback. Switching into or out of **As wired** rebuilds the circuit and resets stored energy, including any tail.
+
+For example, on the GCB-95 Cry Baby try a 1 MΩ output load for an amplifier input, then 10 kΩ for a low-impedance pedal. These are resistive loads. A guitar pickup, cable or speaker can also have a frequency-dependent impedance. A LiveWDF-to-LiveWDF connection passes voltage forward. To approximate loading by the next device, choose its input resistance as the sending device’s output load. The voltage passed to the next insert already includes that loading. Adding the same voltage divider again at the receiver would attenuate the signal twice.
+
+| Factory preset | Source impedance | Output load |
+| --- | --- | --- |
+| Cry Baby GCB-95, Fuzz Face | 100 Ω–150 kΩ | 680 Ω–1 MΩ |
+| ZVEX Fuzz Factory, Roger Mayer Octavia | 100 Ω–150 kΩ | — |
+| API 312 Preamp VP312 Rev A | 20–600 Ω | 600 Ω–100 kΩ |
+| UREI 1176LN Rev D | — | 600 Ω–100 kΩ |
+| dbx 160 VU | — | 10–100 kΩ |
+
+To expose a knob in a custom preset, set `values.externalMinOhms` and `values.externalMaxOhms` on the main input or output terminal. If the schematic already draws the external source or load resistor, put its component ID in `properties.externalResistor` on that terminal. The player then adjusts that resistor in place. Double-click the knob to restore **As wired**.
+
 ## Factory input references
 
 Each of the 90 factory schematics stores its input reference. The [input table](INPUT-LEVELS.csv) lists both the RMS voltage of a −18 dBFS peak sine and the equivalent peak voltage at 0 dBFS. The basis and sources identify the connector, hardware revision, switch setting and any estimate. A maximum input rating describes headroom. An alignment tone describes the operating point for the specified test.

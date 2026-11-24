@@ -41,6 +41,7 @@ juce::String propertyLabel(const std::string& key) {
     if (key == "preset") return "Preset";
     if (key == wdf::kPolarityProperty) return "Polarity";
     if (key == "taper")  return "Taper";
+    if (key == "externalResistor") return "External resistor ID";
     if (key == "mode")   return "Mode";
     // **Not "Node".** Under the geometry-only format this row does not name a
     // net: the drawing decides which net a source feeds, and this is a label

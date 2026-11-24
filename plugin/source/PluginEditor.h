@@ -10,6 +10,7 @@
 #include "SchematicEditor.h"
 #include "UiLookAndFeel.h"
 
+#include <cstdint>
 #include <vector>
 #include <memory>
 
@@ -34,6 +35,7 @@ public:
 
 private:
     LiveWDFPluginProcessor& processor_;
+    std::uint64_t restoredDocumentRevision_;
 
     // Top Toolbar
     juce::Label titleLabel_;
@@ -85,7 +87,8 @@ private:
     DualOscilloscope oscilloscope_;
 
     // Knobs
-    static constexpr int controlStripHeight = 140;
+    juce::TooltipWindow tooltipWindow_{this};
+    juce::Rectangle<int> controlStripBounds_;
     juce::Label inputRouteLabel_{{}, "Input from"};
     juce::Label outputRouteLabel_{{}, "Output to"};
     juce::ComboBox inputRoute_{"Input from"};
@@ -94,7 +97,8 @@ private:
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
 
-    // Dynamic circuit controls: one knob per pot/rheostat group and one button
+    // Dynamic controls include external source/load knobs on circuits that expose them.
+    // Circuit controls have one knob per pot/rheostat group and one button
     // per SPDT group. Both are grouped by label, so a ganged pair takes one
     // place in the strip rather than two. The pot ceiling is the processor's,
     // since it owns the `pot_*` parameters; asking for more than it has is a
@@ -104,8 +108,8 @@ private:
     // Below this width a knob's label stops being readable, so once a row
     // cannot hold every pot the strip wraps onto another row rather than
     // squeezing them (an amp with a graphical equalizer has twelve groups).
-    static constexpr int kMinDynamicPotKnobWidth = 64;
-    std::vector<std::unique_ptr<VintageKnob>> dynamicPotKnobs_;
+    static constexpr int kMinDynamicKnobWidth = 78;
+    std::vector<std::unique_ptr<VintageKnob>> dynamicKnobs_;
     std::vector<std::unique_ptr<juce::TextButton>> dynamicSwitchButtons_;
     std::vector<juce::String> dynamicSwitchNames_;
 
@@ -126,7 +130,7 @@ private:
     std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
-    std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
+    std::vector<std::unique_ptr<SliderAttachment>> dynamicKnobAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
@@ -137,7 +141,9 @@ private:
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 
-    void rebuildDynamicControls();
+    void rebuildDynamicControls(const wdf::LiveWDFDocument& doc);
+    void addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool input);
+    void refreshCircuitView(const juce::String& suffix = {});
     void updateScopeScales();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
@@ -153,7 +159,7 @@ private:
 
     /// What the plugin is playing: the file's name, the restored document's
     /// name, or "No circuit loaded".
-    juce::String currentCircuitDescription() const;
+    juce::String currentCircuitDescription(const wdf::LiveWDFDocument& doc) const;
 
     editor::UiLookAndFeel lookAndFeel_;
 

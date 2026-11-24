@@ -2079,9 +2079,13 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "R_TERM"
+      },
       "type": "out",
       "values": {
+        "externalMinOhms": 10000,
+        "externalMaxOhms": 100000,
         "fullScaleVolts": 13.813703
       },
       "visual": {

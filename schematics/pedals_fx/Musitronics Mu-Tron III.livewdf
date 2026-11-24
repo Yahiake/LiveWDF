@@ -28,6 +28,8 @@
       "type": "in",
       "properties": {},
       "values": {
+        "externalMaxOhms": 150000,
+        "externalMinOhms": 100,
         "referenceMillivoltsRms": 77.5
       },
       "visual": {
@@ -707,8 +709,12 @@
     {
       "id": "OUT1",
       "type": "out",
-      "properties": {},
+      "properties": {
+        "externalResistor": "R_Load"
+      },
       "values": {
+        "externalMaxOhms": 1000000,
+        "externalMinOhms": 680,
         "fullScaleVolts": 1.7664167
       },
       "visual": {

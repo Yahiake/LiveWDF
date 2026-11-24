@@ -139,6 +139,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         juce::ParameterID{"match_output", 1}, "Match output level", true,
         juce::AudioParameterBoolAttributes().withAutomatable(false)));
 
+    for (size_t i = 0; i < numPorts; ++i)
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID{portParameterIds[i], 1}, i == 0 ? "Source impedance" : "Output load",
+            juce::NormalisableRange<float>(0.f, 1.f, static_cast<float>(wdf::PortImpedanceRange::step)), 0.f));
+
     return { params.begin(), params.end() };
 }
 
@@ -149,6 +154,8 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts_(*this, nullptr, "Parameters", createParameterLayout()) {
+    for (size_t i = 0; i < numPorts; ++i)
+        ports_[i].parameter = apvts_.getRawParameterValue(portParameterIds[i]);
     startTimerHz(10);
 
     // Initialize oversamplers (2x = factor 1, 4x = factor 2, 8x = factor 3)
@@ -290,10 +297,20 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     if (currentDoc_.components.empty())
         return;
 
-    if (effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
+    std::array<float, numPorts> requestedPorts{};
+    bool portTopologyChanged = false;
+    for (size_t i = 0; i < numPorts; ++i) {
+        const auto& port = ports_[i];
+        requestedPorts[i] = port.range ? port.parameter->load(std::memory_order_relaxed) : 0.f;
+        portTopologyChanged |= port.enabled != (requestedPorts[i] > 0.f);
+    }
+    if (!portTopologyChanged) rejectedPortRequest_.reset();
+    if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
+        effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_) {
         const juce::File circuitFile = currentFile_;
-        loadCircuitDocument(currentDoc_, false);
+        if (!loadCircuitDocument(currentDoc_, false) && portTopologyChanged)
+            rejectedPortRequest_ = requestedPorts;
         currentFile_ = circuitFile;
     }
     // A headless export can start before the UI timer has prepared a live plan.
@@ -522,6 +539,8 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
 }
 
 void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
+                                               const std::array<double, numPorts>& portPositions,
+                                               std::array<std::string, numPorts>& fixtureNames,
                                                std::unique_ptr<wdf::Engine>& left,
                                                std::unique_ptr<wdf::Engine>& right,
                                                int& inSrcIdx, int& outIdx,
@@ -536,6 +555,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     wdf::Circuit c;
     try {
         c = doc.toCircuit();
+        for (size_t i = 0; i < numPorts; ++i)
+            fixtureNames[i] = wdf::applyPortImpedance(c, doc, i == 0, portPositions[i]);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -677,14 +698,24 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::vector<double> baseSources;
     std::vector<AcSource> acSources;
 
+    std::array<double, numPorts> portPositions{};
+    std::array<std::string, numPorts> fixtureNames;
+    if (!initializePotParameters)
+        for (size_t i = 0; i < numPorts; ++i)
+            portPositions[i] = ports_[i].parameter->load(std::memory_order_relaxed);
+
     wdf::Circuit newSettledControlCircuit;
-    buildEngineFromDoc(doc, effectiveFs, newLeft, newRight, inSrcIdx, outIdx, baseSources,
+    buildEngineFromDoc(doc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, baseSources,
                        acSources, newSettledControlCircuit);
 
     if (!newLeft || !newRight) {
         return false;
     }
-    cacheDocument_ = std::make_shared<const std::string>(doc.toJson());
+    rejectedPortRequest_.reset();
+    auto cacheKey = doc.toJson();
+    for (const auto& fixture : fixtureNames)
+        if (!fixture.empty()) cacheKey += "\nport fixture " + fixture;
+    cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     observedTransferRevision_.reset();
     preparedTransferRevision_.reset();
@@ -701,8 +732,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     {
         std::lock_guard<std::mutex> lock(engineMutex_);
-        leftEngine_ = std::move(newLeft);
-        rightEngine_ = std::move(newRight);
+        leftEngine_.swap(newLeft);
+        rightEngine_.swap(newRight);
         previewPrepared_ = false;
         outputOnlyPreviewAllowed_ = acSources.empty() &&
             std::all_of(probeNodes.begin(), probeNodes.end(), [&](const auto& probe) { return probe.second == outIdx; });
@@ -784,6 +815,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         potTargets_.clear();
         potControlCount_ = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
         for (int i = 0; i < potControlCount_; ++i) {
+            potControls_[static_cast<size_t>(i)].impedance = nullptr;
             potControls_[static_cast<size_t>(i)].knob =
                 apvts_.getRawParameterValue("pot_" + juce::String(i));
             for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
@@ -793,6 +825,21 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                 if (index >= 0)
                     potTargets_.push_back({i, index, varRes});
             }
+        }
+        for (size_t i = 0; i < numPorts; ++i) {
+            auto& port = ports_[i];
+            port.range = wdf::portImpedanceRange(doc, i == 0);
+            port.enabled = !fixtureNames[i].empty();
+            if (initializePotParameters && port.parameter->load() != 0.f)
+                apvts_.getParameter(portParameterIds[i])->setValueNotifyingHost(0.f);
+            if (!port.enabled) continue;
+            const int index = leftEngine_->varResIndexByName(fixtureNames[i]);
+            jassert(port.range && index >= 0);
+            auto& control = potControls_[static_cast<size_t>(potControlCount_)];
+            control.knob = port.parameter;
+            control.impedance = &*port.range;
+            control.position.setCurrentAndTargetValue(port.range->ohmsAt(portPositions[i]) / port.range->maxOhms);
+            potTargets_.push_back({potControlCount_++, index, true});
         }
         switchTargets_.clear();
         for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
@@ -820,7 +867,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         potsMoving_ = false;
         for (int i = 0; i < potControlCount_; ++i) {
             auto& control = potControls_[static_cast<size_t>(i)];
-            const float value = control.knob->load(std::memory_order_relaxed);
+            const double value = control.targetPosition();
             control.position.setCurrentAndTargetValue(std::isfinite(value) ? value : 0.5);
         }
         applyLiveControlsToEngines(true, true);
@@ -973,6 +1020,7 @@ std::map<std::string, bool> LiveWDFPluginProcessor::getLiveSwitchStates() const 
 }
 
 void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     std::lock_guard<std::mutex> lock(engineMutex_);
 
     if (index < 0 || index >= static_cast<int>(switchGroupsInCircuit_.size())
@@ -1000,10 +1048,19 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     applyLiveControlsToEngines(false, true);
 }
 
+double LiveWDFPluginProcessor::PotControl::targetPosition() const {
+    const double value = knob->load(std::memory_order_relaxed);
+    if (impedance == nullptr) return value;
+    // Removing a fixture changes topology. Keep the previous physical value
+    // until the control thread installs the as-wired circuit.
+    if (value <= 0.) return position.getTargetValue();
+    return impedance->ohmsAt(value) / impedance->maxOhms;
+}
+
 void LiveWDFPluginProcessor::readLivePotTargets(int rampSamples) {
     for (int i = 0; i < potControlCount_; ++i) {
         auto& control = potControls_[static_cast<size_t>(i)];
-        const double value = control.knob->load(std::memory_order_relaxed);
+        const double value = control.targetPosition();
         if (std::isfinite(value) && !juce::approximatelyEqual(value, control.position.getTargetValue())) {
             // JUCE resets to the old target. Keep the physical wiper continuous
             // when automation changes direction before its ramp is complete.
@@ -1078,6 +1135,7 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
 // State Persistence
 // ==============================================================================
 void LiveWDFPluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
+    std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     auto state = apvts_.copyState();
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
 
@@ -1101,6 +1159,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("compiled_preview", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
+        for (const auto id : portParameterIds) restoreMissing(id, 0.f);
         apvts_.replaceState(state);
 
         // Restore custom LiveWDF JSON document
@@ -1111,7 +1170,9 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
             if (wdf::LiveWDFDocument::fromJson(jsonStr, doc, err)) {
                 // The APVTS state was restored above; that is the user's knob
                 // state. Do not overwrite it with the document's saved `pos`.
-                loadCircuitDocument(doc, false);
+                const bool documentChanged = currentDoc_.toJson() != jsonStr;
+                if (loadCircuitDocument(doc, false) && documentChanged)
+                    restoredDocumentRevision_.fetch_add(1, std::memory_order_release);
             }
         }
         updateReportedLatency();

@@ -575,9 +575,13 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "Rload"
+      },
       "type": "out",
       "values": {
+        "externalMinOhms": 10000,
+        "externalMaxOhms": 100000,
         "fullScaleVolts": 8.8762398
       },
       "visual": {
