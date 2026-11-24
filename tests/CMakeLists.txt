@@ -77,6 +77,7 @@ add_executable(livewdf_tests
     circuit/test_pot_contracts.cpp
 
     compiler/test_compiler.cpp
+    compiler/test_stage_partition.cpp
     runtime/test_runtime_parity.cpp
     runtime/test_runtime_allocation.cpp
 
