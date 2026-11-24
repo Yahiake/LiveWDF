@@ -1,8 +1,10 @@
 #include "wdf/EngineStep.h"
 #include "wdf/DenseSolve.h"
+#include "wdf/LoadedJunctionMotion.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 namespace wdf {
 namespace {
@@ -29,7 +31,7 @@ struct Tabulation {
 
 bool EngineStep::hasLoadedJunctionPreview() const noexcept {
     return !loadedJunction_.laws.empty() && loadedJunction_.revision == linearRebuilds() &&
-           !hasAdjustedLiveTransfer() && !powerSagEnabled_ && !staticMode_;
+           !powerSagEnabled_ && !staticMode_;
 }
 
 void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
@@ -279,6 +281,15 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
 bool EngineStep::tryLoadedJunctionRoot() noexcept {
     auto& p = loadedJunction_;
     const int k = K_, m = static_cast<int>(p.laws.size());
+    const bool changed = std::memcmp(p.impedance.data(), Z_.data(), Z_.size() * sizeof(double)) != 0;
+    if (changed) {
+        if (!engine::updateJunctionLoading(p, Z_, rootLayout_.redRow)) {
+            p.revision = -1;
+            return false;
+        }
+        p.seed = true;
+        p.cooldown = p.misses = 0;
+    }
     if (p.cooldown > 0) { --p.cooldown; return false; }
     ++loadedJunctionAttempts_;
     p.misses = std::min(6, p.misses + 1);
@@ -450,6 +461,15 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
     }
     // The diagnostic is in port volts. The table interpolates intervals of
     // 1 mV and the FET guard bounds its loaded tangent error at 1 mV.
+    if (changed || hasAdjustedLiveTransfer()) {
+        for (int row = 0; row < k; ++row) {
+            double residual = vt_[row] - vOc_[row];
+            for (const int col : rootLayout_.redCol)
+                residual += Z_[row * k + col] * iv_[col];
+            if (!std::isfinite(residual) || std::abs(residual) > .001)
+                return false;
+        }
+    }
     commitCompiledRoot(.001);
     p.seed = false;
     p.misses = p.cooldown = 0;

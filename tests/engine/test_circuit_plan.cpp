@@ -475,3 +475,62 @@ TEST_CASE("Bipolar Preview follows a qualified control and preserves state on fa
         REQUIRE(voltage == Approx(expected).margin(50e-6));
     }
 }
+
+TEST_CASE("Loaded junction preview follows a live pot and its return under clipping",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addRes("in", "a", 2200);
+    c.addPot("a", "mid", "b", 4700, .5, wdf::PotTaper::Linear, "Gain");
+    c.addRes("b", "0", 3300);
+    c.addCap("b", "0", 4.7e-9);
+    for (auto n : {"a", "mid", "b"})
+        c.addDiode(n, "0", wdf::DiodeModel(2e-12, 1.1, 4.0), n);
+    wdf::Engine preview(c, 48000), accurate(c, 48000);
+    preview.prepareLiveControls();
+    accurate.prepareLiveControls();
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    preview.useLoadedJunctionPreview(true);
+    int frame = 0;
+    for (const auto position : {.5, .86, .2, .5, .86, .5}) {
+        CAPTURE(position);
+        REQUIRE(preview.setLiveControls({{0, position}}, {}));
+        REQUIRE(accurate.setLiveControls({{0, position}}, {}));
+        const auto before = preview.loadedJunctionHits();
+        for (int i = 0; i < 256; ++i) {
+            const double input = 3.2 * std::sin(.07 * frame++) + .9 * std::sin(.31 * i);
+            const auto& ref = accurate.step(&input, 1, 60, 1e-9);
+            const auto& signal = preview.step(&input, 1, 60, 1e-9);
+            for (auto n : {"a", "mid", "b"}) {
+                const auto j = accurate.nodeIndex(n);
+                REQUIRE(signal[j] == Approx(ref[j]).margin(.001));
+            }
+        }
+        CHECK(preview.loadedJunctionHits() - before > 230);
+    }
+}
+
+TEST_CASE("A higher rank control change leaves the full loaded circuit solver available",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    for (auto n : {"a", "b", "c"}) {
+        c.addVarRes("in", n, 10000, .5, wdf::PotTaper::Linear, n);
+        c.addRes(n, "0", 2200);
+        c.addDiode(n, "0", wdf::DiodeModel(2e-12, 1.1, 4.0), n);
+    }
+    wdf::Engine preview(c, 48000), accurate(c, 48000);
+    preview.prepareLiveControls();
+    accurate.prepareLiveControls();
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    preview.useLoadedJunctionPreview(true);
+    for (auto* engine : {&preview, &accurate})
+        REQUIRE(engine->setLiveControls({}, {{0, .9}, {1, .7}, {2, .2}}));
+    const double input = 2.;
+    const auto& ref = accurate.step(&input, 1, 60, 1e-9);
+    const auto& signal = preview.step(&input, 1, 60, 1e-9);
+    CHECK_FALSE(preview.hasLoadedJunctionPreview());
+    CHECK(preview.loadedJunctionHits() == 0);
+    for (auto n : {"a", "b", "c"})
+        CHECK(signal[accurate.nodeIndex(n)] == Approx(ref[accurate.nodeIndex(n)]).margin(1e-7));
+}
