@@ -10,15 +10,15 @@
 
 namespace wdf::engine {
 
-// Moving one two-terminal resistor or both halves of one pot changes the root
-// impedance by rank one or two. Refresh the small linear maps that load the
+// Each changed resistor adds at most one to the rank of the root impedance
+// update. Four covers both legs of a dual-gang pot. Refresh the maps that load the
 // nonlinear junctions. An unsupported rank or ill-conditioned update declines
 // the plan, and the caller uses the normal solver.
 inline bool updateJunctionLoading(LoadedJunctionPlan& plan,
                                   std::span<const double> impedance,
                                   std::span<const int> independentRows) noexcept {
     constexpr int maxPorts = 64;
-    constexpr int maxRank = 2;
+    constexpr int maxRank = 4;
     const int ports = static_cast<int>(independentRows.size());
     const int laws = static_cast<int>(plan.laws.size());
     const int poles = static_cast<int>(plan.linearPoles.size());

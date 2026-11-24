@@ -1,5 +1,6 @@
 #include <catch2.hpp>
 #include "format/LiveWDFFile.h"
+#include "format/ControlGroups.h"
 #include <cmath>
 
 #include "wdf/Engine.h"
@@ -521,29 +522,74 @@ TEST_CASE("Loaded junction preview follows a live pot and its return under clipp
     }
 }
 
-TEST_CASE("A higher rank control change leaves the full loaded circuit solver available",
+TEST_CASE("Loaded junction updates accept four independent resistor changes and decline five",
           "[engine][circuit-plan][live-junction]") {
     wdf::Circuit c;
     c.addSrc("in", "0", 0.);
-    for (auto n : {"a", "b", "c"}) {
+    for (auto n : {"a", "b", "c", "d", "e"}) {
         c.addVarRes("in", n, 10000, .5, wdf::PotTaper::Linear, n);
         c.addRes(n, "0", 2200);
         c.addDiode(n, "0", wdf::DiodeModel(2e-12, 1.1, 4.0), n);
     }
-    wdf::Engine preview(c, 48000), accurate(c, 48000);
+    for (int rank : {3, 4, 5}) {
+        CAPTURE(rank);
+        wdf::Engine preview(c, 48000), accurate(c, 48000);
+        preview.prepareLiveControls();
+        accurate.prepareLiveControls();
+        REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+        preview.useLoadedJunctionPreview(true);
+        std::vector<std::pair<int, double>> settings;
+        for (int i = 0; i < rank; ++i)
+            settings.emplace_back(i, .15 + .15 * i);
+        for (auto* engine : {&preview, &accurate})
+            REQUIRE(engine->setLiveControls({}, settings));
+        const double input = 2.;
+        const auto& ref = accurate.step(&input, 1);
+        const auto& signal = preview.step(&input, 1);
+        CHECK(preview.hasLoadedJunctionPreview() == (rank <= 4));
+        CHECK(preview.loadedJunctionHits() == (rank <= 4 ? 1 : 0));
+        for (auto n : {"a", "b", "c", "d", "e"})
+            CHECK(signal[accurate.nodeIndex(n)] == Approx(ref[accurate.nodeIndex(n)]).margin(1e-5));
+    }
+}
+
+TEST_CASE("The Klon dual-gang gain control preserves the coupled junction solve",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(doc.loadFromFile("schematics/pedals_fx/Klon Centaur.livewdf", error));
+    auto circuit = doc.toCircuit();
+    wdf::Engine preview(circuit, 48000), accurate(circuit, 48000);
     preview.prepareLiveControls();
     accurate.prepareLiveControls();
-    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    const auto source = std::ranges::find(circuit.src, doc.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = size_t(source - circuit.src.begin());
+    const auto output = preview.nodeIndex(doc.outputNet());
+    REQUIRE(output >= 0);
+    REQUIRE(preview.prepareLoadedJunctionPreview(input, false));
     preview.useLoadedJunctionPreview(true);
-    for (auto* engine : {&preview, &accurate})
-        REQUIRE(engine->setLiveControls({}, {{0, .9}, {1, .7}, {2, .2}}));
-    const double input = 2.;
-    const auto& ref = accurate.step(&input, 1, 60, 1e-9);
-    const auto& signal = preview.step(&input, 1, 60, 1e-9);
-    CHECK_FALSE(preview.hasLoadedJunctionPreview());
-    CHECK(preview.loadedJunctionHits() == 0);
-    for (auto n : {"a", "b", "c"})
-        CHECK(signal[accurate.nodeIndex(n)] == Approx(ref[accurate.nodeIndex(n)]).margin(1e-7));
+    const auto gains = wdf::potControlGroups(doc);
+    const auto gain = std::ranges::find(gains, "GAIN", &wdf::LiveControlGroup::name);
+    REQUIRE(gain != gains.end());
+    REQUIRE(gain->members.size() == 2);
+    auto sources = preview.dcValues();
+    int frame = 0;
+    for (const double position : {.75, .15, 1., 0., .5}) {
+        CAPTURE(position);
+        std::vector<std::pair<int, double>> gang;
+        for (const auto& member : gain->members)
+            gang.emplace_back(preview.potIndexByName(member.id), position);
+        REQUIRE(accurate.setLiveControls(gang, {}));
+        REQUIRE(preview.setLiveControls(gang, {}));
+        auto hits = preview.loadedJunctionHits();
+        for (int i = 0; i < 256; ++i, ++frame) {
+            sources[input] = .55 * std::sin(.11 * frame) + .25 * std::sin(.039 * frame);
+            const auto voltage = preview.step(sources)[output];
+            REQUIRE(voltage == Approx(accurate.step(sources)[output]).margin(2e-4));
+        }
+        REQUIRE(preview.loadedJunctionHits() - hits > 240);
+    }
 }
 
 namespace {
