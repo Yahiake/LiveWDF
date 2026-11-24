@@ -64,6 +64,8 @@ public:
     // A single-output approximation for static BJT/diode networks. Preparation
     // allocates and qualifies the fixed schematic away from the audio thread.
     bool prepareBipolarPreview(size_t inputSource, int outputNode);
+    /// Off-thread preparation and playback screen against the current Fast solve.
+    bool prepareAffineNodePreview(size_t inputSource, int outputNode);
     bool stepBipolarPreview(double inputVolts, double& outputVolts) noexcept;
     bool bipolarPreviewActive() const noexcept;
     void releaseBipolarPreview() noexcept;

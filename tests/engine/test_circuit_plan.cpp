@@ -189,6 +189,7 @@ TEST_CASE("Enabling a circuit plan preserves hysteresis through positive feedbac
         wdf::Engine candidate(c, 48000), reference(c, 48000);
         const int out = reference.nodeIndex("out");
         candidate.prepareCircuitPlan();
+        REQUIRE_FALSE(candidate.prepareAffineNodePreview(0, out));
         for (int n = 0; n < 512; ++n) {
             candidate.useCircuitPlan(n >= 128);
             double input = 0.0;
@@ -313,4 +314,57 @@ TEST_CASE("An isolated series diode path retains its bleed resistor and midpoint
         }
         REQUIRE(preview.loadedJunctionHits() > 400);
     }
+}
+
+TEST_CASE("Compiled op-amp nodes keep every probe and reactive history through overload",
+          "[engine][circuit-plan][opamp]") {
+    struct Candidate : wdf::Engine {
+        using Engine::Engine;
+        using EngineStep::buildAffineNodePreview;
+    };
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.05);
+    c.addSrc("bias", "0", .03);
+    c.addRes("in", "sum", 10000, "feed");
+    c.addRes("out", "sum", 47000);
+    c.addCap("sum", "out", 2.2e-9);
+    c.addInd("out", "tap", .001);
+    c.addRes("tap", "0", 800);
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(5.0, 5.0);
+    c.addOpAmp("out", "sum", "bias", "0", "0", model, "U");
+    Candidate preview(c, 48000);
+    wdf::Engine reference(c, 48000);
+    REQUIRE(preview.buildAffineNodePreview());
+    preview.useLoadedJunctionPreview(true);
+    long long beforeDisable = 0, beforeEdit = 0;
+    for (int i = 0; i < 2050; ++i) {
+        if (i == 512) {
+            beforeDisable = preview.affineNodePreviewHits();
+            REQUIRE(beforeDisable > 0);
+            preview.setAllOpAmpSoftRails(true);
+            reference.setAllOpAmpSoftRails(true);
+        }
+        if (i == 768) {
+            REQUIRE(preview.affineNodePreviewHits() == beforeDisable);
+            preview.setAllOpAmpSoftRails(false);
+            reference.setAllOpAmpSoftRails(false);
+        }
+        if (i == 1536) {
+            beforeEdit = preview.affineNodePreviewHits();
+            REQUIRE(beforeEdit > beforeDisable);
+            REQUIRE(reference.setResistance("feed", 15000));
+            REQUIRE(preview.setResistance("feed", 15000));
+        }
+        const double drive = .05 + (i >= 768 && i < 1024 ? 2. : .025) * std::sin(.03 * i);
+        const double sources[]{drive, .03 + .01 * std::cos(.07 * i)};
+        const auto& expected = reference.step(sources, 2);
+        const auto& actual = preview.step(sources, 2, 60, wdf::Engine::kFastLiveTolerance);
+        REQUIRE(preview.lastStateRejected() == reference.lastStateRejected());
+        for (int node = 0; node < preview.nodeCount(); ++node)
+            REQUIRE(actual[node] == Approx(expected[node]).margin(2e-6));
+        REQUIRE(preview.capacitorStates()[0] == Approx(reference.capacitorStates()[0]).margin(2e-6));
+        REQUIRE(preview.inductorStates()[0] == Approx(reference.inductorStates()[0]).margin(2e-6));
+    }
+    REQUIRE(preview.affineNodePreviewHits() == beforeEdit);
 }

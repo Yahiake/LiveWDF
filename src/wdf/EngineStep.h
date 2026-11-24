@@ -187,6 +187,7 @@ public:
         if (loadedJunctionEnabled_ != enabled) loadedJunction_.seed = true;
         loadedJunctionEnabled_ = enabled;
     }
+    long long affineNodePreviewHits() const noexcept { return affineNodeHits_; }
     bool hasLoadedJunctionPreview() const noexcept;
     long long loadedJunctionAttempts() const noexcept { return loadedJunctionAttempts_; }
     long long loadedJunctionHits() const noexcept { return loadedJunctionHits_; }
@@ -220,6 +221,19 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    struct AffineNodePlan {
+        long long revision = -1;
+        struct Amp { int port, model; double impedanceBound; };
+        std::vector<Amp> amps;
+        std::vector<double> coefficients, inputs, outputs, residualBound;
+    };
+    AffineNodePlan affineNodes_;
+    long long affineNodeHits_ = 0;
+    bool buildAffineNodePreview();
+    void swapAffineNodePreview(EngineStep& prepared) noexcept;
+    bool tryAffineNodes(const double* sources, size_t count, double tolerance) noexcept;
+    const std::vector<double>& finishStep(const double* sourceValues, size_t sourceCount,
+                                          std::chrono::steady_clock::time_point phaseTime);
     void swapLoadedJunctionPreview(EngineStep& prepared) noexcept;
     LoadedJunctionPlan loadedJunction_;
     long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
@@ -237,6 +251,7 @@ protected:
         std::vector<CurrentRow> rows;
         std::vector<double> inverse, impedance, drive, current;
     };
+    bool buildAffineRoot(AffineRootPlan& result) const;
     void prepareAffineRoot();
     bool opAmpsOnLinearBranch(const std::vector<double>& voltage) const noexcept;
     bool tryAffineRoot(double tolerance) noexcept;

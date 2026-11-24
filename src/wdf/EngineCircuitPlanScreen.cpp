@@ -20,9 +20,11 @@ double profileSeconds() noexcept {
 
 // The two worker-owned engines start at their DC point with the same controls.
 // Compare the existing Fast Live solver to exactly the plan being published.
+template<size_t blocks = 32>
 bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int output,
-                        bool referenceCompiled, std::chrono::steady_clock::time_point stop) {
-    constexpr size_t blocks = 32, frames = 128;
+                        bool referenceCompiled, std::chrono::steady_clock::time_point stop,
+                        bool testOverload = false) {
+    constexpr size_t frames = 128;
     using Clock = std::chrono::steady_clock;
     std::array<std::array<double, blocks>, 2> elapsed{};
     std::array<std::array<double, frames>, 2> audio{};
@@ -42,7 +44,15 @@ bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int 
             const double level = b < 8 ? .005 : b < 16 ? 1.2 :
                 b < 24 ? 1.2 * std::exp(-6.0 * ((b - 16) + double(i) / frames) / 8.0) : 0.;
             const double phase = 2.0 * std::numbers::pi * time;
-            drive[i] = bias + level * (.7 * std::sin(193. * phase) + .3 * std::sin(1327. * phase));
+            if (testOverload) {
+                // Exercise clip entry, sustained overload and recovery. An ill-conditioned
+                // reference can first reject well after the initial transition.
+                const double driveLevel = b < blocks/4 ? .01 : b < blocks/2 ? 38. :
+                                          b < 3*blocks/4 ? 1.5 : .0001;
+                drive[i] = bias + driveLevel * (.6 * std::sin(997. * phase) + .34 * std::sin(6393. * phase) +
+                                                .098 * std::sin(19103. * phase));
+            } else
+                drive[i] = bias + level * (.7 * std::sin(193. * phase) + .3 * std::sin(1327. * phase));
         }
         for (size_t order = 0; order < 2; ++order) {
             const size_t mode = (b + order) % 2;
@@ -75,6 +85,44 @@ bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int 
            elapsed[1].back() <= 1.10 * elapsed[0].back() && misses[1] <= misses[0];
 }
 } // namespace
+
+bool Engine::prepareAffineNodePreview(size_t inputSource, int outputNode) {
+    if (inputSource >= dcValues_.size() || outputNode < 0 || outputNode >= N_) {
+        affineNodes_ = {};
+        return false;
+    }
+    if (!buildAffineNodePreview())
+        return false;
+    Engine candidate(circuit_, fs_, gridCurrent_), reference(circuit_, fs_, gridCurrent_);
+    // Exercise private engines so screening never consumes a live sample or
+    // leaves a fallback factorization from the overload test attached.
+    if (reference.Z_ != Z_ || reference.Xe_ != Xe_ || reference.Xr_ != Xr_) {
+        affineNodes_ = {};
+        return false;
+    }
+    for (Engine* engine : {&candidate, &reference}) {
+        engine->prepareCircuitPlan();
+        if (affineRoot_.rows.empty())
+            engine->affineRoot_ = {};
+        if (rootFactors_.empty())
+            engine->rootFactors_.clear();
+        if (driveCoefficients_.empty())
+            engine->driveCoefficients_.clear();
+    }
+    candidate.affineNodes_ = std::move(affineNodes_);
+    candidate.affineNodes_.revision = candidate.linearRebuilds();
+    candidate.useLoadedJunctionPreview(true);
+    const auto stop = std::chrono::steady_clock::now() + std::chrono::milliseconds(350);
+    const bool passed = winsPlaybackScreen<96>(candidate, reference, inputSource, outputNode, true, stop, true) &&
+                        candidate.affineNodePreviewHits() > 0;
+    if (passed) {
+        affineNodes_ = std::move(candidate.affineNodes_);
+        affineNodes_.revision = linearRebuilds();
+    } else {
+        affineNodes_ = {};
+    }
+    return passed;
+}
 
 bool Engine::LiveTransferSetup::screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode) {
     if (!prepared_ || !peer.prepared_)

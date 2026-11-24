@@ -124,6 +124,11 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             isCur_[rms.outputCurrentIndex] = rms.detector.outputCurrent();
     }
 
+    if (loadedJunctionEnabled_ && affineNodes_.revision == linearRebuilds() &&
+        tryAffineNodes(sourceValues, sourceCount, tol)) {
+        tock(prof_.solve);
+        return finishStep(sourceValues, sourceCount, tPhase);
+    }
     const bool adjustedTransfer = hasAdjustedLiveTransfer();
     const bool compiled = circuitPlanEnabled_ && circuitPlanRevision_ == linearRebuilds() && !adjustedTransfer;
     double* LIVEWDF_RESTRICT uData = u_.data();
@@ -285,6 +290,17 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     if (adjustedTransfer && K_ > 0)
         adjustableTransfer_.correctLoadedNodes(ii_.data(), rootLayout_.nodeCol, nodeData);
 
+    return finishStep(sourceValues, sourceCount, tPhase);
+}
+
+const std::vector<double>& EngineStep::finishStep(const double* sourceValues, size_t sourceCount,
+                                                   std::chrono::steady_clock::time_point phaseTime) {
+    const auto tock = [&](double& phase) {
+        if (profileOn_)
+            phase += std::chrono::duration<double>(std::chrono::steady_clock::now() - phaseTime).count();
+    };
+    const double* nodeData = node_.data();
+    const double* eoffData = eoff_.data();
     bool stateOk = stateAcceptable();
     if (stateOk) {
         double maxVolts = 0.0;

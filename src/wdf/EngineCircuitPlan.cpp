@@ -151,10 +151,10 @@ void EngineStep::prepareCircuitPlan() {
 // ports. For i = J v + c and v = vOc - Z i, solve (I + J Z) i = J vOc + c.
 // The matrix is fixed whenever the op-amps remain inside their rails and
 // slew limits. Keep curved devices on the nonlinear predictor.
-void EngineStep::prepareAffineRoot() {
+bool EngineStep::buildAffineRoot(AffineRootPlan& result) const {
     if (!nOpAmp_ || powerSagEnabled_ || !photoresistors_.empty() ||
         !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
-        return;
+        return false;
     AffineRootPlan plan;
     for (const auto& dev : rootLayout_.devices) {
         const size_t ci = dev.compIndex;
@@ -171,7 +171,7 @@ void EngineStep::prepareAffineRoot() {
             plan.rows.push_back({dev.portBase, dev.compIndex, g * op.outputVoltageWeight(),
                                  pole * alpha * op.openLoopGain, pole});
         } else {
-            return;
+            return false;
         }
     }
     const int m = static_cast<int>(plan.rows.size());
@@ -196,7 +196,7 @@ void EngineStep::prepareAffineRoot() {
     }
     if (!uniqueClippedRoot(lu, std::move(baseTranspose), m) ||
         !detail::factorLUData(lu.data(), pivots.data(), m))
-        return;
+        return false;
     plan.inverse.resize(entries);
     std::vector<double> column(m);
     for (int j = 0; j < m; ++j) {
@@ -205,14 +205,19 @@ void EngineStep::prepareAffineRoot() {
         detail::solveLUData(lu.data(), pivots.data(), column.data(), m);
         for (int r = 0; r < m; ++r) {
             if (!std::isfinite(column[r]))
-                return;
+                return false;
             plan.inverse[size_t(r) * m + j] = column[r];
         }
     }
     plan.drive.resize(m);
     plan.current.resize(m);
-    affineRoot_ = std::move(plan);
-    certifiedResistance_ = ctrlResValues_;
+    result = std::move(plan);
+    return true;
+}
+
+void EngineStep::prepareAffineRoot() {
+    if (buildAffineRoot(affineRoot_))
+        certifiedResistance_ = ctrlResValues_;
 }
 
 bool EngineStep::tryAffineRoot(double tolerance) noexcept {
