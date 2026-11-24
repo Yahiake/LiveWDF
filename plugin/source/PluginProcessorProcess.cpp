@@ -153,9 +153,10 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int rampSamples = fastLive && !isNonRealtime() ? std::min(numSamples, normalRamp) : normalRamp;
     readLivePotTargets(rampSamples);
     applySettledLiveTransfer(processStereo);
-    const bool compiledPreview = previewPrepared_ && fastLive &&
-        *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
-    const bool tryBipolar = compiledPreview && outputOnlyPreviewAllowed_ && !potsMoving_;
+    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+    leftEngine_->useCompiledOptical(compiledPreview);
+    if (processStereo) rightEngine_->useCompiledOptical(compiledPreview);
+    const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_ && !potsMoving_;
     if (!tryBipolar) {
         leftEngine_->releaseBipolarPreview();
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
