@@ -326,6 +326,30 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
     std::array<Handoff, 3> handoffs{{{5*w + w/4, {}, {}, {}},
                                      {8*w + w/3, {}, {}, {}},
                                      {10*w + w/8 - 1, {}, {}, {}}}};
+    Engine trial(circuit_, fs_, gridCurrent_);
+    trial.bipolarPreview_ = std::make_shared<BipolarPreview>(plan);
+    auto& candidate = *trial.bipolarPreview_;
+    candidate.transfer = trial.linearRebuilds();
+    candidate.controls = trial.liveControlRevision();
+    candidate.peak = peak;
+    candidate.rearmFrames = plan.rearmFrames;
+
+    // An in-range guard trip ahead of the first required handoff disqualifies
+    // a scale independently of the reference waveform or the speed screen.
+    constexpr std::array allScales{1., .5, .25};
+    auto scales = std::span(allScales).first(allowPad ? allScales.size() : 1);
+    const auto prefix = std::span(stimulus.input).first(handoffs.front().frame);
+    while (!scales.empty()) {
+        trial.reset();
+        candidate.scale = scales.front();
+        if (std::ranges::all_of(prefix, [&](double input) {
+            double outputVolts;
+            return trial.stepBipolarPreview(plan.biasInput + input, outputVolts);
+        })) break;
+        scales = scales.subspan(1);
+    }
+    if (scales.empty()) return;
+
     Engine oracle(circuit_, fs_, gridCurrent_);
     if (oracle.Z_ != Z_) return;
     auto sources = oracle.dcValues();
@@ -345,7 +369,7 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
 
     // Time the existing Fast Live root at the same hot two-tone points. The
     // complete Accurate trajectory above remains the independent sound reference.
-    Engine fast(circuit_, fs_, gridCurrent_), trial(circuit_, fs_, gridCurrent_);
+    Engine fast(circuit_, fs_, gridCurrent_);
     fast.prepareCircuitPlan();
     fast.useCircuitPlan(true);
     fast.useMixedAffineReduction(true);
@@ -362,12 +386,6 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
     }
     std::sort(physicalTimes.begin(), physicalTimes.end());
 
-    trial.bipolarPreview_ = std::make_shared<BipolarPreview>(plan);
-    auto& candidate = *trial.bipolarPreview_;
-    candidate.transfer = trial.linearRebuilds();
-    candidate.controls = trial.liveControlRevision();
-    candidate.peak = peak;
-    candidate.rearmFrames = plan.rearmFrames;
     const auto closeState = [](double actual, double reference, double dc) {
         return std::isfinite(actual) && std::abs(actual - reference) <= .015 + .025 * std::abs(reference - dc);
     };
@@ -420,8 +438,7 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
                engine::bipolarPreviewWaveformMatches(expected, rendered) &&
                stimulus.matchesColor(expected, rendered);
     };
-    for (double scale : {1., .5, .25}) {
-        if (scale != 1. && !allowPad) break;
+    for (double scale : scales) {
         if (!passes(scale)) continue;
         bipolarPreview_->scale = scale;
         bipolarPreview_->peak = peak;
