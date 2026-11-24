@@ -396,8 +396,9 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
         }
     }
     double error = 0.0;
-    constexpr int maxCorrections = 8;
-    for (int iteration = 0; iteration <= maxCorrections; ++iteration) {
+    constexpr int usualCorrections = 8, extraBjtCorrections = 4;
+    for (int iteration = 0; iteration <= usualCorrections + extraBjtCorrections; ++iteration) {
+        const double previousError = error;
         error = 0.0;
         for (int i = 0; i < m; ++i) {
             const auto& law = p.laws[i];
@@ -452,8 +453,17 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
                 p.matrix[i * m + j] = (i == j ? 1.0 : 0.0) - slope * row[j];
         }
         if (error <= 1e-7) break;
-        if (iteration == maxCorrections || !detail::factorLUData(p.matrix.data(), p.pivots.data(), m))
-            return false;
+        if (iteration >= usualCorrections) {
+            if (iteration == usualCorrections + extraBjtCorrections || error >= 0.8 * previousError)
+                return false;
+            if (iteration == usualCorrections) {
+                // A contracting BJT junction can finish here more cheaply than restarting the full solve.
+                const auto worst = std::max_element(p.correction.begin(), p.correction.end(),
+                    [](double a, double b) { return std::abs(a) < std::abs(b); });
+                if (p.laws[worst - p.correction.begin()].bjt < 0) return false;
+            }
+        }
+        if (!detail::factorLUData(p.matrix.data(), p.pivots.data(), m)) return false;
         detail::solveLUData(p.matrix.data(), p.pivots.data(), p.correction.data(), m);
         double fraction = 1.0;
         for (int i = 0; i < m; ++i) {
@@ -465,14 +475,14 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
             if ((x < lo && x + dz > hi) || (x > hi && x + dz < lo))
                 fraction = std::min(fraction, (.5 * (lo + hi) - x) / dz);
         }
-        const double remaining = maxCorrections - iteration;
+        const double remaining = std::max(1, usualCorrections - iteration);
         for (int j = 0; j < m; ++j) {
             const double step = fraction * p.correction[j];
             double limit = 8.0;
             // Diode unknowns use mA. A large physical current can lie beyond
             // the distance the remaining bounded corrections could traverse.
             if (p.laws[j].diode >= 0 && std::abs(step) > limit * remaining)
-                limit = std::min(8.0 * maxCorrections, std::abs(step) / remaining);
+                limit = std::min(8.0 * usualCorrections, std::abs(step) / remaining);
             p.q[j] += std::clamp(step, -limit, limit);
         }
     }
