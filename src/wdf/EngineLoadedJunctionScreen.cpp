@@ -46,7 +46,7 @@ void EngineStep::screenJunctionDevices(size_t inputSource, std::vector<bool>& li
         }
     }
 }
-bool EngineStep::screenJunctionBenefit(size_t inputSource) {
+bool EngineStep::screenJunctionBenefit(size_t inputSource, std::span<std::uint8_t> crossedCutoffs) {
     if (inputSource >= dcValues_.size()) {
         const auto candidate = std::find(dcValues_.begin(), dcValues_.end(), 0.0);
         if (candidate == dcValues_.end()) return false;
@@ -93,6 +93,22 @@ bool EngineStep::screenJunctionBenefit(size_t inputSource) {
             times[mode] = std::chrono::duration<double>(std::chrono::steady_clock::now()-start).count();
         }
         ratios[b] = times[1] / std::max(1e-12, times[0]);
+        if (!crossedCutoffs.empty()) {
+            // Reconstruct the reference terminals outside both timed regions.
+            const auto voltage = [&](int port, int frame) {
+                const auto& term = rootPortInfo_[port];
+                const auto node = [&](int n) { return n == N_ ? 0.0 : samples[0][size_t(frame)*N_ + n]; };
+                return node(term.a) - node(term.b) + net_.roffAff[port].eval(source);
+            };
+            for (int i = 0; i < frames; ++i) {
+                source[inputSource] = dcValues_[inputSource] + input[i];
+                for (const auto& guard : preview.loadedJunction_.reverseCutoffs) {
+                    const double vbc = voltage(guard.port + 1, i) - voltage(guard.port, i);
+                    if ((bjts_[guard.device].pnp ? -vbc : vbc) > guard.maxVbc)
+                        crossedCutoffs[guard.device] = 1;
+                }
+            }
+        }
         for (int j = 0; j < N_; ++j)
             for (int i = 0; i < frames; ++i) {
                 const size_t k = size_t(i)*N_+j;

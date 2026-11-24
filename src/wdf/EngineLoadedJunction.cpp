@@ -74,16 +74,24 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
         if (!negativeReverse || !buildLoadedJunctionPlan(linearAmps, bufferTransistors, true, negativeReverse))
             return false;
     }
-    if (screenBenefit && !screenJunctionBenefit(inputSource)) {
-        loadedJunction_ = {};
-        return false;
-    }
-    return true;
+    if (!screenBenefit)
+        return true;
+    std::vector<std::uint8_t> crossed(loadedJunction_.reverseCutoffs.empty() ? 0 : nBjt_);
+    if (screenJunctionBenefit(inputSource, crossed))
+        return true;
+    // A transistor that comes out of reverse cutoff during the physical
+    // sweep needs its full junction law. Retry once, keeping every other guard.
+    if (std::ranges::any_of(crossed, [](auto v) { return v != 0; }) &&
+        buildLoadedJunctionPlan(linearAmps, bufferTransistors, true, negativeReverse, crossed) &&
+        screenJunctionBenefit(inputSource))
+        return true;
+    loadedJunction_ = {};
+    return false;
 }
 
 bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
                                          const std::vector<bool>& bufferTransistors,
-                                         bool omitReverse, bool& negativeReverse) {
+                                         bool omitReverse, bool& negativeReverse, std::span<const std::uint8_t> retained) {
     Plan p;
     std::vector<Tabulation> recipe;
     p.impedance = Z_;
@@ -150,7 +158,7 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
             }
             for (int junction = 0; junction < 2; ++junction) {
                 const bool forward = junction == 0;
-                if (!forward && omitReverse) {
+                if (!forward && omitReverse && (retained.empty() || !retained[ci])) {
                     const double cutoff = reverseCutoffVoltage(b, Z_, K_, r, kFastLiveTolerance / nBjt_);
                     if (sign * (vv_[r + 1] - vv_[r]) <= cutoff) {
                         // The reverse transport current tends to -Is for both polarities.

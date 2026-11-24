@@ -609,6 +609,17 @@ struct ReversePlanProbe : wdf::Engine {
         }
         return worst;
     }
+    std::vector<std::uint8_t> crossReverseCutoffs(size_t input) {
+        std::vector<std::uint8_t> crossed(nBjt_);
+        screenJunctionBenefit(input, crossed);
+        return crossed;
+    }
+    bool retryWithFullReverse(size_t input, std::span<const std::uint8_t> crossed) {
+        std::vector<bool> linearAmps(nOpAmp_), buffers(nBjt_);
+        screenJunctionDevices(input, linearAmps, buffers);
+        bool negativeReverse = false;
+        return buildLoadedJunctionPlan(linearAmps, buffers, true, negativeReverse, crossed);
+    }
     bool prepareGuardedVariant() {
         bool negativeReverse = false;
         return buildLoadedJunctionPlan(std::vector<bool>(nOpAmp_, false),
@@ -726,6 +737,49 @@ TEST_CASE("The loaded solver retries a negative reverse-branch resistance on a c
     }
     REQUIRE(preview.loadedJunctionHits() > 1900);
     REQUIRE(errorEnergy < 1e-6 * signalEnergy);
+}
+
+TEST_CASE("A compressor sidechain retains the full reverse laws that cross cutoff on transients",
+          "[engine][circuit-plan][reverse-cutoff]") {
+    wdf::LiveWDFDocument doc;
+    std::string reason;
+    REQUIRE(doc.loadFromFile("schematics/studio/dynamics/UREI-1176LN-Rev-D.livewdf", reason));
+    const auto setting = std::find_if(doc.components.begin(), doc.components.end(),
+                                      [](const auto& component) { return component.id == "R1"; });
+    REQUIRE(setting != doc.components.end());
+    setting->values["pos"] = .65;
+    const auto circuit = doc.toCircuit();
+    const auto input = std::find_if(circuit.src.begin(), circuit.src.end(),
+                                    [&](const auto& source) { return source.name == doc.inputId(); });
+    REQUIRE(input != circuit.src.end());
+    const auto source = size_t(input - circuit.src.begin());
+    ReversePlanProbe preview(circuit, 48000.);
+    wdf::Engine reference(circuit, 48000.);
+    REQUIRE(preview.prepareLoadedJunctionPreview(source, false));
+    const auto before = preview.cutoffCount();
+    const auto crossed = preview.crossReverseCutoffs(source);
+    const auto count = std::count(crossed.begin(), crossed.end(), std::uint8_t{1});
+    REQUIRE(count > 0);
+    REQUIRE(size_t(count) < before);
+    REQUIRE(preview.retryWithFullReverse(source, crossed));
+    REQUIRE(preview.cutoffCount() == before - size_t(count));
+    preview.useLoadedJunctionPreview(true);
+    auto values = reference.dcValues();
+    const int output = reference.nodeIndex(doc.outputNet());
+    double refEnergy = 0., errEnergy = 0.;
+    for (int i = 0; i < 3072; ++i) {
+        const double time = double(i) / 48000.;
+        const double envelope = std::exp(-double(i % 512) / 115.);
+        values[source] = 1.3 * envelope * (.7 * std::sin(5100.*time) + .3 * std::sin(45800.*time));
+        const double actual = preview.step(values, 60, wdf::Engine::kFastLiveTolerance)[output];
+        const double expected = reference.step(values)[output];
+        REQUIRE_FALSE(preview.lastStateRejected());
+        REQUIRE(std::abs(actual - expected) < .002);
+        refEnergy += expected * expected;
+        errEnergy += (actual - expected) * (actual - expected);
+    }
+    REQUIRE(errEnergy < 1e-6 * refEnergy);
+    REQUIRE(preview.loadedJunctionHits() > 3000);
 }
 
 namespace {
