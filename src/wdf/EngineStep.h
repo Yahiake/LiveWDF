@@ -26,14 +26,7 @@ public:
 
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
-        resetAffineMotion();
-        loadedJunction_.seed = true;
-        loadedJunction_.cooldown = loadedJunction_.misses = 0;
-        circuitPlanCooldown_ = 0;
-        affineRootCooldown_ = 0;
-        affineRootRetry_ = 8;
-        circuitPlanRetry_ = 8;
-        resetControlledDevices();
+        resetPreviewState();
         std::vector<double> node, rootV;
         const bool haveDc =
             solveDc(node, rootV) && node.size() >= static_cast<size_t>(N_) &&
@@ -167,15 +160,8 @@ public:
                 indState_[static_cast<size_t>(grp.indIndices[r])] = a;
             }
         }
-        // A reset starts a new solve history: the runtime gate's evidence from
-        // the old history would describe a different operating point.
-        runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
-        blockFallbackCooldown_ = 0;
-        jointLastIters_ = 0;
-        jointLastTrials_ = 0;
-        runtimeBlockUsed_ = false;
-        runtimeBlockCount_ = 0;
-        runtimePartition_ = nullptr;
+        saveRecoveryState(haveDc && K_ > 0);
+        resetSolverHistory();
     }
 
     static constexpr int kDefaultMaxIterations = 60;
@@ -224,6 +210,81 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    void resetPreviewState() {
+        resetAffineMotion();
+        loadedJunction_.seed = true;
+        loadedJunction_.cooldown = loadedJunction_.misses = 0;
+        circuitPlanCooldown_ = 0;
+        affineRootCooldown_ = 0;
+        affineRootRetry_ = 8;
+        circuitPlanRetry_ = 8;
+        resetControlledDevices();
+    }
+
+    void resetSolverHistory() {
+        // A reset starts a new solve history: the runtime gate's evidence from
+        // the old history would describe a different operating point.
+        runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
+        blockFallbackCooldown_ = 0;
+        jointLastIters_ = 0;
+        jointLastTrials_ = 0;
+        runtimeBlockUsed_ = false;
+        runtimeBlockCount_ = 0;
+        runtimePartition_ = nullptr;
+    }
+
+    // For a fixed netlist and sample rate these DC states depend only on
+    // element conductances and the static amplifier law. Devices whose DC
+    // laws depend on live control, tube domain or supply state use reset().
+    struct RecoveryState {
+        bool valid = false, hasRoot = false;
+        std::vector<double> conductance, caps, inductors, volts, currents, poles;
+        std::vector<unsigned char> softRails;
+    } recovery_;
+
+    bool staticRecoveryEligible() const noexcept {
+        return K_ > 0 && nTri_ == 0 && nCtrl_ == 0 && !powerSagEnabled_ &&
+               bucketBrigades_.empty() && rmsDetectors_.empty();
+    }
+
+    bool hasRecoveryState() const noexcept {
+        return recovery_.valid && staticRecoveryEligible() && recovery_.conductance == net_.eG &&
+               std::ranges::equal(recovery_.softRails, opAmps_, {}, {}, &OpAmpModel::softRails);
+    }
+
+    void saveRecoveryState(bool hasRoot) {
+        if (!staticRecoveryEligible())
+            return;
+        recovery_.conductance = net_.eG;
+        recovery_.softRails.resize(opAmps_.size());
+        for (size_t i = 0; i < opAmps_.size(); ++i)
+            recovery_.softRails[i] = opAmps_[i].softRails;
+        recovery_.caps = capState_;
+        recovery_.inductors = indState_;
+        recovery_.volts = vv_;
+        recovery_.currents = ii_;
+        recovery_.poles = opAmpVp_;
+        recovery_.hasRoot = hasRoot;
+        recovery_.valid = true;
+    }
+
+    void recoverOperatingPoint() {
+        if (!loadedJunctionEnabled_ || !hasRecoveryState()) {
+            reset();
+            return;
+        }
+        resetPreviewState();
+        capState_ = recovery_.caps;
+        indState_ = recovery_.inductors;
+        // With only a network-bias seed, reset() preserves the live root history.
+        if (recovery_.hasRoot) {
+            ii_ = recovery_.currents;
+            opAmpVp_ = recovery_.poles;
+            vv_ = vvPrev_ = vvPrev2_ = recovery_.volts;
+        }
+        resetSolverHistory();
+    }
+
     struct AffineRootPlan {
         struct CurrentRow {
             int port, pole;

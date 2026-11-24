@@ -105,3 +105,66 @@ TEST_CASE("Capacitor startup voltage preserves polarity and repeats on reset",
     CHECK(dc.getCapacitorState(0) == Approx(-1.0));
     CHECK(dc.step(sources).at(out) == Approx(1.0));
 }
+
+TEST_CASE("Rejected-state recovery matches a fresh DC solve across live changes", "[engine][dc-recovery]") {
+    class Probe : public wdf::Engine {
+    public:
+        using Engine::Engine;
+        bool prepared() const { return hasRecoveryState(); }
+        void stall(bool discard) {
+            consecutiveStateRejects_ = 8;
+            if (discard) recovery_.valid = false;
+        }
+    };
+
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.25);
+    c.addPot("in", "tap", "0", 5000., 0.5);
+    c.addOpAmp("out", "out", "tap", "0", "0",
+               wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072), "U1");
+    c.addRes("out", "load", 100.);
+    c.addCap("load", "0", 1e-6);
+    c.addInd("load", "return", 1e-3);
+    c.addRes("return", "0", 330.);
+    Probe live(c, 48000.), reference(c, 48000.);
+    live.useLoadedJunctionPreview(true);
+    reference.useLoadedJunctionPreview(true);
+    live.prepareLiveControls();
+    reference.prepareLiveControls();
+
+    const auto recover = [&](bool expectedPrepared) {
+        REQUIRE(live.prepared() == expectedPrepared);
+        live.stall(false);
+        reference.stall(true);
+        for (int n = 0; n < 16; ++n) {
+            const std::vector<double> input{0.9 * std::cos(0.13 * n)};
+            REQUIRE(live.step(input) == reference.step(input));
+            REQUIRE(live.capacitorStates() == reference.capacitorStates());
+            REQUIRE(live.inductorStates() == reference.inductorStates());
+            REQUIRE(live.rootCurrents() == reference.rootCurrents());
+            REQUIRE(live.opAmpPole(0) == reference.opAmpPole(0));
+        }
+    };
+    recover(true);
+    for (auto* engine : {&live, &reference})
+        REQUIRE(engine->setLiveControls({{0, 0.73}}, {}));
+    recover(false);
+    recover(true);
+    for (auto* engine : {&live, &reference}) {
+        REQUIRE(engine->setLiveControls({{0, 0.15}}, {}));
+        wdf::Engine::LiveTransferSetup setup(c);
+        REQUIRE(engine->captureLiveTransferSetup(setup));
+        setup.build(0, false);
+        REQUIRE_FALSE(engine->prepared());
+        REQUIRE(engine->installLiveTransferSetup(setup));
+    }
+    recover(true);
+    for (auto* engine : {&live, &reference})
+        engine->setOpAmpSoftRails(0, !engine->isOpAmpSoftRails(0));
+    recover(false);
+    recover(true);
+    for (auto* engine : {&live, &reference})
+        engine->enableOpAmpRailSag(0);
+    recover(false);
+    REQUIRE_FALSE(live.prepared());
+}

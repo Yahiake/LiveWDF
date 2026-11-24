@@ -126,6 +126,8 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     releaseBipolarPreview();
     setup.owner_ = nullptr;
     auto& preparedEngine = *setup.prepared_;
+    if (preparedEngine.hasRecoveryState())
+        std::swap(recovery_, preparedEngine.recovery_);
     driveCoefficients_.swap(preparedEngine.driveCoefficients_);
     driveInputs_.swap(preparedEngine.driveInputs_);
     std::swap(affineRoot_, preparedEngine.affineRoot_);

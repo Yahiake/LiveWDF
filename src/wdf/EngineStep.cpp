@@ -32,7 +32,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // consecutive rejected samples, not on normal switch changes.
     if (consecutiveStateRejects_ >= 8) {
         consecutiveStateRejects_ = 0;
-        reset();
+        recoverOperatingPoint();
         newtonIters_ = 0;
         deviceEvals_ = 0;
         lineTrials_ = 0;
