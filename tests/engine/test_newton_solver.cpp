@@ -320,3 +320,36 @@ TEST_CASE("Shared Newton columns preserve the voltage step across live transfer 
     plan.refresh(z, n, n);
     REQUIRE_FALSE(plan.available());
 }
+
+TEST_CASE("Shared Newton eliminates only identity rows with zero current correction", "[engine][newton]") {
+    constexpr int ports = 12, groups = 6;
+    std::vector<double> z(ports * ports), jacobian(ports * ports), rhs(ports), f(ports);
+    std::vector<double> full(ports * ports), expected(ports), actual(ports);
+    std::vector<int> active(ports);
+    std::vector<wdf::RootDevice> devices(ports);
+    for (int i = 0; i < ports; ++i) {
+        f[i] = std::sin(0.7 * i);
+        active[i] = i;
+        devices[i].portBase = devices[i].activeRowBase = i;
+        devices[i].numPorts = devices[i].numActiveRows = 1;
+        for (int j = 0; j < ports; ++j)
+            z[i * ports + j] = std::cos(0.17 * (i + 1) * (1 + j % groups));
+    }
+    wdf::solver::SharedNewtonColumns plan;
+    plan.prepare(z, ports, ports);
+    REQUIRE(plan.available());
+    for (int mask = 0; mask < (1 << groups); ++mask) {
+        for (int i = 0; i < ports; ++i) {
+            const double slope = (mask & (1 << (i % groups))) ? .013 * (i + 1) : 0.;
+            jacobian[i * ports + i] = slope;
+            rhs[i] = -slope * f[i];
+            for (int j = 0; j < ports; ++j)
+                full[i * ports + j] = (i == j ? 1. : 0.) + slope * z[i * ports + j];
+        }
+        plan.assemble(jacobian.data(), f.data(), ports, active.data(), devices);
+        REQUIRE(plan.finish(f.data(), ports, actual.data()));
+        REQUIRE(wdf::solver::RootJacobian::reducedFinishFast(
+            full.data(), rhs.data(), ports, z.data(), f.data(), ports, expected.data()));
+        for (int i = 0; i < ports; ++i) REQUIRE(std::abs(actual[i] - expected[i]) < 1.e-13);
+    }
+}
