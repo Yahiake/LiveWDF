@@ -45,7 +45,7 @@ void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
 bool EngineStep::prepareLoadedJunctionPreview() {
     loadedJunction_ = {};
     if (!nD_ || K_ > 64 || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
-        !photoresistors_.empty() || !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
+        !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
         return false;
 
     Plan p;
@@ -76,6 +76,12 @@ bool EngineStep::prepareLoadedJunctionPreview() {
                 }
             }
             p.injection.push_back({r, j, .001});
+            recipe.emplace_back();
+        } else if (d.kind == RootKind::ControlledRes && circuit_.ctrlRes[ci].photo) {
+            p.laws.emplace_back();
+            p.laws.back().sense = {r, -1, 1.0};
+            p.laws.back().photo = ci;
+            p.injection.push_back({r, j, .001}); // q in mA, i in A
             recipe.emplace_back();
         } else if (d.kind == RootKind::Bjt) {
             const auto& b = bjts_[ci];
@@ -172,7 +178,7 @@ bool EngineStep::prepareLoadedJunctionPreview() {
         law.resistance = -p.mutual[j * m + j];
         if (!(law.resistance >= 0.0)) return false;
         p.mutual[j * m + j] = 0.0;
-        if (law.pole >= 0) continue;
+        if (law.pole >= 0 || law.photo >= 0) continue;
         // Tabulate in terminal voltage to resolve the knee at every impedance.
         // Samples outside the proven monotonically invertible interval use
         // the full root, never a guessed extrapolation of the exponential.
@@ -199,7 +205,7 @@ bool EngineStep::prepareLoadedJunctionPreview() {
         }
     }
     for (auto& law : p.laws) {
-        if (law.pole >= 0) continue;
+        if (law.pole >= 0 || law.photo >= 0) continue;
         size_t n = 1;
         constexpr int count = 32769;
         law.lookup.reserve(count);
@@ -263,7 +269,12 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
             if (!std::isfinite(x)) return false;
             p.raw[i] = x;
             double y, slope;
-            if (law.pole >= 0) {
+            if (law.photo >= 0) {
+                // The lamp's conductance comes from the preceding accepted electrical frame.
+                // Solve its loaded branch exactly within the simultaneous junction system.
+                slope = 1.0 / (law.resistance + .001 * ctrlResValues_[law.photo]);
+                y = slope * x;
+            } else if (law.pole >= 0) {
                 const double gain = 1.0 / (1.0 + law.resistance);
                 y = std::clamp(x * gain, p.low[i], p.high[i]);
                 slope = (y > p.low[i] && y < p.high[i]) ? gain : 0.0;

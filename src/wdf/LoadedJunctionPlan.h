@@ -14,7 +14,7 @@ struct LoadedJunctionPlan {
     };
     struct Law {
         Term sense;
-        int pole = -1, bjt = -1;
+        int pole = -1, bjt = -1, photo = -1;
         bool forward = false;
         int diode = -1, opposite = -1, oppositePort = -1;
         double resistance = 0.0, inversePole = 0.0;

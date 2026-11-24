@@ -88,6 +88,45 @@ TEST_CASE("Co-illuminated optical cells preserve independent attack and release 
     }
 }
 
+TEST_CASE("The loaded junction solve follows a feedback-driven optical resistance", "[engine][photores]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "out", 4700.0);
+    c.addDiode("out", "0", wdf::DiodeModel{4.35e-9, 1.906, 0.6458}, "clip");
+    wdf::PhotoresistorControl cell;
+    cell.sensePos = "out";
+    cell.senseNeg = "0";
+    cell.referenceVolts = 0.25;
+    cell.gamma = 1.65;
+    cell.brightOhms = 250.0;
+    cell.attackSeconds = 0.001;
+    cell.releaseSeconds = 0.010;
+    c.addPhotoresistor("out", "0", 1e6, cell, "feedback");
+
+    for (double fs : {48000.0, 96000.0}) {
+        wdf::Engine native(c, fs), preview(c, fs);
+        REQUIRE(preview.prepareLoadedJunctionPreview());
+        preview.useLoadedJunctionPreview(true);
+        auto source = native.dcValues();
+        const int out = native.nodeIndex("out");
+        double maxVoltageError = 0.0, maxResistanceError = 0.0, minResistance = 1e6;
+        for (int i = 0; i < 3072; ++i) {
+            source[0] = i < 1536 ? 1.6 * std::sin(i * 0.035) : 0.0;
+            const double reference = native.step(source)[out];
+            const double candidate = preview.step(source)[out];
+            const double actualR = preview.controlledResistanceValues().front();
+            const double expectedR = native.controlledResistanceValues().front();
+            maxVoltageError = std::max(maxVoltageError, std::abs(candidate - reference));
+            maxResistanceError = std::max(maxResistanceError, std::abs(actualR / expectedR - 1.0));
+            minResistance = std::min(minResistance, actualR);
+        }
+        CHECK(preview.loadedJunctionHits() > 3000);
+        CHECK(minResistance < 2000.0);
+        CHECK(maxVoltageError < 1e-4);
+        CHECK(maxResistanceError < 1e-3);
+    }
+}
+
 // Increment 18: Variable Resistors (VarRes rheostats) & Controlled Resistors (audio-rate root elements).
 
 TEST_CASE("VarRes taper curves and resistance scaling", "[varres]") {
