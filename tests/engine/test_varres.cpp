@@ -462,6 +462,21 @@ TEST_CASE("Port impedance stamps series and shunt fixtures without duplicating a
     doc.components = {in, out, series, load};
     auto& source = doc.components[0];
     auto& output = doc.components[1];
+    SECTION("Named fixture defaults show their marked resistance without stamping a live control") {
+        source.properties["externalResistor"] = "RS";
+        source.values["externalDefaultOhms"] = 300.;
+        doc.components[2].values["value"] = 150.;
+        const auto range = wdf::portImpedanceRange(doc, true);
+        REQUIRE(range);
+        REQUIRE(range->defaultPosition > 0.);
+        CHECK(range->ohmsAt(static_cast<float>(range->defaultPosition)) == 150.);
+        CHECK(range->wiredOhms == 150.);
+        CHECK(wdf::circuitWithPortImpedances(doc).varRes.empty());
+        CHECK_FALSE(range->needsFixture(range->defaultPosition));
+        CHECK(range->needsFixture(range->positionForOhms(200.)));
+        CHECK(range->needsFixture(range->defaultPosition, true));
+        CHECK_FALSE(range->needsFixture(0., true));
+    }
     SECTION("Existing source and load have their actual values replaced; live changes preserve the transfer") {
         source.properties["externalResistor"] = "RS";
         output.properties["externalResistor"] = "RL";

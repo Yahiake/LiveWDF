@@ -230,7 +230,7 @@ void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool
 
     const auto* name = input ? "Source impedance" : "Output load";
     const auto* parameter = input ? "source_impedance" : "load_impedance";
-    auto knob = std::make_unique<VintageKnob>(input ? "SOURCE Z" : "OUTPUT LOAD");
+    auto knob = std::make_unique<VintageKnob>(input ? "SOURCE R" : "OUTPUT LOAD");
     knob->setAccentColor(juce::Colour(input ? 0xFF00E5A0 : 0xFFFFB800));
     auto& slider = knob->slider();
     slider.setName(name);
@@ -240,19 +240,25 @@ void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool
     const auto ohms = [ohmSymbol](double value) {
         return juce::String(editor::formatValue(value, "")) + ohmSymbol;
     };
-    const juce::String description = input ? "Source impedance feeding the circuit"
-                                           : "External load across the circuit output";
+    const juce::String description = input ? "Resistance of the source feeding this input"
+                                           : "Resistance of the device connected to this output";
+    slider.setDoubleClickReturnValue(true, range->defaultPosition);
     slider.setTooltip(description + ": " + ohms(range->minOhms) + " to " + ohms(range->maxOhms)
-                      + ". Double-click for the original circuit wiring.");
-    slider.textFromValueFunction = [limits = *range, ohms](double position) {
-        return position <= 0. ? juce::String("As wired") : ohms(limits.ohmsAt(position));
+                      + ". Double-click for the preset impedance.");
+    const bool open = !input && range->resistor.empty();
+    slider.textFromValueFunction = [limits = *range, ohms, open](double position) {
+        if (position <= 0.) return open ? juce::String("Open") : ohms(limits.wiredOhms);
+        return ohms(limits.ohmsAt(position));
     };
-    slider.valueFromTextFunction = [limits = *range, &slider, ohmSymbol](const juce::String& text) {
-        if (text.trim().equalsIgnoreCase("As wired")) return 0.;
+    slider.valueFromTextFunction = [limits = *range, &slider, ohmSymbol, open](const juce::String& text) {
+        if (text.trim().equalsIgnoreCase("As wired") || (open && text.trim().equalsIgnoreCase("Open")))
+            return 0.;
         bool ok = false;
         auto number = text.replace(juce::String::charToString(0x2126), "").replace(ohmSymbol, "");
         const double value = editor::parseValue(number.trim().toStdString(), &ok);
         if (!ok || !std::isfinite(value) || value < 0.) return slider.getValue();
+        if (!limits.resistor.empty() && value == limits.wiredOhms) return limits.defaultPosition;
+        if (open && value == 0.) return slider.getValue();
         return limits.positionForOhms(value);
     };
     slider.updateText();

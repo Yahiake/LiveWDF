@@ -2,6 +2,7 @@
 
 #include "format/Document.h"
 
+#include <array>
 #include <optional>
 #include <stdexcept>
 
@@ -11,10 +12,29 @@ namespace wdf {
 struct PortImpedanceRange {
     double minOhms, maxOhms;
     std::string resistor;
+    double wiredOhms = 0., defaultOhms = 0., defaultPosition = 0.;
     static constexpr double step = 0.001;
+
+    bool atDefault(double position) const noexcept {
+        return defaultPosition > 0. && std::abs(position - defaultPosition) <= 1.e-7;
+    }
+
+    bool needsFixture(double position, bool alreadyAdjustable = false) const noexcept {
+        return position > 0. && (resistor.empty() || alreadyAdjustable || !atDefault(position));
+    }
+
+    void setDefault(double ohms) {
+        if (!(ohms >= minOhms && ohms <= maxOhms)) return;
+        defaultOhms = ohms;
+        defaultPosition = std::round(positionForOhms(ohms) / step) * step;
+    }
 
     double ohmsAt(double position) const {
         if (!std::isfinite(position) || position <= 0.) return 0.;
+        // The host stores this parameter on a 0.001 grid. Keep a specified
+        // reference resistor exact when the knob is at its factory detent.
+        if (atDefault(position))
+            return defaultOhms;
         const double t = (std::clamp(position, step, 1.) - step) / (1. - step);
         return minOhms * std::pow(maxOhms / minOhms, t);
     }
@@ -43,7 +63,11 @@ inline std::optional<PortImpedanceRange> portImpedanceRange(const LiveWDFDocumen
     if (pin == port->pins.end() || pin->second.empty() || pin->second == ground) return {};
     const auto named = port->properties.find("externalResistor");
     PortImpedanceRange range{low, high, {}};
-    if (named == port->properties.end()) return range;
+    if (named == port->properties.end()) {
+        const auto value = port->values.find("externalDefaultOhms");
+        if (value != port->values.end()) range.setDefault(value->second);
+        return range;
+    }
     const auto& id = named->second;
     const auto fixture = std::find_if(doc.components.begin(), doc.components.end(),
                                       [&](const auto& part) { return part.id == id; });
@@ -67,6 +91,9 @@ inline std::optional<PortImpedanceRange> portImpedanceRange(const LiveWDFDocumen
         }
     }
     range.resistor = id;
+    const auto value = fixture->values.find("value");
+    range.wiredOhms = value == fixture->values.end() ? 1000. : value->second;
+    range.setDefault(range.wiredOhms);
     return range;
 }
 
@@ -110,6 +137,28 @@ inline std::string applyPortImpedance(Circuit& circuit, const LiveWDFDocument& d
     }
     circuit.addVarRes(a, b, range->maxOhms, range->ohmsAt(position) / range->maxOhms, PotTaper::Linear, name);
     return name;
+}
+
+inline Circuit circuitWithPortImpedances(const LiveWDFDocument& doc,
+        const std::array<double, 2>* positions = nullptr, std::array<std::string, 2>* fixtureNames = nullptr) {
+    auto circuit = doc.toCircuit();
+    for (size_t i = 0; i < 2; ++i) {
+        const bool input = i == 0;
+        const auto range = portImpedanceRange(doc, input);
+        const double position = positions ? (*positions)[i] : (range ? range->defaultPosition : 0.);
+        std::string fixture;
+        if (range && range->needsFixture(position))
+            fixture = applyPortImpedance(circuit, doc, input, position);
+        if (fixtureNames) (*fixtureNames)[i] = std::move(fixture);
+    }
+    return circuit;
+}
+
+inline std::string playbackCacheKey(const LiveWDFDocument& doc, const std::array<std::string, 2>& fixtureNames) {
+    auto key = doc.toJson();
+    for (const auto& fixture : fixtureNames)
+        if (!fixture.empty()) key += "\nport fixture " + fixture;
+    return key;
 }
 
 } // namespace wdf

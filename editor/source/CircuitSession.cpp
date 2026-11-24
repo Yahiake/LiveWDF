@@ -1,4 +1,5 @@
 #include "CircuitSession.h"
+#include "format/PortImpedance.h"
 
 #include "format/PartLibrary.h"
 
@@ -59,7 +60,7 @@ bool CircuitSession::compile(const wdf::LiveWDFDocument& doc, double fs) {
     fs_ = fs;
 
     try {
-        circuit_ = doc.toCircuit();
+        circuit_ = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         error_ = std::string("circuit rejected: ") + e.what();
         engine_.reset();

@@ -306,7 +306,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     for (size_t i = 0; i < numPorts; ++i) {
         const auto& port = ports_[i];
         requestedPorts[i] = port.range ? port.parameter->load(std::memory_order_relaxed) : 0.f;
-        portTopologyChanged |= port.enabled != (requestedPorts[i] > 0.f);
+        portTopologyChanged |= port.enabled != (port.range && port.range->needsFixture(requestedPorts[i], port.enabled));
     }
     if (!portTopologyChanged) rejectedPortRequest_.reset();
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
@@ -581,9 +581,7 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     // covers the conversion that happens first.
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
-        for (size_t i = 0; i < numPorts; ++i)
-            fixtureNames[i] = wdf::applyPortImpedance(c, doc, i == 0, portPositions[i]);
+        c = wdf::circuitWithPortImpedances(doc, &portPositions, &fixtureNames);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -727,9 +725,13 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     std::array<double, numPorts> portPositions{};
     std::array<std::string, numPorts> fixtureNames;
-    if (!initializePotParameters)
-        for (size_t i = 0; i < numPorts; ++i)
-            portPositions[i] = ports_[i].parameter->load(std::memory_order_relaxed);
+    std::array<std::optional<wdf::PortImpedanceRange>, numPorts> portRanges;
+    for (size_t i = 0; i < numPorts; ++i) {
+        portRanges[i] = wdf::portImpedanceRange(doc, i == 0);
+        portPositions[i] = initializePotParameters
+            ? (portRanges[i] ? portRanges[i]->defaultPosition : 0.)
+            : ports_[i].parameter->load(std::memory_order_relaxed);
+    }
 
     wdf::Circuit newSettledControlCircuit;
     buildEngineFromDoc(doc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, baseSources,
@@ -739,10 +741,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         return false;
     }
     rejectedPortRequest_.reset();
-    auto cacheKey = doc.toJson();
-    for (const auto& fixture : fixtureNames)
-        if (!fixture.empty()) cacheKey += "\nport fixture " + fixture;
-    cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
+    cacheDocument_ = std::make_shared<const std::string>(wdf::playbackCacheKey(doc, fixtureNames));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
@@ -857,10 +856,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         }
         for (size_t i = 0; i < numPorts; ++i) {
             auto& port = ports_[i];
-            port.range = wdf::portImpedanceRange(doc, i == 0);
+            port.range = std::move(portRanges[i]);
             port.enabled = !fixtureNames[i].empty();
-            if (initializePotParameters && port.parameter->load() != 0.f)
-                apvts_.getParameter(portParameterIds[i])->setValueNotifyingHost(0.f);
+            const float position = static_cast<float>(portPositions[i]);
+            if (initializePotParameters && port.parameter->load() != position)
+                apvts_.getParameter(portParameterIds[i])->setValueNotifyingHost(position);
             if (!port.enabled) continue;
             const int index = leftEngine_->varResIndexByName(fixtureNames[i]);
             jassert(port.range && index >= 0);

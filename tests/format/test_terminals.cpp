@@ -198,6 +198,12 @@ TEST_CASE("External impedance ranges are optional per terminal and round-trip in
     CHECK(range->ohmsAt(1.) == Approx(100000.));
     for (double ohms : {100., 1000., 10000., 100000.})
         CHECK(range->ohmsAt(range->positionForOhms(ohms)) == Approx(ohms));
+    values["externalDefaultOhms"] = 5900.;
+    const auto preset = wdf::portImpedanceRange(doc, true);
+    REQUIRE(preset);
+    CHECK(preset->ohmsAt(static_cast<float>(preset->defaultPosition)) == 5900.);
+    values["externalDefaultOhms"] = 200000.;
+    CHECK(wdf::portImpedanceRange(doc, true)->defaultPosition == 0.);
     values["externalMaxOhms"] = 50.;
     CHECK_FALSE(wdf::portImpedanceRange(doc, true));
 }

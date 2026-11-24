@@ -10,21 +10,26 @@ To connect inserts at their simulated terminal voltages, choose **Output to → 
 
 ## Source impedance and output load
 
-Presets with an adjustable external connection show **Source Z** or **Output Load** in the player. Both default to **As wired**. Source Z is the series resistance of what drives the input. Output Load is the resistance connected across the output. Turning either control changes the electrical circuit, so its tone and gain can change together. Output level matching continues to use the preset’s saved gain.
+The player shows these controls on presets that define a range. **Source R** sets the series resistance of the device feeding the input. **Output load** sets the shunt resistance of the device receiving the output. The readout shows the effective external resistance. An ideal voltage source reads **0 Ω**. **Open** means no extra load across the output. The circuit's own input and output components still affect its impedance. Double-click to recall the preset's default.
 
-Moving between resistance values is smoothed during playback. Switching into or out of **As wired** rebuilds the circuit and resets stored energy, including any tail.
-
-For example, on the GCB-95 Cry Baby try a 1 MΩ output load for an amplifier input, then 10 kΩ for a low-impedance pedal. These are resistive loads. A guitar pickup, cable or speaker can also have a frequency-dependent impedance. A LiveWDF-to-LiveWDF connection passes voltage forward. To approximate loading by the next device, choose its input resistance as the sending device’s output load. The voltage passed to the next insert already includes that loading. Adding the same voltage divider again at the receiver would attenuate the signal twice.
-
-| Factory preset | Source impedance | Output load |
+| Factory preset | Source default (adjustment range) | Output load default (adjustment range) |
 | --- | --- | --- |
-| Cry Baby GCB-95, Fuzz Face | 100 Ω–150 kΩ | 680 Ω–1 MΩ |
-| ZVEX Fuzz Factory, Roger Mayer Octavia | 100 Ω–150 kΩ | — |
-| API 312 Preamp VP312 Rev A | 20–600 Ω | 600 Ω–100 kΩ |
-| UREI 1176LN Rev D | — | 600 Ω–100 kΩ |
-| dbx 160 VU | — | 10–100 kΩ |
+| Cry Baby GCB-95, Mu-Tron III | 5.9 kΩ (100 Ω–150 kΩ) | 1 MΩ (10 kΩ–1 MΩ) |
+| Fuzz Face, Tone Bender Mk II, FZ-1, Fuzzrite, Big Muff, Colorsound Power Boost | 5.9 kΩ (100 Ω–150 kΩ) | 1 MΩ (5 kΩ–1 MΩ) |
+| ZVEX Fuzz Factory, Roger Mayer Octavia | 5.9 kΩ (100 Ω–150 kΩ) | — |
+| API 312 Preamp VP312 Rev A | 150 Ω (20–600 Ω) | 600 Ω (600 Ω–100 kΩ) |
+| Neve 1073 line preamp | 150 Ω (10–600 Ω) | 600 Ω (600 Ω–100 kΩ) |
+| Soundcraft Series 600 | 600 Ω (10–600 Ω) | 22 kΩ (10–100 kΩ) |
+| UREI 1176LN Rev D, UREI LA-3A, Teletronix LA-2A, Fairchild 660, Altec 436C, Gates Sta-Level | — | 600 Ω (600 Ω–100 kΩ) |
+| API 550A, API 560, Pultec EQP-1A, Pultec MEQ-5, UREI 545 | — | 600 Ω (600 Ω–100 kΩ) |
+| dbx 160 VU, dbx 902, SPL Transient Designer 9842 | — | 10 kΩ (10–100 kΩ) |
+| Manley Massive Passive, GML 8200, Mäag EQ4 | — | 100 kΩ (10–100 kΩ) |
 
-To expose a knob in a custom preset, set `values.externalMinOhms` and `values.externalMaxOhms` on the main input or output terminal. If the schematic already draws the external source or load resistor, put its component ID in `properties.externalResistor` on that terminal. The player then adjusts that resistor in place. Double-click the knob to restore **As wired**.
+The instrument defaults assume a passive guitar feeding a pedal and, where the output is adjustable, a high-impedance amplifier input. The 5.9 kΩ series resistance is a resistive approximation using the winding resistance of a [Fender Pure Vintage ’65 Strat pickup](https://www.fender.com/products/pure-vintage-65-strat-pickups). Its 2.6 H inductance, the guitar controls and the cable produce a frequency-dependent source impedance. To model that interaction, use those components in the schematic. A buffered pedal driving the same input is a different source. For example, the [BOSS DS-2](https://www.boss.info/global/products/ds-2/specifications/) specifies a 1 kΩ output and a 1 MΩ input. Studio presets with a drawn source or termination use the resistor value on that particular schematic.
+
+LiveWDF inserts exchange voltage. To model the loading between them, choose the receiving device's input resistance as the sender’s output load and avoid adding the same voltage divider a second time on the receiver. Numeric resistance changes are smoothed. Adding or removing the external resistor changes the topology and resets stored energy, including effect tails. Output level matching uses the preset's saved gain while you adjust the termination.
+
+For a custom preset, set `values.externalMinOhms` and `values.externalMaxOhms` on its main input or output. To adjust a resistor already drawn in the schematic, set `properties.externalResistor` to its component ID. Its saved value is the default. For a separate external resistor, `values.externalDefaultOhms` sets the default within the range. Omitting it starts with an ideal source or an open external load.
 
 ## Factory input references
 
@@ -48,7 +53,7 @@ Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 m
 
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
-On the third excerpt, 66 of 91 presets were within 1 dB of bypass and 85 were within 2 dB. The largest differences were +4.68 dB on the Maestro FZ-1 and +3.96 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.36 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
+On the third excerpt, 68 of 91 presets were within 1 dB of bypass and 86 were within 2 dB. The largest differences were +4.67 dB on the Maestro FZ-1 and +4.01 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.25 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
 
 To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg.
 

@@ -111,6 +111,7 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "inputPeakVolts") return "Input V peak at 0 dBFS";
     if (key == "fullScaleVolts") return "Matched output V peak at 0 dBFS";
     if (key == "externalMinOhms") return "Minimum external resistance (ohm)";
+    if (key == "externalDefaultOhms") return "Default external resistance (ohm)";
     if (key == "externalMaxOhms") return "Maximum external resistance (ohm)";
     if (key == "dc")             return "DC volts";
     if (key == "ac")             return "AC volts";

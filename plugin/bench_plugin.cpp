@@ -9,6 +9,7 @@
 
 #include "format/AcSource.h"
 #include "format/Document.h"
+#include "format/PortImpedance.h"
 #include "compiler/Compiler.h"
 #include "runtime/Runtime.h"
 
@@ -326,7 +327,7 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
                     Reference& ref, std::string& why) {
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         why = e.what();
         return false;
@@ -624,6 +625,56 @@ bool checkPhysicalRouting() {
     return true;
 }
 
+bool checkExternalImpedanceDefaults() {
+    wdf::LiveWDFDocument doc;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", doc.kReferenceMillivolts},
+            {"externalMinOhms", 100.}, {"externalMaxOhms", 100000.}, {"externalDefaultOhms", 5900.}}, {}, {0, 0}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {6, 2}},
+        {"R2", "res", {{"a", "out"}, {"b", "0"}}, {{"value", 1000.}}, {}, {6, 8}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", 1.}, {"externalMinOhms", 100.},
+            {"externalMaxOhms", 100000.}, {"externalDefaultOhms", 1500.}}, {}, {14, 4}},
+        {"GND", "gnd", {{"sig", "0"}}, {}, {}, {6, 14}},
+    };
+    doc.wires = {{"", {{2, 0}, {6, 0}}}, {"", {{6, 4}, {6, 6}}},
+                 {"", {{6, 4}, {12, 4}}}, {"", {{6, 10}, {6, 12}}}};
+    livewdf::LiveWDFPluginProcessor processor;
+    processor.prepareToPlay(kSampleRate, 16);
+    auto& parameters = processor.getAPVTS();
+    const auto output = [&] {
+        juce::AudioBuffer<float> block(2, 16);
+        juce::MidiBuffer midi;
+        for (int ch = 0; ch < 2; ++ch) std::fill_n(block.getWritePointer(ch), 16, .125f);
+        processor.processBlock(block, midi);
+        return block.getSample(0, 15) / .125;
+    };
+    if (!processor.loadCircuitDocument(doc)) return false;
+    // The native 1k shunt in parallel with 1.5k gives 600 ohms.
+    const auto checkGain = [&](const char* stage, double expected) {
+        const double measured = output();
+        if (std::abs(measured - expected) <= 1.e-6) return true;
+        std::fprintf(stderr, "%s gain %.8f, expected %.8f\n", stage, measured, expected);
+        return false;
+    };
+    if (!checkGain("Factory external impedances", 600. / (5900. + 1000. + 600.))) return false;
+    parameters.getParameter("source_impedance")->setValueNotifyingHost(0.f);
+    parameters.getParameter("load_impedance")->setValueNotifyingHost(.6f);
+    juce::MemoryBlock saved;
+    processor.getStateInformation(saved);
+    if (!processor.loadCircuitDocument(doc)) return false;
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    const double position = parameters.getRawParameterValue("load_impedance")->load();
+    const double load = wdf::portImpedanceRange(doc, false)->ohmsAt(position);
+    const double parallel = 1000. * load / (1000. + load);
+    if (*parameters.getRawParameterValue("source_impedance") != 0.f || std::abs(position - .6) > 1.e-6 ||
+        !checkGain("Restored impedances", parallel / (1000. + parallel))) return false;
+    // A named resistor is already present in the drawing and stays at its marked value.
+    doc.components.front().properties["externalResistor"] = "R1";
+    doc.components[3].properties["externalResistor"] = "R2";
+    return processor.loadCircuitDocument(doc) && checkGain("Original named resistors", .5);
+}
+
+
 int runAudit(const juce::File& file) {
     if (!checkPhysicalRouting()) {
         std::fprintf(stderr, "Physical voltage routing failed at 50%% wet/dry\n");
@@ -873,7 +924,7 @@ int runSpice(const juce::File& file, const std::string& outDir) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1067,7 +1118,7 @@ int runProbe(const juce::File& file, const std::string& outCsv, double fs, doubl
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1188,7 +1239,7 @@ int runB1Diag(const juce::File& file) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1328,7 +1379,7 @@ int runValidation(const juce::File& file) {
         return 1;
     }
     const auto& doc = processor.getCurrentDocument();
-    wdf::Circuit c = doc.toCircuit();
+    wdf::Circuit c = wdf::circuitWithPortImpedances(doc);
     auto engine = std::make_unique<wdf::Engine>(c, kSampleRate);
     std::vector<double> dc, root;
     bool dcOk = engine->solveDc(dc, root);
@@ -1508,7 +1559,7 @@ int runWiring(const juce::File& file) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1770,7 +1821,7 @@ int runRuntimeCheck(const juce::File& file) {
     const auto& doc = processor.getCurrentDocument();
     wdf::Circuit circuit;
     try {
-        circuit = doc.toCircuit();
+        circuit = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -2109,6 +2160,8 @@ bool checkLivePreviewPotMotion(const juce::File& file) {
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
+    if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
+        return checkExternalImpedanceDefaults() ? 0 : 1;
     const char* circuitPath = argc > 1 ? argv[1] : "";
     const juce::File file(circuitPath);
     if (!file.existsAsFile()) {

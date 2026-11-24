@@ -470,11 +470,16 @@ void InspectorPanel::rebuild() {
     if (comp.type == "in")
         order.push_back("inputPeakVolts");
 
+    if ((comp.type == "in" || comp.type == "out") && comp.values.count("externalMinOhms") &&
+        comp.values.count("externalMaxOhms") && !comp.properties.count("externalResistor"))
+        order.push_back("externalDefaultOhms");
+
     for (const char* k : kPreferred)
         if (comp.values.count(k) && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
     for (const auto& [k, v] : comp.values)
-        if (!(comp.type == "in" && k == "fullScaleVolts") && k != primary && std::find(order.begin(), order.end(), k) == order.end())
+        if (!(comp.type == "in" && k == "fullScaleVolts") && k != "externalDefaultOhms" &&
+            k != primary && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
 
     // **A source is either DC or AC, so only that mode's fields are shown.**
@@ -576,6 +581,8 @@ void InspectorPanel::rebuild() {
         double raw = stored != comp.values.end() ? stored->second : 1.0;
         if (key == "inputPeakVolts")
             raw = wdf::LiveWDFDocument::inputVoltsPerFullScale(comp);
+        else if (key == "externalDefaultOhms" && stored == comp.values.end())
+            raw = 0.;
         else if (key == "referenceMillivoltsRms" && stored == comp.values.end())
             raw = wdf::LiveWDFDocument::kReferenceMillivolts;
         const auto taper = comp.properties.find("taper");
@@ -801,6 +808,12 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
             // million -- the same text that means one megohm in a resistance
             // field. Clamp here so the document cannot store a position the
             // engine would only clamp later; 0 and 1 are the physical ends.
+            if (key == "externalDefaultOhms") {
+                if (value == 0. && !it->values.count(key)) return;
+                const auto lo = it->values.find("externalMinOhms"), hi = it->values.find("externalMaxOhms");
+                if (value != 0. && (lo == it->values.end() || hi == it->values.end() ||
+                                    !(value >= lo->second && value <= hi->second))) return;
+            }
             if (key == "pos" && (it->type == "pot" || it->type == "varres"))
                 value = std::clamp(value, 0.0, 1.0);
 

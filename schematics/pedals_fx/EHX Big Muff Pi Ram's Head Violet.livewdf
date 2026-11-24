@@ -36,6 +36,7 @@
       "type": "in",
       "properties": {},
       "values": {
+        "externalDefaultOhms": 5900,
         "externalMaxOhms": 150000,
         "externalMinOhms": 100,
         "referenceMillivoltsRms": 77.5
@@ -856,9 +857,10 @@
       "type": "out",
       "properties": {},
       "values": {
+        "externalDefaultOhms": 1000000,
         "externalMaxOhms": 1000000,
-        "externalMinOhms": 680,
-        "fullScaleVolts": 1.5407649
+        "externalMinOhms": 5000,
+        "fullScaleVolts": 1.4634045
       },
       "visual": {
         "x": 262,
