@@ -465,8 +465,16 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
             if ((x < lo && x + dz > hi) || (x > hi && x + dz < lo))
                 fraction = std::min(fraction, (.5 * (lo + hi) - x) / dz);
         }
-        for (int j = 0; j < m; ++j)
-            p.q[j] += std::clamp(fraction * p.correction[j], -8.0, 8.0);
+        const double remaining = maxCorrections - iteration;
+        for (int j = 0; j < m; ++j) {
+            const double step = fraction * p.correction[j];
+            double limit = 8.0;
+            // Diode unknowns use mA. A large physical current can lie beyond
+            // the distance the remaining bounded corrections could traverse.
+            if (p.laws[j].diode >= 0 && std::abs(step) > limit * remaining)
+                limit = std::min(8.0 * maxCorrections, std::abs(step) / remaining);
+            p.q[j] += std::clamp(step, -limit, limit);
+        }
     }
 
     for (int i = 0; i < k; ++i) {

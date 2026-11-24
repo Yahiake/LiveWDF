@@ -235,6 +235,28 @@ TEST_CASE("Loaded junction preview derives antiparallel devices from their ports
     }
 }
 
+TEST_CASE("Loaded diode solves high-current steps within the compact correction budget", "[engine][circuit-plan]") {
+    wdf::Circuit circuit;
+    const wdf::DiodeModel diode(1e-12, 1.4, 1.0);
+    circuit.addSrc("in", "0", 0.0);
+    circuit.addRes("in", "out", 5.0);
+    circuit.addDiode("out", "0", diode, "junction");
+
+    wdf::Engine preview(circuit, 48000.0);
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    preview.useLoadedJunctionPreview(true);
+    const int output = preview.nodeIndex("out");
+    for (const double input : {1.0, 2.0, -0.2, 4.0, 0.0, 1.5, 0.0}) {
+        CAPTURE(input);
+        const auto before = preview.loadedJunctionHits();
+        const double voltage = preview.step(&input, 1)[output];
+        REQUIRE(preview.loadedJunctionHits() == before + 1);
+        double current, conductance;
+        diode.eval(voltage, current, conductance);
+        CHECK(std::abs((input - voltage) / 5.0 - current) < 2e-6);
+    }
+}
+
 TEST_CASE("Loaded junction preview declines a transistor with extra transport terms", "[engine][circuit-plan]") {
     wdf::Circuit c;
     c.addSrc("supply", "0", 5.0);
