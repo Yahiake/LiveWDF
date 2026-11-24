@@ -183,9 +183,10 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     tock(prof_.network);
 
     const long long fallbacksBefore = blockFallbacks_;
-    const bool compiledRoot = compiled && maxIter >= 4 && (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
+    const bool loadedRoot = loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
+    const bool compiledRoot = !loadedRoot && compiled && maxIter >= 4 && (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol);
-    if (K_ > 0 && !compiledRoot) {
+    if (K_ > 0 && !loadedRoot && !compiledRoot) {
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
         // is driving the solve, and it never replaces the static partition

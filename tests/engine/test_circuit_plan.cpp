@@ -206,3 +206,41 @@ TEST_CASE("Enabling a circuit plan preserves hysteresis through positive feedbac
         }
     }
 }
+
+TEST_CASE("Loaded junction preview derives antiparallel devices from their ports and cards", "[engine][circuit-plan]") {
+    wdf::Circuit c;
+    c.addSrc("signal", "0", 0.0);
+    c.addRes("signal", "junction", 2200);
+    c.addCap("junction", "0", 8.2e-9);
+    c.addDiode("junction", "0", wdf::DiodeModel(2e-12, 1.1, 4.0), "left");
+    c.addDiode("0", "junction", wdf::DiodeModel(1e-9, 1.6, 12.0), "right");
+    for (double fs : {44100.0, 96000.0}) {
+        wdf::Engine preview(c, fs), exact(c, fs);
+        REQUIRE(preview.prepareLoadedJunctionPreview());
+        const int tap = exact.nodeIndex("junction");
+        for (int i = 0; i < 512; ++i) {
+            if (i == 32) {
+                REQUIRE(preview.loadedJunctionAttempts() == 0);
+                preview.useLoadedJunctionPreview(true);
+            }
+            const double src = 3.0 * std::sin(i * .08);
+            const auto& a = exact.step(&src, 1, 60, 1e-9);
+            const auto& b = preview.step(&src, 1, 60, 1e-9);
+            REQUIRE(b[tap] == Approx(a[tap]).margin(3e-4));
+        }
+        REQUIRE(preview.loadedJunctionHits() == 480);
+    }
+}
+
+TEST_CASE("Loaded junction preview declines a transistor with extra transport terms", "[engine][circuit-plan]") {
+    wdf::Circuit c;
+    c.addSrc("supply", "0", 5.0);
+    c.addRes("supply", "c", 2200);
+    c.addRes("b", "supply", 220000);
+    c.addRes("e", "0", 470);
+    c.addBjt("c", "b", "e", wdf::findBjtByName("2N3904-MiSTer-IKF")->model, "device");
+    c.addDiode("b", "c", wdf::DiodeModel(1e-12, 1.4, 12.0), "junction");
+    wdf::Engine preview(c, 48000.0);
+    REQUIRE_FALSE(preview.prepareLoadedJunctionPreview());
+    REQUIRE_FALSE(preview.hasLoadedJunctionPreview());
+}

@@ -460,11 +460,15 @@ bool EngineStep::circuitRootContinuous() const noexcept {
 void EngineStep::acceptCircuitRoot(double error) noexcept {
     circuitPlanCooldown_ = 0;
     circuitPlanRetry_ = 8;
+    ++circuitPlanHits_;
+    commitCompiledRoot(error);
+}
+
+void EngineStep::commitCompiledRoot(double error) noexcept {
     vvPrev2_ = vvPrev_;
     vvPrev_ = vt_;
     vv_.swap(vt_);
     ii_.swap(iv_);
-    ++circuitPlanHits_;
     jointLastIters_ = jointLastTrials_ = 0;
     lastConverged_ = true;
     lastResidual_ = error;

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "wdf/LoadedJunctionPlan.h"
+
 // Level 4 of the engine: one sample.
 //
 // `reset()` seeds the reactive states from the DC operating point, and `step()`
@@ -22,6 +24,7 @@ public:
 
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
+        loadedJunction_.seed = true;
         circuitPlanCooldown_ = 0;
         affineRootCooldown_ = 0;
         affineRootRetry_ = 8;
@@ -176,6 +179,14 @@ public:
     static constexpr double kFastLiveTolerance = 1e-7;
 
     /// Compile at the current operating point outside the audio callback.
+    // Prepare off the audio thread. The optional preview changes only the nonlinear
+    // root. Capacitor, inductor and amplifier histories still advance normally.
+    bool prepareLoadedJunctionPreview();
+    void useLoadedJunctionPreview(bool enabled) noexcept { loadedJunctionEnabled_ = enabled; loadedJunction_.seed = true; }
+    bool hasLoadedJunctionPreview() const noexcept;
+    long long loadedJunctionAttempts() const noexcept { return loadedJunctionAttempts_; }
+    long long loadedJunctionHits() const noexcept { return loadedJunctionHits_; }
+
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
@@ -205,6 +216,12 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    void swapLoadedJunctionPreview(EngineStep& prepared) noexcept;
+    LoadedJunctionPlan loadedJunction_;
+    long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
+    bool loadedJunctionEnabled_ = false;
+    bool tryLoadedJunctionRoot() noexcept;
+
     struct AffineRootPlan {
         struct CurrentRow {
             int port, pole;
@@ -218,6 +235,7 @@ protected:
     bool tryAffineRoot(double tolerance) noexcept;
     bool circuitRootContinuous() const noexcept;
     void acceptCircuitRoot(double error) noexcept;
+    void commitCompiledRoot(double error) noexcept;
     AffineRootPlan affineRoot_;
     std::vector<double> certifiedResistance_;
     long long affineRootAttempts_ = 0, affineRootHits_ = 0;
