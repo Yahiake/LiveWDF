@@ -67,6 +67,10 @@ These links identify specific published diagrams; reproduce their actual compone
 - **Implementation:** gain is a mechanically ganged 250kA + 250kA potentiometer, tone 10kB, level 100kA. Preserve the two coupled gain sections and transistor/JFET nonlinear stages, including DC bias and loading. Electronic bypass, LED, and power-input switching are identifiable separately; decide deliberately whether to model the engaged audio path or the entire switching system.
 - **Alternative entry:** https://stompboxelectronics.com/resources/guitar-pedal-service-manuals/ (links the same manufacturer service notes).
 
+### Klon Centaur
+
+The reference is Martin Chittum’s corrected April 2009 tracing of original unit **S 698**. Follow the nets when comparing part numbers across redraws. The junction of the 1.5 kΩ resistor and 1 µF capacitor feeds the summing amplifier through 15 kΩ. A separate path from the gain-pot wiper feeds it through 27 kΩ. The 10 kΩ linear Treble pot controls the active shelving stage after this mix. [Original annotated trace](https://tiburonboy.github.io/Symbolic-Modified-Nodal-Analysis-using-Python/klon-centaur-schematic-high-res.png) · [Independent nodal model](https://tiburonboy.github.io/Symbolic-Modified-Nodal-Analysis-using-Python/Klon%20Centaur%20part%201.html)
+
 ### Marshall Bluesbreaker Mk I
 - **Reference:** General Guitar Gadgets **Vintage BluesBreaker original-wiring** schematic, dated 2019-05-20, a replica of the original black pedal: https://generalguitargadgets.com/pdf/ggg_mbb_orig_sc.pdf; project and BOM: https://generalguitargadgets.com/effects-projects/distortion/bluesbreaker/. This is a redraw, not a factory-issued service schematic.
 - **Revision:** Aion identifies two Mk I variants. Its more common standard version uses **3.3k and 4.7k** in the two first-stage gain branches, while an early low-gain version uses **27k and 33k** respectively. GGG’s BOM agrees with the common 3.3k/4.7k set (different reference designators). Document chosen version rather than silently mixing them: https://aionfx.com/project/cerulean-amp-overdrive/. Exclude the different BB-2 pedal and King of Tone/Morning Glory modifications.
@@ -98,6 +102,12 @@ Use exact listed revisions. These are sources for component-level transcription,
 - Direct original service notes: https://civade.com/AudioPro/Boss/DS-1_SERVICE_NOTES.pdf
 - Alternate identical notes: https://www.synfo.nl/servicemanuals/Boss/DS-1_SERVICE_NOTES.pdf
 - DS-1A board 70562634, PCB 2291732601; DIST 100kB, TONE 20kB, LEVEL 100kB. Include BJT input gain and op-amp distortion gain, D4/D5 diode pair, loaded passive tone network and output buffer. Preserve the tone network interaction instead of substituting independent EQ; transcribe actual diagram for exact connections and DC bias.
+
+### Boss DS-2 Turbo Distortion
+
+The reference is the BOSS drawing for ET board **7510952000** and VR board **7510954000**. The two Turbo positions select different paths around the discrete distortion amplifier and its filters. BOSS specifies −20 dBu nominal input and output, 1 MΩ input impedance, and a load of at least 10 kΩ. [Factory schematic](https://civade.com/AudioPro/Boss/Boss_DS-2_Turbo_Distortion_Schematic.pdf) · [BOSS specifications](https://www.boss.info/global/products/ds-2/)
+
+An independent measurement of a Malaysian pedal shows a pronounced midrange peak near 900 Hz and a dip near 2.5 kHz in Turbo II. The measurement includes the pedal's tone setting and production origin, which matter when comparing revisions. [Measured response for both modes](https://guitarpedalsvisualized.wordpress.com/2022/03/25/boss-ds-2/)
 
 ### Boss HM-2 Heavy Metal
 - Revision: Roland service notes **15 December 1983, First Edition**. Contains schematic and two board/volume-board revisions; choose the circuit as drawn and document board choice, do not infer component equivalence from layouts.

@@ -28,7 +28,7 @@ To expose a knob in a custom preset, set `values.externalMinOhms` and `values.ex
 
 ## Factory input references
 
-Each of the 90 factory schematics stores its input reference. The [input table](INPUT-LEVELS.csv) lists both the RMS voltage of a −18 dBFS peak sine and the equivalent peak voltage at 0 dBFS. The basis and sources identify the connector, hardware revision, switch setting and any estimate. A maximum input rating describes headroom. An alignment tone describes the operating point for the specified test.
+Each factory schematic stores its input reference. The [input table](INPUT-LEVELS.csv) lists both the RMS voltage of a −18 dBFS peak sine and the equivalent peak voltage at 0 dBFS. The basis and sources identify the connector, hardware revision, switch setting and any estimate. A maximum input rating describes headroom. An alignment tone describes the operating point for the specified test.
 
 | Preset | Input at −18 dBFS, sine RMS | Input at 0 dBFS, peak | Basis |
 | --- | ---: | ---: | --- |
@@ -48,7 +48,7 @@ Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 m
 
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
-On the third excerpt, 65 of 90 presets were within 1 dB of bypass and 84 were within 2 dB. The largest differences were +4.68 dB on the Maestro FZ-1 and +3.96 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.36 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
+On the third excerpt, 66 of 91 presets were within 1 dB of bypass and 85 were within 2 dB. The largest differences were +4.68 dB on the Maestro FZ-1 and +3.96 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.36 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
 
 To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg.
 
