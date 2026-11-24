@@ -30,6 +30,7 @@
 // `EngineStep::step()` performs no allocation.
 
 #include "wdf/solver/SharedNewtonColumns.h"
+#include "wdf/solver/TriodeDomainTransfer.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -1101,6 +1102,7 @@ protected:
             }
         }
         sharedNewtonColumns_.refresh(Zred_, K_, nRed_);
+        triodeDomainTransfer_.refresh(Z_, K_);
     }
 
     // ------------------------------------------------------------------ //
@@ -1203,6 +1205,7 @@ protected:
     std::vector<int> redCol_, redRow_;
     std::vector<double> Zred_;
     solver::SharedNewtonColumns sharedNewtonColumns_;
+    solver::TriodeDomainTransfer triodeDomainTransfer_;
     bool loadedJunctionEnabled_ = false;
     std::vector<RootDevice> rootDevices_;
     std::vector<NewtonBlock> newtonBlocks_;

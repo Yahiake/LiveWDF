@@ -491,3 +491,41 @@ TEST_CASE("Independent large roots retain the full Newton matrix and refresh the
     plan.refresh(z, rows + 1, cols);
     REQUIRE_FALSE(plan.hasPackedResidual());
 }
+
+TEST_CASE("Triode-domain transfer preserves block-order voltage folds after controls move", "[engine][newton]") {
+    constexpr int tubes = 5, ports = tubes * 3;
+    std::vector<double> z(ports * ports), open(ports), current(ports), folded(ports);
+    std::vector<wdf::RootDevice> devices(tubes);
+    std::vector<wdf::NewtonBlock> blocks(2);
+    std::vector<int> order{1, 0};
+    for (int i = 0; i < ports; ++i) {
+        open[i] = std::sin(.18 * i);
+        current[i] = i % 3 == 1 ? 0. : std::cos(.09 * i);
+        blocks[i % 2].ports.push_back(ports - i - 1);
+        for (int j = 0; j < ports; ++j)
+            z[i * ports + j] = (i + j) % 4 == 0 ? 0. : std::cos(.16 * (i + 1) * (j + 1));
+    }
+    for (int i = 0; i < tubes; ++i) {
+        devices[i].kind = wdf::DeviceKind::Triode;
+        devices[i].compIndex = tubes - 1 - i;
+        devices[i].portBase = 3 * (tubes - 1 - i);
+    }
+    const wdf::BlockView view{&blocks, &order, int(blocks.size())};
+    wdf::solver::TriodeDomainTransfer plan;
+    plan.prepare(z, ports, devices);
+    for (int pass = 0; pass < 2; ++pass) {
+        REQUIRE(plan.fold(view, open.data(), current.data(), folded.data()));
+        for (const auto& device : devices) {
+            for (int j = 0; j < 2; ++j) {
+                const int port = device.portBase + 2 * j;
+                REQUIRE(folded[2 * device.compIndex + j] == wdf::solver::RootClosedForms::foldPort(
+                    view, port, view.count, z.data(), open.data(), current.data(), ports));
+            }
+        }
+        std::reverse(order.begin(), order.end());
+        z[5] += .07;
+        plan.refresh(z, ports);
+    }
+    current[3] = std::numeric_limits<double>::infinity();
+    REQUIRE_FALSE(plan.fold(view, open.data(), current.data(), folded.data()));
+}

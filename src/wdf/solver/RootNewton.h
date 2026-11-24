@@ -12,6 +12,7 @@
 #include "wdf/solver/RootResidual.h"
 #include "wdf/solver/RootJacobian.h"
 #include "wdf/solver/SharedNewtonColumns.h"
+#include "wdf/solver/TriodeDomainTransfer.h"
 #include "wdf/solver/RootClosedForms.h"
 
 #if defined(_MSC_VER)
@@ -34,6 +35,7 @@ struct NewtonContext {
     const std::vector<double>& Z;
     const std::vector<double>& Zred;
     SharedNewtonColumns* sharedColumns;
+    const TriodeDomainTransfer* triodeTransfer;
     const std::vector<double>& vvPrev;
     const std::vector<double>& vvPrev2;
     const std::vector<double>& predUp;
@@ -411,6 +413,15 @@ public:
         ctx.jointLastTrials = ctx.lineTrials - jointTr0;
     }
 
+    static bool pinDomains(NewtonContext& ctx, const BlockView& view) noexcept {
+        const bool folded = ctx.triodeTransfer && ctx.triodeTransfer->fold(
+            view, ctx.vOc.data(), ctx.ii.data(), ctx.dv.data());
+        return RootClosedForms::pinTriodeDomains(
+            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+            const_cast<unsigned char*>(ctx.triodeDomainPin.data()), ctx.comp,
+            ctx.rootDevices.data(), ctx.K, folded ? ctx.dv.data() : nullptr);
+    }
+
     /// The callers pin from the previous sample's currents before solving, so
     /// re-read the pin from the solved ones -- the in-sample test the closed
     /// form makes -- and solve again while a triode changed domain, at most
@@ -418,10 +429,7 @@ public:
     static inline void resolveTriodeDomains(NewtonContext& ctx, int maxIter, double tol,
                                             const BlockView& view) noexcept {
         for (int pass = 0; pass < view.count &&
-                           RootClosedForms::pinTriodeDomains(
-                               view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                               const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-                               ctx.comp, ctx.rootDevices.data(), ctx.K);
+                           pinDomains(ctx, view);
              ++pass)
             solveRootsNewtonPass(ctx, maxIter, tol, false, true);
     }
@@ -430,10 +438,7 @@ public:
     static inline void solveRootsNewton(NewtonContext& ctx, int maxIter, double tol,
                                         const BlockView& view, std::vector<double>& vvPrev,
                                         std::vector<double>& vvPrev2) noexcept {
-        RootClosedForms::pinTriodeDomains(
-            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
+        pinDomains(ctx, view);
         solveRootsNewtonPass(ctx, maxIter, tol, true, false);
         // The device laws and pinned domains stay fixed between these two passes.
         if (!ctx.lastConverged && (!ctx.skipIdenticalRetry || predictionChangesSeed(ctx))) {
@@ -448,10 +453,7 @@ public:
     static inline void solveRootsNewtonSeeded(NewtonContext& ctx, int maxIter, double tol,
                                               const BlockView& view, std::vector<double>& vvPrev,
                                               std::vector<double>& vvPrev2) noexcept {
-        RootClosedForms::pinTriodeDomains(
-            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
+        pinDomains(ctx, view);
         solveRootsNewtonPass(ctx, maxIter, tol, false, true);
         if (!ctx.lastConverged)
             solveRootsNewtonPass(ctx, maxIter, tol, false, false);
