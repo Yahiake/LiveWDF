@@ -1,10 +1,1 @@
 # Paths are relative to Factory and remain available through Open File.
-# Playback problems under review at 48 kHz and 128 frames.
-pedals_fx/Boss BD-2 Blues Driver.livewdf
-pedals_fx/Boss NS-2 Noise Suppressor.livewdf
-pedals_fx/EHX Small Stone Issue J.livewdf
-pedals_fx/Shin-ei Univox Uni-Vibe 915.livewdf
-studio/dynamics/UREI-1176LN-Rev-D.livewdf
-studio/dynamics/UREI-LA-3A.livewdf
-studio/eq/Neve 1081 Gold Label Equalizer.livewdf
-studio/eq/UREI 545 Parametric Equalizer.livewdf
