@@ -793,6 +793,42 @@ TEST_CASE("The loaded solver retries a negative reverse-branch resistance on a c
     REQUIRE(errorEnergy < 1e-6 * signalEnergy);
 }
 
+TEST_CASE("A contracting BJT root stays on Preview across a fresh compressor transient",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(doc.loadFromFile("schematics/studio/dynamics/UREI-LA-3A.livewdf", error));
+    auto circuit = doc.toCircuit();
+    for (auto& pot : circuit.pots) {
+        if (pot.name == "GAIN") pot.position = .45;
+        if (pot.name == "SENS") pot.position = .85;
+    }
+    wdf::Engine preview(circuit, 48000.), accurate(circuit, 48000.);
+    const auto source = std::ranges::find(circuit.src, doc.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const int input = static_cast<int>(source - circuit.src.begin());
+    const int output = preview.nodeIndex(doc.outputNet());
+    REQUIRE(output >= 0);
+    REQUIRE(preview.prepareLoadedJunctionPreview(input, false));
+    preview.useLoadedJunctionPreview(true);
+
+    auto sources = accurate.dcValues();
+    auto previousHits = preview.loadedJunctionHits();
+    double energy = 0., errorEnergy = 0.;
+    for (int i = 0; i < 1280; ++i) {
+        if (i == 1024) previousHits = preview.loadedJunctionHits();
+        const double envelope = std::exp(-double(i % 1024) / 192.);
+        sources[input] = envelope * (std::sin(.158*i) + .35*std::sin(.47*i));
+        const double actual = preview.step(sources, wdf::Engine::kDefaultMaxIterations,
+                                           wdf::Engine::kFastLiveTolerance)[output];
+        const double expected = accurate.step(sources)[output];
+        energy += expected * expected;
+        errorEnergy += (actual - expected) * (actual - expected);
+    }
+    CHECK(preview.loadedJunctionHits() - previousHits == 256);
+    CHECK(errorEnergy < 1.e-5 * energy);
+}
+
 TEST_CASE("A compressor sidechain retains the full reverse laws that cross cutoff on transients",
           "[engine][circuit-plan][reverse-cutoff]") {
     wdf::LiveWDFDocument doc;
