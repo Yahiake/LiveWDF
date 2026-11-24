@@ -241,6 +241,11 @@ bool LiveWDFPluginProcessor::compiledPreviewRequested() const {
            && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
 }
 
+bool LiveWDFPluginProcessor::canBrowsePreviewPresets() const {
+    return !isNonRealtime() && getSampleRate() == 48000.0 && compiledPreviewRequested() &&
+           *apvts_.getRawParameterValue("oversampling") == 0.0f;
+}
+
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
     constexpr int polyphase4x = 2;
     return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f

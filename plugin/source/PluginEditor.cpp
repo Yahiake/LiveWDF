@@ -3,6 +3,8 @@
 #include "Fonts.h"
 #include "gui/AboutDialog.h"
 
+#include <algorithm>
+
 namespace livewdf {
 
 namespace {
@@ -39,9 +41,10 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // this a cheap no-op after the first binary has done it.
     if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed())
         juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
-    presetStepper_.setFactoryFolder(FactorySchematics::folder());
+    showPreviewPresets_ = processor_.canBrowsePreviewPresets();
+    presetStepper_.setFactoryFolder(FactorySchematics::folder(), showPreviewPresets_);
     presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
-    presetStepper_.onPresetChosen = [this](const juce::File& file) { loadCircuitFile(file); };
+    presetStepper_.onPresetChosen = [this](const juce::File& file) { loadFactoryPreset(file); };
 
     // 2. Factory and Load File Buttons
     factoryBtn_.onClick = [this] { showFactoryBrowser(); };
@@ -320,7 +323,33 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
     return true;
 }
 
+void LiveWDFPluginEditor::refreshFactoryVisibility() {
+    const bool visible = processor_.canBrowsePreviewPresets();
+    if (visible == showPreviewPresets_)
+        return;
+    showPreviewPresets_ = visible;
+    const auto folder = FactorySchematics::folder();
+    presetStepper_.setFactoryFolder(folder, visible);
+    if (factoryPanel_ != nullptr) {
+        const auto view = factoryPanel_->view();
+        factoryPanel_->setFactoryFolder(folder, visible);
+        factoryPanel_->setView(view);
+    }
+}
+
+bool LiveWDFPluginEditor::loadFactoryPreset(const juce::File& file) {
+    // Automation can change the mode between a UI refresh and a click.
+    if (showPreviewPresets_ != processor_.canBrowsePreviewPresets()) {
+        refreshFactoryVisibility();
+        const auto presets = FactorySchematics::list(FactorySchematics::folder(), showPreviewPresets_);
+        if (std::none_of(presets.begin(), presets.end(), [&](const auto& preset) { return preset.file == file; }))
+            return false;
+    }
+    return loadCircuitFile(file);
+}
+
 void LiveWDFPluginEditor::showFactoryBrowser() {
+    refreshFactoryVisibility();
     if (factoryBrowser_ != nullptr)
         return;
 
@@ -332,7 +361,7 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
     using Browser = editor::PresetLibraryPanel;
     auto browser = std::make_unique<Browser>(Browser::Mode::Factory);
     browser->setSize(500, juce::jmax(320, juce::jmin(480, getHeight() - 100)));
-    browser->setFactoryFolder(FactorySchematics::folder());
+    browser->setFactoryFolder(FactorySchematics::folder(), showPreviewPresets_);
     browser->setCurrentFile(processor_.getCurrentCircuitFile());
     browser->setView(factoryView_);
 
@@ -341,13 +370,14 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
                                                            factoryBtn_.getBounds(), this);
     callout.setDismissalMouseClicksAreAlwaysConsumed(true);
     factoryBrowser_ = &callout;
+    factoryPanel_ = panel;
     panel->onDismiss = [popup = factoryBrowser_] {
         if (popup != nullptr)
             popup->dismiss();
     };
     panel->onPresetChosen = [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this),
                              popup = factoryBrowser_, panel](const juce::File& file) {
-        if (safe != nullptr && panel != nullptr && safe->loadCircuitFile(file)) {
+        if (safe != nullptr && panel != nullptr && safe->loadFactoryPreset(file)) {
             safe->factoryView_ = panel->view();
             safe->presetStepper_.setBrowseOrder(panel->visibleFactoryOrder());
         }
@@ -399,6 +429,7 @@ void LiveWDFPluginEditor::filesDropped(const juce::StringArray& files, int x, in
 // Timer Callback (Periodic UI Refresh)
 // -----------------------------------------------------------------------------
 void LiveWDFPluginEditor::timerCallback() {
+    refreshFactoryVisibility();
     // Follow the host's rate. The editor can open before prepareToPlay and a
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.

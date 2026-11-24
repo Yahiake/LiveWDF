@@ -123,6 +123,10 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    juce::Component::SafePointer<editor::PresetLibraryPanel> factoryPanel_;
+    bool showPreviewPresets_ = false;
+    void refreshFactoryVisibility();
+    bool loadFactoryPreset(const juce::File& file);
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 

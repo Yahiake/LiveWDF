@@ -47,8 +47,9 @@ FactoryPresetStepper::FactoryPresetStepper(juce::Component& parent, juce::Label&
     parent.addChildComponent(next_);
 }
 
-void FactoryPresetStepper::setFactoryFolder(const juce::File& folder) {
+void FactoryPresetStepper::setFactoryFolder(const juce::File& folder, bool showPreviewPresets) {
     factoryFolder_ = folder;
+    showPreviewPresets_ = showPreviewPresets;
     browseOrder_.clear();
     defaultOrder_.clear();
     defaultOrderLoaded_ = false;
@@ -93,7 +94,7 @@ void FactoryPresetStepper::updateButtons() {
                         && currentFile_.isAChildOf(factoryFolder_);
     if (inFactory && !defaultOrderLoaded_
         && std::find(browseOrder_.begin(), browseOrder_.end(), currentFile_) == browseOrder_.end()) {
-        auto presets = FactorySchematics::list(factoryFolder_);
+        auto presets = FactorySchematics::list(factoryFolder_, showPreviewPresets_);
         std::stable_partition(presets.begin(), presets.end(),
                               [](const auto& preset) { return preset.featured; });
         for (const auto& preset : presets)
@@ -204,8 +205,9 @@ void PresetLibraryPanel::setFolder(const juce::File& folder) {
     rescan();
 }
 
-void PresetLibraryPanel::setFactoryFolder(const juce::File& folder) {
+void PresetLibraryPanel::setFactoryFolder(const juce::File& folder, bool showPreviewPresets) {
     factoryFolder_ = folder;
+    showPreviewPresets_ = showPreviewPresets;
     rescan();
 }
 
@@ -384,7 +386,7 @@ void PresetLibraryPanel::rebuild() {
         }
     }
 
-    for (const auto& preset : FactorySchematics::list(factoryRoot)) {
+    for (const auto& preset : FactorySchematics::list(factoryRoot, showPreviewPresets_)) {
         using Collection = FactorySchematics::Collection;
         const auto scope = preset.collection == Collection::Pedals ? Scope::Pedals
                          : preset.collection == Collection::Studio ? Scope::Studio

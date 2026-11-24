@@ -123,14 +123,20 @@ juce::Result FactorySchematics::ensureInstalled() {
     return ensureInstalledAt(folder());
 }
 
-std::vector<FactorySchematics::Preset> FactorySchematics::list(const juce::File& root) {
+std::vector<FactorySchematics::Preset> FactorySchematics::list(const juce::File& root, bool showPreviewPresets) {
     std::vector<Preset> files;
     if (!root.isDirectory())
         return files;
 
     juce::StringArray hiddenPaths;
-    hiddenPaths.addLines(root.getChildFile(".factory-hidden").loadFileAsString());
-    hiddenPaths.trim();
+    bool showSection = false;
+    for (const auto& line : juce::StringArray::fromLines(root.getChildFile(".factory-hidden").loadFileAsString())) {
+        const auto entry = line.trim();
+        if (entry.startsWithChar('['))
+            showSection = showPreviewPresets && entry == "[compiled-preview-48k-1x]";
+        else if (!showSection && entry.isNotEmpty() && !entry.startsWithChar('#'))
+            hiddenPaths.add(entry);
+    }
 
     for (const auto& entry :
          juce::RangedDirectoryIterator(root, true, "*.livewdf", juce::File::findFiles)) {

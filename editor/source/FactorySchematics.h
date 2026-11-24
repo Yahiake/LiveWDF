@@ -41,7 +41,7 @@ public:
     static juce::Result ensureInstalledAt(const juce::File& targetFolder);
 
     /// Classify and sort the installed catalog without reading the circuits.
-    static std::vector<Preset> list(const juce::File& root);
+    static std::vector<Preset> list(const juce::File& root, bool showPreviewPresets = false);
     static juce::String collectionName(Collection collection);
 };
 

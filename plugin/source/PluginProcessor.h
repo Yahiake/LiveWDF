@@ -126,6 +126,7 @@ public:
     /// The rate the host handed to `prepareToPlay`. This is the rate the
     /// engine is compiled at (times the oversampling factor), which is the one
     /// the editor's scope must use for its timebase.
+    bool canBrowsePreviewPresets() const;
     double getHostSampleRate() const noexcept { return sampleRate_; }
 
     const ScopeAudioBuffer& getInputScopeBuffer() const noexcept { return inputScopeBuffer_; }

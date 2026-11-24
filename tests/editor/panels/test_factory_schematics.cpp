@@ -202,14 +202,15 @@ TEST_CASE("Factory preset chevrons follow the visible factory rows") {
     const auto middle = factory.getChildFile("studio/eq/EQ 10.livewdf");
     const auto last = factory.getChildFile("studio/eq/EQ 11.livewdf");
     const auto hidden = factory.getChildFile("studio/eq/EQ 9.livewdf");
+    const auto preview = factory.getChildFile("studio/eq/EQ 7.livewdf");
     const auto other = factory.getChildFile("amps/Amp.livewdf");
     const auto custom = temp.root.getChildFile("User EQ.livewdf");
-    for (const auto& file : {first, middle, last, hidden, other, custom}) {
+    for (const auto& file : {first, middle, last, hidden, preview, other, custom}) {
         REQUIRE(file.getParentDirectory().createDirectory().wasOk());
         REQUIRE(file.replaceWithText("{}"));
     }
     REQUIRE(factory.getChildFile(".factory-hidden").replaceWithText(
-        "# Hidden factory presets\nstudio/eq/EQ 9.livewdf\n"));
+        "# Hidden factory presets\nstudio/eq/EQ 9.livewdf\n[compiled-preview-48k-1x]\nstudio/eq/EQ 7.livewdf\n"));
 
     PresetLibraryPanel browser;
     browser.setFolder(temp.root);
@@ -280,6 +281,23 @@ TEST_CASE("Factory preset chevrons follow the visible factory rows") {
     CHECK_FALSE(previous->isVisible());
     CHECK_FALSE(next->isVisible());
     CHECK(label.getBounds().getWidth() == 260);
+
+    browser.setFactoryFolder(factory, true);
+    stepper.setFactoryFolder(factory, true);
+    REQUIRE(rowWithText(browser, "EQ 7") >= 0);
+    CHECK(rowWithText(browser, "EQ 9") == -1);
+    stepper.setBrowseOrder(browser.visibleFactoryOrder());
+    stepper.setCurrentFile(first);
+    next->onClick();
+    CHECK(chosen == preview);
+
+    browser.setFactoryFolder(factory);
+    stepper.setFactoryFolder(factory);
+    CHECK(rowWithText(browser, "EQ 7") == -1);
+    CHECK_FALSE(next->isVisible());
+    stepper.setCurrentFile(first);
+    next->onClick();
+    CHECK(chosen == last);
 }
 
 TEST_CASE("Preset search ranks exact names before broader matches") {

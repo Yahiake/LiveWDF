@@ -28,7 +28,7 @@ public:
 
     FactoryPresetStepper(juce::Component& parent, juce::Label& name);
 
-    void setFactoryFolder(const juce::File& folder);
+    void setFactoryFolder(const juce::File& folder, bool showPreviewPresets = false);
     void setCurrentFile(const juce::File& file);
     void setBrowseOrder(Order order);
     void setName(const juce::String& name);
@@ -45,6 +45,7 @@ private:
     juce::TextButton previous_{juce::String::charToString(0x2039)};
     juce::TextButton next_{juce::String::charToString(0x203a)};
     juce::File factoryFolder_;
+    bool showPreviewPresets_ = false;
     juce::File currentFile_;
     Order browseOrder_;
     Order defaultOrder_;
@@ -70,7 +71,7 @@ public:
     /// rows, plus a way to choose a real one.
     void setFolder(const juce::File& folder);
     juce::File getFolder() const { return folder_; }
-    void setFactoryFolder(const juce::File& folder);
+    void setFactoryFolder(const juce::File& folder, bool showPreviewPresets = false);
 
     /// Mark the file the current tab came from.
     void setCurrentFile(const juce::File& file);
@@ -156,6 +157,7 @@ private:
     const Mode mode_;
     juce::File folder_;
     juce::File factoryFolder_;
+    bool showPreviewPresets_ = false;
     juce::File currentFile_;
     juce::String searchText_;
     Scope scope_ = Scope::All;
