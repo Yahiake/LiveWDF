@@ -210,8 +210,11 @@ struct PhaseProfile {
     long long samples = 0;
 
     double total() const noexcept {
-        return offsets + network + predict + device + jacobian + lu +
-               linesearch + post;
+        return offsets + network + solve + post;
+    }
+
+    double otherSolveTime() const noexcept {
+        return solve - (predict + device + jacobian + lu + linesearch);
     }
 };
 

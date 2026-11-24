@@ -58,17 +58,18 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     }
     std::memcpy(nodeSafe_.data(), node_.data(), static_cast<size_t>(N_) * sizeof(double));
 
-    // Phase timing scratch. `tick` only touches the clock when profiling
-    // is on, so the audio path pays one well-predicted branch per phase
-    // and nothing else.
     using clk = std::chrono::steady_clock;
-    const auto tick = [&] {
-        return profileOn_ ? clk::now() : clk::time_point{};
-    };
-    clk::time_point tPhase = tick();
+    clk::time_point tPhase{};
+    if (profileOn_) {
+        tPhase = clk::now();
+        ++prof_.samples;
+    }
     const auto tock = [&](double& acc) {
-        if (profileOn_)
-            acc += std::chrono::duration<double>(clk::now() - tPhase).count();
+        if (profileOn_) {
+            const auto now = clk::now();
+            acc += std::chrono::duration<double>(now - tPhase).count();
+            tPhase = now;
+        }
     };
 
     // Only a port a source reaches has an offset that moves. The rest keep
@@ -128,7 +129,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     double* LIVEWDF_RESTRICT uData = u_.data();
     if (compiled && !driveCoefficients_.empty() && applyCompiledDrive(sourceValues, sourceCount)) {
         tock(prof_.offsets);
-        tPhase = tick();
     } else {
         // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
         const double* LIVEWDF_RESTRICT capData = capState_.data();
@@ -144,7 +144,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             wData[t] = b - eoffData[lc.portIdx];
         }
         tock(prof_.offsets);
-        tPhase = tick();
 
         // u = Xe * w via partitioned sparse rows. Degree 0 rows stay 0 from memset.
         // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
@@ -248,7 +247,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // to be written straight into the capacitor/inductor state, so the next
     // sample started from it and never recovered. Reject it, restore the
     // last accepted state, and let the next sample solve again from there.
-    tPhase = tick();
     double* LIVEWDF_RESTRICT nodeData = node_.data();
     std::memcpy(nodeData, uData, static_cast<size_t>(N_) * sizeof(double));
     if (K_ > 0) {
@@ -328,6 +326,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         lastStateRejected_ = true;
         ++stateRejections_;
         ++consecutiveStateRejects_;
+        tock(prof_.post);
         return node_;
     }
 
@@ -426,8 +425,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         indStateData[u.indIdx] = 2.0 * vPort + indStateData[u.indIdx];
     }
     tock(prof_.post);
-    if (profileOn_)
-        ++prof_.samples;
     consecutiveStateRejects_ = 0;
     return node_;
 }

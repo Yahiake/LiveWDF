@@ -651,10 +651,9 @@ void printPhaseShares(const char* name, int roots, const wdf::Engine::PhaseProfi
     std::printf("    %-26s offs %5.1f  net %5.1f  solve %5.1f  post %5.1f ns/sample\n",
                 name, p.offsets * inv, p.network * inv, p.solve * inv, p.post * inv);
     if (p.solve > 0.0) {
-        const double inside = p.device + p.jacobian + p.lu + p.linesearch;
-        std::printf("    %-26s   solve: dev %5.1f  jac %5.1f  lu %5.1f  line %5.1f  block %5.1f\n",
-                    "", p.device * inv, p.jacobian * inv, p.lu * inv, p.linesearch * inv,
-                    (p.solve - inside) * inv);
+        std::printf("    %-26s   solve: predict %5.1f  dev %5.1f  jac %5.1f  lu %5.1f  line %5.1f  other %5.1f\n",
+                    "", p.predict * inv, p.device * inv, p.jacobian * inv, p.lu * inv,
+                    p.linesearch * inv, p.otherSolveTime() * inv);
     }
 }
 
