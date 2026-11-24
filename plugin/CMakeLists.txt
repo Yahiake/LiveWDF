@@ -23,7 +23,6 @@ juce_add_plugin(LiveWDF_Plugin
 )
 
 target_sources(LiveWDF_Plugin PRIVATE
-    source/PreviewPlayback.cpp
     source/PluginProcessor.cpp
     source/PluginProcessorProcess.cpp
     source/PluginProcessor.h
@@ -53,7 +52,6 @@ target_include_directories(LiveWDF_Plugin PRIVATE
 # linked in read-only. That is what keeps a file looking the same in both
 # windows, and it removes the second renderer that used to drift.
 target_link_libraries(LiveWDF_Plugin PRIVATE
-    juce::juce_cryptography
     LiveWDF_EditorCore
     livewdf
     livewdf_options

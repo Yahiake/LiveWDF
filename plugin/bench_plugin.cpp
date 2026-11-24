@@ -1854,82 +1854,6 @@ int runRuntimeCheck(const juce::File& file) {
     return parity ? 0 : 2;
 }
 
-int runPreviewAudit(const juce::File& file) {
-    using Processor = livewdf::LiveWDFPluginProcessor;
-    using Status = Processor::PreviewStatus;
-    Processor p;
-    constexpr int size = 128;
-    p.prepareToPlay(kSampleRate, size);
-    if (!p.loadCircuitFromFile(file)) return 1;
-    auto set = [&](auto id, float value) {
-        auto* param = p.getAPVTS().getParameter(id);
-        param->setValueNotifyingHost(param->convertTo0to1(value));
-    };
-    juce::AudioBuffer<float> audio(2, size);
-    juce::MidiBuffer midi;
-    auto run = [&](float level, int n, bool impulse = false) {
-        for (int i = 0; i < size; ++i) {
-            const auto x = impulse ? float(i == 0) : float(std::sin((i+n*size)*0.083));
-            audio.setSample(0, i, level*x);
-            audio.setSample(1, i, 0.f);
-        }
-        p.processBlock(audio, midi);
-    };
-    auto wait = [&](bool enable) {
-        set("model_preview", float(enable));
-        for (int retry = 0; retry < 180; ++retry) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(20));
-            juce::Timer::callPendingTimersSynchronously();
-            run(0.f, 0);
-            const auto s = p.previewStatus();
-            if (enable && (s == Status::active || s == Status::experimental)) return true;
-            if (enable && (s == Status::unavailable || s == Status::options || s == Status::controls)) break;
-            if (!enable && s == Status::off && retry >= 6) return true;
-        }
-        std::printf("Preview status: %s\n", p.previewLabel());
-        return false;
-    };
-    set("export_4x", 0);
-    set("stereo", 1);
-    if (!wait(true)) return 2;
-    std::vector<double> times;
-    constexpr int blocks = 300;
-    times.reserve(blocks);
-    double leftPeak = 0, rightPeak = 0;
-    const auto usage = threadUsage();
-    for (int n = 0; n < blocks; ++n) {
-        auto t = std::chrono::steady_clock::now();
-        run(.3f, n);
-        times.push_back(std::chrono::duration<double,std::micro>(std::chrono::steady_clock::now()-t).count());
-        for (int i = 0; i < size; ++i) {
-            leftPeak = std::max(leftPeak, std::abs(double(audio.getSample(0, i))));
-            rightPeak = std::max(rightPeak, std::abs(double(audio.getSample(1, i))));
-        }
-    }
-    const auto allocs = threadUsage().allocs - usage.allocs;
-    std::sort(times.begin(), times.end());
-    std::printf("128 stereo frames / 48 kHz, fitted callback + stimulus: median %.3f us, p99 %.3f us, %lld allocations, stereo peaks %.6g %.6g\n",
-                times[blocks/2], times[blocks*99/100], allocs, leftPeak, rightPeak);
-    // DC output bias can be present on a silent channel.
-    if (!(leftPeak > 0 && rightPeak < leftPeak*.01 && allocs == 0)) return 2;
-    run(2.f, 0, true);
-    if (p.previewStatus() != Status::range) return 2;
-    if (!wait(false) || !wait(true)) return 2;
-    auto& param = *p.getAPVTS().getParameter("pot_0");
-    const auto original = param.getValue();
-    if (p.getPotGroups().empty()) return 2;
-    set("pot_0", original > .5f ? .01f : .99f);
-    run(.01f, 0);
-    if (p.previewStatus() != Status::controls) return 2;
-    set("pot_0", original);
-    if (!wait(false) || !wait(true)) return 2;
-    p.setNonRealtime(true);
-    run(.01f, 0);
-    if (p.previewStatus() != Status::render) return 2;
-    std::printf("Realtime stereo, out-of-range fallback, moving controls and physical offline rendering passed.\n");
-    return 0;
-}
-
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -1938,14 +1862,13 @@ int main(int argc, char** argv) {
     const char* circuitPath = argc > 1 ? argv[1] : "";
     const juce::File file(circuitPath);
     if (!file.existsAsFile()) {
-        std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--preview-audit] [--validate] [--b1-diag] [--audit] [--wiring] "
+        std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
                     "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
         return 1;
     }
 
-    bool previewAudit = false;
     bool validate = false;
     bool b1Diag = false;
     bool audit = false;
@@ -1968,8 +1891,6 @@ int main(int argc, char** argv) {
             validate = true;
         else if (arg == "--b1-diag")
             b1Diag = true;
-        else if (arg == "--preview-audit")
-            previewAudit = true;
         else if (arg == "--audit")
             audit = true;
         else if (arg == "--wiring")
@@ -2013,7 +1934,6 @@ int main(int argc, char** argv) {
             wavBlock = std::stoi(argv[++i]);
     }
 
-    if (previewAudit) return runPreviewAudit(file);
     if (validate)
         return runValidation(file);
     if (b1Diag)

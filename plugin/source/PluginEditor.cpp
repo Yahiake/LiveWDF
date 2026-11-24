@@ -85,10 +85,6 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
-    previewBtn_.setTooltip("Use a fitted snapshot at 1x Direct for live playback. Moving a circuit control or exceeding its input range returns to the selected solver. Restore the settings and toggle Preview to retry. Input/output scopes stay live.");
-    addAndMakeVisible(previewBtn_);
-    previewAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "model_preview", previewBtn_);
-
     reportLatencyBtn_.setTooltip("Report oversampling delay to the DAW. Turning this off keeps the audio timing the same.");
     addAndMakeVisible(reportLatencyBtn_);
     reportLatencyAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "report_latency", reportLatencyBtn_);
@@ -402,7 +398,6 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
-    previewBtn_.setButtonText(processor_.previewLabel());
 
     // The parameter can move from automation or host state restore, not only
     // from the button, so the label follows the parameter rather than the click.
@@ -492,9 +487,7 @@ void LiveWDFPluginEditor::resized() {
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
-    auto playbackOptions = topBar.removeFromRight(132).reduced(3, 3);
-    reportLatencyBtn_.setBounds(playbackOptions.removeFromTop(23));
-    previewBtn_.setBounds(playbackOptions);
+    reportLatencyBtn_.setBounds(topBar.removeFromRight(122).reduced(6, 10));
     auto oversamplingControls = topBar.removeFromRight(120).reduced(6, 3);
     oversamplingCombo_.setBounds(oversamplingControls.removeFromTop(27));
     oversampleExportBtn_.setBounds(oversamplingControls);

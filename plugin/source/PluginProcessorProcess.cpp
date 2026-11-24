@@ -57,45 +57,6 @@ void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buff
                         true, processingLatencySamples_.load(std::memory_order_relaxed));
 }
 
-bool LiveWDFPluginProcessor::canPlayPreview(const juce::dsp::AudioBlock<float>& block) {
-    if (!preview_ || *apvts_.getRawParameterValue("model_preview") < 0.5f) {
-        if (previewPlaying_) previewStatus_.store(PreviewStatus::off);
-        return false;
-    }
-    const auto status = previewStatus();
-    if (status != PreviewStatus::armed && status != PreviewStatus::active && status != PreviewStatus::experimental)
-        return false;
-    if (isNonRealtime()) {
-        previewStatus_.store(PreviewStatus::render);
-        return false;
-    }
-    if (*apvts_.getRawParameterValue("oversampling") != 0 || currentOversamplingFactor_ != 1
-            || *apvts_.getRawParameterValue("grid_current") < 0.5f || !acSources_.empty()
-            || !acCurrentSources_.empty() || inSourceIndex_ < 0) {
-        previewStatus_.store(PreviewStatus::options);
-        return false;
-    }
-    bool matched = snapshotControlsAgree_;
-    for (int i = 0; i < potControlCount_; ++i)
-        matched &= std::abs(double(potControls_[i].knob->load()) - previewPots_[i]) <= 1e-6;
-    if (!matched) {
-        previewStatus_.store(PreviewStatus::controls);
-        return false;
-    }
-    const double dc = baseSourceValues_[static_cast<size_t>(inSourceIndex_)];
-    for (size_t ch = 0; ch < block.getNumChannels(); ++ch) {
-        const auto* samples = block.getChannelPointer(ch);
-        for (size_t i = 0; i < block.getNumSamples(); ++i) {
-            if (!(std::abs(double(samples[i]) - dc) <= preview_->peak)) {
-                previewStatus_.store(PreviewStatus::range);
-                return false;
-            }
-        }
-    }
-    previewStatus_.store(preview_->experimental() ? PreviewStatus::experimental : PreviewStatus::active);
-    return true;
-}
-
 void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
     // Denormals for the whole callback. The WDF state is a network of
     // capacitors and tube junctions; as a note decays the state can reach
@@ -203,32 +164,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const std::vector<double>* lastNodesL = nullptr;
     float maxAbsOut = 0.0f;
 
-    const bool playPreview = canPlayPreview(block);
-    if (previewPlaying_ != playPreview) {
-        transitionStart_ = previousWet_;
-        transitionRemaining_ = isNonRealtime() ? 0 : transitionLength_;
-    }
-    previewPlaying_ = playPreview;
-    if (playPreview) {
-        auto& models = preview_->channels;
-        const size_t channelCount = processStereo ? 2 : 1;
-        // Keep one history per independent signal; first stereo sample inherits the previous mono state.
-        if (processStereo && !previewStereo_) models[1] = models[0];
-        previewStereo_ = processStereo;
-        const double dc = baseSourceValues_[static_cast<size_t>(inSourceIndex_)];
-        for (size_t ch = 0; ch < channelCount; ++ch) {
-            auto* samples = block.getChannelPointer(ch);
-            std::visit([&](auto& model) {
-                for (int i = 0; i < numSamples; ++i) {
-                    samples[i] = float((model.step(double(samples[i]) - dc) + preview_->bias) * outputScale);
-                    maxAbsOut = std::max(maxAbsOut, std::abs(samples[i]));
-                }
-                model.finishBlock();
-            }, models[ch]);
-        }
-        if (!processStereo && numChannels > 1)
-            buffer.copyFrom(1, 0, buffer, 0, 0, numSamples);
-    } else if (useHalfBand_) {
+    if (useHalfBand_) {
         float* leftData = buffer.getWritePointer(0);
         float* rightData = (numChannels > 1) ? buffer.getWritePointer(1) : nullptr;
 
@@ -375,11 +311,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float* channelData = buffer.getWritePointer(ch);
         const float* dryData = dryAvailable ? dryBuffer_.getReadPointer(ch) : nullptr;
 
-        for (int i = 0; i < std::min(transitionRemaining_, numSamples); ++i) {
-            const float t = float(transitionRemaining_ - i) / float(transitionLength_);
-            channelData[i] = (1 - t) * channelData[i] + t * transitionStart_[static_cast<size_t>(ch)];
-        }
-        previousWet_[static_cast<size_t>(ch)] = channelData[numSamples - 1];
         for (int i = 0; i < numSamples; ++i) {
             float outSample = channelData[i] * outputGain;
             if (dryData) {
@@ -396,14 +327,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         }
     }
 
-    transitionRemaining_ = std::max(0, transitionRemaining_ - numSamples);
-
     // Push output audio into circular scope buffer
     outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
 }
 
 std::map<std::string, double> LiveWDFPluginProcessor::getLiveProbeVoltages() const {
-    if (previewStatus() == PreviewStatus::active || previewStatus() == PreviewStatus::experimental) return {};
     std::lock_guard<std::mutex> lock(probeMutex_);
     std::map<std::string, double> voltages;
     for (size_t i = 0; i < probeNodes_.size(); ++i)
