@@ -169,7 +169,7 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // The pin frames are Céline's own (`Element.h`): one pin, offset so the
         // flag hangs off the wire end -- the input's at grid (2, 0), the
         // output's at (-2, 0).
-        {"in",         "Input",        "IN",  {"sig"},                {1},         {{2, 0}},                  0.0,        "",           "I", 0, false, "Measurement/Terminals"},
+        {"in",         "Input",        "IN",  {"sig"},                {1},         {{2, 0}},                  wdf::LiveWDFDocument::kReferenceMillivolts, "referenceMillivoltsRms", "I", 0, false, "Measurement/Terminals"},
         {"out",        "Output",       "OUT", {"sig"},                {0},         {{-2, 0}},                 1.0,        "fullScaleVolts", "O", 0, false, "Measurement/Terminals"},
 
         // The ground. **It is a marker, not an element**: its one pin sits on the
@@ -735,10 +735,6 @@ wdf::SchematicComponent makeComponent(const std::string& type,
         comp.properties["model"] = "Real — Auto";
     }
 
-    // A part with no value key has no number to show -- the Input terminal is
-    // one: it says where the signal comes in, and there is nothing about it to
-    // set. Writing an empty key into the map would put a nameless value in the
-    // file, which is worse than nothing.
     if (!spec->valueKey.empty())
         comp.values[spec->valueKey] = spec->defaultValue;
 

@@ -209,6 +209,9 @@ LiveWDFPluginEditor::~LiveWDFPluginEditor() {
 }
 
 void LiveWDFPluginEditor::rebuildDynamicControls() {
+    const auto& doc = processor_.getCurrentDocument();
+    oscilloscope_.setTerminalScales(static_cast<float>(doc.inputVoltsPerFullScale()),
+                                   static_cast<float>(doc.outputFullScaleVolts()));
     // Attachments first: they hold a reference to the knob's slider, so the
     // slider must outlive the attachment, not the other way round.
     dynamicPotAttachments_.clear();

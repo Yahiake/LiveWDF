@@ -133,6 +133,20 @@ TEST_CASE("A nonsense output voltage is not obeyed") {
     CHECK(terminalDocument(-5.0).outputFullScaleVolts() == 1.0);
 }
 
+TEST_CASE("Calibrated mic drive is explicit and survives reopening", "[format][terminals]") {
+    auto doc = terminalDocument();
+    auto& input = doc.components.front().values;
+    input["fullScaleVolts"] = .01;
+    REQUIRE(doc.inputVoltsPerFullScale() == 1.);
+    input["referenceMillivoltsRms"] = -.1;
+    REQUIRE(doc.inputVoltsPerFullScale() == 1.);
+    input["referenceMillivoltsRms"] = 7.74;
+    wdf::LiveWDFDocument back;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(doc.toJson(), back, error));
+    CHECK(back.inputVoltsPerFullScale() == Approx(.08694727161927697));
+}
+
 TEST_CASE("The Input and Output terminals survive a save and reopen") {
     // The file format is what carries them between the editor and the plugin,
     // so a terminal that does not survive the round trip is a terminal the

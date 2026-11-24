@@ -509,6 +509,20 @@ struct LiveWDFDocument {
         return {};
     }
 
+    // RMS millivolts of a −18 dBFS sine when a full-scale sample drives one volt.
+    static constexpr double kReferenceMillivolts = 89.01946956877224;
+
+    /// Peak volts applied to the input by a full-scale digital sample at unity trim.
+    /// Older files sometimes annotate the input with the output-only fullScaleVolts key.
+    double inputVoltsPerFullScale() const {
+        if (const auto* input = terminal("in")) {
+            const auto it = input->values.find("referenceMillivoltsRms");
+            if (it != input->values.end() && std::isfinite(it->second) && it->second > 0.)
+                return it->second / kReferenceMillivolts;
+        }
+        return 1.;
+    }
+
     /// The voltage the circuit produces at the output when the input is at full
     /// scale -- the number the user writes on the Output terminal.
     ///

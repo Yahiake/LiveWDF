@@ -179,7 +179,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         double volts;
         const std::vector<double>* nodes;
     };
-    const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double input) -> OutputSample {
+    const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double sample) -> OutputSample {
+        const double input = sample * inputVoltsPerFullScale_;
         if (inIdx >= 0)
             sources[static_cast<size_t>(inIdx)] = input;
         double volts;

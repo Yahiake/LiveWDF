@@ -686,6 +686,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_ = doc.outputFullScaleVolts();
+        inputVoltsPerFullScale_ = doc.inputVoltsPerFullScale();
         baseSourceValues_ = std::move(baseSources);
         svLeft_.assign(baseSourceValues_.size(), 0.0);
         svRight_.assign(baseSourceValues_.size(), 0.0);

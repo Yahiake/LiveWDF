@@ -390,14 +390,14 @@ void InspectorPanel::rebuild() {
     // is not offered: the model picker says "12AX7", and a "Value" field beside
     // it holding a zero says nothing at all. The question is asked of the
     // accessor, which is where it is answered for everyone else too.
-    if (comp.values.count(primary) && hasNumericValue(comp))
+    if ((comp.values.count(primary) || comp.type == "in") && hasNumericValue(comp))
         order.push_back(primary);
 
     for (const char* k : kPreferred)
         if (comp.values.count(k) && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
     for (const auto& [k, v] : comp.values)
-        if (k != primary && std::find(order.begin(), order.end(), k) == order.end())
+        if (!(comp.type == "in" && k == "fullScaleVolts") && k != primary && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
 
     // **A source is either DC or AC, so only that mode's fields are shown.**
@@ -495,7 +495,8 @@ void InspectorPanel::rebuild() {
         // a pot as its marking. The stored number is raw ("250000"), which is
         // right for the file and wrong for a person; `parseValue` reads the
         // formatted text straight back, so editing and returning changes nothing.
-        const double raw = comp.values.at(key);
+        const auto stored = comp.values.find(key);
+        const double raw = stored != comp.values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
         const auto taper = comp.properties.find("taper");
         const bool isPotValue = (key == primaryValueKey(comp.type) && taper != comp.properties.end());
 
@@ -637,7 +638,7 @@ void InspectorPanel::quickValueEdit(const juce::String& text) {
     // the right name; a type with no such key (a terminal, a model-bearing
     // part's non-numeric read) has nothing to answer.
     const std::string key = primaryValueKey(it->type);
-    if (key.empty() || it->values.count(key) == 0)
+    if (key.empty() || (it->values.count(key) == 0 && it->type != "in"))
         return;
 
     commitEdit(key, text);
@@ -651,7 +652,8 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
 
     // Decide value vs property by asking which map already has the key; this
     // keeps the callback free of the ordering bookkeeping in `rebuild`.
-    if (it->values.count(key)) {
+    const bool inputReference = it->type == "in" && key == "referenceMillivoltsRms";
+    if (it->values.count(key) || inputReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
 
@@ -679,7 +681,7 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
             // of parsing through the formatter's own reader.
             bool ok = false;
             double value = parseValue(text.toStdString(), &ok);
-            if (!ok)
+            if (!ok || (inputReference && (!std::isfinite(value) || value <= 0.)))
                 return;
 
             // A pot position is a normalized fraction, not a resistance. This
@@ -690,7 +692,12 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
             if (key == "pos" && (it->type == "pot" || it->type == "varres"))
                 value = std::clamp(value, 0.0, 1.0);
 
-            if (value == it->values[key])
+            const auto stored = it->values.find(key);
+            if (inputReference) {
+                const double original = stored != it->values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
+                if (text == juce::String(formatValue(original, ""))) return;
+            }
+            if (stored != it->values.end() && value == stored->second)
                 return;   // nothing changed: nothing to tell the host
             it->values[key] = value;
         }

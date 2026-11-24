@@ -237,6 +237,7 @@ private:
     ///
     /// 1 when the document has not said, which scales nothing.
     double outputFullScaleVolts_ = 1.0;
+    double inputVoltsPerFullScale_ = 1.0;
 
     std::vector<double> baseSourceValues_;
 

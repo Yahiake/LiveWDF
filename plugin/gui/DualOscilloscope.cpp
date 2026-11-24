@@ -135,7 +135,8 @@ void DualOscilloscope::timerCallback() {
         float maxVal = 1e-6f;
         for (float s : inWaveScratch_) maxVal = std::max(maxVal, std::abs(s));
         inPeakDb_ = 20.0f * std::log10(maxVal);
-        inPeakVolts_ = maxVal;
+        inPeakVolts_ = maxVal * inputScale_;
+        for (auto& sample : inWaveScratch_) sample *= inputScale_;
     }
 
     if (outBuffer_) {
@@ -152,7 +153,8 @@ void DualOscilloscope::timerCallback() {
         float maxVal = 1e-6f;
         for (float s : outWaveScratch_) maxVal = std::max(maxVal, std::abs(s));
         outPeakDb_ = 20.0f * std::log10(maxVal);
-        outPeakVolts_ = maxVal;
+        outPeakVolts_ = maxVal * outputScale_;
+        for (auto& sample : outWaveScratch_) sample *= outputScale_;
     }
 
     // **The scope sizes itself to the biggest signal it is showing.** A trace

@@ -249,6 +249,7 @@ struct Reference {
     int inIdx = -1;
     int outIdx = -1;
     std::vector<double> base;
+    double inputScale = 1.0;
     double fullScale = 1.0;
     std::string inputName;
 };
@@ -296,6 +297,7 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
     ref.base.resize(c.src.size());
     for (size_t i = 0; i < c.src.size(); ++i)
         ref.base[i] = c.src[i].dc;
+    ref.inputScale = doc.inputVoltsPerFullScale();
     ref.fullScale = doc.outputFullScaleVolts();
 
     try {
@@ -479,7 +481,7 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
                 if (ac.ac != 0.0 && ac.freq != 0.0)
                     sv[source] = wdf::sourceValueAt(ref.base[source], ac.ac, ac.freq, kSampleRate, n);
             }
-            sv[static_cast<size_t>(ref.inIdx)] = static_cast<double>(blockIn[static_cast<size_t>(i)]);
+            sv[static_cast<size_t>(ref.inIdx)] = ref.inputScale * blockIn[static_cast<size_t>(i)];
 
             const auto& nodes = ref.engine->step(sv);
             if (!ref.engine->lastConverged())
@@ -1034,7 +1036,13 @@ int runProbe(const juce::File& file, const std::string& outCsv, double fs, doubl
 int runPluginProbe(const juce::File& file, const std::string& outCsv, double drive = 0.001, double freq = 1000.0) {
     std::vector<float> pluginOut;
     AuditInfo info;
-    const AuditCase tc{ "probe", freq, static_cast<float>(drive) };
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    if (!doc.loadFromFile(file.getFullPathName().toStdString(), doc, error)) {
+        std::printf("plugin probe: %s\n", error.c_str());
+        return 1;
+    }
+    const AuditCase tc{ "probe", freq, static_cast<float>(drive / doc.inputVoltsPerFullScale()) };
     const AuditStats st = runOne(file, 64, tc, pluginOut, &info);
     if (!st.error.empty()) {
         std::printf("plugin probe: %s\n", st.error.c_str());

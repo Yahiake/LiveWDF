@@ -68,6 +68,7 @@ public:
         timebaseMs_ = juce::jlimit(0.2f, 20.0f, msPerDiv);
         autoTimebase_ = false;
     }
+    void setTerminalScales(float in, float out) { inputScale_ = in; outputScale_ = out; }
     void setInputGain(float gain) { inGain_ = gain; }
     void setOutputGain(float gain) { outGain_ = gain; }
     void setFrozen(bool frozen) { frozen_ = frozen; }
@@ -92,6 +93,7 @@ private:
     /// it off automatic, the way a real scope's does when you touch the knob.
     bool autoTimebase_ = true;
 
+    float inputScale_ = 1.0f, outputScale_ = 1.0f;
     float inGain_ = 1.0f;
     float outGain_ = 1.0f;
     bool frozen_ = false;
