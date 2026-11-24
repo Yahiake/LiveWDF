@@ -146,6 +146,7 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
+    friend bool checkLivePreviewCapture(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)
@@ -191,6 +192,7 @@ private:
     std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
     std::optional<AffineResult> readyAffine_;
     std::future<AffineResult> affineJob_;
+    using TransferRevision = std::array<long long, 5>; // transfer, controls, channel affine plans, preview request
     struct SettledTransfer {
         unsigned long long generation = 0;
         wdf::Engine::LiveTransferSetup left, right;
@@ -206,7 +208,13 @@ private:
     bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
     long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
     bool outputOnlyPreviewAllowed_ = false;
-    using TransferRevision = std::array<long long, 5>; // transfer, controls, channel affine plans, preview request
+    enum class CaptureState { idle, requested, needsStorage, done };
+    std::atomic<CaptureState> captureState_{CaptureState::idle};
+    struct TransferCapture {
+        std::optional<SettledTransfer> work;
+        std::optional<TransferRevision> revision;
+        bool fastLive = false, wantPreview = false;
+    } capture_;
     std::optional<TransferRevision> observedTransferRevision_, preparedTransferRevision_;
     wdf::Circuit settledControlCircuit_;
 
@@ -335,6 +343,7 @@ private:
     void timerCallback() override;
     void prepareFastLiveAffine();
     void prepareSettledLiveTransfer();
+    void captureSettledTransferIfRequested() noexcept;
     void applySettledLiveTransfer(bool stereo) noexcept;
     void readLivePotTargets(int rampSamples);
     void advanceLivePots();

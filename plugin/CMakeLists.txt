@@ -87,3 +87,9 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
     juce::juce_gui_basics
     juce::juce_gui_extra
 )
+
+if(LIVEWDF_BUILD_TESTS)
+    add_test(NAME livewdf_live_preview_capture COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf"
+        --check-live-preview-capture)
+endif()

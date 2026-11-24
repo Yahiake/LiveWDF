@@ -357,60 +357,46 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         }
         return;
     }
-    const bool compilePreview = compiledPreviewRequested();
-    const auto revisions = [this](bool needsPreview) -> TransferRevision {
-        return {leftEngine_->linearRebuilds(), leftEngine_->liveControlRevision(),
-                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision(), needsPreview};
-    };
-    TransferRevision revision;
-    bool planOnly = false, needsPreview = false;
-    const bool fastLive = *apvts_.getRawParameterValue("solve_quality") > 0.5f;
-    {
-        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-        if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
+    // The timer can inspect an idle engine immediately. While playing a heavy
+    // circuit, service the same request at a block boundary under the audio
+    // thread's existing lock. The control thread owns all snapshot storage.
+    if (captureState_.load(std::memory_order_acquire) == CaptureState::idle) {
+        if (affineWorkerBusy.test(std::memory_order_relaxed))
             return;
-        planOnly = !leftEngine_->hasAdjustedLiveTransfer();
-        needsPreview = compilePreview && (!previewPrepared_ ||
-            previewLinearRevision_ != leftEngine_->linearRebuilds() ||
-            previewControlRevision_ != leftEngine_->liveControlRevision());
-        if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() != rightEngine_->hasAdjustedLiveTransfer() ||
-            (planOnly && !needsPreview && (!fastLive || (leftEngine_->circuitPlanPrepared() && rightEngine_->circuitPlanPrepared())))) {
-            observedTransferRevision_.reset();
-            return;
-        }
-        revision = revisions(needsPreview);
-        if (observedTransferRevision_ != revision) {
-            observedTransferRevision_ = revision;
-            if (!initialTransferPending_)
-                return;
-        }
-        if (preparedTransferRevision_ == revision || affineWorkerBusy.test(std::memory_order_relaxed))
-            return;
+        capture_.fastLive = *apvts_.getRawParameterValue("solve_quality") > 0.5f;
+        capture_.wantPreview = compiledPreviewRequested();
+        capture_.revision.reset();
+        captureState_.store(CaptureState::requested, std::memory_order_release);
     }
-    SettledTransfer job{engineGeneration_,
-                        wdf::Engine::LiveTransferSetup(settledControlCircuit_),
-                        wdf::Engine::LiveTransferSetup(settledControlCircuit_),
-                        fastLive && !planOnly};
-    job.compilePreview = needsPreview;
-    bool allowOutputOnly = false, allowPad = false;
-    double peak = 0.;
-    size_t input = 0;
-    int output = -1;
-    {
-        std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-        if (!lock.owns_lock() || potsMoving_ ||
-            revisions(needsPreview) != revision ||
-            !leftEngine_->captureLiveTransferSetup(job.left, planOnly) ||
-            !rightEngine_->captureLiveTransferSetup(job.right, planOnly))
-            return;
-        input = static_cast<size_t>(inSourceIndex_);
-        output = outNodeIndex_;
-        allowOutputOnly = outputOnlyPreviewAllowed_;
-        peak = previewPeakVolts(currentDoc_);
-        allowPad = currentDoc_.allowPreviewInputPad;
+    if (captureState_.load(std::memory_order_acquire) == CaptureState::needsStorage) {
+        capture_.work.emplace(SettledTransfer{engineGeneration_,
+            wdf::Engine::LiveTransferSetup(settledControlCircuit_),
+            wdf::Engine::LiveTransferSetup(settledControlCircuit_)});
+        captureState_.store(CaptureState::requested, std::memory_order_release);
+    }
+    if (captureState_.load(std::memory_order_acquire) == CaptureState::requested) {
+        std::unique_lock lock(engineMutex_, std::try_to_lock);
+        if (lock.owns_lock())
+            captureSettledTransferIfRequested();
+    }
+    if (captureState_.load(std::memory_order_acquire) != CaptureState::done)
+        return;
+    if (!capture_.revision) {
+        capture_.work.reset();
+        captureState_.store(CaptureState::idle, std::memory_order_release);
+        return;
     }
     if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
         return;
+    const auto revision = *capture_.revision;
+    const auto fastLive = capture_.fastLive;
+    const auto input = static_cast<size_t>(inSourceIndex_);
+    const auto output = outNodeIndex_;
+    const bool allowOutputOnly = outputOnlyPreviewAllowed_, allowPad = currentDoc_.allowPreviewInputPad;
+    const auto peak = previewPeakVolts(currentDoc_);
+    auto job = std::move(*capture_.work);
+    capture_.work.reset();
+    captureState_.store(CaptureState::idle, std::memory_order_release);
     try {
         settledTransferJob_ = std::async(std::launch::async,
             [work = std::move(job), input, output, fastLive, allowOutputOnly, peak, allowPad]() mutable {
@@ -430,6 +416,43 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
     } catch (const std::exception&) {
         affineWorkerBusy.clear(std::memory_order_release);
     }
+}
+
+void LiveWDFPluginProcessor::captureSettledTransferIfRequested() noexcept {
+    if (captureState_.load(std::memory_order_acquire) != CaptureState::requested)
+        return;
+
+    if (leftEngine_ && rightEngine_ && inSourceIndex_ >= 0) {
+        const bool planOnly = !leftEngine_->hasAdjustedLiveTransfer();
+        const bool needsPreview = capture_.wantPreview && (!previewPrepared_ ||
+            previewLinearRevision_ != leftEngine_->linearRebuilds() ||
+            previewControlRevision_ != leftEngine_->liveControlRevision());
+        const bool needsPlan = capture_.fastLive &&
+            !(leftEngine_->circuitPlanPrepared() && rightEngine_->circuitPlanPrepared());
+        if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() != rightEngine_->hasAdjustedLiveTransfer() ||
+            (planOnly && !needsPreview && !needsPlan)) {
+            observedTransferRevision_.reset();
+        } else {
+            const TransferRevision revision{leftEngine_->linearRebuilds(), leftEngine_->liveControlRevision(),
+                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision(), needsPreview};
+            if ((initialTransferPending_ || observedTransferRevision_ == revision) &&
+                preparedTransferRevision_ != revision) {
+                if (!capture_.work) {
+                    captureState_.store(CaptureState::needsStorage, std::memory_order_release);
+                    return;
+                }
+                auto& job = *capture_.work;
+                if (leftEngine_->captureLiveTransferSetup(job.left, planOnly) &&
+                    rightEngine_->captureLiveTransferSetup(job.right, planOnly)) {
+                    job.affine = capture_.fastLive && !planOnly;
+                    job.compilePreview = needsPreview;
+                    capture_.revision = revision;
+                }
+            }
+            observedTransferRevision_ = revision;
+        }
+    }
+    captureState_.store(CaptureState::done, std::memory_order_release);
 }
 
 void LiveWDFPluginProcessor::applySettledLiveTransfer(bool stereo) noexcept {
@@ -717,9 +740,6 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         if (!fixture.empty()) cacheKey += "\nport fixture " + fixture;
     cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
-    observedTransferRevision_.reset();
-    preparedTransferRevision_.reset();
-
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
     // schematic canvas wants its voltages.
@@ -732,6 +752,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     {
         std::lock_guard<std::mutex> lock(engineMutex_);
+        captureState_.store(CaptureState::idle, std::memory_order_release);
+        capture_.work.reset();
+        observedTransferRevision_.reset();
+        preparedTransferRevision_.reset();
+        initialTransferPending_ = true;
         leftEngine_.swap(newLeft);
         rightEngine_.swap(newRight);
         previewPrepared_ = false;
@@ -877,7 +902,6 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     // A fresh document already has settled controls. Start its background
     // screen before a heavy circuit can saturate the playback callbacks.
-    initialTransferPending_ = true;
     if (!isNonRealtime() && *apvts_.getRawParameterValue("solve_quality") > 0.5f) {
         if (auto* manager = juce::MessageManager::getInstanceWithoutCreating();
             manager != nullptr && manager->isThisTheMessageThread())

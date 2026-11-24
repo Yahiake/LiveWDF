@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <barrier>
 #include <bit>
 #include <cctype>
 #include <chrono>
@@ -1970,6 +1971,59 @@ int runRuntimeCheck(const juce::File& file) {
 
 }  // namespace
 
+namespace livewdf {
+
+bool checkLivePreviewCapture(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    const auto set = [&](const char* id, float value) {
+        processor.getAPVTS().getParameter(id)->setValueNotifyingHost(value);
+    };
+    set("solve_quality", 0.f);
+    set("compiled_preview", 0.f);
+    processor.setPlayConfigDetails(2, 2, 48000, 128);
+    processor.prepareToPlay(48000, 128);
+    if (!processor.loadCircuitFromFile(file))
+        return false;
+    set("solve_quality", 1.f);
+    set("compiled_preview", 1.f);
+
+    // Reproduce a saturated callback that owns the engine for every timer tick.
+    // The worker may take any number of blocks to finish its numerical screen.
+    std::barrier blockBoundary(2);
+    bool stop = false, installed = false;
+    std::thread audio([&] {
+        juce::AudioBuffer<float> block(2, 128);
+        juce::MidiBuffer midi;
+        for (;;) {
+            {
+                const std::lock_guard hold(processor.engineMutex_);
+                blockBoundary.arrive_and_wait();
+                blockBoundary.arrive_and_wait();
+            }
+            if (stop) break;
+            block.clear();
+            processor.processBlock(block, midi);
+            installed = processor.previewPrepared_;
+            blockBoundary.arrive_and_wait();
+        }
+    });
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+    for (;;) {
+        blockBoundary.arrive_and_wait();
+        stop = installed || std::chrono::steady_clock::now() >= deadline;
+        if (!stop) processor.timerCallback();
+        blockBoundary.arrive_and_wait();
+        if (stop) break;
+        blockBoundary.arrive_and_wait();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    audio.join();
+    std::printf("Compiled Preview under continuous engine contention: %s\n", installed ? "PASS" : "FAIL");
+    return installed;
+}
+
+} // namespace livewdf
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
@@ -1982,6 +2036,9 @@ int main(int argc, char** argv) {
                     "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--fast-live]\n");
         return 1;
     }
+
+    if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")
+        return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
 
     if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
         const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
