@@ -4,11 +4,26 @@
 
 #include <algorithm>
 #include <cmath>
+#include <span>
 #include <cstring>
 
 namespace wdf {
 namespace {
 using Plan = LoadedJunctionPlan;
+// Below −12 thermal voltages, the omitted reverse-junction exponential is
+// less than 6.2 ppm of its saturation current. Its leakage remains in the model.
+double reverseCutoffVoltage(const BjtModel& b, std::span<const double> impedance,
+                            int roots, int port, double residualBudget) {
+    // Bound the missing IC/IB contribution to vOc - Z*i at every root.
+    double peakOhms = 0.;
+    for (int i = 0; i < roots; ++i) {
+        const auto* row = impedance.data() + i * roots;
+        peakOhms = std::max(peakOhms, std::abs(row[port]) / b.alphaR + std::abs(row[port + 1]) / b.Br);
+    }
+    const double scale = b.Is * peakOhms;
+    const double vt = scale > 0. ? std::min(-12., std::log(residualBudget / scale)) : -12.;
+    return b.nrVt * vt;
+}
 
 double sense(const Plan::Term& term, const double* v) {
     const double minus = term.negativePort < 0 ? 0.0 : v[term.negativePort];
@@ -50,12 +65,28 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
         !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
         return false;
 
+    std::vector<bool> linearAmps(nOpAmp_), bufferTransistors(nBjt_);
+    screenJunctionDevices(inputSource, linearAmps, bufferTransistors);
+    bool negativeReverse = false;
+    if (!buildLoadedJunctionPlan(linearAmps, bufferTransistors, false, negativeReverse)) {
+        if (!negativeReverse || !buildLoadedJunctionPlan(linearAmps, bufferTransistors, true, negativeReverse))
+            return false;
+    }
+    if (screenBenefit && !screenJunctionBenefit(inputSource)) {
+        loadedJunction_ = {};
+        return false;
+    }
+    return true;
+}
+
+bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
+                                         const std::vector<bool>& bufferTransistors,
+                                         bool omitReverse, bool& negativeReverse) {
     Plan p;
     std::vector<Tabulation> recipe;
     p.impedance = Z_;
     p.constant.assign(K_, 0.0);
-    std::vector<bool> used(nD_, false), linearAmps(nOpAmp_), bufferTransistors(nBjt_);
-    screenJunctionDevices(inputSource, linearAmps, bufferTransistors);
+    std::vector<bool> used(nD_, false);
     std::vector<int> strings(nD_, -1);
     for (int ci = 0; ci < nD_; ++ci) {
         LoadedDiodeString pair{};
@@ -117,6 +148,19 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
             }
             for (int junction = 0; junction < 2; ++junction) {
                 const bool forward = junction == 0;
+                if (!forward && omitReverse) {
+                    const double cutoff = reverseCutoffVoltage(b, Z_, K_, r, kFastLiveTolerance / nBjt_);
+                    if (sign * (vv_[r + 1] - vv_[r]) <= cutoff) {
+                        // The reverse transport current tends to -Is for both polarities.
+                        const double ic = sign * b.Is / b.alphaR;
+                        const double ib = -sign * b.Is / b.Br;
+                        p.constant[r] += ic;
+                        p.constant[r + 1] += ib;
+                        p.constant[r + 2] -= ic + ib;
+                        p.reverseCutoffs.push_back({ci, r, cutoff});
+                        continue;
+                    }
+                }
                 p.laws.emplace_back();
                 p.laws.back().sense = {r + 1, forward ? -1 : r, sign};
                 p.laws.back().bjt = ci;
@@ -221,7 +265,11 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
     for (int j = 0; j < m; ++j) {
         auto& law = p.laws[j];
         law.resistance = -p.mutual[j * m + j];
-        if (!(law.resistance >= 0.0)) return false;
+        if (!(law.resistance >= 0.0)) {
+            negativeReverse = !omitReverse && law.bjt >= 0 && !law.forward &&
+                              std::isfinite(law.resistance);
+            return false;
+        }
         p.mutual[j * m + j] = 0.0;
         if (law.pole >= 0 || law.photo >= 0 || law.fet >= 0) continue;
         // Tabulate in terminal voltage to resolve the knee at every impedance.
@@ -271,10 +319,6 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
     p.matrix.resize(m * m); p.pivots.resize(m); p.low.resize(m); p.high.resize(m);
     p.revision = linearRebuilds();
     loadedJunction_ = std::move(p);
-    if (screenBenefit && !screenJunctionBenefit(inputSource)) {
-        loadedJunction_ = {};
-        return false;
-    }
     return true;
 }
 
@@ -425,6 +469,11 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
         if (demand < a.railLow() || demand > a.railHigh() || (slew > 0.0 && std::abs(demand - previous) > slew))
             return false;
         iv_[pole.port] += pole.currentGain * pole.historyGain * previous;
+    }
+    for (const auto& guard : p.reverseCutoffs) {
+        const auto& b = bjts_[guard.device];
+        const double vbc = (b.pnp ? -1.0 : 1.0) * (vt_[guard.port + 1] - vt_[guard.port]);
+        if (!(vbc <= guard.maxVbc)) return false;
     }
     for (const auto& buffer : p.buffers) {
         const auto& b = bjts_[buffer.device];

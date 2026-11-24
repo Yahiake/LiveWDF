@@ -239,6 +239,8 @@ protected:
     long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
     bool loadedJunctionEnabled_ = false;
     bool tryLoadedJunctionRoot() noexcept;
+    bool buildLoadedJunctionPlan(const std::vector<bool>& linearAmps, const std::vector<bool>& buffers,
+                                 bool omitReverse, bool& negativeReverse);
     bool screenJunctionBenefit(size_t inputSource);
     void screenJunctionDevices(size_t inputSource, std::vector<bool>& linearAmps,
                                std::vector<bool>& bufferTransistors) const;

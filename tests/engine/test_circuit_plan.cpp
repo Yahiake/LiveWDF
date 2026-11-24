@@ -1,4 +1,5 @@
 #include <catch2.hpp>
+#include "format/LiveWDFFile.h"
 #include <cmath>
 
 #include "wdf/Engine.h"
@@ -533,4 +534,124 @@ TEST_CASE("A higher rank control change leaves the full loaded circuit solver av
     CHECK(preview.loadedJunctionHits() == 0);
     for (auto n : {"a", "b", "c"})
         CHECK(signal[accurate.nodeIndex(n)] == Approx(ref[accurate.nodeIndex(n)]).margin(1e-7));
+}
+
+namespace {
+struct ReversePlanProbe : wdf::Engine {
+    using Engine::Engine;
+    size_t cutoffCount() const { return loadedJunction_.reverseCutoffs.size(); }
+    double cutoffVoltage() const { return loadedJunction_.reverseCutoffs.at(0).maxVbc; }
+    bool prepareGuardedVariant() {
+        bool negativeReverse = false;
+        return buildLoadedJunctionPlan(std::vector<bool>(nOpAmp_, false),
+                                       std::vector<bool>(nBjt_, false), true, negativeReverse);
+    }
+};
+}
+
+TEST_CASE("Guarded reverse transport returns to physical solving before BJT saturation",
+          "[engine][circuit-plan][reverse-cutoff]") {
+    for (double sign : {1.0, -1.0}) {
+        CAPTURE(sign);
+        wdf::Circuit c;
+        c.addSrc("rail", "0", sign * 5.);
+        c.addSrc("drive", "0", sign * .53);
+        c.addRes("rail", "collector", 470.);
+        c.addRes("drive", "base", 330.);
+        c.addRes("emitter", "0", 220.);
+        c.addCap("collector", "0", 1e-9);
+        const auto& model = wdf::findBjtByName(sign > 0. ? "2N3904" : "2N3906")->model;
+        c.addBjt("collector", "base", "emitter", model, "Q");
+        c.addDiode("base", "emitter", wdf::DiodeModel(1e-14, 1.6, 4.0), "D");
+
+        ReversePlanProbe preview(c, 48000.);
+        wdf::Engine physical(c, 48000.);
+        REQUIRE(preview.prepareGuardedVariant());
+        REQUIRE(preview.cutoffCount() == 1);
+        preview.useLoadedJunctionPreview(true);
+        const int b = physical.nodeIndex("base");
+        const int collector = physical.nodeIndex("collector");
+        auto sources = physical.dcValues();
+        int forwardHits = 0, saturationFallbacks = 0, recoveryHits = 0;
+        for (int i = 0; i < 384; ++i) {
+            sources[0] = sign * (i >= 128 && i < 192 ? -.1 : 5.);
+            sources[1] = sign * (.53 + .015 * std::sin(.07 * i));
+            const auto& expected = physical.step(sources);
+            const auto hits = preview.loadedJunctionHits();
+            const auto& actual = preview.step(sources);
+            const bool used = preview.loadedJunctionHits() != hits;
+            REQUIRE_FALSE(preview.lastStateRejected());
+            REQUIRE(actual[collector] == Approx(expected[collector]).margin(3e-4));
+            const double vbc = sign * (expected[b] - expected[collector]);
+            if (vbc > 0.) {
+                REQUIRE_FALSE(used);
+                ++saturationFallbacks;
+            } else if (i < 128 && used) {
+                ++forwardHits;
+            } else if (i > 224 && used) {
+                ++recoveryHits;
+            }
+        }
+        REQUIRE(forwardHits > 100);
+        REQUIRE(saturationFallbacks > 40);
+        REQUIRE(recoveryHits > 100);
+    }
+}
+
+TEST_CASE("High leakage and resistance narrow the permissible reverse-junction range",
+          "[engine][circuit-plan][reverse-cutoff]") {
+    wdf::Circuit c;
+    c.addSrc("rail", "0", 9.);
+    c.addRes("rail", "collector", 1e6);
+    c.addRes("base", "0", 1000.);
+    wdf::BjtModel model;
+    model.Is = 1e-7;
+    c.addBjt("collector", "base", "0", model, "Q");
+    c.addDiode("base", "0", wdf::DiodeModel(1e-14, 1.6, 4.0), "D");
+    ReversePlanProbe preview(c, 48000.);
+    REQUIRE(preview.prepareGuardedVariant());
+    REQUIRE(preview.cutoffCount() == 1);
+    // Even through the 1 MΩ collector, the omitted IC contribution stays
+    // below the Fast Live root residual budget.
+    const double cutoff = preview.cutoffVoltage();
+    REQUIRE(cutoff < -12. * model.Nr * model.Vt);
+    REQUIRE(1e6 * model.Is * (1. + 1. / model.Br) * std::exp(cutoff / (model.Nr * model.Vt))
+            <= wdf::Engine::kFastLiveTolerance);
+}
+
+TEST_CASE("The loaded solver retries a negative reverse-branch resistance on a compressor",
+          "[engine][circuit-plan][reverse-cutoff]") {
+    wdf::LiveWDFDocument doc;
+    std::string err;
+    REQUIRE(doc.loadFromFile("schematics/studio/dynamics/UREI-LA-3A.livewdf", err));
+    const auto circuit = doc.toCircuit();
+    ReversePlanProbe preview(circuit, 48000.);
+    wdf::Engine physical(circuit, 48000.);
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    REQUIRE(preview.cutoffCount() == 0);
+    for (auto* engine : std::array<wdf::Engine*, 2>{&preview, &physical}) {
+        REQUIRE(engine->setPotPosition("GAIN", .45));
+        REQUIRE(engine->setPotPosition("SENS", .90));
+        engine->reset();
+    }
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    REQUIRE(preview.cutoffCount() > 0);
+    preview.useLoadedJunctionPreview(true);
+    auto sources = physical.dcValues();
+    const auto inputSource = std::find_if(circuit.src.begin(), circuit.src.end(),
+        [&](const auto& s) { return s.name == doc.inputId(); });
+    REQUIRE(inputSource != circuit.src.end());
+    const auto input = size_t(inputSource - circuit.src.begin());
+    const int output = physical.nodeIndex(doc.outputNet());
+    double signalEnergy = 0., errorEnergy = 0.;
+    for (int i = 0; i < 2048; ++i) {
+        sources[input] = .35 * std::sin(.07 * i);
+        const double actual = preview.step(sources)[output];
+        const double expected = physical.step(sources)[output];
+        REQUIRE_FALSE(preview.lastStateRejected());
+        signalEnergy += expected * expected;
+        errorEnergy += (actual - expected) * (actual - expected);
+    }
+    REQUIRE(preview.loadedJunctionHits() > 1900);
+    REQUIRE(errorEnergy < 1e-6 * signalEnergy);
 }

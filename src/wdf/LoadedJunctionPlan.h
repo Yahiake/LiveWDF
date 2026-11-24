@@ -29,6 +29,10 @@ struct LoadedJunctionPlan {
         int device, port;
         double vbe;
     };
+    struct ReverseCutoff {
+        int device, port;
+        double maxVbc;
+    };
     struct FetStamp {
         int device, port;
         double conductance, transconductance, offset, load;
@@ -42,6 +46,7 @@ struct LoadedJunctionPlan {
     std::vector<FetStamp> fets;
     std::vector<LinearPole> linearPoles;
     std::vector<Buffer> buffers;
+    std::vector<ReverseCutoff> reverseCutoffs;
     std::vector<double> poleMap;
     std::vector<Entry> linear, injection;
     std::vector<double> constant, offset, openMap, voltageMap, mutual;
