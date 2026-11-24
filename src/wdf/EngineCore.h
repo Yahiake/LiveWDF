@@ -29,6 +29,7 @@
 // Everything the audio loop touches is allocated before the first sample.
 // `EngineStep::step()` performs no allocation.
 
+#include "wdf/solver/SharedNewtonColumns.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -1099,6 +1100,7 @@ protected:
                 zrRow[j] = zRow[rc[j]];
             }
         }
+        sharedNewtonColumns_.refresh(Zred_, K_, nRed_);
     }
 
     // ------------------------------------------------------------------ //
@@ -1200,6 +1202,8 @@ protected:
     int nRed_ = 0;
     std::vector<int> redCol_, redRow_;
     std::vector<double> Zred_;
+    solver::SharedNewtonColumns sharedNewtonColumns_;
+    bool loadedJunctionEnabled_ = false;
     std::vector<RootDevice> rootDevices_;
     std::vector<NewtonBlock> newtonBlocks_;
     /// Experimental runtime partition, selected per sample when enabled. It has

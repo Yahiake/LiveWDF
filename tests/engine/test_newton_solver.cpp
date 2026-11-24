@@ -266,3 +266,47 @@ TEST_CASE("Diode Bridge Rectifier produces pure positive full-wave rectification
     REQUIRE(minDc >= -1e-12);
     REQUIRE(maxDc > 2.0); // Positive DC rail established
 }
+
+TEST_CASE("Shared Newton columns preserve the voltage step across live transfer changes", "[engine][newton]") {
+    constexpr int n = 12, groups = 4;
+    std::vector<double> z(n * n), jac(n * n), f(n), matrix(n * n), rhs(n), expected(n), actual(n);
+    for (int i = 0; i < n; ++i) {
+        f[i] = std::sin(0.2 + i);
+        for (int j = 0; j < n; ++j) {
+            const double column = std::cos(0.3 * (1 + i) * (1 + j % groups));
+            z[i * n + j] = j < groups ? column : j < 2 * groups ? -column : 0.0;
+            jac[i * n + j] = 0.015 * std::sin(0.4 * (1 + i) * (j + 2));
+        }
+    }
+    wdf::solver::SharedNewtonColumns plan;
+    plan.prepare(z, n, n);
+    const auto check = [&] {
+        REQUIRE(plan.available());
+        for (int i = 0; i < n; ++i) {
+            rhs[i] = 0;
+            for (int k = 0; k < n; ++k) rhs[i] -= jac[i * n + k] * f[k];
+            for (int j = 0; j < n; ++j) {
+                double value = i == j ? 1.0 : 0.0;
+                for (int k = 0; k < n; ++k) value += jac[i * n + k] * z[k * n + j];
+                matrix[i * n + j] = value;
+            }
+        }
+        REQUIRE(plan.solve(matrix.data(), rhs.data(), f.data(), n, actual.data()));
+        REQUIRE(wdf::solver::RootJacobian::reducedFinishFast(
+            matrix.data(), rhs.data(), n, z.data(), f.data(), n, expected.data()));
+        for (int i = 0; i < n; ++i) REQUIRE(std::abs(actual[i] - expected[i]) < 1.e-13);
+    };
+    check();
+    for (double& value : z) value *= 0.9;
+    plan.refresh(z, n, n);
+    check();
+    z[groups] = std::nextafter(z[groups], 0.);
+    plan.refresh(z, n, n);
+    REQUIRE_FALSE(plan.available());
+    z[groups] = -z[0];
+    plan.refresh(z, n, n);
+    check();
+    z[2 * groups] = 1.e-15;
+    plan.refresh(z, n, n);
+    REQUIRE_FALSE(plan.available());
+}

@@ -11,6 +11,7 @@
 #include "wdf/DenseTopology.h"
 #include "wdf/solver/RootResidual.h"
 #include "wdf/solver/RootJacobian.h"
+#include "wdf/solver/SharedNewtonColumns.h"
 #include "wdf/solver/RootClosedForms.h"
 
 #if defined(_MSC_VER)
@@ -32,6 +33,7 @@ struct NewtonContext {
     const std::vector<double>& vOc;
     const std::vector<double>& Z;
     const std::vector<double>& Zred;
+    SharedNewtonColumns* sharedColumns;
     const std::vector<double>& vvPrev;
     const std::vector<double>& vvPrev2;
     const std::vector<double>& predUp;
@@ -266,11 +268,13 @@ public:
                 tock(ctx.prof->jacobian);
 
             tPhase = tick();
-            const bool solved = !ctx.Zred.empty()
+            const bool compactSolved = ctx.sharedColumns && ctx.sharedColumns->solve(
+                ctx.Mr.data(), ctx.rN.data(), ctx.F.data(), ctx.K, ctx.dv.data());
+            const bool solved = compactSolved || (!ctx.Zred.empty()
                 ? RootJacobian::reducedFinishFast(
                       ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
                 : RootJacobian::reducedFinish(
-                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data()));
             if (ctx.prof)
                 tock(ctx.prof->lu);
             if (!solved)

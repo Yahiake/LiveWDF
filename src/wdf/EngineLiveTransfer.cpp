@@ -98,6 +98,7 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode, requestedPeak, allowPad))
         return;
     prepareLoadedJunctionPreview(inputSource);
+    sharedNewtonColumns_.prepare(Zred_, K_, nRed_);
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
@@ -138,6 +139,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
     const auto installPreview = [&] {
         if (setup.compiledPreview_) {
+            std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             swapAffineNodePreview(preparedEngine);
             adoptBipolarPreview(preparedEngine);
             swapLoadedJunctionPreview(preparedEngine);
@@ -166,6 +168,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     auto live = transfer(*this);
     auto prepared = transfer(*setup.prepared_);
     live.swap(prepared);
+    if (!setup.compiledPreview_) sharedNewtonColumns_.refresh(Zred_, K_, nRed_);
     ++linearRebuilds_;
     circuitPlanRevision_ = preparedEngine.circuitPlanPrepared() ? linearRebuilds() : -1;
     installPreview();

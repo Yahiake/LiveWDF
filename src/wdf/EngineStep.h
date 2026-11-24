@@ -263,7 +263,6 @@ protected:
     void swapLoadedJunctionPreview(EngineStep& prepared) noexcept;
     LoadedJunctionPlan loadedJunction_;
     long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
-    bool loadedJunctionEnabled_ = false;
     bool tryLoadedJunctionRoot() noexcept;
     bool buildLoadedJunctionPlan(const std::vector<bool>& linearAmps, const std::vector<bool>& buffers,
                                  bool omitReverse, bool& negativeReverse, std::span<const std::uint8_t> retained = {});
