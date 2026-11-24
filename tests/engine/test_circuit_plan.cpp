@@ -282,3 +282,35 @@ TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Prev
     candidate.reset();
     REQUIRE(candidate.stepBipolarPreview(0., voltage));
 }
+
+TEST_CASE("An isolated series diode path retains its bleed resistor and midpoint voltage", "[engine][circuit-plan]") {
+    struct InspectPlan : wdf::Engine {
+        using Engine::Engine;
+        size_t seriesPaths() const { return loadedJunction_.strings.size(); }
+    };
+    wdf::Circuit c;
+    c.addSrc("audio", "0", 0.0);
+    c.addRes("audio", "out", 10000);
+    c.addCap("out", "0", 8.2e-9);
+    c.addDiode("out", "0", wdf::DiodeModel(1e-10, 1.8, 4.0), "single");
+    c.addDiode("0", "mid", wdf::DiodeModel(3e-9, 1.3, 2.0), "first");
+    c.addDiode("mid", "out", wdf::DiodeModel(2e-12, 1.9, 18.0), "second");
+    c.addRes("mid", "out", 1e8);
+    for (bool loadedMidpoint : {false, true}) {
+        if (loadedMidpoint) c.addCap("mid", "0", 10e-9);
+        InspectPlan preview(c, 48000), exact(c, 48000);
+        REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+        REQUIRE(preview.seriesPaths() == (loadedMidpoint ? 0 : 1));
+        preview.useLoadedJunctionPreview(true);
+        for (int i = 0; i < 512; ++i) {
+            const double src = 1.2 * std::sin(.037*i);
+            const auto& a = exact.step(&src, 1, 60, 1e-9);
+            const auto& b = preview.step(&src, 1, 60, 1e-9);
+            for (const char* node : {"mid", "out"}) {
+                const int j = exact.nodeIndex(node);
+                REQUIRE(b[j] == Approx(a[j]).margin(.002));
+            }
+        }
+        REQUIRE(preview.loadedJunctionHits() > 400);
+    }
+}

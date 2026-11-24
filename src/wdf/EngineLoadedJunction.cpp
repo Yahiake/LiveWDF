@@ -54,6 +54,16 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
     p.constant.assign(K_, 0.0);
     std::vector<bool> used(nD_, false), linearAmps(nOpAmp_), bufferTransistors(nBjt_);
     screenJunctionDevices(inputSource, linearAmps, bufferTransistors);
+    std::vector<int> strings(nD_, -1);
+    for (int ci = 0; ci < nD_; ++ci) {
+        LoadedDiodeString pair{};
+        if (!used[ci] && findLoadedDiodeString(comp_, rootLayout_, ci, used, pair) &&
+            strings[pair.first] < 0 && strings[pair.second] < 0) {
+            strings[ci] = static_cast<int>(p.strings.size());
+            used[pair.first] = used[pair.second] = true;
+            p.strings.push_back(std::move(pair));
+        }
+    }
     for (const auto& d : rootLayout_.devices) {
         const int r = d.portBase, ci = d.compIndex;
         const int j = static_cast<int>(p.laws.size());
@@ -63,9 +73,10 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
             auto& law = p.laws.back();
             law.sense = {r, -1, 1.0};
             law.diode = ci;
+            law.string = strings[ci];
             for (const auto& pair : rootLayout_.devices) {
                 const int k = pair.compIndex;
-                if (pair.kind == RootKind::Diode && k > ci && !used[k] &&
+                if (law.string < 0 && pair.kind == RootKind::Diode && strings[k] < 0 && k > ci && !used[k] &&
                     isAntiParallelDiodePair(comp_, ci, k) &&
                     std::equal(comp_.diode[ci].first.off.begin(), comp_.diode[ci].first.off.end(),
                                comp_.diode[k].first.off.begin(), comp_.diode[k].first.off.end(),
@@ -214,12 +225,17 @@ bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBen
         // Tabulate in terminal voltage to resolve the knee at every impedance.
         // Samples outside the proven monotonically invertible interval use
         // the full root, never a guessed extrapolation of the exponential.
-        for (int s = -1520; s <= 1500; ++s) {
+        for (int s = law.string < 0 ? -1520 : -1500; s <= 1500; ++s) {
             const double v = s < -1500 ? -std::ldexp(1.0, -s - 1500) : .001 * s;
             double i = 0.0, g = 0.0;
             if (law.diode >= 0) {
                 comp_.diode[law.diode].second.eval(v, i, g);
-                if (law.opposite >= 0) {
+                if (law.string >= 0) {
+                    double drop;
+                    auto& pair = p.strings[law.string];
+                    i -= pair.tabulate(comp_, -v, drop);
+                    if (s >= -1500) pair.firstDrop.push_back(drop);
+                } else if (law.opposite >= 0) {
                     double reverse;
                     comp_.diode[law.opposite].second.eval(-v, reverse, g);
                     i -= reverse;
@@ -288,7 +304,11 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
                 const double vt = law.forward ? b.nfVt : b.nrVt;
                 p.q[i] = 1000.0 * b.Is * std::expm1(std::min(kBJtMaxExpArg, sense(law.sense, vv_.data()) / vt));
             } else {
-                const double reverse = law.oppositePort >= 0 ? ii_[law.oppositePort] : 0.0;
+                double reverse = law.oppositePort >= 0 ? ii_[law.oppositePort] : 0.0;
+                if (law.string >= 0) {
+                    const auto& pair = p.strings[law.string];
+                    reverse = ii_[pair.firstPort] + pair.firstShunt*vv_[pair.firstPort];
+                }
                 p.q[i] = 1000.0 * (ii_[law.sense.port] - reverse);
             }
         }
@@ -403,6 +423,24 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
     }
     for (const auto& e : p.injection) iv_[e.row] += e.value * p.q[e.col];
     for (const auto& law : p.laws) {
+        if (law.string >= 0) {
+            const auto& pair = p.strings[law.string];
+            const double v = vt_[law.sense.port];
+            if (v < -1.5 || v > 1.5) return false;
+            const double position = (v + 1.5)*1000.0;
+            const auto j = std::min(static_cast<size_t>(position), pair.firstDrop.size()-2);
+            const double first = pair.firstDrop[j] + (position-static_cast<double>(j))*(pair.firstDrop[j+1]-pair.firstDrop[j]);
+            const double second = -v - first;
+            double current, derivative;
+            comp_.diode[pair.first].second.eval(first, current, derivative);
+            const double total = current + pair.firstShunt*first;
+            iv_[pair.firstPort] = current;
+            iv_[pair.secondPort] = total - pair.secondShunt*second;
+            iv_[law.sense.port] += total;
+            vt_[pair.firstPort] = first;
+            vt_[pair.secondPort] = second;
+            continue;
+        }
         if (law.opposite < 0) continue;
         double reverse, conductance;
         comp_.diode[law.opposite].second.eval(-vt_[law.sense.port], reverse, conductance);

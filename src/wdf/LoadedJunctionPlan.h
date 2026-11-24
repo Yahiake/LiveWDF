@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "wdf/LoadedDiodeString.h"
 
 namespace wdf {
 
@@ -16,7 +17,7 @@ struct LoadedJunctionPlan {
         Term sense;
         int pole = -1, bjt = -1, fet = -1, photo = -1;
         bool forward = false;
-        int diode = -1, opposite = -1, oppositePort = -1;
+        int diode = -1, opposite = -1, oppositePort = -1, string = -1;
         double resistance = 0.0, inversePole = 0.0;
         std::vector<double> drive, current, lookup;
     };
@@ -37,6 +38,7 @@ struct LoadedJunctionPlan {
         double value;
     };
     std::vector<Law> laws;
+    std::vector<LoadedDiodeString> strings;
     std::vector<FetStamp> fets;
     std::vector<LinearPole> linearPoles;
     std::vector<Buffer> buffers;
