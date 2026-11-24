@@ -1,6 +1,7 @@
 #pragma once
 
 #include "wdf/DenseSolve.h"
+#include "wdf/DenseTopology.h"
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -68,20 +69,35 @@ public:
     }
     bool available() const noexcept { return valid_; }
 
-    // With E selecting each group's representative, S E is the identity.
-    // S (I + J Z) E is the compact matrix, and S (-J F) its right-hand side.
-    bool solve(const double* matrix, const double* rhs, const double* f, int rows, double* dv) noexcept {
-        const int groups = int(representatives_.size()), cols = int(members_.size());
+    // Assemble I + S J C and -S J F from the local device Jacobians. Rows
+    // eliminated by S do not contribute to either side.
+    void assemble(const double* jacobian, const double* f, int ports,
+                  const int* activePorts, const std::vector<RootDevice>& devices) noexcept {
+        const int groups = int(representatives_.size());
         std::fill(matrix_.begin(), matrix_.end(), 0.);
         std::fill(rhs_.begin(), rhs_.end(), 0.);
-        for (int j = 0; j < cols; ++j) {
-            const auto [group, sign] = members_[j];
-            if (sign == 0) continue;
-            rhs_[group] += sign * rhs[j];
-            double* dst = matrix_.data() + size_t(group) * groups;
-            const double* src = matrix + size_t(j) * cols;
-            for (int g = 0; g < groups; ++g) dst[g] += sign * src[representatives_[g]];
+        for (int g = 0; g < groups; ++g)
+            matrix_[g * groups + g] = 1.;
+        for (const RootDevice& device : devices) {
+            for (int i = device.activeRowBase; i < device.activeRowBase + device.numActiveRows; ++i) {
+                const auto [group, sign] = members_[i];
+                if (!sign) continue;
+                const double* derivative = jacobian + activePorts[i] * ports;
+                double* row = matrix_.data() + group * groups;
+                for (int q = device.portBase; q < device.portBase + device.numPorts; ++q) {
+                    const double slope = sign * derivative[q];
+                    if (slope == 0.) continue;
+                    rhs_[group] -= slope * f[q];
+                    const double* column = columns_.data() + q * groups;
+                    for (int g = 0; g < groups; ++g)
+                        row[g] += slope * column[g];
+                }
+            }
         }
+    }
+
+    bool finish(const double* f, int rows, double* dv) noexcept {
+        const int groups = int(representatives_.size());
         if (!detail::solveData(matrix_.data(), rhs_.data(), groups))
             return false;
         for (int i = 0; i < rows; ++i) {

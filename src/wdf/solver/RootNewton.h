@@ -255,26 +255,36 @@ public:
             }
 
             tPhase = tick();
-            if (!ctx.Zred.empty()) {
-                RootJacobian::reducedAssembleFast(
-                    ctx.Zred.data(), ctx.J.data(), ctx.F.data(), ctx.nRed, ctx.K,
-                    ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
-            } else {
-                RootJacobian::reducedAssemble(
-                    ctx.Z.data(), ctx.J.data(), ctx.F.data(), ctx.redCol.data(), ctx.nRed, ctx.K,
-                    ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
-            }
+            const auto assembleFull = [&] {
+                if (!ctx.Zred.empty()) {
+                    RootJacobian::reducedAssembleFast(
+                        ctx.Zred.data(), ctx.J.data(), ctx.F.data(), ctx.nRed, ctx.K,
+                        ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
+                } else {
+                    RootJacobian::reducedAssemble(
+                        ctx.Z.data(), ctx.J.data(), ctx.F.data(), ctx.redCol.data(), ctx.nRed, ctx.K,
+                        ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
+                }
+            };
+            if (ctx.sharedColumns)
+                ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
+                                            ctx.redCol.data(), ctx.rootDevices);
+            else
+                assembleFull();
             if (ctx.prof)
                 tock(ctx.prof->jacobian);
 
             tPhase = tick();
-            const bool compactSolved = ctx.sharedColumns && ctx.sharedColumns->solve(
-                ctx.Mr.data(), ctx.rN.data(), ctx.F.data(), ctx.K, ctx.dv.data());
-            const bool solved = compactSolved || (!ctx.Zred.empty()
-                ? RootJacobian::reducedFinishFast(
-                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
-                : RootJacobian::reducedFinish(
-                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data()));
+            bool solved = ctx.sharedColumns && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
+            if (!solved) {
+                if (ctx.sharedColumns)
+                    assembleFull();
+                solved = !ctx.Zred.empty()
+                    ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                          ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
+                    : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                          ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+            }
             if (ctx.prof)
                 tock(ctx.prof->lu);
             if (!solved)

@@ -275,7 +275,7 @@ TEST_CASE("Shared Newton columns preserve the voltage step across live transfer 
         for (int j = 0; j < n; ++j) {
             const double column = std::cos(0.3 * (1 + i) * (1 + j % groups));
             z[i * n + j] = j < groups ? column : j < 2 * groups ? -column : 0.0;
-            jac[i * n + j] = 0.015 * std::sin(0.4 * (1 + i) * (j + 2));
+            jac[i * n + j] = i / 4 == j / 4 ? 0.015 * std::sin(0.4 * (1 + i) * (j + 2)) : 0.;
         }
     }
     wdf::solver::SharedNewtonColumns plan;
@@ -291,7 +291,17 @@ TEST_CASE("Shared Newton columns preserve the voltage step across live transfer 
                 matrix[i * n + j] = value;
             }
         }
-        REQUIRE(plan.solve(matrix.data(), rhs.data(), f.data(), n, actual.data()));
+        // Three local four-port Jacobians include multi-port derivatives. Active
+        // currents map into signed duplicate columns and zero columns.
+        std::vector<wdf::RootDevice> devices(3);
+        std::vector<int> active(n);
+        for (int i = 0; i < n; ++i) active[i] = i;
+        for (int d = 0; d < 3; ++d) {
+            devices[d].portBase = devices[d].activeRowBase = d * 4;
+            devices[d].numPorts = devices[d].numActiveRows = 4;
+        }
+        plan.assemble(jac.data(), f.data(), n, active.data(), devices);
+        REQUIRE(plan.finish(f.data(), n, actual.data()));
         REQUIRE(wdf::solver::RootJacobian::reducedFinishFast(
             matrix.data(), rhs.data(), n, z.data(), f.data(), n, expected.data()));
         for (int i = 0; i < n; ++i) REQUIRE(std::abs(actual[i] - expected[i]) < 1.e-13);
