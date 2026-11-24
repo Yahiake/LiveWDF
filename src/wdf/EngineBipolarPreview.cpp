@@ -426,6 +426,7 @@ void Engine::qualifyBipolarControlMotion(size_t source, int output) {
     std::vector<std::pair<int, double>> pos(1), empty;
     constexpr int segment = 256, frames = 4 * segment;
     Values expected(frames), rendered(frames);
+    bool transientProbeAvailable = true;
     for (int k = 0; k < int(plan.qualifiedControls.size()); ++k) {
         if (std::none_of(plan.ports.begin(), plan.ports.end(), [k](const auto& p) { return p.control == k; }) ||
             std::any_of(plan.ports.begin(), plan.ports.end(),
@@ -438,7 +439,7 @@ void Engine::qualifyBipolarControlMotion(size_t source, int output) {
             return oracle.setParametersByIndex(isPot ? pos : empty, isPot ? empty : pos, empty) &&
                    trial.setLiveControls(isPot ? pos : empty, isPot ? empty : pos);
         };
-        const auto qualifies = [&](BipolarPreview::Range& range) {
+        const auto qualifies = [&](BipolarPreview::Range& range, bool fullRange) {
             // Changing a filter can raise stored energy at the same external level.
             // Measure capacitor/inductor excursions with the original nonlinear
             // circuit, then check a separate drive against those limits and waves.
@@ -447,7 +448,10 @@ void Engine::qualifyBipolarControlMotion(size_t source, int output) {
             const auto wave = [&](int r) {
                 return r < nCaps_ ? oracle.capState_[r] : oracle.indState_[r - nCaps_];
             };
-            for (bool verify : {false, true}) {
+            enum class Probe { tones, transient, verify };
+            bool stateExceeded = false;
+            const auto run = [&](Probe probe) {
+                const bool verify = probe == Probe::verify;
                 if (!setPosition(initial)) return false;
                 trial.reset();
                 oracle.reset();
@@ -455,16 +459,23 @@ void Engine::qualifyBipolarControlMotion(size_t source, int output) {
                 for (int i = 0; i < frames; ++i) {
                     if (i % segment == 0 && !setPosition(sequence[i / segment])) return false;
                     const double t = 2. * std::numbers::pi * i / fs_;
-                    const double drive = verify
+                    double drive = verify
                         ? .41 * std::sin(257. * t + .3) + .34 * std::sin(1249. * t) +
                           .25 * std::sin(std::min(5483., .17 * fs_) * t + .2)
                         : .43 * std::sin(311. * t) + .32 * std::sin(1387. * t) +
                           .25 * std::sin(std::min(6421., .18 * fs_) * t);
+                    if (probe == Probe::transient)
+                        drive = std::copysign(1., std::sin(233. * t + .25) + .7 * std::sin(2029. * t + .38)
+                                                 + .3 * std::sin(std::min(7133., .21 * fs_) * t));
                     sources[source] = plan.biasInput + BipolarPreview::movingPeak * (i % segment == 127 ? 1. : drive);
                     expected[i] = oracle.step(sources)[output] - plan.biasOutput;
                     if (!oracle.lastConverged() || oracle.lastStateRejected()) return false;
                     if (verify) {
-                        if (!trial.stepBipolarPreview(sources[source], rendered[i])) return false;
+                        if (!trial.stepBipolarPreview(sources[source], rendered[i])) {
+                            for (int r = 0; r < plan.states; ++r)
+                                stateExceeded |= std::abs(candidate.next[r]) > range.stateLimit[r];
+                            return false;
+                        }
                         rendered[i] -= plan.biasOutput;
                     }
                     for (int r = 0; r < plan.states; ++r) {
@@ -476,13 +487,21 @@ void Engine::qualifyBipolarControlMotion(size_t source, int output) {
                             return false;
                     }
                 }
-            }
-            return engine::bipolarPreviewWaveformMatches(expected, rendered);
+                return !verify || engine::bipolarPreviewWaveformMatches(expected, rendered);
+            };
+            if (!run(Probe::tones)) return false;
+            if (run(Probe::verify)) return true;
+            // A resonant control can store more energy under transients. Measure
+            // that envelope on the physical circuit, then repeat the held-out
+            // waveform and individual-state checks with all guard limits active.
+            if (!fullRange || !stateExceeded || !transientProbeAvailable) return false;
+            transientProbeAvailable = false;
+            return run(Probe::transient) && run(Probe::verify);
         };
         // An EQ can remain nearly linear around noon and overload at an end stop.
         for (double radius : {1., .125}) {
             BipolarPreview::Range range{std::max(0., initial - radius), std::min(1., initial + radius), {}};
-            const bool passed = qualifies(range);
+            const bool passed = qualifies(range, radius == 1.);
             candidate.qualifiedControls[k] = {};
             if (!setPosition(initial)) return;
             if (passed) {

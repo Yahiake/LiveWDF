@@ -344,6 +344,38 @@ TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Prev
     REQUIRE(candidate.stepBipolarPreview(0., voltage));
 }
 
+TEST_CASE("A resonant EQ control keeps its physical response over a wide live sweep", "[engine][circuit-plan]") {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(doc.loadFromFile("schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf", error));
+    const auto band = std::ranges::find(doc.components, "A4_SW_PRES-2", &wdf::SchematicComponent::id);
+    REQUIRE(band != doc.components.end());
+    band->properties["select"] = "1"; // Upper presence at 1.5 kHz.
+    const auto circuit = doc.toCircuit();
+    const auto source = std::ranges::find(circuit.src, doc.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = size_t(source - circuit.src.begin());
+    wdf::Engine preview(circuit, 48000), reference(circuit, 48000);
+    const int output = preview.nodeIndex(doc.outputNet()), gain = preview.potIndexByName("A4_RV_PRES");
+    REQUIRE(output >= 0);
+    REQUIRE(gain >= 0);
+    preview.prepareLiveControls();
+    reference.prepareLiveControls();
+    REQUIRE(preview.prepareBipolarPreview(input, output));
+    auto sources = reference.dcValues();
+    double actual;
+    for (int n = 0; n < 1024; ++n) {
+        if (n == 256) {
+            REQUIRE(preview.setLiveControls({{gain, .85}}, {}));
+            REQUIRE(reference.setLiveControls({{gain, .85}}, {}));
+        }
+        sources[input] = .52 * std::sin(.19635 * n) + .19 * std::sin(.3927 * n);
+        REQUIRE(preview.stepBipolarPreview(sources[input], actual));
+        REQUIRE(actual == Approx(reference.step(sources)[output]).margin(2e-4));
+    }
+    REQUIRE_FALSE(preview.stepBipolarPreview(1.5, actual));
+}
+
 TEST_CASE("An isolated series diode path retains its bleed resistor and midpoint voltage", "[engine][circuit-plan]") {
     struct InspectPlan : wdf::Engine {
         using Engine::Engine;
