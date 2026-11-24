@@ -150,7 +150,7 @@ target_link_libraries(livewdf_bench_semiconductors PRIVATE livewdf_test_support)
 if(NOT CMAKE_CROSSCOMPILING)
     add_executable(livewdf_generate_fixtures codegen/generate_fixtures.cpp)
     target_link_libraries(livewdf_generate_fixtures PRIVATE livewdf livewdf_options)
-    set(generated_steps generated_rlc.h generated_diode.h generated_external.h)
+    set(generated_steps generated_rlc.h generated_diode.h generated_external.h generated_amp.h)
     add_custom_command(OUTPUT ${generated_steps}
         COMMAND livewdf_generate_fixtures ${generated_steps}
         DEPENDS livewdf_generate_fixtures VERBATIM)

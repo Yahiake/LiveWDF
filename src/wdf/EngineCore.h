@@ -76,6 +76,8 @@ public:
     int mosfetCount() const { return nMosfet_; }
     int bjtCount() const { return nBjt_; }
     int opAmpCount() const { return nOpAmp_; }
+    const OpAmpModel& opAmpModel(size_t i) const { return opAmps_.at(i); }
+    double opAmpPole(size_t i) const { return opAmpVp_.at(i); }
     /// How many JFET groups have needed the independent bracketed fallback.
     long long jfetFallbackCount() const { return jfetFallbacks_; }
     /// How many MOSFET groups have needed the independent bracketed fallback.

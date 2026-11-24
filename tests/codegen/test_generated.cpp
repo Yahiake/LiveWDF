@@ -16,6 +16,10 @@
 #include "generated_external.h"
 #undef CircuitStep
 
+#define CircuitStep GeneratedAmp
+#include "generated_amp.h"
+#undef CircuitStep
+
 template<class Model>
 void compare(int count) {
     Model model;
@@ -57,6 +61,7 @@ int main() {
         compare<GeneratedRLC>(0);
         compare<GeneratedDiode>(1);
         compare<GeneratedExternal>(2);
+        compare<GeneratedAmp>(3);
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
         return 1;

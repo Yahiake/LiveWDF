@@ -71,7 +71,12 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
         biasPorts.size() != static_cast<size_t>(k))
         throw std::invalid_argument("could not establish a DC operating point");
     const bool scalarDiode = k == 1 && e.compiled().diode.size() == 1;
-    if (k && !scalarDiode && !externalRoots)
+    const bool scalarAmp = k == 3 && e.opAmpCount() == 1 && !e.opAmpModel(0).softRails &&
+        !e.opAmpModel(0).hasClassABOutput() && !e.isOpAmpRailSagEnabled(0) &&
+        std::isfinite(e.opAmpModel(0).railLow()) && std::isfinite(e.opAmpModel(0).railHigh()) &&
+        e.opAmpModel(0).railLow() <= e.opAmpModel(0).railHigh() && std::isfinite(e.opAmpPole(0)) &&
+        e.rootImpedance()[3] <= e.rootImpedance()[6];
+    if (k && !scalarDiode && !scalarAmp && !externalRoots)
         throw std::invalid_argument(std::to_string(k) + " coupled root ports require --external-roots");
     const auto outputInfo = e.compiled().info.find(outputNet);
     if (outputInfo == e.compiled().info.end()) throw std::invalid_argument("unknown output net");
@@ -131,7 +136,7 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
     out.imbue(std::locale::classic());
     out << std::setprecision(std::numeric_limits<double>::max_digits10);
     out << "// Generated for fixed component values at " << e.fs() << " Hz.\n"
-        << "#pragma once\n#include <array>\n#include <cmath>\n#include <cstddef>\n#include <optional>\n";
+        << "#pragma once\n#include <algorithm>\n#include <array>\n#include <cmath>\n#include <cstddef>\n#include <optional>\n";
     if (scalarDiode) out << "#include \"devices/Diode.h\"\n";
     out << "\nstruct CircuitStep {\n"
         << "    using Ports = std::array<double, " << k << ">;\n"
@@ -155,6 +160,7 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
     Row initial = e.capacitorStates();
     initial.insert(initial.end(), e.inductorStates().begin(), e.inductorStates().end());
     literals(out, initial);
+    if (scalarAmp) out << ";\n    double pole = " << e.opAmpPole(0);
     out << ";\n\n    Ports openCircuit([[maybe_unused]] const Sources& source) const {\n        return {\n";
     const Names names{nx, ns};
     for (const auto& row : open) {
@@ -164,6 +170,15 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
         << "    double advance([[maybe_unused]] const Sources& source, [[maybe_unused]] const Ports& current) {\n"
         << "        const double result = ";
     expression(out, outRow, names);
+    if (scalarAmp) {
+        // The internal source follows directly from the output terminal KVL.
+        const auto& amp = e.opAmpModel(0);
+        Row source = zero;
+        add(source, open[0], amp.outputVoltageWeight());
+        source[currentBase] = -(amp.outputImpedance + amp.outputVoltageWeight() * e.rootImpedance()[0]);
+        out << ";\n        pole = ";
+        expression(out, source, names);
+    }
     out << ";\n        state = {\n";
     for (const auto& row : next) {
         out << "            "; expression(out, row, names); out << ",\n";
@@ -180,6 +195,35 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
             << "    double step(const Sources& source) {\n"
             << "        double i, slope;\n        loadedDiode.eval(openCircuit(source)[0], i, slope);\n"
             << "        return advance(source, {i});\n    }\n";
+    }
+    if (scalarAmp) {
+        const auto& amp = e.opAmpModel(0);
+        const double a = std::clamp(wdf::OpAmpEngineLaw::alpha(amp, e.fs()), 0., 1.);
+        const double gain = a * amp.openLoopGain / (1. + a);
+        const double zDiff = e.rootImpedance()[3] - e.rootImpedance()[6];
+        const double weight = amp.outputVoltageWeight();
+        const double load = amp.outputImpedance + weight * e.rootImpedance()[0];
+        const double feedback = 1. - gain * zDiff / load;
+        if (!(load > 0. && feedback > 0.) || !std::isfinite(load) || !std::isfinite(feedback))
+            throw std::invalid_argument("single op-amp has no unique monotone loaded solution");
+
+        // Eliminate the output-load current in the linear branch, then clamp
+        // the pole to the slew and rail bounds. Negative feedback makes the
+        // unclamped solution and the physical piece select the same bound.
+        out << "    double step(const Sources& source) {\n"
+            << "        const Ports q = openCircuit(source);\n"
+            << "        const double unloaded = " << 1. / ((1. + a) * feedback) << " * pole + ("
+            << gain / feedback << ") * (q[1] - q[2]) + (" << -gain * zDiff * weight / (load * feedback)
+            << ") * q[0];\n";
+        const double slew = wdf::OpAmpEngineLaw::maxDv(amp, e.fs());
+        if (std::isfinite(slew))
+            out << "        const double limited = std::clamp(unloaded, pole - " << slew
+                << ", pole + " << slew << ");\n";
+        else out << "        const double limited = unloaded;\n";
+        out << "        const double v = std::clamp(limited, double(" << amp.railLow()
+            << "), double(" << amp.railHigh() << "));\n"
+            << "        const double i = (" << weight << " * q[0] - v) * " << 1. / load << ";\n"
+            << "        return advance(source, {i, 0., 0.});\n    }\n";
     }
     if (externalRoots && k) {
         out << R"(
@@ -201,8 +245,11 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
         if (!std::isfinite(sample)) return {};
         for (double x : trial.state)
             if (!std::isfinite(x)) return {};
-        state = trial.state;
-        return sample;
+)";
+        if (scalarAmp) out << "        if (!std::isfinite(trial.pole)) return {};\n";
+        out << "        state = trial.state;\n";
+        if (scalarAmp) out << "        pole = trial.pole;\n";
+        out << R"(        return sample;
     }
 )";
     }
