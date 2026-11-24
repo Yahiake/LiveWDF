@@ -42,7 +42,7 @@ void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
         loadedJunction_.revision = linearRebuilds();
 }
 
-bool EngineStep::prepareLoadedJunctionPreview() {
+bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBenefit) {
     loadedJunction_ = {};
     if (!nD_ || K_ > 64 || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
         !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
@@ -52,7 +52,8 @@ bool EngineStep::prepareLoadedJunctionPreview() {
     std::vector<Tabulation> recipe;
     p.impedance = Z_;
     p.constant.assign(K_, 0.0);
-    std::vector<bool> used(nD_, false);
+    std::vector<bool> used(nD_, false), linearAmps(nOpAmp_), bufferTransistors(nBjt_);
+    screenJunctionDevices(inputSource, linearAmps, bufferTransistors);
     for (const auto& d : rootLayout_.devices) {
         const int r = d.portBase, ci = d.compIndex;
         const int j = static_cast<int>(p.laws.size());
@@ -88,6 +89,19 @@ bool EngineStep::prepareLoadedJunctionPreview() {
             if (b.hasLowCurrentCorrections() || b.Ikf != 0.0)
                 return false;
             const double sign = b.pnp ? -1.0 : 1.0;
+            if (bufferTransistors[ci]) {
+                const auto a = b.evaluateTerminals(vv_[r], vv_[r + 1]);
+                p.buffers.push_back({ci, r, sign * vv_[r + 1]});
+                const double gds[] = {a.diC_dVce, a.diB_dVce, -a.diC_dVce - a.diB_dVce};
+                const double gm[] = {a.diC_dVbe, a.diB_dVbe, -a.diC_dVbe - a.diB_dVbe};
+                const double currents[] = {a.iC, a.iB, a.iE};
+                for (int v = 0; v < 3; ++v) {
+                    p.linear.push_back({r + v, r, gds[v]});
+                    p.linear.push_back({r + v, r + 1, gm[v]});
+                    p.constant[r + v] = currents[v] - gds[v] * vv_[r] - gm[v] * vv_[r+1];
+                }
+                continue;
+            }
             for (int junction = 0; junction < 2; ++junction) {
                 const bool forward = junction == 0;
                 p.laws.emplace_back();
@@ -108,6 +122,15 @@ bool EngineStep::prepareLoadedJunctionPreview() {
             if (amp.softRails || amp.hasClassABOutput()) return false;
             const double a = std::clamp(opAmpAlpha_[ci], 0.0, 1.0);
             const double g = 1.0 / amp.outputImpedance;
+            if (linearAmps[ci]) {
+                const double source = a * amp.openLoopGain / (1.0 + a);
+                const double history = 1.0 / (1.0 + a);
+                p.linearPoles.push_back({ci, r, source, history, -g});
+                p.linear.push_back({r, r, g * amp.outputVoltageWeight()});
+                p.linear.push_back({r, r + 1, -g * source});
+                p.linear.push_back({r, r + 2, g * source});
+                continue;
+            }
             p.laws.emplace_back();
             auto& law = p.laws.back();
             law.sense = {r + 1, r + 2, a * amp.openLoopGain / (1.0 + a)};
@@ -120,6 +143,11 @@ bool EngineStep::prepareLoadedJunctionPreview() {
             const auto e = comp_.jfet[ci].model.evaluate(vv_[r + 1], vv_[r]);
             if (!e.valid) return false;
             const double c = e.id - e.did_ds * vv_[r] - e.did_gs * vv_[r + 1];
+            p.laws.emplace_back();
+            p.laws.back().sense = {r, -1, 1.0};
+            p.laws.back().fet = static_cast<int>(p.fets.size());
+            p.injection.push_back({r, j, .001});
+            recipe.emplace_back();
             p.fets.push_back({ci, r, e.did_ds, e.did_gs, c, 0.0});
             p.linear.push_back({r, r, e.did_ds});
             p.linear.push_back({r, r + 1, e.did_gs});
@@ -137,7 +165,7 @@ bool EngineStep::prepareLoadedJunctionPreview() {
     for (int i = 0; i < k; ++i) {
         lu[i * k + i] = 1.0;
         for (const auto& e : p.linear)
-            lu[i * k + e.col] += Z_[i * k + e.row] * e.value;
+            if (independent(e.row)) lu[i * k + e.col] += Z_[i * k + e.row] * e.value;
     }
     if (!detail::factorLUData(lu.data(), pivot.data(), k)) return false;
     p.openMap.resize(k * k);
@@ -145,8 +173,8 @@ bool EngineStep::prepareLoadedJunctionPreview() {
     p.mutual.resize(m * m);
     p.offset.assign(k, 0.0);
     for (int i = 0; i < k; ++i)
-        for (const auto& fet : p.fets)
-            p.offset[i] -= Z_[i * k + fet.port] * fet.offset;
+        for (int j : rootLayout_.redCol)
+            p.offset[i] -= Z_[i * k + j] * p.constant[j];
     detail::solveLUData(lu.data(), pivot.data(), p.offset.data(), k);
     for (int col = 0; col < k + m; ++col) {
         std::fill(x.begin(), x.end(), 0.0);
@@ -168,17 +196,21 @@ bool EngineStep::prepareLoadedJunctionPreview() {
             for (int i = 0; i < m; ++i)
                 p.mutual[i * m + col - k] = sense(p.laws[i].sense, x.data());
     }
-    for (auto& fet : p.fets)
-        for (int i = 0; i < k; ++i) {
-            for (int j = 0; j < k; ++j) x[j] = Z_[j * k + fet.port];
-            fet.load = std::max(fet.load, std::abs(dot(&p.openMap[i*k], x.data(), k)));
-        }
+    const int poles = static_cast<int>(p.linearPoles.size());
+    p.poleMap.resize(k * poles);
+    for (int j = 0; j < poles; ++j) {
+        const auto& pole = p.linearPoles[j];
+        for (int i = 0; i < k; ++i)
+            x[i] = -Z_[i * k + pole.port] * pole.currentGain * pole.historyGain;
+        detail::solveLUData(lu.data(), pivot.data(), x.data(), k);
+        for (int i = 0; i < k; ++i) p.poleMap[i * poles + j] = x[i];
+    }
     for (int j = 0; j < m; ++j) {
         auto& law = p.laws[j];
         law.resistance = -p.mutual[j * m + j];
         if (!(law.resistance >= 0.0)) return false;
         p.mutual[j * m + j] = 0.0;
-        if (law.pole >= 0 || law.photo >= 0) continue;
+        if (law.pole >= 0 || law.photo >= 0 || law.fet >= 0) continue;
         // Tabulate in terminal voltage to resolve the knee at every impedance.
         // Samples outside the proven monotonically invertible interval use
         // the full root, never a guessed extrapolation of the exponential.
@@ -205,7 +237,7 @@ bool EngineStep::prepareLoadedJunctionPreview() {
         }
     }
     for (auto& law : p.laws) {
-        if (law.pole >= 0 || law.photo >= 0) continue;
+        if (law.pole >= 0 || law.photo >= 0 || law.fet >= 0) continue;
         size_t n = 1;
         constexpr int count = 32769;
         law.lookup.reserve(count);
@@ -221,23 +253,37 @@ bool EngineStep::prepareLoadedJunctionPreview() {
     p.matrix.resize(m * m); p.pivots.resize(m); p.low.resize(m); p.high.resize(m);
     p.revision = linearRebuilds();
     loadedJunction_ = std::move(p);
+    if (screenBenefit && !screenJunctionBenefit(inputSource)) {
+        loadedJunction_ = {};
+        return false;
+    }
     return true;
 }
 
 bool EngineStep::tryLoadedJunctionRoot() noexcept {
     auto& p = loadedJunction_;
     const int k = K_, m = static_cast<int>(p.laws.size());
+    if (p.cooldown > 0) { --p.cooldown; return false; }
     ++loadedJunctionAttempts_;
+    p.misses = std::min(6, p.misses + 1);
+    p.cooldown = (1 << (p.misses - 1)) - 1;
     const bool seed = p.seed;
     p.seed = true; // A declined solve must restart from the native solution next sample.
-    for (int i = 0; i < k; ++i)
+    const int poles = static_cast<int>(p.linearPoles.size());
+    for (int i = 0; i < k; ++i) {
         p.open[i] = p.offset[i] + dot(&p.openMap[i * k], vOc_.data(), k);
+        for (int j = 0; j < poles; ++j)
+            p.open[i] += p.poleMap[i * poles + j] * opAmpVp_[p.linearPoles[j].device];
+    }
     for (int i = 0; i < m; ++i) {
         const auto& law = p.laws[i];
         p.drive[i] = sense(law.sense, p.open.data());
         if (seed) {
             if (law.pole >= 0) p.q[i] = opAmpVp_[law.pole];
-            else if (law.bjt >= 0) {
+            else if (law.fet >= 0) {
+                const auto& f = p.fets[law.fet];
+                p.q[i] = 1000.0*(ii_[f.port]-f.offset-f.conductance*vv_[f.port]-f.transconductance*vv_[f.port+1]);
+            } else if (law.bjt >= 0) {
                 const auto& b = bjts_[law.bjt];
                 const double vt = law.forward ? b.nfVt : b.nrVt;
                 p.q[i] = 1000.0 * b.Is * std::expm1(std::min(kBJtMaxExpArg, sense(law.sense, vv_.data()) / vt));
@@ -269,6 +315,24 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
             if (!std::isfinite(x)) return false;
             p.raw[i] = x;
             double y, slope;
+            if (law.fet >= 0) {
+                const auto& f = p.fets[law.fet];
+                const double* gate = &p.voltageMap[(f.port + 1) * m];
+                const double vds = x - law.resistance * p.q[i];
+                const double vgs = p.open[f.port + 1] + dot(gate, p.q.data(), m);
+                const auto e = comp_.jfet[f.device].model.evaluate(vgs, vds);
+                if (!e.valid) return false;
+                y = 1000.0 * (e.id - f.offset - f.conductance*vds - f.transconductance*vgs);
+                const double dds = 1000.0 * (e.did_ds - f.conductance);
+                const double dgs = 1000.0 * (e.did_gs - f.transconductance);
+                for (int j = 0; j < m; ++j) {
+                    const double ds = j == i ? -law.resistance : row[j];
+                    p.matrix[i*m+j] = (i == j ? 1.0 : 0.0) - dds*ds - dgs*gate[j];
+                }
+                p.correction[i] = y - p.q[i];
+                error = std::max(error, std::abs(p.correction[i]));
+                continue;
+            }
             if (law.photo >= 0) {
                 // The lamp's conductance comes from the preceding accepted electrical frame.
                 // Solve its loaded branch exactly within the simultaneous junction system.
@@ -320,14 +384,24 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
     }
     iv_ = p.constant;
     for (const auto& e : p.linear) iv_[e.row] += e.value * vt_[e.col];
-    for (const auto& e : p.injection) iv_[e.row] += e.value * p.q[e.col];
-    // A FET tangent can describe a switch at a settled bias. Only keep it
-    // while the actual device current still agrees under this load.
-    for (const auto& fet : p.fets) {
-        const auto e = comp_.jfet[fet.device].model.evaluate(vt_[fet.port + 1], vt_[fet.port]);
-        if (!e.valid || std::abs(e.id - iv_[fet.port]) * fet.load > .001)
+    for (const auto& pole : p.linearPoles) {
+        const auto& a = opAmps_[pole.device];
+        if (a.softRails) return false;
+        const double previous = opAmpVp_[pole.device];
+        const double demand = pole.sourceGain * (vt_[pole.port+1] - vt_[pole.port+2]) + pole.historyGain * previous;
+        const double slew = opAmpMaxDv_[pole.device];
+        if (demand < a.railLow() || demand > a.railHigh() || (slew > 0.0 && std::abs(demand - previous) > slew))
+            return false;
+        iv_[pole.port] += pole.currentGain * pole.historyGain * previous;
+    }
+    for (const auto& buffer : p.buffers) {
+        const auto& b = bjts_[buffer.device];
+        const double sign = b.pnp ? -1.0 : 1.0;
+        const double vbe = sign * vt_[buffer.port + 1];
+        if (std::abs(vbe - buffer.vbe) > .012 || vbe - sign * vt_[buffer.port] > .15)
             return false;
     }
+    for (const auto& e : p.injection) iv_[e.row] += e.value * p.q[e.col];
     for (const auto& law : p.laws) {
         if (law.opposite < 0) continue;
         double reverse, conductance;
@@ -339,6 +413,7 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
     // 1 mV and the FET guard bounds its loaded tangent error at 1 mV.
     commitCompiledRoot(.001);
     p.seed = false;
+    p.misses = p.cooldown = 0;
     ++loadedJunctionHits_;
     return true;
 }

@@ -216,7 +216,7 @@ TEST_CASE("Loaded junction preview derives antiparallel devices from their ports
     c.addDiode("0", "junction", wdf::DiodeModel(1e-9, 1.6, 12.0), "right");
     for (double fs : {44100.0, 96000.0}) {
         wdf::Engine preview(c, fs), exact(c, fs);
-        REQUIRE(preview.prepareLoadedJunctionPreview());
+        REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
         const int tap = exact.nodeIndex("junction");
         for (int i = 0; i < 512; ++i) {
             if (i == 32) {

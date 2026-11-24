@@ -25,6 +25,7 @@ public:
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
         loadedJunction_.seed = true;
+        loadedJunction_.cooldown = loadedJunction_.misses = 0;
         circuitPlanCooldown_ = 0;
         affineRootCooldown_ = 0;
         affineRootRetry_ = 8;
@@ -181,8 +182,11 @@ public:
     /// Compile at the current operating point outside the audio callback.
     // Prepare off the audio thread. The optional preview changes only the nonlinear
     // root. Capacitor, inductor and amplifier histories still advance normally.
-    bool prepareLoadedJunctionPreview();
-    void useLoadedJunctionPreview(bool enabled) noexcept { loadedJunctionEnabled_ = enabled; loadedJunction_.seed = true; }
+    bool prepareLoadedJunctionPreview(size_t inputSource = size_t(-1), bool screenBenefit = true);
+    void useLoadedJunctionPreview(bool enabled) noexcept {
+        if (loadedJunctionEnabled_ != enabled) loadedJunction_.seed = true;
+        loadedJunctionEnabled_ = enabled;
+    }
     bool hasLoadedJunctionPreview() const noexcept;
     long long loadedJunctionAttempts() const noexcept { return loadedJunctionAttempts_; }
     long long loadedJunctionHits() const noexcept { return loadedJunctionHits_; }
@@ -221,6 +225,9 @@ protected:
     long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
     bool loadedJunctionEnabled_ = false;
     bool tryLoadedJunctionRoot() noexcept;
+    bool screenJunctionBenefit(size_t inputSource);
+    void screenJunctionDevices(size_t inputSource, std::vector<bool>& linearAmps,
+                               std::vector<bool>& bufferTransistors) const;
 
     struct AffineRootPlan {
         struct CurrentRow {
