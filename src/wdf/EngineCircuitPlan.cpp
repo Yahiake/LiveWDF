@@ -35,12 +35,12 @@ void applyCircuitTangent(const double* LIVEWDF_RESTRICT lu, const int* pivots,
 // diagonal and can be scaled to strict row dominance, every one of these
 // intermediate matrices is nonsingular. Subtracting any two putative
 // solutions gives one such homogeneous system, hence the solution is unique.
-bool uniqueClippedRoot(const std::vector<double>& full, std::vector<double> baseTranspose, int n) {
-    std::vector<double> comparison(full.size());
+bool uniqueClippedRoot(const std::vector<double>& full, std::vector<double>& baseTranspose,
+                       std::vector<double>& comparison, std::vector<double>& factors,
+                       std::vector<int>& pivots, std::vector<double>& weights, int n) {
     for (int r = 0; r < n; ++r)
         for (int c = 0; c < n; ++c)
             comparison[size_t(r) * n + c] = full[size_t(r) * n + c] - baseTranspose[size_t(c) * n + r];
-    std::vector<int> pivots(n);
     if (!detail::factorLUData(baseTranspose.data(), pivots.data(), n))
         return false;
     for (int r = 0; r < n; ++r) {
@@ -53,8 +53,8 @@ bool uniqueClippedRoot(const std::vector<double>& full, std::vector<double> base
     }
     // Find weights and then independently verify the inequalities. Allows
     // one-way feed-forward coupling of arbitrary gain between stages.
-    auto factors = comparison;
-    std::vector<double> weights(n, 1.0);
+    std::copy(comparison.begin(), comparison.end(), factors.begin());
+    std::fill(weights.begin(), weights.end(), 1.0);
     if (!detail::factorLUData(factors.data(), pivots.data(), n))
         return false;
     detail::solveLUData(factors.data(), pivots.data(), weights.data(), n);
@@ -175,10 +175,20 @@ bool EngineStep::buildAffineRoot(AffineRootPlan& result) const {
         }
     }
     const int m = static_cast<int>(plan.rows.size());
-    const size_t entries = size_t(m) * m;
-    std::vector<double> lu(entries), baseTranspose(entries);
-    std::vector<int> pivots(m);
     plan.impedance.resize(size_t(K_) * m);
+    plan.inverse.resize(size_t(m) * m);
+    plan.drive.resize(m);
+    plan.current.resize(m);
+    AffineRootScratch scratch(m);
+    if (!factorAffineRoot(plan, scratch))
+        return false;
+    result = std::move(plan);
+    return true;
+}
+
+bool EngineStep::factorAffineRoot(AffineRootPlan& plan, AffineRootScratch& scratch) const noexcept {
+    const int m = static_cast<int>(plan.rows.size());
+    auto& [lu, baseTranspose, comparison, factors, column, pivots] = scratch;
     for (int r = 0; r < K_; ++r)
         for (int j = 0; j < m; ++j)
             plan.impedance[size_t(r) * m + j] = Z_[size_t(r) * K_ + plan.rows[j].port];
@@ -194,11 +204,10 @@ bool EngineStep::buildAffineRoot(AffineRootPlan& result) const {
             lu[size_t(r) * m + j] = value;
         }
     }
-    if (!uniqueClippedRoot(lu, std::move(baseTranspose), m) ||
+    if (!uniqueClippedRoot(lu, baseTranspose, comparison, factors, pivots, column, m) ||
         !detail::factorLUData(lu.data(), pivots.data(), m))
         return false;
-    plan.inverse.resize(entries);
-    std::vector<double> column(m);
+
     for (int j = 0; j < m; ++j) {
         std::fill(column.begin(), column.end(), 0.0);
         column[j] = 1.0;
@@ -209,9 +218,49 @@ bool EngineStep::buildAffineRoot(AffineRootPlan& result) const {
             plan.inverse[size_t(r) * m + j] = column[r];
         }
     }
-    plan.drive.resize(m);
-    plan.current.resize(m);
-    result = std::move(plan);
+    return true;
+}
+
+// The native network already maintains the exact loaded Z for moving pots.
+// Re-factor just the op-amp output ports when Z changes. Keeping the original
+// cap, inductor and pole histories lets either solver take the next sample.
+void EngineStep::prepareAffineMotion() {
+    if (affineNodes_.amps.empty() || nOpAmp_ > 12 ||
+        (circuit_.pots.empty() && circuit_.varRes.empty()))
+        return;
+    auto& motion = affineNodes_.motion.emplace(nOpAmp_);
+    if (!buildAffineRoot(motion.root))
+        affineNodes_.motion.reset();
+}
+
+void EngineStep::resetAffineMotion() noexcept {
+    if (auto& motion = affineNodes_.motion) {
+        motion->revision = -1;
+        motion->cooldown = 0;
+    }
+}
+
+bool EngineStep::tryAffineMotion(double tolerance) noexcept {
+    auto& motion = *affineNodes_.motion;
+    if (staticMode_ || !explicitRootsAllowed_ || powerSagEnabled_)
+        return false;
+    if (motion.cooldown > 0) {
+        --motion.cooldown;
+        return false;
+    }
+    if (motion.revision != liveControlRevision()) {
+        motion.revision = liveControlRevision();
+        motion.certified = factorAffineRoot(motion.root, motion.scratch);
+    }
+    if (!motion.certified)
+        return false;
+    ++affineRootAttempts_;
+    ++circuitPlanAttempts_;
+    if (!tryAffineRoot(motion.root, tolerance)) {
+        motion.cooldown = 7;
+        return false;
+    }
+    ++affineRootHits_;
     return true;
 }
 
@@ -220,8 +269,7 @@ void EngineStep::prepareAffineRoot() {
         certifiedResistance_ = ctrlResValues_;
 }
 
-bool EngineStep::tryAffineRoot(double tolerance) noexcept {
-    auto& plan = affineRoot_;
+bool EngineStep::tryAffineRoot(AffineRootPlan& plan, double tolerance) noexcept {
     const size_t m = plan.rows.size();
     for (size_t j = 0; j < m; ++j) {
         const auto& row = plan.rows[j];
@@ -363,7 +411,7 @@ bool EngineStep::tryCompiledRoot(double tolerance) noexcept {
         } else {
             ++affineRootAttempts_;
             ++circuitPlanAttempts_;
-            if (tryAffineRoot(tolerance)) {
+            if (tryAffineRoot(affineRoot_, tolerance)) {
                 ++affineRootHits_;
                 affineRootRetry_ = 8;
                 return true;

@@ -681,3 +681,101 @@ TEST_CASE("The loaded solver retries a negative reverse-branch resistance on a c
     REQUIRE(preview.loadedJunctionHits() > 1900);
     REQUIRE(errorEnergy < 1e-6 * signalEnergy);
 }
+
+namespace {
+struct AffineControlProbe : wdf::Engine {
+    using Engine::Engine;
+    bool enableForTest() {
+        prepareLiveControls();
+        if (!buildAffineNodePreview()) return false;
+        prepareAffineMotion();
+        useLoadedJunctionPreview(true);
+        return bool(affineNodes_.motion);
+    }
+    bool ownsSeparateWorkspace(const AffineControlProbe& other) const {
+        return affineNodes_.motion->root.inverse.data() != other.affineNodes_.motion->root.inverse.data() &&
+               affineNodes_.motion->scratch.full.data() != other.affineNodes_.motion->scratch.full.data();
+    }
+};
+}
+
+TEST_CASE("Affine live controls preserve frequency and gain on the SSL EQ while both move",
+          "[engine][circuit-plan][affine-motion]") {
+    wdf::LiveWDFDocument doc;
+    std::string reason;
+    REQUIRE(doc.loadFromFile("schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf", reason));
+    const auto circuit = doc.toCircuit();
+    AffineControlProbe preview(circuit, 48000.);
+    wdf::Engine reference(circuit, 48000.);
+    REQUIRE(preview.enableForTest());
+    const AffineControlProbe copy = preview;
+    REQUIRE(preview.ownsSeparateWorkspace(copy));
+    reference.prepareLiveControls();
+    const auto src = std::find_if(circuit.src.begin(), circuit.src.end(),
+                                  [&](const auto& s) { return s.name == doc.inputId(); });
+    REQUIRE(src != circuit.src.end());
+    const int gain = preview.potIndexByName("G_HMF");
+    const int freqA = preview.potIndexByName("F_HMF_A");
+    const int freqB = preview.potIndexByName("F_HMF_B");
+    REQUIRE(std::min({gain, freqA, freqB}) >= 0);
+    auto sources = reference.dcValues();
+    for (int i = 0; i < 1536; ++i) {
+        if (i % 8 == 0) {
+            const double phase = std::sin(i * .007);
+            const double f = .4 + .23 * phase;
+            const std::vector<std::pair<int,double>> pots{{gain, .54 - .25 * phase}, {freqA, f}, {freqB, f}};
+            REQUIRE(preview.setLiveControls(pots, {}));
+            REQUIRE(reference.setLiveControls(pots, {}));
+        }
+        sources[size_t(src - circuit.src.begin())] = .35 * std::sin(.13*i) + .13 * std::sin(.027*i);
+        const auto& expected = reference.step(sources);
+        const auto& actual = preview.step(sources, 60, wdf::Engine::kFastLiveTolerance);
+        REQUIRE_FALSE(preview.lastStateRejected());
+        for (int node = 0; node < preview.nodeCount(); ++node)
+            REQUIRE(actual[node] == Approx(expected[node]).margin(2e-6));
+    }
+    REQUIRE(preview.affineRootHits() > 1400);
+}
+
+TEST_CASE("An op-amp feedback control can revoke uniqueness and recover it",
+          "[engine][circuit-plan][affine-motion]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addRes("in", "negative", 10000.);
+    c.addRes("out", "negative", 10000.);
+    c.addRes("positive", "0", 10000.);
+    c.addVarRes("out", "positive", 100000., .99);
+    c.addRes("out", "0", 10000.);
+    c.addCap("out", "negative", 100e-12);
+    auto op = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    op.setVRails(5., 5.);
+    c.addOpAmp("out", "negative", "positive", "0", "0", op, "U");
+
+    AffineControlProbe preview(c, 48000.);
+    wdf::Engine reference(c, 48000.);
+    REQUIRE(preview.enableForTest());
+    reference.prepareLiveControls();
+    const int out = reference.nodeIndex("out");
+    const std::array positions{.90, .001, .90, .85, .95};
+    std::array<long long, positions.size()> hits{};
+    for (size_t section = 0; section < positions.size(); ++section) {
+        REQUIRE(preview.setLiveControls({}, {{0, positions[section]}}));
+        REQUIRE(reference.setLiveControls({}, {{0, positions[section]}}));
+        const auto before = preview.affineRootHits();
+        for (int i = 0; i < 512; ++i) {
+            const auto t = int(section) * 512 + i;
+            const double input = section == 1 ? (i < 50 ? 5. : 0.) :
+                                 section == 3 ? 18. * std::sin(.03 * t) : .1 * std::sin(.09 * t);
+            const auto& expected = reference.step(&input, 1);
+            const auto& actual = preview.step(&input, 1, 60, wdf::Engine::kFastLiveTolerance);
+            REQUIRE(preview.lastStateRejected() == reference.lastStateRejected());
+            REQUIRE(actual[out] == Approx(expected[out]).margin(2e-6));
+        }
+        hits[section] = preview.affineRootHits() - before;
+    }
+    REQUIRE(hits[0] > 480);
+    REQUIRE(hits[1] == 0);
+    REQUIRE(hits[2] > 480);
+    REQUIRE(hits[3] < 480);
+    REQUIRE(hits[4] > 480);
+}

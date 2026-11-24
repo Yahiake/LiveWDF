@@ -20,7 +20,7 @@ double profileSeconds() noexcept {
 
 // The two worker-owned engines start at their DC point with the same controls.
 // Compare the existing Fast Live solver to exactly the plan being published.
-template<size_t blocks = 32>
+template<size_t blocks = 32, bool moveControls = false>
 bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int output,
                         bool referenceCompiled, std::chrono::steady_clock::time_point stop,
                         bool testOverload = false) {
@@ -36,6 +36,16 @@ bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int 
     candidate.useCircuitPlan(true);
     reference.useCircuitPlan(referenceCompiled);
     const double secondsPerBlock = frames / rate;
+    std::vector<std::pair<int, double>> pots, rheostats;
+    if constexpr (moveControls) {
+        for (auto* e : engines) {
+            e->prepareLiveControls();
+            e->reset();
+        }
+        if (!reference.pots().empty()) pots.emplace_back(0, 0.);
+        if (!reference.varRes().empty()) rheostats.emplace_back(0, 0.);
+        if (pots.empty() && rheostats.empty()) return false;
+    }
     int misses[2]{};
     for (size_t b = 0; b < blocks; ++b) {
         for (size_t i = 0; i < frames; ++i) {
@@ -59,6 +69,15 @@ bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int 
             Engine& engine = *engines[mode];
             const double start = profileSeconds();
             for (size_t i = 0; i < frames; ++i) {
+                if constexpr (moveControls) {
+                    if (i % 8 == 0) {
+                        const int phase = int((b * frames + i) / 8) % 128;
+                        const double position = .2 + .6 * std::min(phase, 128 - phase) / 64.;
+                        if (!pots.empty()) pots[0].second = position;
+                        if (!rheostats.empty()) rheostats[0].second = position;
+                        if (!engine.setLiveControls(pots, rheostats)) return false;
+                    }
+                }
                 sources[input] = drive[i];
                 audio[mode][i] = engine.step(sources, Engine::kDefaultMaxIterations,
                                              Engine::kFastLiveTolerance)[output];
@@ -116,6 +135,15 @@ bool Engine::prepareAffineNodePreview(size_t inputSource, int outputNode) {
     const bool passed = winsPlaybackScreen<96>(candidate, reference, inputSource, outputNode, true, stop, true) &&
                         candidate.affineNodePreviewHits() > 0;
     if (passed) {
+        candidate.prepareAffineMotion();
+        if (candidate.affineNodes_.motion) {
+            const auto hits = candidate.affineRootHits();
+            const auto moveStop = std::chrono::steady_clock::now() + std::chrono::milliseconds(350);
+            if (!winsPlaybackScreen<32, true>(candidate, reference, inputSource, outputNode, true, moveStop) ||
+                candidate.affineRootHits() == hits)
+                candidate.affineNodes_.motion.reset();
+            candidate.resetAffineMotion();
+        }
         affineNodes_ = std::move(candidate.affineNodes_);
         affineNodes_.revision = linearRebuilds();
     } else {

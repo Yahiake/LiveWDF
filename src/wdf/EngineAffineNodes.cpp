@@ -164,6 +164,7 @@ bool EngineStep::tryAffineNodes(const double* sources, size_t count, double tole
 }
 void EngineStep::swapAffineNodePreview(EngineStep& prepared) noexcept {
     std::swap(affineNodes_, prepared.affineNodes_);
+    resetAffineMotion();
     if (!affineNodes_.amps.empty())
         affineNodes_.revision = linearRebuilds();
 }

@@ -15,6 +15,8 @@
 
 #include "wdf/EngineCompile.h"
 
+#include <optional>
+
 namespace wdf {
 
 class EngineStep : public EngineCompile {
@@ -24,6 +26,7 @@ public:
 
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
+        resetAffineMotion();
         loadedJunction_.seed = true;
         loadedJunction_.cooldown = loadedJunction_.misses = 0;
         circuitPlanCooldown_ = 0;
@@ -221,11 +224,34 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    struct AffineRootPlan {
+        struct CurrentRow {
+            int port, pole;
+            double conductance, differential, poleGain;
+        };
+        std::vector<CurrentRow> rows;
+        std::vector<double> inverse, impedance, drive, current;
+    };
+    struct AffineRootScratch {
+        explicit AffineRootScratch(int n) :
+            full(n*n), baseTranspose(n*n), comparison(n*n), factors(n*n), column(n), pivots(n) {}
+        std::vector<double> full, baseTranspose, comparison, factors, column;
+        std::vector<int> pivots;
+    };
+    struct AffineMotion {
+        explicit AffineMotion(int n) : scratch(n) {}
+        AffineRootPlan root;
+        AffineRootScratch scratch;
+        long long revision = -1;
+        bool certified = false;
+        int cooldown = 0;
+    };
     struct AffineNodePlan {
         long long revision = -1;
         struct Amp { int port, model; double impedanceBound; };
         std::vector<Amp> amps;
         std::vector<double> coefficients, inputs, outputs, residualBound;
+        std::optional<AffineMotion> motion;
     };
     AffineNodePlan affineNodes_;
     long long affineNodeHits_ = 0;
@@ -245,18 +271,14 @@ protected:
     void screenJunctionDevices(size_t inputSource, std::vector<bool>& linearAmps,
                                std::vector<bool>& bufferTransistors) const;
 
-    struct AffineRootPlan {
-        struct CurrentRow {
-            int port, pole;
-            double conductance, differential, poleGain;
-        };
-        std::vector<CurrentRow> rows;
-        std::vector<double> inverse, impedance, drive, current;
-    };
+    bool factorAffineRoot(AffineRootPlan&, AffineRootScratch&) const noexcept;
     bool buildAffineRoot(AffineRootPlan& result) const;
+    void prepareAffineMotion();
+    void resetAffineMotion() noexcept;
+    bool tryAffineMotion(double tolerance) noexcept;
     void prepareAffineRoot();
     bool opAmpsOnLinearBranch(const std::vector<double>& voltage) const noexcept;
-    bool tryAffineRoot(double tolerance) noexcept;
+    bool tryAffineRoot(AffineRootPlan&, double tolerance) noexcept;
     bool circuitRootContinuous() const noexcept;
     void acceptCircuitRoot(double error) noexcept;
     void commitCompiledRoot(double error) noexcept;
