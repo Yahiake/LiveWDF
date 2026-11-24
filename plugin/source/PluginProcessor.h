@@ -195,6 +195,8 @@ private:
     std::future<AffineResult> affineJob_;
     using TransferRevision = std::array<long long, 5>; // transfer, controls, channel affine plans, preview request
     struct SettledTransfer {
+        SettledTransfer(unsigned long long currentGeneration, const wdf::Circuit& circuit)
+            : generation(currentGeneration), left(circuit), right(left.makePeer()) {}
         unsigned long long generation = 0;
         wdf::Engine::LiveTransferSetup left, right;
         bool affine = false;

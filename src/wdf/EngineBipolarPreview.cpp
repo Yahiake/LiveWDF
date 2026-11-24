@@ -748,6 +748,13 @@ void Engine::resetBipolarPreviewHistory() noexcept {
     bipolarPreview_->quietFrames = 0;
 }
 
+void Engine::copyBipolarPreviewFrom(const Engine& source) {
+    bipolarPreview_ = std::make_shared<BipolarPreview>(*source.bipolarPreview_);
+    bipolarPreview_->transfer = linearRebuilds();
+    bipolarPreview_->controls = liveControlRevision();
+    resetBipolarPreviewHistory();
+}
+
 void Engine::adoptBipolarPreview(Engine& prepared) noexcept {
     releaseBipolarPreview();
     bipolarPreview_.swap(prepared.bipolarPreview_);

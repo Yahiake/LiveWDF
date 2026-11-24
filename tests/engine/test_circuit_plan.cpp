@@ -246,17 +246,64 @@ TEST_CASE("Loaded junction preview declines a transistor with extra transport te
     REQUIRE_FALSE(preview.hasLoadedJunctionPreview());
 }
 
-TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Preview", "[engine][circuit-plan]") {
+namespace {
+wdf::Circuit bipolarPreviewStage() {
     wdf::Circuit c;
     c.addSrc("in", "0", 0.);
     c.addSrc("supply", "0", 9.);
-    c.addRes("in", "base", 330000.);
+    c.addRes("in", "base", 330000., "feed");
     c.addRes("supply", "base", 22000.);
     c.addRes("base", "0", 4700.);
     c.addRes("supply", "collector", 3300.);
     c.addRes("emitter", "0", 820.);
     c.addCap("collector", "0", 22.e-9);
     c.addBjt("collector", "base", "emitter", wdf::findBjtByName("2N3904")->model, "Q1");
+    return c;
+}
+}
+
+TEST_CASE("Stereo bipolar Preview qualifies matching snapshots once and keeps channel histories independent",
+          "[engine][circuit-plan]") {
+    auto c = bipolarPreviewStage();
+    wdf::Engine left(c, 48000.), right(c, 48000.), reference(c, 48000.);
+    wdf::Engine::LiveTransferSetup a(c);
+    auto b = a.makePeer();
+    bool shouldShare = true;
+    SECTION("same snapshot") {}
+    SECTION("different base circuit identity") {
+        b = wdf::Engine::LiveTransferSetup(c);
+        shouldShare = false;
+    }
+    SECTION("different resistor values") {
+        REQUIRE(right.setResistance("feed", 390000.));
+        REQUIRE(reference.setResistance("feed", 390000.));
+        shouldShare = false;
+    }
+    REQUIRE(left.captureLiveTransferSetup(a, true));
+    REQUIRE(right.captureLiveTransferSetup(b, true));
+    a.build(0, false);
+    b.build(0, false);
+    const int output = left.nodeIndex("collector");
+    REQUIRE(a.prepareCompiledPreviewPair(b, 0, output, true, 1.2, false) == shouldShare);
+    REQUIRE(left.installLiveTransferSetup(a));
+    REQUIRE(right.installLiveTransferSetup(b));
+    REQUIRE(reference.prepareBipolarPreview(0, output));
+    for (int n = 0; n < 128; ++n) {
+        double yLeft, yRight, expected;
+        const auto loud = n < 32 ? 2. : 0.;
+        if (!left.stepBipolarPreview(loud, yLeft)) {
+            const double sources[] = {loud, 9.};
+            left.step(sources, 2);
+        }
+        const auto quiet = .3 * std::sin(n * .039);
+        REQUIRE(right.stepBipolarPreview(quiet, yRight));
+        REQUIRE(reference.stepBipolarPreview(quiet, expected));
+        REQUIRE(yRight == expected);
+    }
+}
+
+TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Preview", "[engine][circuit-plan]") {
+    auto c = bipolarPreviewStage();
     wdf::Engine candidate(c, 48000.), reference(c, 48000.);
     const int output = candidate.nodeIndex("collector");
     REQUIRE(candidate.prepareBipolarPreview(0, output));

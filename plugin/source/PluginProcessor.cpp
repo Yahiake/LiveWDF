@@ -369,9 +369,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         captureState_.store(CaptureState::requested, std::memory_order_release);
     }
     if (captureState_.load(std::memory_order_acquire) == CaptureState::needsStorage) {
-        capture_.work.emplace(SettledTransfer{engineGeneration_,
-            wdf::Engine::LiveTransferSetup(settledControlCircuit_),
-            wdf::Engine::LiveTransferSetup(settledControlCircuit_)});
+        capture_.work.emplace(engineGeneration_, settledControlCircuit_);
         captureState_.store(CaptureState::requested, std::memory_order_release);
     }
     if (captureState_.load(std::memory_order_acquire) == CaptureState::requested) {
@@ -405,10 +403,8 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
                 work.right.build(input, work.affine);
                 if (fastLive)
                     work.left.screenCircuitPlan(work.right, input, output);
-                if (work.compilePreview) {
-                    work.left.prepareCompiledPreview(input, output, allowOutputOnly, peak, allowPad);
-                    work.right.prepareCompiledPreview(input, output, allowOutputOnly, peak, allowPad);
-                }
+                if (work.compilePreview)
+                    work.left.prepareCompiledPreviewPair(work.right, input, output, allowOutputOnly, peak, allowPad);
                 return std::move(work);
             });
         preparedTransferRevision_ = revision;

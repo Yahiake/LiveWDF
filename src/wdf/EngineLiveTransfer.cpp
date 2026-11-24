@@ -1,5 +1,6 @@
 #include "wdf/Engine.h"
 
+#include <algorithm>
 #include <tuple>
 
 namespace wdf {
@@ -33,6 +34,14 @@ bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly) c
     return true;
 }
 
+Engine::LiveTransferSetup Engine::LiveTransferSetup::makePeer() {
+    if (!baseCircuit_)
+        baseCircuit_ = std::make_shared<BaseCircuitIdentity>();
+    LiveTransferSetup peer(circuit_);
+    peer.baseCircuit_ = baseCircuit_;
+    return peer;
+}
+
 void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
     prepared_ = std::make_unique<Engine>(circuit_, rate_, gridCurrent_);
     if (!planOnly_)
@@ -54,6 +63,32 @@ void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int o
     // Compile each channel at its physical DC point. Live histories stay on the recipient.
     prepared_->reset();
     prepared_->prepareCompiledPreview(inputSource, outputNode, allowOutputOnly, requestedPeak, allowPad);
+}
+
+bool Engine::LiveTransferSetup::prepareCompiledPreviewPair(LiveTransferSetup& peer, size_t inputSource,
+                                                           int outputNode, bool allowOutputOnly,
+                                                           double requestedPeak, bool allowPad) {
+    const bool fresh = !compiledPreview_ && !peer.compiledPreview_;
+    prepareCompiledPreview(inputSource, outputNode, allowOutputOnly, requestedPeak, allowPad);
+    const auto sameValues = [](const auto& a, const auto& b, auto field) {
+        return std::ranges::equal(a, b, {}, field, field);
+    };
+    // Only these three sets of values can differ between snapshots of a shared
+    // base circuit. Model cards, wiring and the other components came from the same copy.
+    if (fresh && prepared_ && prepared_->bipolarPreview_ && peer.prepared_ &&
+        baseCircuit_ && baseCircuit_ == peer.baseCircuit_ &&
+        rate_ == peer.rate_ && gridCurrent_ == peer.gridCurrent_ && planOnly_ == peer.planOnly_ &&
+        maskCount_ == peer.maskCount_ && affineMasks_ == peer.affineMasks_ &&
+        sameValues(circuit_.res, peer.circuit_.res, &Res::value) &&
+        sameValues(circuit_.pots, peer.circuit_.pots, &Pot::position) &&
+        sameValues(circuit_.varRes, peer.circuit_.varRes, &VarRes::position)) {
+        peer.prepared_->reset();
+        peer.prepared_->copyBipolarPreviewFrom(*prepared_);
+        peer.compiledPreview_ = true;
+        return true;
+    }
+    peer.prepareCompiledPreview(inputSource, outputNode, allowOutputOnly, requestedPeak, allowPad);
+    return false;
 }
 
 void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,

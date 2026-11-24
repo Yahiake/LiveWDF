@@ -113,9 +113,14 @@ public:
     class LiveTransferSetup {
     public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
+        /// Create the other channel's snapshot from this same base circuit.
+        LiveTransferSetup makePeer();
         void build(size_t inputSource, bool prepareAffine);
         void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
                                     double requestedPeak = 1.2, bool allowPad = false);
+        /// Prepare both channels. True means they share a qualification and own separate playback state.
+        bool prepareCompiledPreviewPair(LiveTransferSetup& peer, size_t inputSource, int outputNode,
+                                        bool allowOutputOnly, double requestedPeak, bool allowPad);
         /// Compare the prepared channels on the worker and drop unprofitable plans.
         bool screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode);
 
@@ -129,6 +134,8 @@ public:
         size_t maskCount_ = 0;
         long long linearRevision_ = 0, controlRevision_ = 0, affineRevision_ = 0;
         std::unique_ptr<Engine> prepared_;
+        struct BaseCircuitIdentity {};
+        std::shared_ptr<const BaseCircuitIdentity> baseCircuit_;
     };
 
     /// Copy live numeric settings into a setup created from this engine's
@@ -146,6 +153,7 @@ private:
     void qualifyBipolarControlMotion(size_t inputSource, int outputNode);
     void qualifyBipolarPreviewRange(size_t inputSource, int outputNode, double peak, bool allowPad);
     void resetBipolarPreviewHistory() noexcept;
+    void copyBipolarPreviewFrom(const Engine& source);
     struct BipolarPreview;
     std::shared_ptr<BipolarPreview> bipolarPreview_;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
