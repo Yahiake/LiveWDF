@@ -379,3 +379,52 @@ TEST_CASE("Compiled op-amp nodes keep every probe and reactive history through o
     }
     REQUIRE(preview.affineNodePreviewHits() == beforeEdit);
 }
+
+TEST_CASE("Bipolar Preview follows a qualified control and preserves state on fallback",
+          "[engine][circuit-plan][live-controls]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addSrc("supply", "0", 9.);
+    c.addPot("in", "tap", "0", 10000.);
+    c.addPot("tap", "level", "0", 47000.);
+    c.addRes("level", "feed", 330000.);
+    c.addCap("feed", "base", 100e-9);
+    c.addRes("supply", "base", 22000.);
+    c.addRes("base", "0", 4700.);
+    c.addRes("supply", "collector", 3300.);
+    c.addVarRes("emitter", "0", 1640., .5);
+    c.addCap("collector", "0", 22e-9);
+    c.addBjt("collector", "base", "emitter", wdf::findBjtByName("2N3904")->model, "Q1");
+
+    wdf::Engine preview(c, 48000.), physical(c, 48000.);
+    preview.prepareLiveControls();
+    const int output = preview.nodeIndex("collector");
+    REQUIRE(preview.prepareBipolarPreview(0, output));
+    auto sources = physical.dcValues();
+    const auto movePot = [&](int index, double position) {
+        REQUIRE(preview.setLiveControls({{index, position}}, {}));
+        REQUIRE(physical.setPotPosition(index, position));
+    };
+    for (int i = 0; i < 640; ++i) {
+        CAPTURE(i);
+        if (i == 128) movePot(0, .13);
+        if (i == 256) movePot(1, .8);  // Both control networks differ from the qualified plan.
+        if (i == 320) movePot(0, .5);
+        if (i == 384 || i == 448) {
+            const double setting = i == 384 ? .50001 : .5;  // This rheostat changes the DC bias.
+            REQUIRE(preview.setLiveControls({}, {{0, setting}}));
+            REQUIRE(physical.setVarResPosition(0, setting));
+        }
+        if (i == 512) {
+            REQUIRE(preview.setPotPosition(1, .35));  // A new base transfer invalidates the old plan.
+            REQUIRE(physical.setPotPosition(1, .35));
+        }
+        sources[0] = .06 * std::sin(.02 * i);
+        const double expected = physical.step(sources)[output];
+        double voltage = 0.;
+        const bool active = preview.stepBipolarPreview(sources[0], voltage);
+        REQUIRE(active == (i < 256 || (i >= 320 && i < 384) || (i >= 448 && i < 512)));
+        if (!active) voltage = preview.step(sources)[output];
+        REQUIRE(voltage == Approx(expected).margin(50e-6));
+    }
+}

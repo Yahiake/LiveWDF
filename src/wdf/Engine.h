@@ -143,6 +143,7 @@ public:
 private:
     long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
+    void qualifyBipolarControlMotion(size_t inputSource, int outputNode);
     void qualifyBipolarPreviewRange(size_t inputSource, int outputNode, double peak, bool allowPad);
     void resetBipolarPreviewHistory() noexcept;
     struct BipolarPreview;

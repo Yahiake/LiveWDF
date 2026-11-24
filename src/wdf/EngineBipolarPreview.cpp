@@ -60,6 +60,67 @@ struct Engine::BipolarPreview {
     Values drive, next, terminals, actualCurrent, acceptedDrive;
     Values defectLimit, stateLimit;
     std::vector<size_t> devices;
+
+    struct ControlPort {
+        int element, control;
+        double reference;
+        bool keepsBias;
+    };
+    std::vector<ControlPort> ports;
+    struct Range {
+        double low = 1., high = 0.;
+        Values stateLimit;
+    };
+    static constexpr double movingPeak = .8;
+    std::vector<Range> qualifiedControls;
+    Rows branchVoltage;
+    std::array<int, 2> moving{};
+    std::array<double, 4> feedback{};
+    int movingCount{};
+    bool supportsMotion{};
+
+    // Extra currents through the changed resistor legs close the small port loop
+    // around the *loaded* transistor tangent. The wave histories remain physical.
+    bool updateControlPorts(const Network& net, const Circuit& circuit) noexcept {
+        movingCount = 0;
+        std::array<double, 2> delta{};
+        for (int n = 0; n < int(ports.size()); ++n) {
+            const auto& p = ports[n];
+            if (net.eG[p.element] == p.reference) continue;
+            const auto& range = qualifiedControls[p.control];
+            const double position = p.control < int(circuit.pots.size()) ? circuit.pots[p.control].position
+                : circuit.varRes[p.control - int(circuit.pots.size())].position;
+            if (!p.keepsBias || !(position >= range.low && position <= range.high) || movingCount == 2 ||
+                (movingCount && p.control != ports[moving[0]].control)) return false;
+            delta[movingCount] = (net.eG[p.element] - p.reference) / p.reference;
+            moving[movingCount++] = n;
+        }
+        if (!movingCount) return true;
+        const int start = transition.width - int(ports.size());
+        const double a = 1. + delta[0] * branchVoltage[moving[0]][start + moving[0]];
+        if (movingCount == 1) {
+            feedback[0] = -delta[0] / a;
+            return std::isfinite(feedback[0]) && a > 1e-12;
+        }
+        const double b = delta[0] * branchVoltage[moving[0]][start + moving[1]];
+        const double c = delta[1] * branchVoltage[moving[1]][start + moving[0]];
+        const double d = 1. + delta[1] * branchVoltage[moving[1]][start + moving[1]];
+        const double det = a*d - b*c;
+        if (!(a > 0. && d > 0. && det > 1e-12 * (1. + std::abs(a*d) + std::abs(b*c)))) return false;
+        feedback = {-d*delta[0]/det, b*delta[1]/det, c*delta[0]/det, -a*delta[1]/det};
+        return std::all_of(feedback.begin(), feedback.end(), [](double v) { return std::isfinite(v); });
+    }
+
+    void applyControlPorts(bool includeDefects) noexcept {
+        const int start = transition.width - int(ports.size());
+        const int count = includeDefects ? start : states + 2;
+        double drop[2]{};
+        for (int i = 0; i < movingCount; ++i)
+            drop[i] = dot(branchVoltage[moving[i]], drive.data(), count);
+        drive[start + moving[0]] = feedback[0] * drop[0] + (movingCount == 2 ? feedback[1] * drop[1] : 0.);
+        if (movingCount == 2)
+            drive[start + moving[1]] = feedback[2] * drop[0] + feedback[3] * drop[1];
+    }
 };
 
 bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double requestedPeak, bool allowPad) {
@@ -79,7 +140,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
         return false;
 
     const int k = K_, independent = int(rootLayout_.nodeCol.size());
-    const int input = nx, constant = nx + 1, defect = nx + 2, columns = defect + independent;
+    const int input = nx, constant = nx + 1, defect = nx + 2, control = defect + independent;
     auto work = std::make_shared<BipolarPreview>();
     auto& p = *work;
     p.states = nx;
@@ -105,7 +166,29 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
     // Unknowns are deviations of physical waves, the input voltage, a constant,
     // and independent nonlinear current defects. Project the open-circuit drive
     // onto these columns, then close instantaneous feedback at the bias point.
+    const int controlCount = int(circuit_.pots.size() + circuit_.varRes.size());
+    // Two legs per potentiometer. Larger control banks keep the existing fallback.
+    if (2 * circuit_.pots.size() + circuit_.varRes.size() <= 8) {
+        p.qualifiedControls.resize(controlCount);
+        const auto addPort = [&](int q, int owner) {
+            if (q < 0) return;
+            const int a = net_.epA[q], b = net_.epB[q];
+            const double drop = (a < 0 ? 0. : dcNodes[a]) - (b < 0 ? 0. : dcNodes[b]) +
+                                net_.eoffAff[q].eval(dcValues_);
+            p.ports.push_back({q, owner, net_.eG[q], std::abs(drop) <= 1e-9 && net_.eG[q] > 0.});
+        };
+        for (int i = 0; i < int(circuit_.pots.size()); ++i) {
+            addPort(potResA_[i], i);
+            addPort(potResB_[i], i);
+        }
+        for (int i = 0; i < int(circuit_.varRes.size()); ++i)
+            addPort(varResResIndex_[i], int(circuit_.pots.size()) + i);
+    }
+    const int columns = control + int(p.ports.size());
     Rows nodes(N_, columns), roots(k, columns), factor(k, k);
+    for (int i = 0; i < int(p.ports.size()); ++i)
+        for (int n = 0; n < N_; ++n)
+            nodes[n][control + i] = linXe_[n][p.ports[i].element];
     const auto stateIndex = [&](int port) {
         return net_.capOf[port] >= 0 ? net_.capOf[port] : nCaps_ + net_.indOf[port];
     };
@@ -160,7 +243,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
             currents[r] = dot(p.jacobian.data() + size_t(r) * k, rhs.data(), k);
             if (c == constant) currents[r] += p.biasCurrent[r];
         }
-        if (c >= defect) currents[rootLayout_.nodeCol[c - defect]] += 1.;
+        if (c >= defect && c < control) currents[rootLayout_.nodeCol[c - defect]] += 1.;
         for (int n = 0; n < N_; ++n)
             for (int terminal : rootLayout_.nodeCol)
                 nodes[n][c] -= Xr_[size_t(n) * k + terminal] * currents[terminal];
@@ -179,9 +262,20 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
     }
     std::copy_n(nodes[outputNode], columns, p.transition[nx]);
     p.transition[nx][constant] -= p.biasOutput;
-    p.voltage = Rows(k, defect);
-    for (int r = 0; r < k; ++r) std::copy_n(roots[r], defect, p.voltage[r]);
-    if (!allFinite(p.voltage.data) || !allFinite(p.transition.data)) return false;
+    p.branchVoltage = Rows(int(p.ports.size()), columns);
+    for (int i = 0; i < int(p.ports.size()); ++i) {
+        const auto q = p.ports[i].element;
+        for (int c = 0; c < columns; ++c)
+            p.branchVoltage[i][c] = difference(net_.epA[q], net_.epB[q], c);
+        p.branchVoltage[i][input] += coefficient(net_.eoffAff[q], inputSource);
+        p.branchVoltage[i][constant] += net_.eoffAff[q].eval(dcValues_);
+    }
+    p.voltage = Rows(k, defect + int(p.ports.size()));
+    for (int r = 0; r < k; ++r) {
+        std::copy_n(roots[r], defect, p.voltage[r]);
+        std::copy_n(roots[r] + control, p.ports.size(), p.voltage[r] + defect);
+    }
+    if (!allFinite(p.voltage.data) || !allFinite(p.transition.data) || !allFinite(p.branchVoltage.data)) return false;
     p.drive.resize(columns);
     p.drive[constant] = 1.;
     p.next.resize(nx);
@@ -215,7 +309,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
     }
     Values measuredDefect;
     const auto qualify = [&](BipolarPreview& candidate) {
-        const int terms = candidate.transition.width - defect;
+        const int terms = candidate.transition.width - int(candidate.ports.size()) - defect;
         Values observedDefect(terms), observedState(nx);
         double peakError = 0., signalEnergy = 0., errorEnergy = 0.;
         candidate.qualifying = true;
@@ -258,7 +352,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
     constexpr size_t keepDevices = 4;
     if (p.devices.size() > keepDevices) {
         Values projection(p.transition[nx], p.transition[nx] + nx), next(nx);
-        Values weight(p.transition[nx] + defect, p.transition[nx] + columns);
+        Values weight(p.transition[nx] + defect, p.transition[nx] + control);
         for (double& w : weight) w = std::abs(w);
         for (int lag = 0; lag < 128; ++lag) {
             std::fill(next.begin(), next.end(), 0.);
@@ -290,6 +384,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
             for (int r = 0; r < rootDevices_[d].numActiveRows; ++r, ++term)
                 if (chosen) use.push_back(defect + term);
         }
+        for (int c = control; c < columns; ++c) use.push_back(c);
         const auto compress = [&](const Rows& from) {
             const int n = int(from.data.size()) / from.width;
             Rows result(n, defect + int(use.size()));
@@ -301,6 +396,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
             return result;
         };
         reduced->transition = compress(p.transition);
+        reduced->branchVoltage = compress(p.branchVoltage);
         reduced->handoffRoots = compress(p.handoffRoots);
         reduced->handoffNodes = compress(p.handoffNodes);
         reduced->drive.resize(reduced->transition.width);
@@ -311,7 +407,90 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
     bipolarPreview_->rearmFrames = std::clamp(int(std::round(.002 * fs_)), 32, 1024);
     if (std::isfinite(requestedPeak) && requestedPeak > qualificationPeak && requestedPeak <= lim_.maxNodeVolts)
         qualifyBipolarPreviewRange(inputSource, outputNode, requestedPeak, allowPad);
+    qualifyBipolarControlMotion(inputSource, outputNode);
     return true;
+}
+
+void Engine::qualifyBipolarControlMotion(size_t source, int output) {
+    auto& plan = *bipolarPreview_;
+    if (plan.scale != 1. || std::none_of(plan.ports.begin(), plan.ports.end(),
+                                            [](const auto& p) { return p.keepsBias; })) return;
+    // A zero DC drop certifies the unchanged bias. At that bias a knob may
+    // change the AC feedback and which transistor corrections reach the output.
+    // Screen each control using its actual two endpoints and an interior jump.
+    Engine oracle(circuit_, fs_, gridCurrent_), trial(circuit_, fs_, gridCurrent_);
+    trial.prepareLiveControls();
+    trial.bipolarPreview_ = std::make_shared<BipolarPreview>(plan);
+    auto& candidate = *trial.bipolarPreview_;
+    auto sources = oracle.dcValues();
+    std::vector<std::pair<int, double>> pos(1), empty;
+    constexpr int segment = 256, frames = 4 * segment;
+    Values expected(frames), rendered(frames);
+    for (int k = 0; k < int(plan.qualifiedControls.size()); ++k) {
+        if (std::none_of(plan.ports.begin(), plan.ports.end(), [k](const auto& p) { return p.control == k; }) ||
+            std::any_of(plan.ports.begin(), plan.ports.end(),
+                        [k](const auto& p) { return p.control == k && !p.keepsBias; })) continue;
+        const bool isPot = k < int(circuit_.pots.size());
+        const int index = isPot ? k : k - int(circuit_.pots.size());
+        const double initial = isPot ? circuit_.pots[index].position : circuit_.varRes[index].position;
+        const auto setPosition = [&](double value) {
+            pos[0] = {index, value};
+            return oracle.setParametersByIndex(isPot ? pos : empty, isPot ? empty : pos, empty) &&
+                   trial.setLiveControls(isPot ? pos : empty, isPot ? empty : pos);
+        };
+        const auto qualifies = [&](BipolarPreview::Range& range) {
+            // Changing a filter can raise stored energy at the same external level.
+            // Measure capacitor/inductor excursions with the original nonlinear
+            // circuit, then check a separate drive against those limits and waves.
+            range.stateLimit = plan.stateLimit;
+            const double sequence[] = {initial, range.low, range.high, range.low + .37 * (range.high - range.low)};
+            const auto wave = [&](int r) {
+                return r < nCaps_ ? oracle.capState_[r] : oracle.indState_[r - nCaps_];
+            };
+            for (bool verify : {false, true}) {
+                if (!setPosition(initial)) return false;
+                trial.reset();
+                oracle.reset();
+                if (verify) candidate.qualifiedControls[k] = range;
+                for (int i = 0; i < frames; ++i) {
+                    if (i % segment == 0 && !setPosition(sequence[i / segment])) return false;
+                    const double t = 2. * std::numbers::pi * i / fs_;
+                    const double drive = verify
+                        ? .41 * std::sin(257. * t + .3) + .34 * std::sin(1249. * t) +
+                          .25 * std::sin(std::min(5483., .17 * fs_) * t + .2)
+                        : .43 * std::sin(311. * t) + .32 * std::sin(1387. * t) +
+                          .25 * std::sin(std::min(6421., .18 * fs_) * t);
+                    sources[source] = plan.biasInput + BipolarPreview::movingPeak * (i % segment == 127 ? 1. : drive);
+                    expected[i] = oracle.step(sources)[output] - plan.biasOutput;
+                    if (!oracle.lastConverged() || oracle.lastStateRejected()) return false;
+                    if (verify) {
+                        if (!trial.stepBipolarPreview(sources[source], rendered[i])) return false;
+                        rendered[i] -= plan.biasOutput;
+                    }
+                    for (int r = 0; r < plan.states; ++r) {
+                        const double physical = wave(r) - plan.biasState[r];
+                        if (!std::isfinite(physical)) return false;
+                        if (!verify)
+                            range.stateLimit[r] = std::max(range.stateLimit[r], 1.25 * std::abs(physical) + 50e-6);
+                        else if (std::abs(candidate.drive[r] - physical) > .001 + .015 * std::abs(physical))
+                            return false;
+                    }
+                }
+            }
+            return engine::bipolarPreviewWaveformMatches(expected, rendered);
+        };
+        // An EQ can remain nearly linear around noon and overload at an end stop.
+        for (double radius : {1., .125}) {
+            BipolarPreview::Range range{std::max(0., initial - radius), std::min(1., initial + radius), {}};
+            const bool passed = qualifies(range);
+            candidate.qualifiedControls[k] = {};
+            if (!setPosition(initial)) return;
+            if (passed) {
+                plan.qualifiedControls[k] = std::move(range);
+                break;
+            }
+        }
+    }
 }
 
 void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, bool allowPad) {
@@ -450,8 +629,17 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
 bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept {
     if (!bipolarPreview_) return false;
     auto& p = *bipolarPreview_;
-    if (p.transfer != linearRebuilds() || p.controls != liveControlRevision() ||
-        hasAdjustedLiveTransfer()) {
+    if (p.transfer != linearRebuilds()) {
+        releaseBipolarPreview();
+        return false;
+    }
+    if (p.controls != liveControlRevision()) {
+        std::fill(p.drive.end() - p.ports.size(), p.drive.end(), 0.);
+        p.supportsMotion = !p.ports.empty() && p.updateControlPorts(net_, circuit_);
+        if (!p.supportsMotion) p.movingCount = 0;
+        p.controls = liveControlRevision();
+    }
+    if (hasAdjustedLiveTransfer() && !p.supportsMotion) {
         releaseBipolarPreview();
         return false;
     }
@@ -469,23 +657,30 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
         return false;
     };
     // The worker uses double test voltages and the host supplies rounded float samples.
-    if (!(std::abs(input) <= std::max(p.peak, double(static_cast<float>(p.peak)))))
-        return reject();
+    const double peak = p.movingCount ? std::min(p.peak, BipolarPreview::movingPeak) : p.peak;
+    if (!(std::abs(input) <= std::max(peak, double(static_cast<float>(peak))))) return reject();
 
     const int nx = p.states, defect = nx + 2;
+    const int control = p.transition.width - int(p.ports.size());
+    const int sampleColumns = p.movingCount ? p.transition.width : control;
     if (!p.active) {
         for (int i = 0; i < nCaps_; ++i) p.drive[i] = p.scale * (capState_[i] - p.biasState[i]);
         for (int i = 0; i < nInds_; ++i)
             p.drive[nCaps_ + i] = p.scale * (indState_[i] - p.biasState[nCaps_ + i]);
     }
     p.drive[nx] = input * p.scale;
+    if (p.movingCount) p.applyControlPorts(false);
     int column = 0;
     for (size_t index : p.devices) {
         const auto& dev = rootDevices_[index];
         const int base = dev.portBase;
         // The BJT law uses Vce and Vbe. Its third current is their return path.
-        for (int r = base; r < base + dev.numActiveRows; ++r)
-            p.terminals[r] = p.biasVoltage[r] + dot(p.voltage[r], p.drive.data(), defect);
+        for (int r = base; r < base + dev.numActiveRows; ++r) {
+            double voltage = dot(p.voltage[r], p.drive.data(), defect);
+            for (int i = 0; i < p.movingCount; ++i)
+                voltage += p.voltage[r][defect + p.moving[i]] * p.drive[control + p.moving[i]];
+            p.terminals[r] = p.biasVoltage[r] + voltage;
+        }
         currentsForDevice(dev, p.terminals.data(), p.actualCurrent.data(), nullptr);
         for (int r = base; r < base + dev.numActiveRows; ++r, ++column) {
             double correction = p.actualCurrent[r] - p.biasCurrent[r];
@@ -495,11 +690,13 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
             p.drive[defect + column] = correction;
         }
     }
+    if (p.movingCount) p.applyControlPorts(true);
+    const auto& stateLimit = p.movingCount ? p.qualifiedControls[p.ports[p.moving[0]].control].stateLimit : p.stateLimit;
     for (int r = 0; r < nx; ++r) {
-        p.next[r] = dot(p.transition[r], p.drive.data(), p.transition.width);
-        if (!(std::abs(p.next[r]) <= p.stateLimit[r])) return reject();
+        p.next[r] = dot(p.transition[r], p.drive.data(), sampleColumns);
+        if (!(std::abs(p.next[r]) <= stateLimit[r])) return reject();
     }
-    const double y = p.biasOutput + dot(p.transition[nx], p.drive.data(), p.transition.width) / p.scale;
+    const double y = p.biasOutput + dot(p.transition[nx], p.drive.data(), sampleColumns) / p.scale;
     if (!(std::abs(y) <= lim_.maxNodeVolts)) return reject();
 
     std::copy(p.drive.begin(), p.drive.end(), p.acceptedDrive.begin());
