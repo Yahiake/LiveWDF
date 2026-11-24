@@ -375,14 +375,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float* channelData = buffer.getWritePointer(ch);
         const float* dryData = dryAvailable ? dryBuffer_.getReadPointer(ch) : nullptr;
 
+        for (int i = 0; i < std::min(transitionRemaining_, numSamples); ++i) {
+            const float t = float(transitionRemaining_ - i) / float(transitionLength_);
+            channelData[i] = (1 - t) * channelData[i] + t * transitionStart_[static_cast<size_t>(ch)];
+        }
+        previousWet_[static_cast<size_t>(ch)] = channelData[numSamples - 1];
         for (int i = 0; i < numSamples; ++i) {
-            float wet = channelData[i];
-            if (i < transitionRemaining_) {
-                const float t = float(transitionRemaining_ - i) / float(transitionLength_);
-                wet = (1 - t) * wet + t * transitionStart_[static_cast<size_t>(ch)];
-            }
-            if (i == numSamples - 1) previousWet_[static_cast<size_t>(ch)] = wet;
-            float outSample = wet * outputGain;
+            float outSample = channelData[i] * outputGain;
             if (dryData) {
                 outSample = dryData[i] * dryMix + outSample * wetMix;
             }

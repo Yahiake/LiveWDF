@@ -296,6 +296,8 @@ void LiveWDFPluginProcessor::preparePreview() {
         previewStatus_.store(PreviewStatus::off);
         return;
     }
+    if (previewStatus() == PreviewStatus::render)
+        previewRequest_ = 0;  // Resume requested live playback after the offline render.
     if (previewRequest_ == engineGeneration_ || previewJob_.valid()) return;
     previewRequest_ = previewJobGeneration_ = engineGeneration_;
     if (attemptedOversamplingChoice_ != 0 || !attemptedGridCurrent_) {
@@ -305,8 +307,8 @@ void LiveWDFPluginProcessor::preparePreview() {
     previewStatus_.store(PreviewStatus::loading);
     try {
         previewJob_ = std::async(std::launch::async,
-            [doc = cacheDocument_, file = currentFile_, rate = sampleRate_] {
-                return loadPreviewPlayback(*doc, file, rate);
+            [doc = currentDoc_, file = currentFile_, rate = sampleRate_] {
+                return loadPreviewPlayback(doc.toJson(), file, rate);
             });
     } catch (const std::system_error&) {
         previewStatus_.store(PreviewStatus::unavailable);
@@ -974,10 +976,10 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
 
     if (switchGroupStates_[static_cast<size_t>(index)] == throwB) return;
     // A switch changes the document digest, including while a worker is reading it.
-    ++engineGeneration_;
+    previewJobGeneration_ = 0;
     previewRequest_ = engineGeneration_;
     snapshotControlsAgree_ = false;
-    if (preview_) previewStatus_.store(PreviewStatus::controls);
+    if (*apvts_.getRawParameterValue("model_preview") > 0.5f) previewStatus_.store(PreviewStatus::controls);
     // The editor reads the throws through `controlMutex_`; the audio thread
     // reads them under the engine lock, which we already hold. Lock order is
     // engine -> control everywhere, so the two cannot deadlock.
