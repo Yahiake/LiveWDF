@@ -2,9 +2,9 @@
 
 In the schematic editor, select **Input** and enter either **Input V peak at 0 dBFS** or **Input mV RMS at -18 dBFS**. Both fields set the same reference. At zero Trim, a digital sample of 1 drives the circuit with the chosen peak voltage. A −18 dBFS peak sine drives it with the chosen RMS voltage. **Output** holds the peak volts per full-scale sample used for matched playback. A fixed divisor applies the same gain to every sample, preserving the circuit’s dynamics.
 
-With **Chain in** off and **Match out** on (the defaults), a track drives the circuit at its preset input reference and the return uses its matched output reference. The input voltage is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit input reference use 1 V peak at full scale. Historic Input `fullScaleVolts` annotations do not set playback gain.
+With **Input from → Track** and **Output to → Track (level matched)** (the defaults), a track drives the circuit at its preset input reference and the return uses its matched output reference. The input voltage is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit input reference use 1 V peak at full scale. Historic Input `fullScaleVolts` annotations do not set playback gain.
 
-To connect inserts at their simulated terminal voltages, turn **Match out** off on the sending instance and **Chain in** on at the receiving instance. Their common scale is +4 dBu at −18 dBFS (about 13.8 V peak at full scale). For example, 100 mV peak leaving a pedal arrives as 100 mV peak at the next preset, even if its native input alignment is different. Use unity DAW gain and zero output master/input trim between the two. Turn **Match out** on at the end to return to the preset’s audition level. The controls also apply in standalone and offline rendering.
+To connect inserts at their simulated terminal voltages, choose **Output to → Next LiveWDF** on the sending instance and **Input from → Previous LiveWDF** on the receiving instance. Both use 13.8 V peak per full-scale sample. This places a +4 dBu studio alignment tone (1.228 V RMS) at −18 dBFS. Floating-point samples above 1.0 can carry higher terminal voltages between inserts. For example, 100 mV peak leaving a pedal arrives as 100 mV peak at the next preset, even if its native input alignment is different. Use unity DAW gain and zero output master/input trim between the two. Choose **Output to → Track (level matched)** at the end to return to the preset’s audition level. The controls also apply in standalone and offline rendering.
 
 ## Factory input references
 
@@ -22,7 +22,7 @@ The Helios Musicland EQ, SSL 82E242 EQ and Pye 4060 use 0.775 V RMS as a working
 
 ## Output sweep
 
-At the preset’s saved controls, **Match out** uses one fixed output divisor. The calibration compares K-weighted RMS level on active 50 ms frames with the digital bypass. Guitar circuits use recorded DI passages. Studio circuits use a repeatable broadband bus or voiced/sibilant signal. Gates are matched over the strongest input frames so their closed intervals do not drive up the makeup gain.
+At the preset’s saved controls, **Track (level matched)** uses one fixed output divisor. The calibration compares K-weighted RMS level on active 50 ms frames with the digital bypass. Guitar circuits use recorded DI passages. Studio circuits use a repeatable broadband bus or voiced/sibilant signal. Gates are matched over the strongest input frames so their closed intervals do not drive up the makeup gain.
 
 Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
 

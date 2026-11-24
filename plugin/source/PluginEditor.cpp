@@ -148,16 +148,18 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
     addAndMakeVisible(oscilloscope_);
 
-    chainInputBtn_.setTooltip("Receive a LiveWDF physical output (+4 dBu at -18 dBFS). "
-                              "Leave off for a track or instrument using this preset's input reference.");
-    matchOutputBtn_.setTooltip("Apply this preset's measured output reference for listening. "
-                               "Turn off to send volts to a LiveWDF instance with Chain in enabled.");
-    addAndMakeVisible(chainInputBtn_);
-    addAndMakeVisible(matchOutputBtn_);
-    chainInputAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "chain_input", chainInputBtn_);
-    matchOutputAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "match_output", matchOutputBtn_);
-    chainInputBtn_.onStateChange = [this] { updateScopeScales(); };
-    matchOutputBtn_.onStateChange = [this] { updateScopeScales(); };
+    inputRoute_.addItemList({"Track", "Previous LiveWDF"}, 1);
+    outputRoute_.addItemList({"Next LiveWDF", "Track (level matched)"}, 1);
+    inputRoute_.setTooltip("Track uses the preset's input voltage scale. Previous LiveWDF receives the preceding circuit's output voltage.");
+    outputRoute_.setTooltip("Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
+    addAndMakeVisible(inputRouteLabel_);
+    addAndMakeVisible(inputRoute_);
+    addAndMakeVisible(outputRouteLabel_);
+    addAndMakeVisible(outputRoute_);
+    inputRouteAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "chain_input", inputRoute_);
+    outputRouteAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "match_output", outputRoute_);
+    inputRoute_.onChange = [this] { updateScopeScales(); };
+    outputRoute_.onChange = [this] { updateScopeScales(); };
 
     // 7. Input Trim & Output Knobs
     inTrimKnob_.setAccentColor(juce::Colour(0xFF00E5A0)); // Teal
@@ -222,8 +224,8 @@ LiveWDFPluginEditor::~LiveWDFPluginEditor() {
 void LiveWDFPluginEditor::updateScopeScales() {
     const auto& doc = processor_.getCurrentDocument();
     constexpr auto chainVolts = static_cast<float>(wdf::LiveWDFDocument::kChainVoltsPerFullScale);
-    oscilloscope_.setTerminalScales(chainInputBtn_.getToggleState() ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
-                                   matchOutputBtn_.getToggleState() ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
+    oscilloscope_.setTerminalScales(inputRoute_.getSelectedItemIndex() == 1 ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
+                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
 }
 
 void LiveWDFPluginEditor::rebuildDynamicControls() {
@@ -507,12 +509,12 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
     g.drawHorizontalLine(52, 0.0f, static_cast<float>(getWidth()));
 
     // Divider lines around control strip
-    const int knobStripY = getHeight() - 268;
+    const int knobStripY = getHeight() - 150 - controlStripHeight;
     g.setColour(juce::Colour(0xFF14171C));
-    g.fillRect(0, knobStripY, getWidth(), 118);
+    g.fillRect(0, knobStripY, getWidth(), controlStripHeight);
     g.setColour(juce::Colour(0xFF262E3B));
     g.drawHorizontalLine(knobStripY, 0.0f, static_cast<float>(getWidth()));
-    g.drawHorizontalLine(knobStripY + 118, 0.0f, static_cast<float>(getWidth()));
+    g.drawHorizontalLine(knobStripY + controlStripHeight, 0.0f, static_cast<float>(getWidth()));
 
     // Switch strip sits above the knobs, and only exists when the circuit has
     // an SPDT to throw.
@@ -564,18 +566,15 @@ void LiveWDFPluginEditor::resized() {
     auto bottomScope = bounds.removeFromBottom(150);
     oscilloscope_.setBounds(bottomScope.reduced(4));
 
-    // 3. Middle Knob Strip (height 118px)
-    auto knobStrip = bounds.removeFromBottom(118).reduced(12, 4);
+    auto knobStrip = bounds.removeFromBottom(controlStripHeight).reduced(12, 4);
+    auto routes = knobStrip.removeFromBottom(28).reduced(0, 2);
+    inputRouteLabel_.setBounds(routes.removeFromLeft(76));
+    inputRoute_.setBounds(routes.removeFromLeft(158));
+    outputRoute_.setBounds(routes.removeFromRight(180));
+    outputRouteLabel_.setBounds(routes.removeFromRight(72));
 
-    // Left: Input Trim
-    auto inputStrip = knobStrip.removeFromLeft(92);
-    chainInputBtn_.setBounds(inputStrip.removeFromBottom(20));
-    inTrimKnob_.setBounds(inputStrip);
-
-    // Right: Mix & Output Master
-    auto outputStrip = knobStrip.removeFromRight(92);
-    matchOutputBtn_.setBounds(outputStrip.removeFromBottom(20));
-    outMasterKnob_.setBounds(outputStrip);
+    inTrimKnob_.setBounds(knobStrip.removeFromLeft(92));
+    outMasterKnob_.setBounds(knobStrip.removeFromRight(92));
     mixKnob_.setBounds(knobStrip.removeFromRight(92));
 
     // Center: Dynamic Circuit Potentiometers. One row while every knob keeps a

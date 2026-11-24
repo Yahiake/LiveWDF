@@ -85,8 +85,11 @@ private:
     DualOscilloscope oscilloscope_;
 
     // Knobs
-    juce::ToggleButton chainInputBtn_{"Chain in"};
-    juce::ToggleButton matchOutputBtn_{"Match out"};
+    static constexpr int controlStripHeight = 140;
+    juce::Label inputRouteLabel_{{}, "Input from"};
+    juce::Label outputRouteLabel_{{}, "Output to"};
+    juce::ComboBox inputRoute_{"Input from"};
+    juce::ComboBox outputRoute_{"Output to"};
     VintageKnob inTrimKnob_ { "TRIM", " dB" };
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
@@ -111,8 +114,8 @@ private:
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
-    std::unique_ptr<ButtonAttachment> chainInputAttach_;
-    std::unique_ptr<ButtonAttachment> matchOutputAttach_;
+    std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
+    std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
