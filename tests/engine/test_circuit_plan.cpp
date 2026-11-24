@@ -487,10 +487,20 @@ TEST_CASE("Loaded junction preview follows a live pot and its return under clipp
     c.addCap("b", "0", 4.7e-9);
     for (auto n : {"a", "mid", "b"})
         c.addDiode(n, "0", wdf::DiodeModel(2e-12, 1.1, 4.0), n);
-    wdf::Engine preview(c, 48000), accurate(c, 48000);
+    struct PreviewEngine : wdf::Engine {
+        using Engine::Engine;
+        using EngineStep::swapLoadedJunctionPreview;
+    };
+    PreviewEngine preview(c, 48000);
+    wdf::Engine worker(c, 48000), accurate(c, 48000);
     preview.prepareLiveControls();
     accurate.prepareLiveControls();
-    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    REQUIRE(worker.prepareLoadedJunctionPreview(0, false));
+    REQUIRE(preview.setLiveControls({{0, .7}}, {}));
+    REQUIRE(preview.setLiveControls({{0, .5}}, {}));
+    REQUIRE(preview.liveControlRevision() != worker.liveControlRevision());
+    preview.swapLoadedJunctionPreview(worker);
+    REQUIRE(preview.hasLoadedJunctionPreview());
     preview.useLoadedJunctionPreview(true);
     int frame = 0;
     for (const auto position : {.5, .86, .2, .5, .86, .5}) {

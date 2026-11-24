@@ -60,6 +60,7 @@ bool EngineStep::screenJunctionBenefit(size_t inputSource) {
     preview.useCircuitPlan(true);
     preview.loadedJunction_ = std::move(loadedJunction_);
     preview.loadedJunction_.revision = preview.linearRebuilds();
+    preview.loadedJunction_.controlRevision = preview.liveControlRevision();
     preview.useLoadedJunctionPreview(true);
 
     constexpr int blocks = 24, frames = 32;
@@ -109,6 +110,7 @@ bool EngineStep::screenJunctionBenefit(size_t inputSource) {
     loadedJunction_.seed = true;
     loadedJunction_.cooldown = loadedJunction_.misses = 0;
     loadedJunction_.revision = linearRebuilds();
+    loadedJunction_.controlRevision = liveControlRevision();
     return valid && preview.loadedJunctionHits() > blocks*frames*3/5 &&
            ratios[blocks/2] < .92 && ratios[blocks*3/4] < 1.0;
 }

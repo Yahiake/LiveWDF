@@ -55,6 +55,6 @@ struct LoadedJunctionPlan {
     std::vector<double> impedance;
     int misses = 0, cooldown = 0;
     bool seed = true;
-    long long revision = -1;
+    long long revision = -1, controlRevision = -1;
 };
 } // namespace wdf

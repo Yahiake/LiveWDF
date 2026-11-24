@@ -55,8 +55,10 @@ void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
     // the complete port impedance (also catches the wrong knob position).
     if (K_ != prepared.K_ || fs_ != prepared.fs_ || Z_ != loadedJunction_.impedance)
         loadedJunction_.revision = -1;
-    else
+    else {
         loadedJunction_.revision = linearRebuilds();
+        loadedJunction_.controlRevision = liveControlRevision();
+    }
 }
 
 bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBenefit) {
@@ -318,6 +320,7 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
     p.drive.resize(m); p.q.resize(m); p.raw.resize(m); p.correction.resize(m);
     p.matrix.resize(m * m); p.pivots.resize(m); p.low.resize(m); p.high.resize(m);
     p.revision = linearRebuilds();
+    p.controlRevision = liveControlRevision();
     loadedJunction_ = std::move(p);
     return true;
 }
@@ -325,7 +328,9 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
 bool EngineStep::tryLoadedJunctionRoot() noexcept {
     auto& p = loadedJunction_;
     const int k = K_, m = static_cast<int>(p.laws.size());
-    const bool changed = std::memcmp(p.impedance.data(), Z_.data(), Z_.size() * sizeof(double)) != 0;
+    const bool changed = p.controlRevision != liveControlRevision() &&
+                         std::memcmp(p.impedance.data(), Z_.data(), Z_.size() * sizeof(double)) != 0;
+    p.controlRevision = liveControlRevision();
     if (changed) {
         if (!engine::updateJunctionLoading(p, Z_, rootLayout_.redRow)) {
             p.revision = -1;
