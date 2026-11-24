@@ -326,7 +326,8 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
         }
     }
     double error = 0.0;
-    for (int iteration = 0; iteration <= 6; ++iteration) {
+    constexpr int maxCorrections = 8;
+    for (int iteration = 0; iteration <= maxCorrections; ++iteration) {
         error = 0.0;
         for (int i = 0; i < m; ++i) {
             const auto& law = p.laws[i];
@@ -381,7 +382,7 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
                 p.matrix[i * m + j] = (i == j ? 1.0 : 0.0) - slope * row[j];
         }
         if (error <= 1e-7) break;
-        if (iteration == 6 || !detail::factorLUData(p.matrix.data(), p.pivots.data(), m))
+        if (iteration == maxCorrections || !detail::factorLUData(p.matrix.data(), p.pivots.data(), m))
             return false;
         detail::solveLUData(p.matrix.data(), p.pivots.data(), p.correction.data(), m);
         double fraction = 1.0;
