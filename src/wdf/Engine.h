@@ -70,6 +70,8 @@ public:
     bool prepareAffineNodePreview(size_t inputSource, int outputNode);
     bool stepBipolarPreview(double inputVolts, double& outputVolts) noexcept;
     bool bipolarPreviewActive() const noexcept;
+    /// A completed input attenuation can make a tripped plan usable before silence.
+    void retryBipolarPreviewAfterAttenuation() noexcept;
     void releaseBipolarPreview() noexcept;
     // The caller has validated the worker's topology and controls for this engine.
     void adoptBipolarPreview(Engine& prepared) noexcept;

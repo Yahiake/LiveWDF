@@ -329,6 +329,8 @@ private:
     std::string category_ = "Custom";
     std::string author_ = "LiveWDF User";
     std::string description_ = "";
+    bool allowPreviewInputPad_ = false;
+    double previewPadDb_ = 0.;
     std::string inputNode_ = "in";
     std::string outputNode_ = "out";
     std::string groundNode_ = "0";

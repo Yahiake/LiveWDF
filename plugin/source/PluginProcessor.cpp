@@ -144,6 +144,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
             juce::ParameterID{portParameterIds[i], 1}, i == 0 ? "Source impedance" : "Output load",
             juce::NormalisableRange<float>(0.f, 1.f, static_cast<float>(wdf::PortImpedanceRange::step)), 0.f));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"preview_pad", 1}, "Preview pad", false));
+
     return { params.begin(), params.end() };
 }
 
@@ -570,7 +573,7 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
                                                std::array<std::string, numPorts>& fixtureNames,
                                                std::unique_ptr<wdf::Engine>& left,
                                                std::unique_ptr<wdf::Engine>& right,
-                                               int& inSrcIdx, int& outIdx,
+                                               int& inSrcIdx, int& outIdx, double& outputBias,
                                                std::vector<double>& baseSources,
                                                std::vector<AcSource>& acSourcesOut,
                                                wdf::Circuit& settledControlCircuit) {
@@ -664,14 +667,13 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         // Silent pre-roll: settle dynamic states (op-amp GBW, reactive waves,
         // nonlinear predictors) at the DC operating point to eliminate
         // sample-0 transient clicks upon audio startup.
-        for (int p = 0; p < 64; ++p) {
-            left->step(baseSources);
-            right->step(baseSources);
-        }
-
-        // Where the audio leaves: the Output terminal's pin, or the document's
-        // named output node when the sheet has no Output terminal.
         outIdx = left->nodeIndex(doc.outputNet());
+        for (int p = 0; p < 64; ++p) {
+            const auto& nodes = left->step(baseSources);
+            right->step(baseSources);
+            if (outIdx >= 0)
+                outputBias = nodes[static_cast<size_t>(outIdx)];
+        }
         settledControlCircuit = std::move(c);
     } catch (const std::exception& e) {
         left.reset();
@@ -720,6 +722,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::unique_ptr<wdf::Engine> newLeft, newRight;
     int inSrcIdx = -1;
     int outIdx = -1;
+    double outputBias = 0.;
     std::vector<double> baseSources;
     std::vector<AcSource> acSources;
 
@@ -734,7 +737,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     }
 
     wdf::Circuit newSettledControlCircuit;
-    buildEngineFromDoc(doc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, baseSources,
+    buildEngineFromDoc(doc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, outputBias, baseSources,
                        acSources, newSettledControlCircuit);
 
     if (!newLeft || !newRight) {
@@ -770,6 +773,15 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_ = doc.outputFullScaleVolts();
+        previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
+            ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;
+        previewPadOutputBias_ = outputBias;
+        auto* pad = apvts_.getParameter("preview_pad");
+        if ((initializePotParameters || previewPadScale_ == 1.) && pad->getValue() > 0.5f)
+            pad->setValueNotifyingHost(0.f);
+        previewPadGain_.reset(sampleRate_, .015);
+        previewPadGain_.setCurrentAndTargetValue(compiledPreviewRequested() && pad->getValue() > 0.5f
+                                                 ? previewPadScale_ : 1.);
         inputVoltsPerFullScale_ = doc.inputVoltsPerFullScale();
         baseSourceValues_ = std::move(baseSources);
         svLeft_.assign(baseSourceValues_.size(), 0.0);
@@ -1186,6 +1198,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
                 state.appendChild(juce::ValueTree{"PARAM", {{"id", id}, {"value", value}}}, nullptr);
         };
         restoreMissing("compiled_preview", 0.0f);
+        restoreMissing("preview_pad", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
         for (const auto id : portParameterIds) restoreMissing(id, 0.f);

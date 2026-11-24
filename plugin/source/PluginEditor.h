@@ -93,6 +93,7 @@ private:
     juce::Label outputRouteLabel_{{}, "Output to"};
     juce::ComboBox inputRoute_{"Input from"};
     juce::ComboBox outputRoute_{"Output to"};
+    juce::ToggleButton previewPadBtn_{"Pad hack"};
     VintageKnob inTrimKnob_ { "TRIM", " dB" };
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
@@ -120,6 +121,7 @@ private:
 
     std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
     std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
+    std::unique_ptr<ButtonAttachment> previewPadAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;

@@ -625,6 +625,79 @@ bool checkPhysicalRouting() {
     return true;
 }
 
+// A divider biased by a second source exposes the physical drive at its scope while
+// its wet output should stay constant through the entire matched pad transition.
+bool checkPreviewPad(const juce::File& factoryPreset) {
+    wdf::LiveWDFDocument doc;
+    doc.previewPadDb = 12.;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", doc.kReferenceMillivolts}}, {}, {}},
+        {"REF", "src", {{"pos", "ref"}, {"neg", "0"}}, {{"dc", .5}}, {}, {}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {}},
+        {"R2", "res", {{"a", "out"}, {"b", "ref"}}, {{"value", 1000.}}, {}, {}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", 2.}}, {}, {}},
+        {"P", "scope", {{"probe", "out"}}, {}, {}, {}},
+    };
+    constexpr int frames = 128;
+    livewdf::LiveWDFPluginProcessor processor;
+    processor.prepareToPlay(kSampleRate, frames);
+    if (!processor.loadCircuitDocument(doc)) return false;
+    auto& state = processor.getAPVTS();
+    const auto set = [&](const char* id, float value) {
+        auto* param = state.getParameter(id);
+        param->setValueNotifyingHost(param->convertTo0to1(value));
+    };
+    set("compiled_preview", 1);
+    set("stereo", 1);
+    set("mix", 50);
+    set("export_4x", 0);
+    juce::AudioBuffer<float> block(2, frames);
+    juce::MidiBuffer midi;
+    const auto render = [&]() {
+        for (int ch = 0; ch < 2; ++ch)
+            std::fill_n(block.getWritePointer(ch), frames, .25f * (ch + 1));
+        processor.processBlock(block, midi);
+        for (int ch = 0; ch < 2; ++ch) {
+            const double input = .25 * (ch + 1);
+            const double expected = .5 * input + .5 * (.25 + .5 * input) / 2.;
+            for (int i = 0; i < frames; ++i)
+                if (std::abs(block.getSample(ch, i) - expected) > 1.e-6) return false;
+        }
+        return true;
+    };
+    const auto probe = [&] { return processor.getLiveProbeVoltages().at("out"); };
+    if (!render() || std::abs(probe() - .375) > 1.e-6) return false;
+    set("preview_pad", 1);
+    const double padded = .25 + .125 * std::pow(10., -.6);
+    if (!render() || !(probe() < .375 && probe() > padded)) return false;
+    for (int i = 0; i < 6; ++i) if (!render()) return false;
+    if (std::abs(probe() - padded) > 1.e-6) return false;
+    processor.setNonRealtime(true);
+    if (!render() || std::abs(probe() - .375) > 1.e-6) return false;
+    set("accurate_export", 0);
+    if (!render() || std::abs(probe() - padded) > 1.e-6) return false;
+    doc.previewPadDb = 0.;
+    auto* pad = state.getParameter("preview_pad");
+    if (!processor.loadCircuitDocument(doc) || pad->getValue() != 0.f ||
+        !render() || std::abs(probe() - .375) > 1.e-6) return false;
+
+    // Restore the player's choice on an actual wired factory document, including
+    // when an older session is recalled into an instance that previously used a pad.
+    if (!processor.loadCircuitFromFile(factoryPreset)) return false;
+    set("preview_pad", 1);
+    juce::MemoryBlock saved;
+    processor.getStateInformation(saved);
+    if (!processor.loadCircuitDocument(doc) || pad->getValue() != 0.f) return false;
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    if (pad->getValue() != 1.f || processor.getDocumentSnapshot().previewPadDb <= 0.) return false;
+    auto xml = juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize()));
+    auto old = juce::ValueTree::fromXml(*xml);
+    old.removeChild(old.getChildWithProperty("id", "preview_pad"), nullptr);
+    juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    return pad->getValue() == 0.f;
+}
+
 bool checkExternalImpedanceDefaults() {
     wdf::LiveWDFDocument doc;
     doc.components = {
@@ -2184,6 +2257,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    if (argc == 3 && std::string(argv[2]) == "--check-preview-pad")
+        return checkPreviewPad(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-live-preview-pot-motion")
         return livewdf::checkLivePreviewPotMotion(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")

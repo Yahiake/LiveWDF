@@ -109,6 +109,7 @@ std::string valueKeyLabel(const std::string& key) {
     // not already something a person would want to read on a label.
     if (key == "referenceMillivoltsRms") return "Input mV RMS at -18 dBFS";
     if (key == "inputPeakVolts") return "Input V peak at 0 dBFS";
+    if (key == "previewPadDb") return "Preview pad (dB)";
     if (key == "fullScaleVolts") return "Matched output V peak at 0 dBFS";
     if (key == "externalMinOhms") return "Minimum external resistance (ohm)";
     if (key == "externalDefaultOhms") return "Default external resistance (ohm)";

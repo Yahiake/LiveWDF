@@ -616,6 +616,22 @@ TEST_CASE("A sheet round-trips through a document", "[schematic][document]") {
     CHECK_FALSE(reloaded.getWires().empty());
 }
 
+TEST_CASE("Canvas edits preserve Preview pad settings until the document is cleared", "[schematic][document]") {
+    wdf::LiveWDFDocument doc;
+    doc.allowPreviewInputPad = true;
+    doc.previewPadDb = 12.;
+    Schematic sheet;
+    sheet.fromDocument(doc);
+    sheet.addPart("res", 10, 10);
+    const auto edited = sheet.toDocument();
+    CHECK(edited.previewPadDb == 12.);
+    CHECK(edited.allowPreviewInputPad);
+    sheet.clear();
+    const auto empty = sheet.toDocument();
+    CHECK(empty.previewPadDb == 0.);
+    CHECK_FALSE(empty.allowPreviewInputPad);
+}
+
 TEST_CASE("toDocument names each wire's net the way extractNets does",
           "[schematic][document]") {
     Schematic s;

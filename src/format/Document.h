@@ -196,6 +196,9 @@ struct LiveWDFDocument {
     std::string description = "";
     // Permit Preview to test a compensated input pad over a verified clean range.
     bool allowPreviewInputPad = false;
+    // Optional user-selectable Preview attenuation with reciprocal wet output gain, in dB.
+    double previewPadDb = 0.;
+    static constexpr bool validPreviewPadDb(double db) noexcept { return db >= 0. && db <= 24.; }
 
     // Standard I/O Nodes
     //

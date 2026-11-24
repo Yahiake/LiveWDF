@@ -132,10 +132,12 @@ public:
     std::map<std::string, double> getLiveProbeVoltages() const;
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
 
+    bool canBrowsePreviewPresets() const;
+    bool compiledPreviewRequested() const;
+
     /// The rate the host handed to `prepareToPlay`. This is the rate the
     /// engine is compiled at (times the oversampling factor), which is the one
     /// the editor's scope must use for its timebase.
-    bool canBrowsePreviewPresets() const;
     double getHostSampleRate() const noexcept { return sampleRate_; }
 
     const ScopeAudioBuffer& getInputScopeBuffer() const noexcept { return inputScopeBuffer_; }
@@ -262,6 +264,9 @@ private:
     /// 1 when the document has not said, which scales nothing.
     double outputFullScaleVolts_ = 1.0;
     std::atomic<double> inputVoltsPerFullScale_{1.0};
+    double previewPadScale_ = 1.;
+    double previewPadOutputBias_ = 0.;
+    juce::SmoothedValue<double> previewPadGain_{1.};
 
     std::vector<double> baseSourceValues_;
 
@@ -344,7 +349,6 @@ private:
 
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
     bool shouldForceAccurate() const;
-    bool compiledPreviewRequested() const;
     int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
@@ -360,7 +364,7 @@ private:
                             std::array<std::string, numPorts>& fixtureNames,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
-                            int& inSrcIdx, int& outIdx,
+                            int& inSrcIdx, int& outIdx, double& outputBias,
                             std::vector<double>& baseSources,
                             std::vector<AcSource>& acSourcesOut,
                             wdf::Circuit& settledControlCircuit);

@@ -467,8 +467,11 @@ void InspectorPanel::rebuild() {
     if ((comp.values.count(primary) || comp.type == "in" || comp.type == "out") && hasNumericValue(comp))
         order.push_back(primary);
 
-    if (comp.type == "in")
+    if (comp.type == "in") {
         order.push_back("inputPeakVolts");
+        if (comp.id == doc_->inputId())
+            order.push_back("previewPadDb");
+    }
 
     if ((comp.type == "in" || comp.type == "out") && comp.values.count("externalMinOhms") &&
         comp.values.count("externalMaxOhms") && !comp.properties.count("externalResistor"))
@@ -581,7 +584,10 @@ void InspectorPanel::rebuild() {
         double raw = stored != comp.values.end() ? stored->second : 1.0;
         if (key == "inputPeakVolts")
             raw = wdf::LiveWDFDocument::inputVoltsPerFullScale(comp);
-        else if (key == "externalDefaultOhms" && stored == comp.values.end())
+        else if (key == "previewPadDb") {
+            raw = doc_->previewPadDb;
+            ed->setTooltip("Offer this much input attenuation and matching wet output gain in Preview (0–24 dB). Enter 0 to hide the control.");
+        } else if (key == "externalDefaultOhms" && stored == comp.values.end())
             raw = 0.;
         else if (key == "referenceMillivoltsRms" && stored == comp.values.end())
             raw = wdf::LiveWDFDocument::kReferenceMillivolts;
@@ -767,7 +773,14 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
     const std::string key = peakInput ? "referenceMillivoltsRms" : displayedKey;
     const bool inputReference = it->type == "in" && key == "referenceMillivoltsRms";
     const bool outputReference = it->type == "out" && key == "fullScaleVolts";
-    if (it->values.count(key) || inputReference || outputReference) {
+    if (key == "previewPadDb" && doc_->terminal("in") == &*it) {
+        bool ok = false;
+        const double db = parseValue(text.toStdString(), &ok);
+        if (!ok || !wdf::LiveWDFDocument::validPreviewPadDb(db) ||
+            text == juce::String(formatValue(doc_->previewPadDb, "")) || db == doc_->previewPadDb)
+            return;
+        doc_->previewPadDb = db;
+    } else if (it->values.count(key) || inputReference || outputReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
 

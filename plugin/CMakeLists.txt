@@ -89,6 +89,9 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
 )
 
 if(LIVEWDF_BUILD_TESTS)
+    add_test(NAME livewdf_preview_pad COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
+        --check-preview-pad)
     add_test(NAME livewdf_external_impedance_defaults COMMAND LiveWDF_PluginBench
         --check-external-impedance-defaults)
     add_test(NAME livewdf_live_preview_capture COMMAND LiveWDF_PluginBench

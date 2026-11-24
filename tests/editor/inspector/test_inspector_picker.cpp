@@ -875,3 +875,24 @@ TEST_CASE("Peak volts and nominal RMS edit the selected input alignment") {
     CHECK(second.values.count("inputPeakVolts") == 0);
     CHECK(second.values.at("fullScaleVolts") == 12.0);
 }
+
+TEST_CASE("The main input inspector edits the document's manual Preview pad") {
+    auto doc = documentWith("in");
+    doc.components.push_back(makeComponent("in", doc.components, 0.f, 4.f));
+    InspectorPanel panel;
+    panel.setSize(320, 700);
+    panel.setTarget(&doc, doc.inputId());
+    auto* pad = findEditorBelowCaption(panel, "Preview pad (dB):");
+    REQUIRE(pad != nullptr);
+    for (const auto& edit : {"12.5", "25"}) {
+        pad->setText(edit, false);
+        pad->onFocusLost();
+        CHECK(doc.previewPadDb == 12.5);
+    }
+    pad->setText("0", false);
+    pad->onFocusLost();
+    CHECK(doc.previewPadDb == 0.);
+    CHECK(doc.components.front().values.count("previewPadDb") == 0);
+    panel.setTarget(&doc, doc.components.back().id);
+    CHECK(findEditorBelowCaption(panel, "Preview pad (dB):") == nullptr);
+}

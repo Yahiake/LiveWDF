@@ -6158,6 +6158,7 @@
   },
   "name": "Neve 1081 Gold Label Equalizer",
   "outputNode": "out",
+  "previewPadDb": 12.0,
   "version": 3,
   "wires": [
     {

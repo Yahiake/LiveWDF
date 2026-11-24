@@ -152,6 +152,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     outputRoute_.setTooltip("Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
     addAndMakeVisible(inputRouteLabel_);
     addAndMakeVisible(inputRoute_);
+    addChildComponent(previewPadBtn_);
+    previewPadAttach_ = std::make_unique<ButtonAttachment>(
+        processor_.getAPVTS(), "preview_pad", previewPadBtn_);
     addAndMakeVisible(outputRouteLabel_);
     addAndMakeVisible(outputRoute_);
     inputRouteAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "chain_input", inputRoute_);
@@ -269,6 +272,13 @@ void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool
 
 void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc) {
     updateScopeScales();
+    previewPadBtn_.setVisible(doc.previewPadDb > 0.);
+    if (previewPadBtn_.isVisible()) {
+        const auto amount = juce::String(doc.previewPadDb, 1) + " dB";
+        previewPadBtn_.setTooltip("Lower circuit drive by " + amount + " and add " + amount
+            + " back to the wet output. Requires Fast Live with Preview. Accurate export bypasses the pad.");
+        previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
+    }
     // Attachments first: they hold a reference to the knob's slider, so the
     // slider must outlive the attachment, not the other way round.
     dynamicKnobAttachments_.clear();
@@ -508,6 +518,7 @@ void LiveWDFPluginEditor::timerCallback() {
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
     compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
+    previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
     // The parameter can move from automation or host state restore, not only
     // from the button, so the label follows the parameter rather than the click.
@@ -630,6 +641,7 @@ void LiveWDFPluginEditor::resized() {
     inputRoute_.setBounds(routes.removeFromLeft(158));
     outputRoute_.setBounds(routes.removeFromRight(180));
     outputRouteLabel_.setBounds(routes.removeFromRight(72));
+    previewPadBtn_.setBounds(routes.removeFromLeft(112).reduced(5, 0));
 
     inTrimKnob_.setBounds(knobStrip.removeFromLeft(fixedKnobWidth));
     outMasterKnob_.setBounds(knobStrip.removeFromRight(fixedKnobWidth));

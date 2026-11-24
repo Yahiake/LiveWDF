@@ -28,6 +28,7 @@
 #include "format/LiveWDFFile.h"
 #include "format/PortImpedance.h"
 
+#include <limits>
 #include <string>
 
 namespace {
@@ -180,6 +181,29 @@ TEST_CASE("A document permits Preview input padding only when explicitly saved")
     CHECK(loaded.allowPreviewInputPad);
     REQUIRE(wdf::LiveWDFDocument::fromJson(existing, loaded, error));
     CHECK_FALSE(loaded.allowPreviewInputPad);
+}
+
+TEST_CASE("Manual Preview pad is optional, bounded and independent of automatic padding", "[format][terminals]") {
+    auto doc = terminalDocument();
+    CHECK(doc.toJson().find("previewPadDb") == std::string::npos);
+    wdf::LiveWDFDocument loaded;
+    std::string error;
+    for (const double db : {12.5, 24.}) {
+        doc.previewPadDb = db;
+        REQUIRE(wdf::LiveWDFDocument::fromJson(doc.toJson(), loaded, error));
+        CHECK(loaded.previewPadDb == db);
+        CHECK_FALSE(loaded.allowPreviewInputPad);
+    }
+    for (const std::string value : {"0", "-1", "25", "\"12\""}) {
+        REQUIRE(wdf::LiveWDFDocument::fromJson("{\"version\":3,\"previewPadDb\":" + value + "}", loaded, error));
+        CHECK(loaded.previewPadDb == 0.);
+    }
+    doc.previewPadDb = std::numeric_limits<double>::infinity();
+    const auto withoutPad = doc.toJson();
+    CHECK(withoutPad.find("previewPadDb") == std::string::npos);
+    loaded.previewPadDb = 12.;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(withoutPad, loaded, error));
+    CHECK(loaded.previewPadDb == 0.);
 }
 
 TEST_CASE("External impedance ranges are optional per terminal and round-trip in ohms", "[format][terminals]") {

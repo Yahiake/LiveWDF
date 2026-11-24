@@ -737,6 +737,13 @@ bool Engine::bipolarPreviewActive() const noexcept {
     return bipolarPreview_ && bipolarPreview_->active;
 }
 
+void Engine::retryBipolarPreviewAfterAttenuation() noexcept {
+    if (bipolarPreview_ && bipolarPreview_->tripped && lastConverged() && !lastStateRejected()) {
+        bipolarPreview_->tripped = false;
+        bipolarPreview_->quietFrames = 0;
+    }
+}
+
 void Engine::releaseBipolarPreview() noexcept {
     if (!bipolarPreviewActive() || bipolarPreview_->qualifying) return;
     auto& p = *bipolarPreview_;
