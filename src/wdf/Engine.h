@@ -45,6 +45,22 @@ public:
         reset();
     }
 
+    void reset() {
+        if (bipolarPreview_) resetBipolarPreviewHistory();
+        EngineStep::reset();
+    }
+
+    const std::vector<double>& step(const std::vector<double>& sources,
+                                    int maxIter = kDefaultMaxIterations, double tol = kDefaultTolerance) {
+        return step(sources.data(), sources.size(), maxIter, tol);
+    }
+
+    const std::vector<double>& step(const double* sources, size_t count,
+                                    int maxIter = kDefaultMaxIterations, double tol = kDefaultTolerance) {
+        if (bipolarPreview_) releaseBipolarPreview();
+        return EngineStep::step(sources, count, maxIter, tol);
+    }
+
     // A single-output approximation for static BJT/diode networks. Preparation
     // allocates and qualifies the fixed schematic away from the audio thread.
     bool prepareBipolarPreview(size_t inputSource, int outputNode);
@@ -120,6 +136,7 @@ public:
 private:
     long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
+    void resetBipolarPreviewHistory() noexcept;
     struct BipolarPreview;
     std::shared_ptr<BipolarPreview> bipolarPreview_;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;

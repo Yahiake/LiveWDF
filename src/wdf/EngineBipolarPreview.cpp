@@ -385,6 +385,11 @@ void Engine::releaseBipolarPreview() noexcept {
     p.active = false;
 }
 
+void Engine::resetBipolarPreviewHistory() noexcept {
+    bipolarPreview_->active = false;
+    bipolarPreview_->tripped = false;
+}
+
 void Engine::adoptBipolarPreview(Engine& prepared) noexcept {
     releaseBipolarPreview();
     bipolarPreview_.swap(prepared.bipolarPreview_);

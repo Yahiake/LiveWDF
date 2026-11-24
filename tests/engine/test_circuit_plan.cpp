@@ -244,3 +244,41 @@ TEST_CASE("Loaded junction preview declines a transistor with extra transport te
     REQUIRE_FALSE(preview.prepareLoadedJunctionPreview());
     REQUIRE_FALSE(preview.hasLoadedJunctionPreview());
 }
+
+TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Preview", "[engine][circuit-plan]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addSrc("supply", "0", 9.);
+    c.addRes("in", "base", 330000.);
+    c.addRes("supply", "base", 22000.);
+    c.addRes("base", "0", 4700.);
+    c.addRes("supply", "collector", 3300.);
+    c.addRes("emitter", "0", 820.);
+    c.addCap("collector", "0", 22.e-9);
+    c.addBjt("collector", "base", "emitter", wdf::findBjtByName("2N3904")->model, "Q1");
+    wdf::Engine candidate(c, 48000.), reference(c, 48000.);
+    const int output = candidate.nodeIndex("collector");
+    REQUIRE(candidate.prepareBipolarPreview(0, output));
+    auto sources = candidate.dcValues();
+    for (int n = 0; n < 128; ++n) {
+        sources[0] = .3 * std::sin(n * .039);
+        double voltage;
+        REQUIRE(candidate.stepBipolarPreview(sources[0], voltage));
+        REQUIRE(voltage == Approx(reference.step(sources)[output]).margin(2e-6));
+    }
+    REQUIRE(candidate.bipolarPreviewActive());
+    REQUIRE(candidate.step(sources)[output] == Approx(reference.step(sources)[output]).margin(2e-6));
+    REQUIRE_FALSE(candidate.bipolarPreviewActive());
+
+    double voltage;
+    REQUIRE(candidate.stepBipolarPreview(sources[0], voltage));
+    candidate.reset();
+    reference.reset();
+    REQUIRE_FALSE(candidate.bipolarPreviewActive());
+    sources[0] = 0.;
+    REQUIRE(candidate.stepBipolarPreview(sources[0], voltage));
+    REQUIRE(voltage == Approx(reference.step(sources)[output]).margin(1e-8));
+    REQUIRE_FALSE(candidate.stepBipolarPreview(5., voltage));
+    candidate.reset();
+    REQUIRE(candidate.stepBipolarPreview(0., voltage));
+}
