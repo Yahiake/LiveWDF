@@ -188,7 +188,7 @@ protected:
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
             vv_, ii_, J_, F_, vOc_, Z_, Zred_,
-            loadedJunctionEnabled_ && sharedNewtonColumns_.available() ? &sharedNewtonColumns_ : nullptr,
+            loadedJunctionEnabled_ && sharedNewtonColumns_.hasPackedResidual() ? &sharedNewtonColumns_ : nullptr,
             vvPrev_, vvPrev2_, predUp_, predDown_, stepUp_, stepDown_, redCol_,
             redToActive_, activeRedCol_, Mr_, rN_, dv_, vt_, ft_, Jt_, iv_,
             bestV_, bestI_, gridJunctionLimiters_, junctionLimiters_, rootLayout_,

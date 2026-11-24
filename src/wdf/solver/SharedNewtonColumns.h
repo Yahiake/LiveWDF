@@ -55,6 +55,14 @@ public:
         const int groups = int(representatives_.size());
         if (!groups || groups * 4 > cols * 3) {
             *this = {};
+            // Large independent roots still benefit from evaluating their port
+            // voltages in parallel. Their Newton factorization stays unchanged.
+            if (groups && rows >= 12) {
+                plannedRows_ = rows;
+                rhs_.resize(cols);
+                packed_.resize(size_t((rows + lanes - 1) / lanes) * cols * lanes);
+                refresh(z, rows, cols);
+            }
             return;
         }
         columns_.resize(size_t(rows) * groups);
@@ -69,6 +77,12 @@ public:
     void refresh(const std::vector<double>& z, int rows, int cols) noexcept {
         valid_ = false;
         const int groups = int(representatives_.size());
+        if (!groups && plannedRows_ > 0 && rows == plannedRows_ && cols == int(rhs_.size()) &&
+            z.size() == size_t(rows) * cols) {
+            pack(z, rows, cols);
+            valid_ = true;
+            return;
+        }
         if (!groups || int(members_.size()) != cols || columns_.size() != size_t(rows) * groups ||
             z.size() != size_t(rows) * cols) return;
         for (int i = 0; i < rows; ++i) {
@@ -80,16 +94,11 @@ public:
                 if (group >= 0 && row[j] != (sign ? sign * compact[group] : 0.0)) return;
             }
         }
-        // Each group supplies one scalar current to several independent voltage
-        // equations. Adjacent lanes then accumulate consecutive port voltages.
-        for (int r = 0; r < rows; ++r) {
-            const int block = r / lanes, lane = r % lanes;
-            for (int g = 0; g < groups; ++g)
-                packed_[(size_t(block) * groups + g) * lanes + lane] = columns_[size_t(r) * groups + g];
-        }
+        pack(columns_, rows, groups);
         valid_ = true;
     }
-    bool available() const noexcept { return valid_; }
+    bool available() const noexcept { return valid_ && !representatives_.empty(); }
+    bool hasPackedResidual() const noexcept { return valid_; }
 
     // Assemble I + S J C and -S J F from the local device Jacobians. Rows
     // eliminated by S do not contribute to either side.
@@ -122,6 +131,11 @@ public:
     // Newton corrections, including each line-search trial.
     bool residual(const double* v, const double* vOc, const double* currents,
                   const int* activePorts, int rows, double* f) noexcept {
+        if (members_.empty()) {
+            for (size_t j = 0; j < rhs_.size(); ++j) rhs_[j] = currents[activePorts[j]];
+            multiply(packed_.data(), rhs_.data(), int(rhs_.size()), v, vOc, rows, f);
+            return true;
+        }
         std::fill(rhs_.begin(), rhs_.end(), 0.);
         for (size_t j = 0; j < members_.size(); ++j) {
             const auto [group, sign] = members_[j];
@@ -139,6 +153,14 @@ public:
     }
 private:
     static constexpr int lanes = 16;
+
+    void pack(const std::vector<double>& source, int rows, int groups) noexcept {
+        for (int r = 0; r < rows; ++r) {
+            const int block = r / lanes, lane = r % lanes;
+            for (int g = 0; g < groups; ++g)
+                packed_[(size_t(block) * groups + g) * lanes + lane] = source[size_t(r) * groups + g];
+        }
+    }
 
     static void multiply(const double* coefficients, const double* current, int groups,
                          const double* base, const double* vOc, int rows, double* result) noexcept {
@@ -195,6 +217,7 @@ private:
     std::vector<Member> members_;
     std::vector<int> representatives_;
     std::vector<double> columns_, packed_, matrix_, rhs_;
+    int plannedRows_ = 0;
     bool valid_ = false;
 };
 

@@ -271,6 +271,7 @@ public:
             }
 
             tPhase = tick();
+            const bool compact = ctx.sharedColumns && ctx.sharedColumns->available();
             const auto assembleFull = [&] {
                 if (!ctx.Zred.empty()) {
                     RootJacobian::reducedAssembleFast(
@@ -282,7 +283,7 @@ public:
                         ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
                 }
             };
-            if (ctx.sharedColumns)
+            if (compact)
                 ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
                                             ctx.redCol.data(), ctx.rootDevices);
             else
@@ -291,9 +292,9 @@ public:
                 tock(ctx.prof->jacobian);
 
             tPhase = tick();
-            bool solved = ctx.sharedColumns && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
+            bool solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
             if (!solved) {
-                if (ctx.sharedColumns)
+                if (compact)
                     assembleFull();
                 solved = !ctx.Zred.empty()
                     ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
@@ -329,7 +330,7 @@ public:
             double ftNorm = 0.0;
             // Near a hard op-amp rail the fourth trial can still worsen the
             // full residual. A few more backtracks avoid a discarded sample.
-            const int maxTrials = ctx.sharedColumns && !ctx.opAmps.empty() ? 10 : 4;
+            const int maxTrials = compact && !ctx.opAmps.empty() ? 10 : 4;
             for (int h = 0; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
                 for (int r = 0; r < ctx.K; ++r)

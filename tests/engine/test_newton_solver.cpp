@@ -461,3 +461,33 @@ TEST_CASE("Shared-current residual follows the physical transfer across a partia
         plan.refresh(z, rows, cols);
     }
 }
+
+TEST_CASE("Independent large roots retain the full Newton matrix and refresh the packed residual", "[engine][newton]") {
+    constexpr int rows = 19, cols = 11;
+    std::vector<double> z(rows * cols), v(rows), open(rows), current(rows), actual(rows);
+    int active[cols];
+    for (int i = 0; i < rows; ++i) {
+        v[i] = std::sin(.09 * i);
+        open[i] = std::cos(.17 * i);
+        current[i] = std::sin(.03 * i);
+        for (int j = 0; j < cols; ++j)
+            z[i * cols + j] = std::sin(.04 * (i + 1) * (j + 1));
+    }
+    for (int j = 0; j < cols; ++j) active[j] = rows - 1 - j;
+    wdf::solver::SharedNewtonColumns plan;
+    plan.prepare(z, rows, cols);
+    for (int pass = 0; pass < 2; ++pass) {
+        REQUIRE_FALSE(plan.available());
+        REQUIRE(plan.hasPackedResidual());
+        REQUIRE(plan.residual(v.data(), open.data(), current.data(), active, rows, actual.data()));
+        for (int i = 0; i < rows; ++i) {
+            double full = v[i] - open[i];
+            for (int j = 0; j < cols; ++j) full += z[i * cols + j] * current[active[j]];
+            REQUIRE(std::abs(full - actual[i]) < 1.e-14);
+        }
+        for (double& entry : z) entry *= .8;
+        plan.refresh(z, rows, cols);
+    }
+    plan.refresh(z, rows + 1, cols);
+    REQUIRE_FALSE(plan.hasPackedResidual());
+}
