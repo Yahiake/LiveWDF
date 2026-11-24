@@ -381,3 +381,32 @@ TEST_CASE("Preview skips a failed Newton retry only for identical starting volta
     CHECK(reference.newtonIterations() == 2);
     CHECK(preview.newtonIterations() == (changedHistory ? 2 : 1));
 }
+
+TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
+    constexpr int rows = 35, cols = 12, groups = 4;
+    std::vector<double> z(rows * cols), v(rows), open(rows), current(rows), actual(rows);
+    int active[cols];
+    for (int i = 0; i < rows; ++i) {
+        v[i] = std::sin(.19 * (i + 1));
+        open[i] = std::cos(.17 * i);
+        current[i] = std::sin(.07 * i);
+        for (int j = 0; j < cols; ++j) {
+            const double value = std::cos(.21 * (i + 1) * (1 + j % groups));
+            z[i * cols + j] = j < groups ? value : j < 2 * groups ? -value : 0.;
+        }
+    }
+    for (int j = 0; j < cols; ++j) active[j] = 2 * j;
+    wdf::solver::SharedNewtonColumns plan;
+    plan.prepare(z, rows, cols);
+    for (int pass = 0; pass < 2; ++pass) {
+        REQUIRE(plan.available());
+        plan.residual(v.data(), open.data(), current.data(), active, rows, actual.data());
+        for (int i = 0; i < rows; ++i) {
+            double expected = v[i] - open[i];
+            for (int j = 0; j < cols; ++j) expected += z[i * cols + j] * current[active[j]];
+            REQUIRE(std::abs(actual[i] - expected) < 1.e-13);
+        }
+        for (double& entry : z) entry *= .9;
+        plan.refresh(z, rows, cols);
+    }
+}

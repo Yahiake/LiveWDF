@@ -44,6 +44,7 @@ public:
             return;
         }
         columns_.resize(size_t(rows) * groups);
+        packed_.resize(size_t((rows + lanes - 1) / lanes) * groups * lanes);
         matrix_.resize(size_t(groups) * groups);
         rhs_.resize(groups);
         refresh(z, rows, cols);
@@ -64,6 +65,13 @@ public:
                 const auto [group, sign] = members_[j];
                 if (row[j] != (sign ? sign * compact[group] : 0.0)) return;
             }
+        }
+        // Each group supplies one scalar current to several independent voltage
+        // equations. Adjacent lanes then accumulate consecutive port voltages.
+        for (int r = 0; r < rows; ++r) {
+            const int block = r / lanes, lane = r % lanes;
+            for (int g = 0; g < groups; ++g)
+                packed_[(size_t(block) * groups + g) * lanes + lane] = columns_[size_t(r) * groups + g];
         }
         valid_ = true;
     }
@@ -96,18 +104,47 @@ public:
         }
     }
 
-    bool finish(const double* f, int rows, double* dv) noexcept {
-        const int groups = int(representatives_.size());
-        if (!solveActive(groups)) return false;
-        for (int i = 0; i < rows; ++i) {
-            double v = -f[i];
-            const double* compact = columns_.data() + size_t(i) * groups;
-            for (int g = 0; g < groups; ++g) v -= compact[g] * rhs_[g];
-            dv[i] = v;
+    // F = v - vOc + C (S i). Use the same grouping for residual checks and
+    // Newton corrections, including each line-search trial.
+    void residual(const double* v, const double* vOc, const double* currents,
+                  const int* activePorts, int rows, double* f) noexcept {
+        std::fill(rhs_.begin(), rhs_.end(), 0.);
+        for (size_t j = 0; j < members_.size(); ++j) {
+            const auto [group, sign] = members_[j];
+            if (sign) rhs_[group] += sign * currents[activePorts[j]];
         }
+        multiply(packed_.data(), rhs_.data(), int(rhs_.size()), v, vOc, rows, f);
+    }
+
+    bool finish(const double* f, int rows, double* dv) noexcept {
+        if (!solveActive(int(representatives_.size()))) return false;
+        multiply(packed_.data(), rhs_.data(), int(rhs_.size()), f, nullptr, rows, dv);
         return true;
     }
 private:
+    static constexpr int lanes = 16;
+
+    static void multiply(const double* coefficients, const double* current, int groups,
+                         const double* base, const double* vOc, int rows, double* result) noexcept {
+        for (int r = 0; r < rows; r += lanes) {
+            const int count = std::min(lanes, rows - r);
+            const double* block = coefficients + size_t(r) * groups;
+            double sum[lanes]{};
+            if (vOc) {
+                for (int l = 0; l < count; ++l) sum[l] = base[r + l] - vOc[r + l];
+                for (int g = 0; g < groups; ++g)
+                    for (int l = 0; l < lanes; ++l)
+                        sum[l] += block[g * lanes + l] * current[g];
+            } else {
+                for (int l = 0; l < count; ++l) sum[l] = -base[r + l];
+                for (int g = 0; g < groups; ++g)
+                    for (int l = 0; l < lanes; ++l)
+                        sum[l] -= block[g * lanes + l] * current[g];
+            }
+            for (int l = 0; l < count; ++l) result[r + l] = sum[l];
+        }
+    }
+
     bool solveActive(int groups) noexcept {
         constexpr int maxGroups = 64;
         if (groups > maxGroups) return detail::solveData(matrix_.data(), rhs_.data(), groups);
@@ -141,7 +178,7 @@ private:
     struct Member { int group, sign; };
     std::vector<Member> members_;
     std::vector<int> representatives_;
-    std::vector<double> columns_, matrix_, rhs_;
+    std::vector<double> columns_, packed_, matrix_, rhs_;
     bool valid_ = false;
 };
 

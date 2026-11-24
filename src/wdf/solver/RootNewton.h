@@ -127,7 +127,9 @@ public:
     static inline void residualInto(const NewtonContext& ctx, const std::vector<double>& v,
                                     const std::vector<double>& vOc, const std::vector<double>& Z,
                                     const std::vector<double>& i, std::vector<double>& F) noexcept {
-        if (!ctx.Zred.empty()) {
+        if (ctx.sharedColumns) {
+            ctx.sharedColumns->residual(v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data());
+        } else if (!ctx.Zred.empty()) {
             RootResidual::residualIntoFast(
                 v.data(), vOc.data(), ctx.Zred.data(), i.data(), F.data(),
                 ctx.redCol.data(), ctx.nRed, ctx.K);
