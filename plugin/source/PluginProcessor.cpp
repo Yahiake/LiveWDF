@@ -286,8 +286,12 @@ void LiveWDFPluginProcessor::timerCallback() {
         lastError_ = "Could not apply a live control setting";
     applyPendingCircuitOptions();
     if (!isNonRealtime() && !currentDoc_.components.empty()) {
-        prepareSettledLiveTransfer();
-        prepareFastLiveAffine();
+        const auto audioRevision = audioTransferRevision_.exchange(noAudioSinceTick, std::memory_order_relaxed);
+        prepareSettledLiveTransfer(audioRevision != noAudioSinceTick);
+        if (!settledTransferJob_.valid() && !settledTransferPublished_ &&
+            captureState_.load(std::memory_order_acquire) == CaptureState::idle &&
+            audioRevision != adjustedAudioTransfer)
+            prepareFastLiveAffine(audioRevision);
     }
     updateReportedLatency();
 }
@@ -332,7 +336,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     }
 }
 
-void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
+void LiveWDFPluginProcessor::prepareSettledLiveTransfer(bool audioActive) {
     if (settledTransferPublished_) {
         const std::unique_ptr<SettledTransfer> retired(
             retiredSettledTransfer_.exchange(nullptr, std::memory_order_acquire));
@@ -372,7 +376,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         capture_.work.emplace(engineGeneration_, settledControlCircuit_);
         captureState_.store(CaptureState::requested, std::memory_order_release);
     }
-    if (captureState_.load(std::memory_order_acquire) == CaptureState::requested) {
+    if (!audioActive && captureState_.load(std::memory_order_acquire) == CaptureState::requested) {
         std::unique_lock lock(engineMutex_, std::try_to_lock);
         if (lock.owns_lock())
             captureSettledTransferIfRequested();
@@ -475,7 +479,7 @@ void LiveWDFPluginProcessor::applySettledLiveTransfer(bool stereo) noexcept {
     retiredSettledTransfer_.store(ready, std::memory_order_release);
 }
 
-void LiveWDFPluginProcessor::prepareFastLiveAffine() {
+void LiveWDFPluginProcessor::prepareFastLiveAffine(long long audioRevision) {
     if (affineJob_.valid()) {
         if (affineJob_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
             return;
@@ -486,6 +490,11 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
         }
     }
 
+    const bool stereo = *apvts_.getRawParameterValue("stereo") > 0.5f;
+    if (!readyAffine_ && audioRevision >= 0 &&
+        requestedAffineKey_ == AffineKey{engineGeneration_, audioRevision, stereo})
+        return;
+
     std::optional<AffineResult> completed;
     std::optional<wdf::Engine::MixedAffineSetup> leftSetup, rightSetup;
     AffineKey key;
@@ -493,7 +502,6 @@ void LiveWDFPluginProcessor::prepareFastLiveAffine() {
         std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
         if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
             return;
-        const bool stereo = *apvts_.getRawParameterValue("stereo") > 0.5f;
         if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() ||
             (stereo && rightEngine_->hasAdjustedLiveTransfer())) {
             if (readyAffine_) {

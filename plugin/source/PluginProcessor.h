@@ -211,6 +211,10 @@ private:
     bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
     long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
     bool outputOnlyPreviewAllowed_ = false;
+    // The timer can service an idle engine directly. During playback the
+    // callback publishes the revision and handles pending captures itself.
+    static constexpr long long noAudioSinceTick = -2, adjustedAudioTransfer = -1;
+    std::atomic<long long> audioTransferRevision_{noAudioSinceTick};
     enum class CaptureState { idle, requested, needsStorage, done };
     std::atomic<CaptureState> captureState_{CaptureState::idle};
     struct TransferCapture {
@@ -344,8 +348,8 @@ private:
     int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
-    void prepareFastLiveAffine();
-    void prepareSettledLiveTransfer();
+    void prepareFastLiveAffine(long long audioRevision);
+    void prepareSettledLiveTransfer(bool audioActive = false);
     void captureSettledTransferIfRequested() noexcept;
     void applySettledLiveTransfer(bool stereo) noexcept;
     void readLivePotTargets(int rampSamples);

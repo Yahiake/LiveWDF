@@ -1987,6 +1987,22 @@ bool checkLivePreviewCapture(const juce::File& file) {
     set("solve_quality", 1.f);
     set("compiled_preview", 1.f);
 
+    // A running Preview job owns the preparation slot. Polling the separate
+    // affine solver here would take the mutex and could make the audio block dry.
+    {
+        std::promise<LiveWDFPluginProcessor::SettledTransfer> busy;
+        processor.settledTransferJob_ = busy.get_future();
+        processor.timerCallback();
+        processor.settledTransferJob_ = {};
+        if (processor.observedAffineKey_) return false;
+    }
+    // An active stream captures settings at the next audio block. Even if the
+    // mutex happens to be free at this instant, the timer must leave it alone.
+    processor.audioTransferRevision_.store(processor.leftEngine_->linearRebuilds());
+    processor.timerCallback();
+    if (processor.captureState_.load() != LiveWDFPluginProcessor::CaptureState::requested)
+        return false;
+
     // Reproduce a saturated callback that owns the engine for every timer tick.
     // The worker may take any number of blocks to finish its numerical screen.
     std::barrier blockBoundary(2);
