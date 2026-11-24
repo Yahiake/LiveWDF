@@ -21,6 +21,7 @@
 
 #include "wdf/EngineStep.h"
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <span>
@@ -28,6 +29,7 @@
 namespace wdf {
 
 class Engine : public EngineStep {
+    static constexpr size_t planLimit = 5;
 public:
     /// Compile `circuit` and prepare to run at `fs` Hz. Throws if the network is
     /// singular. Runs the transfer build, sizes every buffer, and seeds the
@@ -75,6 +77,7 @@ public:
     bool installMixedAffineSetup(MixedAffineSetup& setup);
     void useMixedAffineReduction(bool enabled) noexcept { mixedAffineEnabled_ = enabled; }
 
+    long long mixedAffineRevision() const noexcept { return mixedAffineRevision_; }
     long long mixedAffineAttempts() const { return mixedAffineAttempts_; }
     long long mixedAffineAccepted() const { return mixedAffineAccepted_; }
 
@@ -82,24 +85,30 @@ public:
     public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
         void build(size_t inputSource, bool prepareAffine);
+        /// Compare the prepared channels on the worker and drop unprofitable plans.
+        bool screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode);
 
     private:
         friend class Engine;
         const Engine* owner_ = nullptr;
         Circuit circuit_;
         double rate_ = 0.0;
-        bool gridCurrent_ = true;
-        long long linearRevision_ = 0, controlRevision_ = 0;
+        bool gridCurrent_ = true, planOnly_ = false;
+        std::array<unsigned, planLimit> affineMasks_{};
+        size_t maskCount_ = 0;
+        long long linearRevision_ = 0, controlRevision_ = 0, affineRevision_ = 0;
         std::unique_ptr<Engine> prepared_;
     };
 
     /// Copy live numeric settings into a setup created from this engine's
     /// original circuit. Build on a worker; installation keeps live DSP state.
-    bool captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept;
+    /// planOnly snapshots an unadjusted transfer and installs just its solver plan.
+    bool captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly = false) const noexcept;
     bool canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept;
     bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 
 private:
+    long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);

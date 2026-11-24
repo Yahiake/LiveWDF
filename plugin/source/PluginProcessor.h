@@ -191,7 +191,8 @@ private:
     std::future<SettledTransfer> settledTransferJob_;
     std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
     bool settledTransferPublished_ = false;
-    long long observedControlRevision_ = -1, preparedControlRevision_ = -1;
+    using TransferRevision = std::array<long long, 4>; // transfer, controls, channel affine plans
+    std::optional<TransferRevision> observedTransferRevision_, preparedTransferRevision_;
     wdf::Circuit settledControlCircuit_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch

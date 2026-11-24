@@ -123,51 +123,56 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             isCur_[rms.outputCurrentIndex] = rms.detector.outputCurrent();
     }
 
-    // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
-    const double* LIVEWDF_RESTRICT capData = capState_.data();
-    const double* LIVEWDF_RESTRICT indData = indState_.data();
-    double* LIVEWDF_RESTRICT wData = w_.data();
-    for (int t = 0; t < nLive_; ++t) {
-        const auto& lc = liveColInfo_[static_cast<size_t>(t)];
-        double b = 0.0;
-        if (lc.capIdx >= 0)
-            b = capData[lc.capIdx];
-        else if (lc.indIdx >= 0)
-            b = -indData[lc.indIdx];
-        wData[t] = b - eoffData[lc.portIdx];
-    }
-    tock(prof_.offsets);
-    tPhase = tick();
-
-    // u = Xe * w via partitioned sparse rows. Degree 0 rows stay 0 from memset.
-    // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
+    const bool adjustedTransfer = hasAdjustedLiveTransfer();
+    const bool compiled = circuitPlanEnabled_ && circuitPlanRevision_ == linearRebuilds() && !adjustedTransfer;
     double* LIVEWDF_RESTRICT uData = u_.data();
-    std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
-    if (networkFactors_.active) {
-        networkFactors_.apply(wData, uData);
+    if (compiled && !driveCoefficients_.empty() && applyCompiledDrive(sourceValues, sourceCount)) {
+        tock(prof_.offsets);
+        tPhase = tick();
     } else {
-        for (const auto& e : xeRows1_) {
-            uData[e.node] = e.val * wData[e.col];
+        // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
+        const double* LIVEWDF_RESTRICT capData = capState_.data();
+        const double* LIVEWDF_RESTRICT indData = indState_.data();
+        double* LIVEWDF_RESTRICT wData = w_.data();
+        for (int t = 0; t < nLive_; ++t) {
+            const auto& lc = liveColInfo_[static_cast<size_t>(t)];
+            double b = 0.0;
+            if (lc.capIdx >= 0)
+                b = capData[lc.capIdx];
+            else if (lc.indIdx >= 0)
+                b = -indData[lc.indIdx];
+            wData[t] = b - eoffData[lc.portIdx];
         }
-        for (const auto& e : xeRows2_) {
-            uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
-        }
-        if (!xeRowsN_.empty()) {
-            const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
-            const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-            for (const auto& e : xeRowsN_) {
-                double s = 0.0;
-                for (int idx = e.start; idx < e.end; ++idx)
-                    s += xeVals[idx] * wData[xeCols[idx]];
-                uData[e.node] = s;
+        tock(prof_.offsets);
+        tPhase = tick();
+
+        // u = Xe * w via partitioned sparse rows. Degree 0 rows stay 0 from memset.
+        // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
+        std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
+        if (networkFactors_.active) {
+            networkFactors_.apply(wData, uData);
+        } else {
+            for (const auto& e : xeRows1_) {
+                uData[e.node] = e.val * wData[e.col];
+            }
+            for (const auto& e : xeRows2_) {
+                uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
+            }
+            if (!xeRowsN_.empty()) {
+                const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
+                const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
+                for (const auto& e : xeRowsN_) {
+                    double s = 0.0;
+                    for (int idx = e.start; idx < e.end; ++idx)
+                        s += xeVals[idx] * wData[xeCols[idx]];
+                    uData[e.node] = s;
+                }
             }
         }
     }
-
     for (const auto& e : isrcRows_)
         uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
-    const bool adjustedTransfer = hasAdjustedLiveTransfer();
     if (adjustedTransfer)
         adjustableTransfer_.correctOpenCircuit(eoffData, uData);
 
@@ -179,7 +184,9 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     tock(prof_.network);
 
     const long long fallbacksBefore = blockFallbacks_;
-    if (K_ > 0) {
+    const bool compiledRoot = compiled && maxIter >= 4 && !rootFactors_.empty() && explicitRootsAllowed_ &&
+                              !explicitRootsActive_ && tryCompiledRoot(tol);
+    if (K_ > 0 && !compiledRoot) {
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
         // is driving the solve, and it never replaces the static partition
@@ -217,7 +224,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             solveRootsNewton(maxIter, tol);
         else
             solveRootsNewton(maxIter, tol);
-    } else {
+    } else if (K_ == 0) {
         lastConverged_ = true;
         lastResidual_ = 0.0;
         keptBest_ = false;

@@ -34,6 +34,7 @@ add_executable(livewdf_tests
     engine/test_engine_smoke.cpp
     engine/test_accounting.cpp
     engine/test_block_solve.cpp
+    engine/test_circuit_plan.cpp
     engine/test_core_contracts.cpp
     engine/test_nan_sentinel.cpp
     engine/test_elements_l_i.cpp
@@ -116,6 +117,9 @@ add_test(NAME livewdf_tests COMMAND livewdf_tests
 
 add_executable(livewdf_bench_circuits bench/bench_circuits.cpp)
 target_link_libraries(livewdf_bench_circuits PRIVATE livewdf_test_support)
+
+add_executable(livewdf_bench_circuit_plan bench/bench_circuit_plan.cpp)
+target_link_libraries(livewdf_bench_circuit_plan PRIVATE livewdf)
 
 add_executable(livewdf_bench bench/bench_stage.cpp)
 target_link_libraries(livewdf_bench PRIVATE livewdf_test_support)

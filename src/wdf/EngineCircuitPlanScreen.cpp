@@ -1,0 +1,109 @@
+#include "wdf/Engine.h"
+
+#include <chrono>
+#include <ctime>
+#include <numbers>
+
+namespace wdf {
+namespace {
+
+double profileSeconds() noexcept {
+#if defined(CLOCK_THREAD_CPUTIME_ID)
+    timespec ts{};
+    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0)
+        return double(ts.tv_sec) + 1e-9 * double(ts.tv_nsec);
+    return std::numeric_limits<double>::quiet_NaN();
+#else
+    return std::chrono::duration<double>(std::chrono::steady_clock::now().time_since_epoch()).count();
+#endif
+}
+
+// The two worker-owned engines start at their DC point with the same controls.
+// Compare the existing Fast Live solver to exactly the plan being published.
+bool winsPlaybackScreen(Engine& candidate, Engine& reference, size_t input, int output) {
+    constexpr size_t blocks = 32, frames = 128;
+    using Clock = std::chrono::steady_clock;
+    const auto stop = Clock::now() + std::chrono::milliseconds(350);
+    std::array<std::array<double, blocks>, 2> elapsed{};
+    std::array<std::array<double, frames>, 2> audio{};
+    std::array<double, frames> drive{};
+    auto sources = reference.dcValues();
+    const double bias = sources[input];
+    const double rate = reference.fs();
+    std::array<Engine*, 2> engines{&reference, &candidate};
+    candidate.useCircuitPlan(true);
+    reference.useCircuitPlan(false);
+    const double secondsPerBlock = frames / rate;
+    int misses[2]{};
+    for (size_t b = 0; b < blocks; ++b) {
+        for (size_t i = 0; i < frames; ++i) {
+            const double time = (b * frames + i) / rate;
+            // Quiet input, clipping, a decaying note, then silence.
+            const double level = b < 8 ? .005 : b < 16 ? 1.2 :
+                b < 24 ? 1.2 * std::exp(-6.0 * ((b - 16) + double(i) / frames) / 8.0) : 0.;
+            const double phase = 2.0 * std::numbers::pi * time;
+            drive[i] = bias + level * (.7 * std::sin(193. * phase) + .3 * std::sin(1327. * phase));
+        }
+        for (size_t order = 0; order < 2; ++order) {
+            const size_t mode = (b + order) % 2;
+            Engine& engine = *engines[mode];
+            const double start = profileSeconds();
+            for (size_t i = 0; i < frames; ++i) {
+                sources[input] = drive[i];
+                audio[mode][i] = engine.step(sources, Engine::kDefaultMaxIterations,
+                                             Engine::kFastLiveTolerance)[output];
+                if (engine.lastStateRejected() || !std::isfinite(audio[mode][i]) ||
+                    ((i % 16) == 15 && Clock::now() >= stop))
+                    return false;
+            }
+            elapsed[mode][b] = profileSeconds() - start;
+            if (!(elapsed[mode][b] > 0.0))
+                return false;
+            misses[mode] += elapsed[mode][b] > secondsPerBlock;
+            if (Clock::now() >= stop)
+                return false;
+        }
+        for (size_t i = 0; i < frames; ++i)
+            if (std::abs(audio[1][i] - audio[0][i]) > 2e-6 + 1e-5 * std::abs(audio[0][i]))
+                return false;
+    }
+    for (auto& times : elapsed)
+        std::sort(times.begin(), times.end());
+    // Require a clear median win without buying it with worse callback tails.
+    return elapsed[1][blocks / 2] < .90 * elapsed[0][blocks / 2] &&
+           elapsed[1][blocks - 2] <= 1.05 * elapsed[0][blocks - 2] &&
+           elapsed[1].back() <= 1.10 * elapsed[0].back() && misses[1] <= misses[0];
+}
+} // namespace
+
+bool Engine::LiveTransferSetup::screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode) {
+    if (!prepared_ || !peer.prepared_)
+        return false;
+    auto& candidate = *prepared_;
+    auto& reference = *peer.prepared_;
+    const bool eligible = !candidate.rootFactors_.empty() || candidate.hasLinearDrivePlan();
+    if (eligible && maskCount_ == peer.maskCount_ &&
+        std::equal(affineMasks_.begin(), affineMasks_.begin() + maskCount_, peer.affineMasks_.begin()) &&
+        rate_ == peer.rate_ && candidate.net_.eG == reference.net_.eG &&
+        inputSource < candidate.dcValues().size() && candidate.dcValues() == reference.dcValues() &&
+        outputNode >= 0 && outputNode < candidate.N_ && outputNode < reference.N_ &&
+        winsPlaybackScreen(candidate, reference, inputSource, outputNode)) {
+        // Screening can refactor the candidate at a hot sample. Publish the
+        // same initial tangent to both channels; the reference never used it.
+        candidate.rootFactors_ = reference.rootFactors_;
+        candidate.rootPivots_ = reference.rootPivots_;
+        candidate.circuitPlanRetry_ = reference.circuitPlanRetry_;
+        return true;
+    }
+
+    for (auto* engine : {&candidate, &reference}) {
+        engine->driveCoefficients_.clear();
+        engine->driveInputs_.clear();
+        engine->rootFactors_.clear();
+        engine->circuitResidualColumns_.clear();
+        engine->rootPivots_.clear();
+    }
+    return false;
+}
+
+} // namespace wdf

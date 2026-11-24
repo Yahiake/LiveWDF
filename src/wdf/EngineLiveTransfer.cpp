@@ -4,8 +4,8 @@
 
 namespace wdf {
 
-bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept {
-    if (setup.prepared_ || !hasAdjustedLiveTransfer() || !explicitRootsAllowed_ || runtimeBlockEnabled_ ||
+bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly) const noexcept {
+    if (setup.prepared_ || hasAdjustedLiveTransfer() == planOnly || !explicitRootsAllowed_ || runtimeBlockEnabled_ ||
         fineBlockSolver_ || powerSagEnabled_ ||
         setup.circuit_.res.size() != circuit_.res.size() ||
         setup.circuit_.pots.size() != circuit_.pots.size() ||
@@ -19,6 +19,13 @@ bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept {
     for (size_t i = 0; i < circuit_.varRes.size(); ++i)
         setup.circuit_.varRes[i].position = circuit_.varRes[i].position;
     setup.owner_ = this;
+    setup.planOnly_ = planOnly;
+    setup.maskCount_ = 0;
+    setup.affineRevision_ = mixedAffineRevision();
+    if (planOnly && blockCount_ == 1) {
+        for (const auto& plan : newtonBlocks_.front().alternateLinearSlopes)
+            setup.affineMasks_[setup.maskCount_++] = plan.linearSlopeMask;
+    }
     setup.rate_ = fs_;
     setup.gridCurrent_ = gridCurrent_;
     setup.linearRevision_ = linearRebuilds();
@@ -28,14 +35,20 @@ bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept {
 
 void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
     prepared_ = std::make_unique<Engine>(circuit_, rate_, gridCurrent_);
-    prepared_->prepareLiveControls();
+    if (!planOnly_)
+        prepared_->prepareLiveControls();
+    if (planOnly_ || prepareAffine)
+        prepared_->prepareCircuitPlan();
     if (prepareAffine)
         prepared_->prepareMixedAffineReduction(inputSource);
+    else if (maskCount_ && prepared_->canPrepareMixedAffineReduction(inputSource))
+        prepared_->compileMixedAffinePlans(std::span(affineMasks_).first(maskCount_));
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
     const auto& prepared = setup.prepared_;
-    return setup.owner_ == this && prepared && hasAdjustedLiveTransfer() &&
+    return setup.owner_ == this && prepared && (hasAdjustedLiveTransfer() != setup.planOnly_) &&
+           (!setup.planOnly_ || setup.affineRevision_ == mixedAffineRevision()) &&
            setup.linearRevision_ == linearRebuilds() &&
            setup.controlRevision_ == liveControlRevision() &&
            explicitRootsAllowed_ && !runtimeBlockEnabled_ && !fineBlockSolver_ &&
@@ -53,6 +66,20 @@ bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const n
 bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     if (!canInstallLiveTransferSetup(setup))
         return false;
+
+    setup.owner_ = nullptr;
+    auto& preparedEngine = *setup.prepared_;
+    driveCoefficients_.swap(preparedEngine.driveCoefficients_);
+    driveInputs_.swap(preparedEngine.driveInputs_);
+    rootFactors_.swap(preparedEngine.rootFactors_);
+    circuitResidualColumns_.swap(preparedEngine.circuitResidualColumns_);
+    rootPivots_.swap(preparedEngine.rootPivots_);
+    circuitPlanCooldown_ = 0;
+    circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
+    if (setup.planOnly_) {
+        circuitPlanRevision_ = linearRebuilds();
+        return true;
+    }
 
     // The old transfer goes back to the control side through setup. Live
     // capacitor/inductor waves, device histories and sample scratch stay put.
@@ -72,6 +99,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     auto prepared = transfer(*setup.prepared_);
     live.swap(prepared);
     ++linearRebuilds_;
+    circuitPlanRevision_ = preparedEngine.circuitPlanPrepared() ? linearRebuilds() : -1;
     return true;
 }
 

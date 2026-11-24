@@ -290,48 +290,60 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         }
         return;
     }
-    long long revision = 0;
+    const auto revisions = [this]() -> TransferRevision {
+        return {leftEngine_->linearRebuilds(), leftEngine_->liveControlRevision(),
+                leftEngine_->mixedAffineRevision(), rightEngine_->mixedAffineRevision()};
+    };
+    TransferRevision revision;
+    bool planOnly = false;
+    const bool fastLive = *apvts_.getRawParameterValue("solve_quality") > 0.5f;
     {
         std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
         if (!lock.owns_lock() || !leftEngine_ || !rightEngine_ || inSourceIndex_ < 0)
             return;
-        if (potsMoving_ || !leftEngine_->hasAdjustedLiveTransfer() ||
-            !rightEngine_->hasAdjustedLiveTransfer()) {
-            observedControlRevision_ = -1;
+        planOnly = !leftEngine_->hasAdjustedLiveTransfer();
+        if (potsMoving_ || leftEngine_->hasAdjustedLiveTransfer() != rightEngine_->hasAdjustedLiveTransfer() ||
+            (planOnly && (!fastLive || (leftEngine_->circuitPlanPrepared() && rightEngine_->circuitPlanPrepared())))) {
+            observedTransferRevision_.reset();
             return;
         }
-        revision = leftEngine_->liveControlRevision();
-        if (observedControlRevision_ != revision) {
-            observedControlRevision_ = revision;
+        revision = revisions();
+        if (observedTransferRevision_ != revision) {
+            observedTransferRevision_ = revision;
             return;
         }
-        if (preparedControlRevision_ == revision || affineWorkerBusy.test(std::memory_order_relaxed))
+        if (preparedTransferRevision_ == revision || affineWorkerBusy.test(std::memory_order_relaxed))
             return;
     }
     SettledTransfer job{engineGeneration_,
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
-                        *apvts_.getRawParameterValue("solve_quality") > 0.5f};
+                        fastLive && !planOnly};
     size_t input = 0;
+    int output = -1;
     {
         std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
-        if (!lock.owns_lock() || potsMoving_ || leftEngine_->liveControlRevision() != revision ||
-            !leftEngine_->captureLiveTransferSetup(job.left) ||
-            !rightEngine_->captureLiveTransferSetup(job.right))
+        if (!lock.owns_lock() || potsMoving_ ||
+            revisions() != revision ||
+            !leftEngine_->captureLiveTransferSetup(job.left, planOnly) ||
+            !rightEngine_->captureLiveTransferSetup(job.right, planOnly))
             return;
         input = static_cast<size_t>(inSourceIndex_);
+        output = outNodeIndex_;
     }
     if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
         return;
     try {
         settledTransferJob_ = std::async(std::launch::async,
-            [work = std::move(job), input]() mutable {
+            [work = std::move(job), input, output, fastLive]() mutable {
                 const AffineWorkerSlot slot;
                 work.left.build(input, work.affine);
                 work.right.build(input, work.affine);
+                if (fastLive)
+                    work.left.screenCircuitPlan(work.right, input, output);
                 return std::move(work);
             });
-        preparedControlRevision_ = revision;
+        preparedTransferRevision_ = revision;
     } catch (const std::exception&) {
         affineWorkerBusy.clear(std::memory_order_release);
     }
@@ -603,7 +615,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     }
     cacheDocument_ = std::make_shared<const std::string>(doc.toJson());
     settledControlCircuit_ = std::move(newSettledControlCircuit);
-    observedControlRevision_ = preparedControlRevision_ = -1;
+    observedTransferRevision_.reset();
+    preparedTransferRevision_.reset();
 
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the

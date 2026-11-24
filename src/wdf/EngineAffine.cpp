@@ -6,10 +6,6 @@
 
 namespace wdf {
 
-namespace {
-constexpr size_t planLimit = 5;
-}
-
 bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
     if (hasAdjustedLiveTransfer() || blockCount_ != 1)
         return false;
@@ -74,7 +70,13 @@ bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
     if (setup.owner_ != this || setup.revision_ != linearRebuilds() || setup.rate_ != fs_ ||
         !canPrepareMixedAffineReduction(setup.input_) || setup.transfer_ != Z_)
         return false;
-    newtonBlocks_.front().alternateLinearSlopes.swap(setup.plans_);
+    auto& live = newtonBlocks_.front().alternateLinearSlopes;
+    if (!std::equal(live.begin(), live.end(), setup.plans_.begin(), setup.plans_.end(),
+                    [](const auto& a, const auto& b) { return a.linearSlopeMask == b.linearSlopeMask; })) {
+        ++mixedAffineRevision_;
+        circuitPlanRevision_ = -1; // Reprice against the new Fast Live baseline.
+    }
+    live.swap(setup.plans_);
     return true;
 }
 

@@ -19,6 +19,8 @@ class EngineStep : public EngineCompile {
 public:
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
+        circuitPlanCooldown_ = 0;
+        circuitPlanRetry_ = 8;
         resetControlledDevices();
         std::vector<double> node, rootV;
         const bool haveDc =
@@ -166,6 +168,17 @@ public:
 
     static constexpr int kDefaultMaxIterations = 60;
     static constexpr double kDefaultTolerance = 1e-9;
+    static constexpr double kFastLiveTolerance = 1e-7;
+
+    /// Compile at the current operating point outside the audio callback.
+    void prepareCircuitPlan();
+    void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
+    bool hasLinearDrivePlan() const noexcept {
+        return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
+    }
+    long long circuitPlanAttempts() const noexcept { return circuitPlanAttempts_; }
+    long long circuitPlanHits() const noexcept { return circuitPlanHits_; }
 
     /// Advance one sample. Returns the node voltages (indexed like `nodeNames()`).
     const std::vector<double>& step(const std::vector<double>& sourceValues,
@@ -182,6 +195,14 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    bool factorCircuitTangent(const std::vector<double>& jacobian) noexcept;
+    bool tryCompiledRoot(double tolerance) noexcept;
+    bool applyCompiledDrive(const double* sources, size_t count) noexcept;
+    std::vector<double> driveCoefficients_, driveInputs_, rootFactors_, circuitResidualColumns_;
+    std::vector<int> rootPivots_;
+    long long circuitPlanRevision_ = -1, circuitPlanAttempts_ = 0, circuitPlanHits_ = 0;
+    int circuitPlanCooldown_ = 0, circuitPlanRetry_ = 8;
+    bool circuitPlanEnabled_ = false;
     void resetControlledDevices() {
         for (const auto& photo : photoresistors_)
             ctrlResValues_[photo.index] = circuit_.ctrlRes[photo.index].initialOhms;

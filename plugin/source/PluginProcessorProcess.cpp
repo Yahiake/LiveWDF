@@ -126,9 +126,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
-    constexpr double kFastLiveTolerance = 1e-7;
     const double solveTolerance = fastLive
-        ? kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
+        ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
     // The output scale: the volts the circuit makes at full input, read off
@@ -151,8 +150,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     readLivePotTargets();
     applySettledLiveTransfer(processStereo);
     leftEngine_->useMixedAffineReduction(fastLive);
-    if (processStereo)
+    leftEngine_->useCircuitPlan(fastLive);
+    if (processStereo) {
         rightEngine_->useMixedAffineReduction(fastLive);
+        rightEngine_->useCircuitPlan(fastLive);
+    }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
     if (processStereo)
