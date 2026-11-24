@@ -1,6 +1,8 @@
 #include "wdf/Engine.h"
+#include "wdf/BipolarPreviewQualification.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <limits>
 #include <numbers>
@@ -50,7 +52,9 @@ struct Engine::BipolarPreview {
     long long transfer{}, controls{};
     int states{};
     bool active = false, tripped = false, qualifying = false;
-    double biasInput{}, biasOutput{};
+    double biasInput{}, biasOutput{}, scale = 1., peak = qualificationPeak;
+    int rearmFrames = 0, quietFrames = 0;
+    Values biasNodes;
     Values biasState, biasVoltage, biasCurrent, jacobian;
     Rows voltage, transition, handoffNodes, handoffRoots;
     Values drive, next, terminals, actualCurrent, acceptedDrive;
@@ -58,7 +62,7 @@ struct Engine::BipolarPreview {
     std::vector<size_t> devices;
 };
 
-bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode) {
+bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double requestedPeak, bool allowPad) {
     releaseBipolarPreview();
     bipolarPreview_.reset();
     const int nx = nCaps_ + nInds_;
@@ -94,6 +98,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode) {
     p.biasState = bias.capState_;
     p.biasState.insert(p.biasState.end(), bias.indState_.begin(), bias.indState_.end());
     p.biasOutput = dcNodes[outputNode];
+    p.biasNodes = dcNodes;
     if (!allFinite(p.biasState) || !allFinite(p.biasCurrent) || !allFinite(p.jacobian))
         return false;
 
@@ -303,32 +308,160 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode) {
         bipolarPreview_ = std::move(reduced);
         if (!qualify(*bipolarPreview_)) bipolarPreview_ = std::move(full);
     }
+    bipolarPreview_->rearmFrames = std::clamp(int(std::round(.002 * fs_)), 32, 1024);
+    if (std::isfinite(requestedPeak) && requestedPeak > qualificationPeak && requestedPeak <= lim_.maxNodeVolts)
+        qualifyBipolarPreviewRange(inputSource, outputNode, requestedPeak, allowPad);
     return true;
+}
+
+void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, bool allowPad) {
+    using Clock = std::chrono::steady_clock;
+    const engine::BipolarPreviewStimulus stimulus(fs_, peak);
+    const int w = stimulus.period, frames = int(stimulus.input.size());
+    const auto& plan = *bipolarPreview_;
+    struct Handoff {
+        int frame;
+        Values nodes, caps, inds;
+    };
+    std::array<Handoff, 3> handoffs{{{5*w + w/4, {}, {}, {}},
+                                     {8*w + w/3, {}, {}, {}},
+                                     {10*w + w/8 - 1, {}, {}, {}}}};
+    Engine oracle(circuit_, fs_, gridCurrent_);
+    if (oracle.Z_ != Z_) return;
+    auto sources = oracle.dcValues();
+    Values expected(frames), rendered(frames);
+    for (int i = 0; i < frames; ++i) {
+        sources[source] = plan.biasInput + stimulus.input[i];
+        const auto& nodes = oracle.step(sources);
+        if (!oracle.lastConverged() || oracle.lastStateRejected() || !std::isfinite(nodes[output])) return;
+        expected[i] = nodes[output] - plan.biasOutput;
+        for (auto& state : handoffs) {
+            if (state.frame != i) continue;
+            state.nodes = nodes;
+            state.caps = oracle.capState_;
+            state.inds = oracle.indState_;
+        }
+    }
+
+    // Time the existing Fast Live root at the same hot two-tone points. The
+    // complete Accurate trajectory above remains the independent sound reference.
+    Engine fast(circuit_, fs_, gridCurrent_), trial(circuit_, fs_, gridCurrent_);
+    fast.prepareCircuitPlan();
+    fast.useCircuitPlan(true);
+    fast.useMixedAffineReduction(true);
+    constexpr int block = 64;
+    const int timedStart = 6*w, timedEnd = 9*w;
+    Values physicalTimes;
+    for (int begin = timedStart; begin + block <= timedEnd; begin += block) {
+        const auto start = Clock::now();
+        for (int i = begin; i < begin + block; ++i) {
+            sources[source] = plan.biasInput + stimulus.input[i];
+            fast.step(sources, kDefaultMaxIterations, kFastLiveTolerance);
+        }
+        physicalTimes.push_back(std::chrono::duration<double>(Clock::now() - start).count());
+    }
+    std::sort(physicalTimes.begin(), physicalTimes.end());
+
+    trial.bipolarPreview_ = std::make_shared<BipolarPreview>(plan);
+    auto& candidate = *trial.bipolarPreview_;
+    candidate.transfer = trial.linearRebuilds();
+    candidate.controls = trial.liveControlRevision();
+    candidate.peak = peak;
+    candidate.rearmFrames = plan.rearmFrames;
+    const auto closeState = [](double actual, double reference, double dc) {
+        return std::isfinite(actual) && std::abs(actual - reference) <= .015 + .025 * std::abs(reference - dc);
+    };
+    const auto checkHandoff = [&](const Handoff& state) {
+        trial.releaseBipolarPreview();
+        for (int n = 0; n < N_; ++n)
+            if (!closeState(trial.node_[n], state.nodes[n], plan.biasNodes[n])) return false;
+        for (int n = 0; n < nCaps_; ++n)
+            if (!closeState(trial.capState_[n], state.caps[n], plan.biasState[n])) return false;
+        for (int n = 0; n < nInds_; ++n)
+            if (!closeState(trial.indState_[n], state.inds[n], plan.biasState[nCaps_ + n])) return false;
+        return true;
+    };
+
+    const auto passes = [&](double scale) {
+        trial.reset();
+        candidate.scale = scale;
+        bool physicalSample = false;
+        Values times;
+        auto start = Clock::now();
+        for (int i = 0; i < frames; ++i) {
+            const int offset = i - timedStart;
+            if (offset >= 0 && i < timedEnd && offset % block == 0) start = Clock::now();
+            sources[source] = plan.biasInput + stimulus.input[i];
+            double y;
+            const bool active = !physicalSample && trial.stepBipolarPreview(sources[source], y);
+            if (!active) {
+                // Force a real full-drive step after a measured state handoff.
+                // A deliberate over-range impulse must fall back and later rearm.
+                const bool inRecovery = i >= stimulus.overloadSection*w && i <= stimulus.overloadSection*w + candidate.rearmFrames;
+                if (!physicalSample && !inRecovery) return false;
+                y = trial.step(sources, kDefaultMaxIterations, kFastLiveTolerance)[output];
+                if (!trial.lastConverged() || trial.lastStateRejected()) return false;
+            } else if (i == stimulus.overloadSection*w) {
+                return false;
+            }
+            physicalSample = false;
+            rendered[i] = y - plan.biasOutput;
+            if (offset >= 0 && i < timedEnd && offset % block == block - 1)
+                times.push_back(std::chrono::duration<double>(Clock::now() - start).count());
+            for (const auto& state : handoffs) {
+                if (state.frame != i) continue;
+                if (!checkHandoff(state)) return false;
+                physicalSample = true;
+            }
+        }
+        std::sort(times.begin(), times.end());
+        const size_t mid = times.size()/2, q3 = 3*times.size()/4;
+        return times[mid] < .8 * physicalTimes[mid] && times[q3] < .95 * physicalTimes[q3] &&
+               engine::bipolarPreviewWaveformMatches(expected, rendered) &&
+               stimulus.matchesColor(expected, rendered);
+    };
+    for (double scale : {1., .5, .25}) {
+        if (scale != 1. && !allowPad) break;
+        if (!passes(scale)) continue;
+        bipolarPreview_->scale = scale;
+        bipolarPreview_->peak = peak;
+        bipolarPreview_->rearmFrames = candidate.rearmFrames;
+        return;
+    }
 }
 
 bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept {
     if (!bipolarPreview_) return false;
     auto& p = *bipolarPreview_;
-    if (p.tripped || p.transfer != linearRebuilds() || p.controls != liveControlRevision() ||
+    if (p.transfer != linearRebuilds() || p.controls != liveControlRevision() ||
         hasAdjustedLiveTransfer()) {
         releaseBipolarPreview();
         return false;
     }
+    const double input = inputVolts - p.biasInput;
+    if (p.tripped) {
+        if (!p.rearmFrames) return false;
+        if (!lastConverged() || lastStateRejected_ || !(std::abs(input) <= p.peak / 8.)) p.quietFrames = 0;
+        else if (++p.quietFrames >= p.rearmFrames) p.tripped = false;
+        if (p.tripped) return false;
+    }
     const auto reject = [&]() {
         releaseBipolarPreview();
         p.tripped = true;
+        p.quietFrames = 0;
         return false;
     };
-    if (!(std::abs(inputVolts - p.biasInput) <= static_cast<float>(qualificationPeak)))
+    // The worker uses double test voltages and the host supplies rounded float samples.
+    if (!(std::abs(input) <= std::max(p.peak, double(static_cast<float>(p.peak)))))
         return reject();
 
     const int nx = p.states, defect = nx + 2;
     if (!p.active) {
-        for (int i = 0; i < nCaps_; ++i) p.drive[i] = capState_[i] - p.biasState[i];
+        for (int i = 0; i < nCaps_; ++i) p.drive[i] = p.scale * (capState_[i] - p.biasState[i]);
         for (int i = 0; i < nInds_; ++i)
-            p.drive[nCaps_ + i] = indState_[i] - p.biasState[nCaps_ + i];
+            p.drive[nCaps_ + i] = p.scale * (indState_[i] - p.biasState[nCaps_ + i]);
     }
-    p.drive[nx] = inputVolts - p.biasInput;
+    p.drive[nx] = input * p.scale;
     int column = 0;
     for (size_t index : p.devices) {
         const auto& dev = rootDevices_[index];
@@ -349,7 +482,7 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
         p.next[r] = dot(p.transition[r], p.drive.data(), p.transition.width);
         if (!(std::abs(p.next[r]) <= p.stateLimit[r])) return reject();
     }
-    const double y = p.biasOutput + dot(p.transition[nx], p.drive.data(), p.transition.width);
+    const double y = p.biasOutput + dot(p.transition[nx], p.drive.data(), p.transition.width) / p.scale;
     if (!(std::abs(y) <= lim_.maxNodeVolts)) return reject();
 
     std::copy(p.drive.begin(), p.drive.end(), p.acceptedDrive.begin());
@@ -359,6 +492,14 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
     return true;
 }
 
+double Engine::bipolarPreviewInputScale() const noexcept {
+    return bipolarPreview_ ? bipolarPreview_->scale : 1.;
+}
+
+double Engine::bipolarPreviewPeakInput() const noexcept {
+    return bipolarPreview_ ? bipolarPreview_->peak : 0.;
+}
+
 bool Engine::bipolarPreviewActive() const noexcept {
     return bipolarPreview_ && bipolarPreview_->active;
 }
@@ -366,20 +507,22 @@ bool Engine::bipolarPreviewActive() const noexcept {
 void Engine::releaseBipolarPreview() noexcept {
     if (!bipolarPreviewActive() || bipolarPreview_->qualifying) return;
     auto& p = *bipolarPreview_;
-    for (int j = 0; j < nCaps_; ++j) capState_[j] = p.biasState[j] + p.drive[j];
+    for (int j = 0; j < nCaps_; ++j) capState_[j] = p.biasState[j] + p.drive[j] / p.scale;
     for (int j = 0; j < nInds_; ++j)
-        indState_[j] = p.biasState[j + nCaps_] + p.drive[j + nCaps_];
+        indState_[j] = p.biasState[j + nCaps_] + p.drive[j + nCaps_] / p.scale;
 
     // Reconstruct the last accepted sample, including its current correction.
     // A rejected input still belongs to the normal solver when this returns.
     for (int r = 0; r < K_; ++r)
-        vv_[r] = p.biasVoltage[r] + dot(p.handoffRoots[r], p.acceptedDrive.data(), p.handoffRoots.width);
+        vv_[r] = p.biasVoltage[r] + dot(p.handoffRoots[r], p.acceptedDrive.data(), p.handoffRoots.width) / p.scale;
     for (const auto& dev : rootDevices_)
         currentsForDevice(dev, vv_.data(), ii_.data(), nullptr);
     vvPrev_ = vv_;
     vvPrev2_ = vv_;
-    for (int n = 0; n < N_; ++n)
-        node_[n] = dot(p.handoffNodes[n], p.acceptedDrive.data(), p.handoffNodes.width);
+    for (int n = 0; n < N_; ++n) {
+        const double node = dot(p.handoffNodes[n], p.acceptedDrive.data(), p.handoffNodes.width);
+        node_[n] = p.biasNodes[n] + (node - p.biasNodes[n]) / p.scale;
+    }
     lastStateRejected_ = false;
     consecutiveStateRejects_ = 0;
     p.active = false;
@@ -388,6 +531,7 @@ void Engine::releaseBipolarPreview() noexcept {
 void Engine::resetBipolarPreviewHistory() noexcept {
     bipolarPreview_->active = false;
     bipolarPreview_->tripped = false;
+    bipolarPreview_->quietFrames = 0;
 }
 
 void Engine::adoptBipolarPreview(Engine& prepared) noexcept {

@@ -63,7 +63,9 @@ public:
 
     // A single-output approximation for static BJT/diode networks. Preparation
     // allocates and qualifies the fixed schematic away from the audio thread.
-    bool prepareBipolarPreview(size_t inputSource, int outputNode);
+    bool prepareBipolarPreview(size_t inputSource, int outputNode, double requestedPeak = 1.2, bool allowPad = false);
+    double bipolarPreviewInputScale() const noexcept;
+    double bipolarPreviewPeakInput() const noexcept;
     /// Off-thread preparation and playback screen against the current Fast solve.
     bool prepareAffineNodePreview(size_t inputSource, int outputNode);
     bool stepBipolarPreview(double inputVolts, double& outputVolts) noexcept;
@@ -112,7 +114,8 @@ public:
     public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
         void build(size_t inputSource, bool prepareAffine);
-        void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly);
+        void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                    double requestedPeak = 1.2, bool allowPad = false);
         /// Compare the prepared channels on the worker and drop unprofitable plans.
         bool screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode);
 
@@ -132,13 +135,15 @@ public:
     /// original circuit. Build on a worker; installation keeps live DSP state.
     /// planOnly snapshots an unadjusted transfer and installs just its solver plan.
     bool captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly = false) const noexcept;
-    void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly);
+    void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                double requestedPeak = 1.2, bool allowPad = false);
     bool canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept;
     bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 
 private:
     long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
+    void qualifyBipolarPreviewRange(size_t inputSource, int outputNode, double peak, bool allowPad);
     void resetBipolarPreviewHistory() noexcept;
     struct BipolarPreview;
     std::shared_ptr<BipolarPreview> bipolarPreview_;

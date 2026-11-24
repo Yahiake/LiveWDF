@@ -194,6 +194,8 @@ struct LiveWDFDocument {
     std::string category = "Custom";
     std::string author = "LiveWDF User";
     std::string description = "";
+    // Permit Preview to test a compensated input pad over a verified clean range.
+    bool allowPreviewInputPad = false;
 
     // Standard I/O Nodes
     //

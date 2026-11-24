@@ -168,3 +168,15 @@ TEST_CASE("The Input and Output terminals survive a save and reopen") {
     CHECK(back.outputNet() == "out");
     CHECK(back.outputFullScaleVolts() == 240.0);
 }
+
+TEST_CASE("A document permits Preview input padding only when explicitly saved") {
+    auto document = terminalDocument();
+    const auto existing = document.toJson();
+    document.allowPreviewInputPad = true;
+    wdf::LiveWDFDocument loaded;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(document.toJson(), loaded, error));
+    CHECK(loaded.allowPreviewInputPad);
+    REQUIRE(wdf::LiveWDFDocument::fromJson(existing, loaded, error));
+    CHECK_FALSE(loaded.allowPreviewInputPad);
+}

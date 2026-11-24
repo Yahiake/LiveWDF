@@ -14,6 +14,17 @@ namespace livewdf {
 
 namespace {
 
+// Historic studio drawings annotate the input with its nominal peak voltage.
+// This selects a trial level for the worker. The input reference controls the voltage applied during playback.
+double previewPeakVolts(const wdf::LiveWDFDocument& doc) {
+    if (const auto* input = doc.terminal("in")) {
+        const auto it = input->values.find("fullScaleVolts");
+        if (it != input->values.end() && std::isfinite(it->second) && it->second > 1.2)
+            return it->second;
+    }
+    return 2. * doc.inputVoltsPerFullScale();
+}
+
 // The low-frequency group delay is the first moment of the oversampling
 // round trip. Measure after decimation so the phase of the decimator is included.
 float halfBandLatency(wdf::OversamplingFactor factor) {
@@ -284,8 +295,10 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
             !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer() && (!previewPrepared_ ||
                 previewLinearRevision_ != leftEngine_->linearRebuilds() ||
                 previewControlRevision_ != leftEngine_->liveControlRevision())) {
+            const double peak = previewPeakVolts(currentDoc_);
             for (auto* engine : {leftEngine_.get(), rightEngine_.get()})
-                engine->prepareCompiledPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_, outputOnlyPreviewAllowed_);
+                engine->prepareCompiledPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_,
+                                               outputOnlyPreviewAllowed_, peak, currentDoc_.allowPreviewInputPad);
             previewPrepared_ = true;
             previewLinearRevision_ = leftEngine_->linearRebuilds();
             previewControlRevision_ = leftEngine_->liveControlRevision();
@@ -353,7 +366,8 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
                         wdf::Engine::LiveTransferSetup(settledControlCircuit_),
                         fastLive && !planOnly};
     job.compilePreview = needsPreview;
-    bool allowOutputOnly = false;
+    bool allowOutputOnly = false, allowPad = false;
+    double peak = 0.;
     size_t input = 0;
     int output = -1;
     {
@@ -366,20 +380,22 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         input = static_cast<size_t>(inSourceIndex_);
         output = outNodeIndex_;
         allowOutputOnly = outputOnlyPreviewAllowed_;
+        peak = previewPeakVolts(currentDoc_);
+        allowPad = currentDoc_.allowPreviewInputPad;
     }
     if (affineWorkerBusy.test_and_set(std::memory_order_acquire))
         return;
     try {
         settledTransferJob_ = std::async(std::launch::async,
-            [work = std::move(job), input, output, fastLive, allowOutputOnly]() mutable {
+            [work = std::move(job), input, output, fastLive, allowOutputOnly, peak, allowPad]() mutable {
                 const AffineWorkerSlot slot;
                 work.left.build(input, work.affine);
                 work.right.build(input, work.affine);
                 if (fastLive)
                     work.left.screenCircuitPlan(work.right, input, output);
                 if (work.compilePreview) {
-                    work.left.prepareCompiledPreview(input, output, allowOutputOnly);
-                    work.right.prepareCompiledPreview(input, output, allowOutputOnly);
+                    work.left.prepareCompiledPreview(input, output, allowOutputOnly, peak, allowPad);
+                    work.right.prepareCompiledPreview(input, output, allowOutputOnly, peak, allowPad);
                 }
                 return std::move(work);
             });

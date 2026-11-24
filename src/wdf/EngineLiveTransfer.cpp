@@ -45,20 +45,22 @@ void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
         prepared_->compileMixedAffinePlans(std::span(affineMasks_).first(maskCount_));
 }
 
-void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly) {
+void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                                       double requestedPeak, bool allowPad) {
     if (!prepared_)
         return;
     compiledPreview_ = true;
     // Performance screening may leave the worker at the end of its test signal.
     // Compile each channel at its physical DC point. Live histories stay on the recipient.
     prepared_->reset();
-    prepared_->prepareCompiledPreview(inputSource, outputNode, allowOutputOnly);
+    prepared_->prepareCompiledPreview(inputSource, outputNode, allowOutputOnly, requestedPeak, allowPad);
 }
 
-void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly) {
+void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                    double requestedPeak, bool allowPad) {
     if (prepareAffineNodePreview(inputSource, outputNode))
         return;
-    if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode))
+    if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode, requestedPeak, allowPad))
         return;
     prepareLoadedJunctionPreview(inputSource);
 }

@@ -280,6 +280,17 @@ TEST_CASE("Physical stepping and reset resume the reactive state of bipolar Prev
     REQUIRE(candidate.stepBipolarPreview(sources[0], voltage));
     REQUIRE(voltage == Approx(reference.step(sources)[output]).margin(1e-8));
     REQUIRE_FALSE(candidate.stepBipolarPreview(5., voltage));
+    sources[0] = 5.;
+    candidate.step(sources);
+    reference.step(sources);
+    sources[0] = 0.;
+    for (int n = 0; n < 95; ++n) {
+        REQUIRE_FALSE(candidate.stepBipolarPreview(0., voltage));
+        candidate.step(sources);
+        reference.step(sources);
+    }
+    REQUIRE(candidate.stepBipolarPreview(0., voltage));
+    CHECK(voltage == Approx(reference.step(sources)[output]).margin(2e-6));
     candidate.reset();
     REQUIRE(candidate.stepBipolarPreview(0., voltage));
 }
