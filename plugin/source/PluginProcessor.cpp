@@ -296,6 +296,8 @@ void LiveWDFPluginProcessor::preparePreview() {
         previewStatus_.store(PreviewStatus::off);
         return;
     }
+    if (previewStatus() == PreviewStatus::render)
+        previewRequest_ = 0;  // Resume requested live playback after the offline render.
     if (previewRequest_ == engineGeneration_ || previewJob_.valid()) return;
     previewRequest_ = previewJobGeneration_ = engineGeneration_;
     if (attemptedOversamplingChoice_ != 0 || !attemptedGridCurrent_) {
