@@ -132,6 +132,7 @@ public:
     /// original circuit. Build on a worker; installation keeps live DSP state.
     /// planOnly snapshots an unadjusted transfer and installs just its solver plan.
     bool captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly = false) const noexcept;
+    void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly);
     bool canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept;
     bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 

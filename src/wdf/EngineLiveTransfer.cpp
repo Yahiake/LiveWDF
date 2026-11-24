@@ -52,8 +52,15 @@ void Engine::LiveTransferSetup::prepareCompiledPreview(size_t inputSource, int o
     // Performance screening may leave the worker at the end of its test signal.
     // Compile each channel at its physical DC point. Live histories stay on the recipient.
     prepared_->reset();
-    if (!allowOutputOnly || !prepared_->prepareBipolarPreview(inputSource, outputNode))
-        prepared_->prepareLoadedJunctionPreview(inputSource);
+    prepared_->prepareCompiledPreview(inputSource, outputNode, allowOutputOnly);
+}
+
+void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly) {
+    if (prepareAffineNodePreview(inputSource, outputNode))
+        return;
+    if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode))
+        return;
+    prepareLoadedJunctionPreview(inputSource);
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
@@ -94,6 +101,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
     const auto installPreview = [&] {
         if (setup.compiledPreview_) {
+            swapAffineNodePreview(preparedEngine);
             adoptBipolarPreview(preparedEngine);
             swapLoadedJunctionPreview(preparedEngine);
         }
