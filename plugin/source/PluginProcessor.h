@@ -191,6 +191,7 @@ private:
     std::future<SettledTransfer> settledTransferJob_;
     std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
     bool settledTransferPublished_ = false;
+    bool initialTransferPending_ = false;
     using TransferRevision = std::array<long long, 4>; // transfer, controls, channel affine plans
     std::optional<TransferRevision> observedTransferRevision_, preparedTransferRevision_;
     wdf::Circuit settledControlCircuit_;

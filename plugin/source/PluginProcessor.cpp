@@ -310,7 +310,8 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
         revision = revisions();
         if (observedTransferRevision_ != revision) {
             observedTransferRevision_ = revision;
-            return;
+            if (!initialTransferPending_)
+                return;
         }
         if (preparedTransferRevision_ == revision || affineWorkerBusy.test(std::memory_order_relaxed))
             return;
@@ -344,6 +345,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer() {
                 return std::move(work);
             });
         preparedTransferRevision_ = revision;
+        initialTransferPending_ = false;
     } catch (const std::exception&) {
         affineWorkerBusy.clear(std::memory_order_release);
     }
@@ -753,6 +755,14 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         rightEngine_->prepareLiveControls();
     }
 
+    // A fresh document already has settled controls. Start its background
+    // screen before a heavy circuit can saturate the playback callbacks.
+    initialTransferPending_ = true;
+    if (!isNonRealtime() && *apvts_.getRawParameterValue("solve_quality") > 0.5f) {
+        if (auto* manager = juce::MessageManager::getInstanceWithoutCreating();
+            manager != nullptr && manager->isThisTheMessageThread())
+            prepareSettledLiveTransfer();
+    }
     return true;
 }
 
