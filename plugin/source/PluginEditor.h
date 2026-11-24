@@ -55,6 +55,7 @@ private:
     juce::TextButton aboutBtn_ { "ABOUT" };
 
     juce::ComboBox oversamplingCombo_;
+    juce::ToggleButton previewBtn_{"Preview"};
     juce::ToggleButton reportLatencyBtn_{"Report latency"};
     juce::ToggleButton oversampleExportBtn_ { "4× export" };
     juce::ComboBox solveQualityCombo_;
@@ -112,7 +113,7 @@ private:
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
     std::unique_ptr<ComboBoxAttachment> oversamplingAttach_;
-    std::unique_ptr<ButtonAttachment> reportLatencyAttach_;
+    std::unique_ptr<ButtonAttachment> reportLatencyAttach_, previewAttach_;
     std::unique_ptr<ButtonAttachment> oversampleExportAttach_;
     std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;

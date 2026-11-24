@@ -116,6 +116,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"export_4x", 1}, "4x export", true));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"model_preview", 1}, "Model Preview", false,
+        juce::AudioParameterBoolAttributes().withAutomatable(false)));
+
     return { params.begin(), params.end() };
 }
 
@@ -246,10 +250,67 @@ void LiveWDFPluginProcessor::timerCallback() {
         lastError_ = "Could not apply a live control setting";
     applyPendingCircuitOptions();
     if (!isNonRealtime() && !currentDoc_.components.empty()) {
-        prepareSettledLiveTransfer();
-        prepareFastLiveAffine();
+        preparePreview();
+        if (previewStatus() != PreviewStatus::active && previewStatus() != PreviewStatus::experimental) {
+            prepareSettledLiveTransfer();
+            prepareFastLiveAffine();
+        }
     }
     updateReportedLatency();
+}
+
+const char* LiveWDFPluginProcessor::previewLabel() const noexcept {
+    switch (previewStatus()) {
+        case PreviewStatus::loading: return "Loading fit";
+        case PreviewStatus::unavailable: return "No fit";
+        case PreviewStatus::armed: return "Preview ready";
+        case PreviewStatus::active: return "Preview active";
+        case PreviewStatus::experimental: return "Experimental";
+        case PreviewStatus::controls: return "Full: controls";
+        case PreviewStatus::range: return "Full: level";
+        case PreviewStatus::options: return "Full: settings";
+        case PreviewStatus::render: return "Full: export";
+        case PreviewStatus::off: return "Preview";
+    }
+    return "Preview";
+}
+
+void LiveWDFPluginProcessor::preparePreview() {
+    const bool enabled = *apvts_.getRawParameterValue("model_preview") > 0.5f;
+    if (previewJob_.valid() && previewJob_.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+        std::unique_ptr<PreviewPlayback> result;
+        try { result = previewJob_.get(); } catch (const std::exception&) {}
+        if (enabled && previewRequest_ && previewJobGeneration_ == engineGeneration_) {
+            if (!result) previewStatus_.store(PreviewStatus::unavailable);
+            else {
+                // Start both the model and its physical fallback from a fresh operating point.
+                const auto file = currentFile_;
+                if (!loadCircuitDocument(currentDoc_, false, std::move(result)))
+                    previewStatus_.store(PreviewStatus::unavailable);
+                currentFile_ = file;
+            }
+        }
+    }
+    if (!enabled) {
+        previewRequest_ = 0;
+        previewStatus_.store(PreviewStatus::off);
+        return;
+    }
+    if (previewRequest_ == engineGeneration_ || previewJob_.valid()) return;
+    previewRequest_ = previewJobGeneration_ = engineGeneration_;
+    if (attemptedOversamplingChoice_ != 0 || !attemptedGridCurrent_) {
+        previewStatus_.store(PreviewStatus::options);
+        return;
+    }
+    previewStatus_.store(PreviewStatus::loading);
+    try {
+        previewJob_ = std::async(std::launch::async,
+            [doc = cacheDocument_, file = currentFile_, rate = sampleRate_] {
+                return loadPreviewPlayback(*doc, file, rate);
+            });
+    } catch (const std::system_error&) {
+        previewStatus_.store(PreviewStatus::unavailable);
+    }
 }
 
 void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
@@ -582,7 +643,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 }
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc,
-                                                 bool initializePotParameters) {
+                                                 bool initializePotParameters,
+                                                 std::unique_ptr<PreviewPlayback> preview) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     lastError_.clear();
     liveControlUpdateFailed_.store(false, std::memory_order_relaxed);
@@ -633,6 +695,14 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         leftEngine_ = std::move(newLeft);
         rightEngine_ = std::move(newRight);
         ++engineGeneration_;
+        preview_ = std::move(preview);
+        previewRequest_ = preview_ ? engineGeneration_ : 0;
+        previewPlaying_ = false;
+        previewStereo_ = false;
+        transitionRemaining_ = 0;
+        transitionLength_ = std::max(1, int(sampleRate_ * 0.003));
+        previewStatus_.store(preview_ ? PreviewStatus::armed : PreviewStatus::off);
+        snapshotControlsAgree_ = true;
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
@@ -736,8 +806,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         // not a sample-rate rebuild, so the saved `pos` becomes the knob value;
         // an oversampling change calls the private overload with `false` and
         // leaves the user's knob where it is.
-        if (initializePotParameters)
-            syncPotParametersFromDocument(doc);
+        syncPotParametersFromDocument(doc, initializePotParameters);
 
         // Start at the saved knob positions. Measure ramp progress in host
         // samples so oversampling does not change the feel of the controls.
@@ -757,10 +826,11 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     return true;
 }
 
-void LiveWDFPluginProcessor::syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc) {
+void LiveWDFPluginProcessor::syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc, bool notify) {
     const int potLimit = std::min(kMaxPotKnobs, static_cast<int>(potGroupsInCircuit_.size()));
     for (int i = 0; i < potLimit; ++i) {
         double pos = 0.5;
+        bool found = false;
         for (const auto& member : potGroupsInCircuit_[static_cast<size_t>(i)].members) {
             const auto comp = std::find_if(doc.components.begin(), doc.components.end(),
                                            [&](const wdf::SchematicComponent& c) {
@@ -771,11 +841,15 @@ void LiveWDFPluginProcessor::syncPotParametersFromDocument(const wdf::LiveWDFDoc
 
             const auto it = comp->values.find("pos");
             if (it != comp->values.end()) {
-                pos = std::clamp(it->second, 0.0, 1.0);
-                break;
+                const double value = std::clamp(it->second, 0.0, 1.0);
+                if (found && pos != value) snapshotControlsAgree_ = false;
+                if (!found) pos = value;
+                found = true;
             }
         }
 
+        previewPots_[static_cast<size_t>(i)] = pos;
+        if (!notify) continue;
         const juce::String potId = "pot_" + juce::String(i);
         if (auto* param = apvts_.getParameter(potId))
             param->setValueNotifyingHost(param->convertTo0to1(static_cast<float>(pos)));
@@ -891,12 +965,19 @@ std::map<std::string, bool> LiveWDFPluginProcessor::getLiveSwitchStates() const 
 }
 
 void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
+    const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     std::lock_guard<std::mutex> lock(engineMutex_);
 
     if (index < 0 || index >= static_cast<int>(switchGroupsInCircuit_.size())
         || index >= static_cast<int>(switchGroupStates_.size()))
         return;
 
+    if (switchGroupStates_[static_cast<size_t>(index)] == throwB) return;
+    // A switch changes the document digest, including while a worker is reading it.
+    ++engineGeneration_;
+    previewRequest_ = engineGeneration_;
+    snapshotControlsAgree_ = false;
+    if (preview_) previewStatus_.store(PreviewStatus::controls);
     // The editor reads the throws through `controlMutex_`; the audio thread
     // reads them under the engine lock, which we already hold. Lock order is
     // engine -> control everywhere, so the two cannot deadlock.
