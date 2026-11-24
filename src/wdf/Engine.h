@@ -45,6 +45,15 @@ public:
         reset();
     }
 
+    // A single-output approximation for static BJT/diode networks. Preparation
+    // allocates and qualifies the fixed schematic away from the audio thread.
+    bool prepareBipolarPreview(size_t inputSource, int outputNode);
+    bool stepBipolarPreview(double inputVolts, double& outputVolts) noexcept;
+    bool bipolarPreviewActive() const noexcept;
+    void releaseBipolarPreview() noexcept;
+    // The caller has validated the worker's topology and controls for this engine.
+    void adoptBipolarPreview(Engine& prepared) noexcept;
+
     /// Prepare at most five affine slope patterns for a coupled root. Call
     /// outside the audio callback. A separate engine measures the patterns,
     /// so preparing a plan never changes this engine's audio state. A change
@@ -110,6 +119,8 @@ public:
 private:
     long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
+    struct BipolarPreview;
+    std::shared_ptr<BipolarPreview> bipolarPreview_;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);
     std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
