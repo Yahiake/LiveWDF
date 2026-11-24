@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_dsp/juce_dsp.h>
 #include "wdf/Engine.h"
+#include "PreviewPlayback.h"
 #include "dsp/HalfBandOversampler.h"
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
@@ -121,6 +122,9 @@ public:
     std::map<std::string, bool> getLiveSwitchStates() const;
 
     std::map<std::string, double> getLiveProbeVoltages() const;
+    enum class PreviewStatus { off, loading, unavailable, armed, active, experimental, controls, range, options, render };
+    PreviewStatus previewStatus() const noexcept { return previewStatus_.load(std::memory_order_relaxed); }
+    const char* previewLabel() const noexcept;
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
 
     /// The rate the host handed to `prepareToPlay`. This is the rate the
@@ -167,6 +171,20 @@ private:
     std::unique_ptr<wdf::Engine> rightEngine_;
     unsigned long long engineGeneration_ = 0;
 
+    std::atomic<PreviewStatus> previewStatus_{PreviewStatus::off};
+    std::unique_ptr<PreviewPlayback> preview_;
+    std::future<std::unique_ptr<PreviewPlayback>> previewJob_;
+    unsigned long long previewRequest_ = 0;
+    unsigned long long previewJobGeneration_ = 0;
+    bool previewPlaying_ = false;
+    bool previewStereo_ = false;
+    std::array<float, 2> previousWet_{}, transitionStart_{};
+    int transitionRemaining_ = 0;
+    int transitionLength_ = 1;
+    std::array<double, kMaxPotKnobs> previewPots_{};
+    bool snapshotControlsAgree_ = true;
+    void preparePreview();
+    bool canPlayPreview(const juce::dsp::AudioBlock<float>& block);
     struct AffineKey {
         unsigned long long generation = 0;
         long long revision = 0;
@@ -299,10 +317,11 @@ private:
     double sampleRate_ = 48000.0;
     int samplesPerBlock_ = 512;
 
-    bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters);
+    bool loadCircuitDocument(const wdf::LiveWDFDocument& doc, bool initializePotParameters,
+                             std::unique_ptr<PreviewPlayback> preview = {});
     bool shouldForceAccurate() const;
     int effectiveOversamplingChoice() const;
-    void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
+    void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc, bool notify);
     void timerCallback() override;
     void prepareFastLiveAffine();
     void prepareSettledLiveTransfer();
