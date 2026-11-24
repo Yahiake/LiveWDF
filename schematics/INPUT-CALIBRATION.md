@@ -1,16 +1,39 @@
-# Factory input calibration
+# Factory input and output calibration
 
-Select the circuit’s **Input** terminal in the schematic editor. **Input mV RMS at -18 dBFS** sets the voltage of a −18 dBFS peak sine at zero Trim. Choose the reference for the connector, input mode, pad and circuit section being modeled. A fixed conversion preserves changes in playing level. A 6.02 dB increase doubles the voltage. The reference applies to both live playback and offline rendering. The **Output** terminal sets the number of physical output volts per digital full-scale sample.
+In the schematic editor, select **Input** and enter either **Input V peak at 0 dBFS** or **Input mV RMS at -18 dBFS**. Both fields set the same reference. At zero Trim, a digital sample of 1 drives the circuit with the chosen peak voltage. A −18 dBFS peak sine drives it with the chosen RMS voltage. **Output** holds the peak volts per full-scale sample used for matched playback. A fixed divisor applies the same gain to every sample, preserving the circuit’s dynamics.
 
-The plugin applies the input reference only to the circuit’s wet path. The circuit’s gain, dynamics and overload determine its response. With Input reference in millivolts, the peak voltage applied to a sample is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit reference use 1 volt peak per digital full-scale sample at zero Trim. Historic `fullScaleVolts` annotations on some Input terminals do not set playback gain.
+With **Chain in** off and **Match out** on (the defaults), a track drives the circuit at its preset input reference and the return uses its matched output reference. The input voltage is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit input reference use 1 V peak at full scale. Historic Input `fullScaleVolts` annotations do not set playback gain.
 
-## Choosing a reference
+To connect inserts at their simulated terminal voltages, turn **Match out** off on the sending instance and **Chain in** on at the receiving instance. Their common scale is +4 dBu at −18 dBFS (about 13.8 V peak at full scale). For example, 100 mV peak leaving a pedal arrives as 100 mV peak at the next preset, even if its native input alignment is different. Use unity DAW gain and zero output master/input trim between the two. Turn **Match out** on at the end to return to the preset’s audition level. The controls also apply in standalone and offline rendering.
 
-[The factory input-level survey](INPUT-LEVELS.csv) covers all 90 schematics. The audition column gives a reproducible test level for every preset. The remaining columns record the source’s own units, revision, conditions and any assumptions. Several vintage sources specify a maximum at a particular frequency, an average operating range or a test stimulus. Each is identified separately. Internal console connections can operate at a different level from the external line connector. Estimates are starting points for auditioning a circuit. Factory playback uses an explicit value in the individual schematic only after a playback check.
+## Factory input references
 
-- **MCI JH‑400B mic preamp.** The engineering specification uses a 0.774 V reference. Its nominal mic-preamp test is −40 dB in and −6 dB out, or 7.74 mV RMS in and about 388 mV RMS out. The preset aligns a −18 dBFS sine to this test. Mic Gain at 0.55 produces about 34.05 dB physical gain. The output reference is 4.35769 V peak per full scale. [MCI engineering specifications, mic-preamp distortion and measurement conditions](https://torridheatstudios.com/MCI/MCI%20JH-400%20Series/MCI%20JH-400B%20Series/MCI%20JH-400B%20Engineering%20Specifications.pdf).
-- **BOSS BD‑2, DS‑1A, GE‑7, MT‑2, NS‑2, SD‑1 and TR‑2.** Their published −20 dBu input corresponds to 77.5 mV RMS. The GE‑7, TR‑2 and open NS‑2 use the same physical input and output scaling to preserve their calibrated insertion level. The drive pedals retain their existing output scaling and gain controls. Source manuals and revision notes appear in the survey.
-- **BBE 482i.** The unit uses −10 dBu line level, about 245 mV RMS. Its +18 dBu maximum input belongs in the overload check. [BBE 482i user guide, pp. 5–6](https://www.bbesound.com/products/manuals/482i_manual_rev4.pdf).
-- **dbx 160 VU.** The meter is factory aligned to +4 dB referenced to 0.775 V. At −18 dBFS the preset drives the input with 1.22829 V RMS. In the plugin, a 12 dB increase in tone level raised output by about 3 dB at the factory preset’s compressor setting. The same input at 1:1 gave near-unity insertion gain. [Original dbx 160/161 manual and calibration procedure](https://dbxpro.com/en-US/products/160).
+Each of the 90 factory schematics stores its input reference. The [input table](INPUT-LEVELS.csv) lists both the RMS voltage of a −18 dBFS peak sine and the equivalent peak voltage at 0 dBFS. The basis and sources identify the connector, hardware revision, switch setting and any estimate. A maximum input rating describes headroom. An alignment tone describes the operating point for the specified test.
 
-Set the physical drive first. Then check the output level and the behavior the unit is meant to produce. A gate needs tests near its threshold, a compressor needs level steps and release tails, and a distortion pedal needs hard attacks at high gain. Calibrating input voltage does not establish a CPU deadline or qualify a faster solver. For a range claim, record the control settings, source and load, input frequency or program, and distortion at the stated limit.
+| Preset | Input at −18 dBFS, sine RMS | Input at 0 dBFS, peak | Basis |
+| --- | ---: | ---: | --- |
+| BOSS BD-2 | 77.5 mV | 0.871 V | Published −20 dBu guitar input. This same value serves as an estimate for guitar inputs without a published reference. |
+| MCI JH-400B mic preamp | 7.74 mV | 0.08695 V | MCI’s nominal distortion test at 34 dB gain yields about 388 mV RMS out. |
+| Neve 1081 Gold Label EQ | 137.82 mV | 1.548 V | Drawing EB20031 marks −15 dBm at the internal filter entrance. The preset starts at this point. |
+| BBE 482i | 245.08 mV | 2.753 V | The specified −10 dBu operating level on channel B. |
+| dbx 160 VU | 1.22829 V | 13.798 V | Factory 0 VU alignment. The threshold and ratio still control gain reduction. |
+
+The Helios Musicland EQ, SSL 82E242 EQ and Pye 4060 use 0.775 V RMS as a working reference. The table identifies the original drawings and desk alignment evidence for each. A physical connection to a console section feeds its modeled node directly. For example, a +4 dBu signal needs 19 dB of attenuation to reach the Neve 1081 filter’s −15 dBu operating point. The preset input reference handles that when feeding it directly from a track.
+
+## Output sweep
+
+At the preset’s saved controls, **Match out** uses one fixed output divisor. The calibration compares K-weighted RMS level on active 50 ms frames with the digital bypass. Guitar circuits use recorded DI passages. Studio circuits use a repeatable broadband bus or voiced/sibilant signal. Gates are matched over the strongest input frames so their closed intervals do not drive up the makeup gain.
+
+Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
+
+The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
+
+On the third excerpt, 65 of 90 presets were within 1 dB of bypass and 84 were within 2 dB. The largest differences were +4.68 dB on the Maestro FZ-1 and +3.96 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.36 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
+
+To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg.
+
+```sh
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench accurate.csv --verify
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fast.csv --verify --fast-live
+```

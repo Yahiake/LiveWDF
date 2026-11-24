@@ -514,15 +514,21 @@ struct LiveWDFDocument {
     // RMS millivolts of a −18 dBFS sine when a full-scale sample drives one volt.
     static constexpr double kReferenceMillivolts = 89.01946956877224;
 
+    // Between inserts a −18 dBFS sine carries +4 dBu (1228.29 mV RMS).
+    static constexpr double kChainVoltsPerFullScale = 1228.292224157363 / kReferenceMillivolts;
+
     /// Peak volts applied to the input by a full-scale digital sample at unity trim.
     /// Older files sometimes annotate the input with the output-only fullScaleVolts key.
-    double inputVoltsPerFullScale() const {
-        if (const auto* input = terminal("in")) {
-            const auto it = input->values.find("referenceMillivoltsRms");
-            if (it != input->values.end() && std::isfinite(it->second) && it->second > 0.)
-                return it->second / kReferenceMillivolts;
-        }
+    static double inputVoltsPerFullScale(const SchematicComponent& input) {
+        const auto it = input.values.find("referenceMillivoltsRms");
+        if (it != input.values.end() && std::isfinite(it->second) && it->second > 0.)
+            return it->second / kReferenceMillivolts;
         return 1.;
+    }
+
+    double inputVoltsPerFullScale() const {
+        const auto* input = terminal("in");
+        return input ? inputVoltsPerFullScale(*input) : 1.;
     }
 
     /// The voltage the circuit produces at the output when the input is at full
@@ -543,7 +549,7 @@ struct LiveWDFDocument {
         const auto it = out->values.find("fullScaleVolts");
         if (it == out->values.end())
             return 1.0;
-        return it->second > 0.0 ? it->second : 1.0;
+        return std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
     }
 
     /// One source's AC settings: how big the swing is, and how fast it moves.

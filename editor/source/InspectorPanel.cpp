@@ -390,8 +390,11 @@ void InspectorPanel::rebuild() {
     // is not offered: the model picker says "12AX7", and a "Value" field beside
     // it holding a zero says nothing at all. The question is asked of the
     // accessor, which is where it is answered for everyone else too.
-    if ((comp.values.count(primary) || comp.type == "in") && hasNumericValue(comp))
+    if ((comp.values.count(primary) || comp.type == "in" || comp.type == "out") && hasNumericValue(comp))
         order.push_back(primary);
+
+    if (comp.type == "in")
+        order.push_back("inputPeakVolts");
 
     for (const char* k : kPreferred)
         if (comp.values.count(k) && std::find(order.begin(), order.end(), k) == order.end())
@@ -496,7 +499,11 @@ void InspectorPanel::rebuild() {
         // right for the file and wrong for a person; `parseValue` reads the
         // formatted text straight back, so editing and returning changes nothing.
         const auto stored = comp.values.find(key);
-        const double raw = stored != comp.values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
+        double raw = stored != comp.values.end() ? stored->second : 1.0;
+        if (key == "inputPeakVolts")
+            raw = wdf::LiveWDFDocument::inputVoltsPerFullScale(comp);
+        else if (key == "referenceMillivoltsRms" && stored == comp.values.end())
+            raw = wdf::LiveWDFDocument::kReferenceMillivolts;
         const auto taper = comp.properties.find("taper");
         const bool isPotValue = (key == primaryValueKey(comp.type) && taper != comp.properties.end());
 
@@ -638,13 +645,13 @@ void InspectorPanel::quickValueEdit(const juce::String& text) {
     // the right name; a type with no such key (a terminal, a model-bearing
     // part's non-numeric read) has nothing to answer.
     const std::string key = primaryValueKey(it->type);
-    if (key.empty() || (it->values.count(key) == 0 && it->type != "in"))
+    if (key.empty() || (it->values.count(key) == 0 && it->type != "in" && it->type != "out"))
         return;
 
     commitEdit(key, text);
 }
 
-void InspectorPanel::commitEdit(const std::string& key, const juce::String& text) {
+void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::String& text) {
     if (!doc_ || id_.empty()) return;
     auto it = std::find_if(doc_->components.begin(), doc_->components.end(),
                            [&](const wdf::SchematicComponent& c) { return c.id == id_; });
@@ -652,8 +659,12 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
 
     // Decide value vs property by asking which map already has the key; this
     // keeps the callback free of the ordering bookkeeping in `rebuild`.
+    // Both input fields edit the same alignment, expressed at different digital sine levels.
+    const bool peakInput = it->type == "in" && displayedKey == "inputPeakVolts";
+    const std::string key = peakInput ? "referenceMillivoltsRms" : displayedKey;
     const bool inputReference = it->type == "in" && key == "referenceMillivoltsRms";
-    if (it->values.count(key) || inputReference) {
+    const bool outputReference = it->type == "out" && key == "fullScaleVolts";
+    if (it->values.count(key) || inputReference || outputReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
 
@@ -681,7 +692,12 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
             // of parsing through the formatter's own reader.
             bool ok = false;
             double value = parseValue(text.toStdString(), &ok);
-            if (!ok || (inputReference && (!std::isfinite(value) || value <= 0.)))
+            if (peakInput) {
+                if (text == juce::String(formatValue(wdf::LiveWDFDocument::inputVoltsPerFullScale(*it), ""))) return;
+                value *= wdf::LiveWDFDocument::kReferenceMillivolts;
+            }
+            if (!ok || ((inputReference || outputReference)
+                        && (!std::isfinite(value) || value <= 0.)))
                 return;
 
             // A pot position is a normalized fraction, not a resistance. This
@@ -693,10 +709,11 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
                 value = std::clamp(value, 0.0, 1.0);
 
             const auto stored = it->values.find(key);
-            if (inputReference) {
+            if (inputReference && !peakInput) {
                 const double original = stored != it->values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
                 if (text == juce::String(formatValue(original, ""))) return;
             }
+            if (outputReference && stored == it->values.end() && value == 1.0) return;
             if (stored != it->values.end() && value == stored->second)
                 return;   // nothing changed: nothing to tell the host
             it->values[key] = value;

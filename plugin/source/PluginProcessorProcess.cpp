@@ -89,12 +89,19 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float inputGain = juce::Decibels::decibelsToGain(inputTrimDb);
     const float outputGain = juce::Decibels::decibelsToGain(outputMasterDb);
     const float wetMix = mixPercent * 0.01f;
-    const float dryMix = 1.0f - wetMix;
+    const bool chainInput = *apvts_.getRawParameterValue("chain_input") > 0.5f;
+    const bool matchOutput = *apvts_.getRawParameterValue("match_output") > 0.5f;
 
     const bool wantStereo = stereoRequested && numChannels > 1;
 
     // Try to acquire engine lock (never block audio thread)
     std::unique_lock<std::mutex> lock(engineMutex_, std::try_to_lock);
+    const double presetInput = inputVoltsPerFullScale_.load(std::memory_order_relaxed);
+    constexpr double chainVolts = wdf::LiveWDFDocument::kChainVoltsPerFullScale;
+    const double inputScale = chainInput ? chainVolts : presetInput;
+    // Carry a dry signal through the same change of units as a wire around the circuit.
+    // At the matched output a bypassed preset keeps its original audition level.
+    const float dryScale = static_cast<float>(inputScale / (matchOutput ? presetInput : chainVolts));
     const int latency = processingLatencySamples_.load(std::memory_order_relaxed);
     auto* activeOversampler = lock.owns_lock() ? activePolyphaseOversampler() : nullptr;
     juce::dsp::AudioBlock<float> block(buffer);
@@ -103,7 +110,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // Keep untrimmed separate channels in the history, including at Mix 100%.
     // Host bypass can then return the delayed original input immediately.
-    const bool dryAvailable = canProcess && dryMix > 0.001f && dryBuffer_.getNumSamples() >= numSamples;
+    const bool dryAvailable = canProcess && wetMix < 0.999f && dryBuffer_.getNumSamples() >= numSamples;
     if (latency == 0)
         conditionInput(block, inputGain, !wantStereo);
     if (dryAvailable) {
@@ -121,7 +128,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
     if (!canProcess) {
-        buffer.applyGain(outputGain);
+        // A voltage-chain return may have a large dry conversion (e.g. a mic preamp).
+        // During a rebuild only pass the dry contribution the player actually requested.
+        const bool passThrough = (!chainInput && matchOutput) || (lock.owns_lock() && !leftEngine_);
+        const float fallbackGain = passThrough ? outputGain : (1.0f - wetMix) * dryScale;
+        buffer.applyGain(fallbackGain);
         outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
         return;
     }
@@ -130,18 +141,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    // The output scale: the volts the circuit makes at full input, read off
-    // the Output terminal, and the reciprocal of it.
-    //
-    // The circuit is not changed and nothing is limited or clipped -- the
-    // output is simply *scaled*, by the number the user wrote. Without it, a
-    // preamp that makes 100 volts hands 100 to the audio buffer, which is a
-    // digital full-scale overload and a very loud click.
-    //
-    // Read under the lock, which is held for the rest of the block, because it
-    // is written when a document is loaded.
-    const float outputScale =
-        1.0f / static_cast<float>(outputFullScaleVolts_ > 0.0 ? outputFullScaleVolts_ : 1.0);
+    const float outputScale = static_cast<float>(1.0 / (matchOutput ? outputFullScaleVolts_ : chainVolts));
+    const float dryMix = (1.0f - wetMix) * dryScale;
 
     // Stereo needs a live right engine. Mono deliberately leaves it untouched,
     // which is where the CPU saving comes from: one engine instead of two.
@@ -180,7 +181,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         const std::vector<double>* nodes;
     };
     const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double sample) -> OutputSample {
-        const double input = sample * inputVoltsPerFullScale_;
+        const double input = sample * inputScale;
         if (inIdx >= 0)
             sources[static_cast<size_t>(inIdx)] = input;
         double volts;

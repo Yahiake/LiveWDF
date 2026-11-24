@@ -6,7 +6,9 @@
       "id": "IN1",
       "properties": {},
       "type": "in",
-      "values": {},
+      "values": {
+        "referenceMillivoltsRms": 77.5
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -521,7 +523,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 5.0
+        "fullScaleVolts": 6.4251668
       },
       "visual": {
         "flipped": false,

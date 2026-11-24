@@ -854,3 +854,24 @@ TEST_CASE("Unlabelled pots remain separate controls") {
     CHECK(groups[0].name == doc.components[0].id);
     CHECK(groups[1].name == doc.components[1].id);
 }
+
+TEST_CASE("Peak volts and nominal RMS edit the selected input alignment") {
+    auto doc = documentWith("in");
+    doc.components.push_back(makeComponent("in", doc.components, 0.f, 4.f));
+    auto& second = doc.components.back();
+    second.values.clear();
+    second.values["fullScaleVolts"] = 12.0;
+    InspectorPanel panel;
+    panel.setSize(320, 700);
+    panel.setTarget(&doc, second.id);
+    auto* peak = findEditorBelowCaption(panel, "Input V peak at 0 dBFS:");
+    REQUIRE(peak != nullptr);
+    peak->onFocusLost();
+    CHECK(second.values.count("referenceMillivoltsRms") == 0);
+    peak->setText("0.25", false);
+    peak->onFocusLost();
+    CHECK(wdf::LiveWDFDocument::inputVoltsPerFullScale(second) == Approx(.25));
+    CHECK(doc.inputVoltsPerFullScale() == Approx(1.0));
+    CHECK(second.values.count("inputPeakVolts") == 0);
+    CHECK(second.values.at("fullScaleVolts") == 12.0);
+}

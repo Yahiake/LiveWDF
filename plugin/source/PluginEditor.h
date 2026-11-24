@@ -85,6 +85,8 @@ private:
     DualOscilloscope oscilloscope_;
 
     // Knobs
+    juce::ToggleButton chainInputBtn_{"Chain in"};
+    juce::ToggleButton matchOutputBtn_{"Match out"};
     VintageKnob inTrimKnob_ { "TRIM", " dB" };
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
@@ -109,6 +111,8 @@ private:
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
+    std::unique_ptr<ButtonAttachment> chainInputAttach_;
+    std::unique_ptr<ButtonAttachment> matchOutputAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
@@ -131,6 +135,7 @@ private:
     bool isDraggingFile_ = false;
 
     void rebuildDynamicControls();
+    void updateScopeScales();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
     void showFactoryBrowser();

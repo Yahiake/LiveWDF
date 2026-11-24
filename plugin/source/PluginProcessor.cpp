@@ -14,10 +14,12 @@ namespace livewdf {
 
 namespace {
 
-// Historic studio drawings annotate the input with its nominal peak voltage.
-// This selects a trial level for the worker. The input reference controls the voltage applied during playback.
+// An explicit input alignment supersedes the trial amplitude on older drawings.
 double previewPeakVolts(const wdf::LiveWDFDocument& doc) {
     if (const auto* input = doc.terminal("in")) {
+        const auto reference = input->values.find("referenceMillivoltsRms");
+        if (reference != input->values.end() && std::isfinite(reference->second) && reference->second > 0.)
+            return 2. * doc.inputVoltsPerFullScale();
         const auto it = input->values.find("fullScaleVolts");
         if (it != input->values.end() && std::isfinite(it->second) && it->second > 1.2)
             return it->second;
@@ -129,6 +131,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"compiled_preview", 1}, "Compiled Preview", false));
+
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"chain_input", 1}, "Input from physical chain", false,
+        juce::AudioParameterBoolAttributes().withAutomatable(false)));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"match_output", 1}, "Match output level", true,
+        juce::AudioParameterBoolAttributes().withAutomatable(false)));
 
     return { params.begin(), params.end() };
 }
@@ -1085,8 +1094,13 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         // Earlier session files contain no Preview parameter. Reloading them
         // into an existing instance must restore the original playback mode.
         auto state = juce::ValueTree::fromXml(*xmlState);
-        if (!state.getChildWithProperty("id", "compiled_preview").isValid())
-            state.appendChild(juce::ValueTree{"PARAM", {{"id", "compiled_preview"}, {"value", 0.0f}}}, nullptr);
+        const auto restoreMissing = [&](const char* id, float value) {
+            if (!state.getChildWithProperty("id", id).isValid())
+                state.appendChild(juce::ValueTree{"PARAM", {{"id", id}, {"value", value}}}, nullptr);
+        };
+        restoreMissing("compiled_preview", 0.0f);
+        restoreMissing("chain_input", 0.0f);
+        restoreMissing("match_output", 1.0f);
         apvts_.replaceState(state);
 
         // Restore custom LiveWDF JSON document

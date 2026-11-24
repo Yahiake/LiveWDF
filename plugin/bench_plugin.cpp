@@ -29,6 +29,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -221,6 +222,67 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 #endif
     std::printf("\n");
     return 0;
+}
+
+// Calibration uses mono native float32 streams at 48 kHz. Keep the host's
+// bypass as the digital reference, including the final short callback.
+int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
+                      bool fastLive) {
+    constexpr int blockSize = 128;
+    std::ifstream source(inPath, std::ios::binary);
+    std::ofstream dest(outPath, std::ios::binary);
+    if (!source || !dest)
+        return 1;
+
+    livewdf::LiveWDFPluginProcessor processor;
+    auto set = [&](const char* id, float value) {
+        auto* p = processor.getAPVTS().getParameter(id);
+        if (!p) throw std::runtime_error(id);
+        p->setValueNotifyingHost(p->convertTo0to1(value));
+    };
+    processor.setNonRealtime(!fastLive);
+    set("export_4x", 0);
+    set("accurate_export", 1);
+    set("oversampling", 0);
+    set("solve_quality", fastLive ? 1.f : 0.f);
+    processor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
+    processor.prepareToPlay(kSampleRate, blockSize);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return 1;
+    }
+    set("input_trim", 0);
+    set("output_master", 0);
+    set("mix", 100);
+    set("match_output", 1);
+    set("chain_input", 0);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> wet(2, blockSize), bypass(2, blockSize);
+    float in[blockSize];
+    const auto started = std::chrono::steady_clock::now();
+    std::int64_t framesRendered = 0;
+    while (source.read(reinterpret_cast<char*>(in), sizeof in) || source.gcount() > 0) {
+        if (source.gcount() % sizeof(float) != 0) return 1;
+        const auto frames = static_cast<int>(source.gcount() / sizeof(float));
+        wet.setSize(2, frames, false, false, true);
+        for (int c = 0; c < 2; ++c) wet.copyFrom(c, 0, in, frames);
+        bypass.makeCopyOf(wet, true);
+        processor.processBlockBypassed(bypass, midi);
+        if (!std::equal(in, in + frames, bypass.getReadPointer(0))) {
+            std::fprintf(stderr, "1x host bypass differs from source\n");
+            return 1;
+        }
+        if (fastLive) {
+            // Let the same control-thread timer and worker prepare plans as during playback.
+            juce::Timer::callPendingTimersSynchronously();
+            std::this_thread::sleep_until(started + std::chrono::duration<double>(framesRendered / kSampleRate));
+        }
+        processor.processBlock(wet, midi);
+        framesRendered += frames;
+        dest.write(reinterpret_cast<const char*>(wet.getReadPointer(0)), frames * sizeof(float));
+    }
+    dest.close();
+    return source.eof() && !source.bad() && dest ? 0 : 1;
 }
 
 // ==============================================================================
@@ -521,7 +583,51 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     return st;
 }
 
+// A 2:1 resistive divider has a known wet voltage for every incoming sample.
+// Check both conversion directions at a partial mix so wrong dry units are audible.
+bool checkPhysicalRouting() {
+    wdf::LiveWDFDocument doc;
+    constexpr double inputRef = .25, matchedRef = 2.;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", inputRef * doc.kReferenceMillivolts}}, {}, {}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {}},
+        {"R2", "res", {{"a", "out"}, {"b", "0"}}, {{"value", 1000.}}, {}, {}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", matchedRef}}, {}, {}},
+    };
+    livewdf::LiveWDFPluginProcessor processor;
+    auto set = [&](const char* id, float value) {
+        auto* parameter = processor.getAPVTS().getParameter(id);
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+    };
+    set("solve_quality", 0);
+    set("mix", 50);
+    constexpr int frames = 16;
+    processor.prepareToPlay(kSampleRate, frames);
+    if (!processor.loadCircuitDocument(doc))
+        return false;
+    juce::AudioBuffer<float> audio(2, frames);
+    juce::MidiBuffer midi;
+    for (bool receive : {false, true}) {
+        set("chain_input", receive);
+        set("match_output", receive);
+        constexpr float sample = .125f;
+        for (int ch = 0; ch < audio.getNumChannels(); ++ch)
+            std::fill_n(audio.getWritePointer(ch), frames, sample);
+        processor.processBlock(audio, midi);
+        const double inputVolts = sample * (receive ? doc.kChainVoltsPerFullScale : inputRef);
+        const double dry = inputVolts / (receive ? inputRef : doc.kChainVoltsPerFullScale);
+        const double wet = .5 * inputVolts / (receive ? matchedRef : doc.kChainVoltsPerFullScale);
+        if (!(std::abs(audio.getSample(0, frames - 1) - .5 * (dry + wet)) < 1e-6))
+            return false;
+    }
+    return true;
+}
+
 int runAudit(const juce::File& file) {
+    if (!checkPhysicalRouting()) {
+        std::fprintf(stderr, "Physical voltage routing failed at 50%% wet/dry\n");
+        return 1;
+    }
     const AuditCase cases[] = {
         { "sine 440 Hz, peak 0.001", 440.0, 0.001f },
         { "sine 440 Hz, peak 0.02", 440.0, 0.02f },
@@ -1873,8 +1979,14 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--fast-live]\n");
         return 1;
+    }
+
+    if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
+        const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
+        if (argc != 5 && !fastLive) return 1;
+        return renderCalibration(file, argv[3], argv[4], fastLive);
     }
 
     bool validate = false;

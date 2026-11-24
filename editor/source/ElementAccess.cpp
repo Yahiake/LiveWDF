@@ -108,7 +108,8 @@ std::string valueKeyLabel(const std::string& key) {
     // The keys are the file format's words. These are the ones whose key is
     // not already something a person would want to read on a label.
     if (key == "referenceMillivoltsRms") return "Input mV RMS at -18 dBFS";
-    if (key == "fullScaleVolts") return "V at full input";
+    if (key == "inputPeakVolts") return "Input V peak at 0 dBFS";
+    if (key == "fullScaleVolts") return "Matched output V peak at 0 dBFS";
     if (key == "dc")             return "DC volts";
     if (key == "ac")             return "AC volts";
     if (key == "freq")           return "Frequency (Hz)";

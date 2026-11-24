@@ -148,6 +148,17 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
     addAndMakeVisible(oscilloscope_);
 
+    chainInputBtn_.setTooltip("Receive a LiveWDF physical output (+4 dBu at -18 dBFS). "
+                              "Leave off for a track or instrument using this preset's input reference.");
+    matchOutputBtn_.setTooltip("Apply this preset's measured output reference for listening. "
+                               "Turn off to send volts to a LiveWDF instance with Chain in enabled.");
+    addAndMakeVisible(chainInputBtn_);
+    addAndMakeVisible(matchOutputBtn_);
+    chainInputAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "chain_input", chainInputBtn_);
+    matchOutputAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "match_output", matchOutputBtn_);
+    chainInputBtn_.onStateChange = [this] { updateScopeScales(); };
+    matchOutputBtn_.onStateChange = [this] { updateScopeScales(); };
+
     // 7. Input Trim & Output Knobs
     inTrimKnob_.setAccentColor(juce::Colour(0xFF00E5A0)); // Teal
     inTrimKnob_.slider().setDoubleClickReturnValue(true, 0.0f);
@@ -208,10 +219,15 @@ LiveWDFPluginEditor::~LiveWDFPluginEditor() {
     stopTimer();
 }
 
-void LiveWDFPluginEditor::rebuildDynamicControls() {
+void LiveWDFPluginEditor::updateScopeScales() {
     const auto& doc = processor_.getCurrentDocument();
-    oscilloscope_.setTerminalScales(static_cast<float>(doc.inputVoltsPerFullScale()),
-                                   static_cast<float>(doc.outputFullScaleVolts()));
+    constexpr auto chainVolts = static_cast<float>(wdf::LiveWDFDocument::kChainVoltsPerFullScale);
+    oscilloscope_.setTerminalScales(chainInputBtn_.getToggleState() ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
+                                   matchOutputBtn_.getToggleState() ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
+}
+
+void LiveWDFPluginEditor::rebuildDynamicControls() {
+    updateScopeScales();
     // Attachments first: they hold a reference to the knob's slider, so the
     // slider must outlive the attachment, not the other way round.
     dynamicPotAttachments_.clear();
@@ -552,10 +568,14 @@ void LiveWDFPluginEditor::resized() {
     auto knobStrip = bounds.removeFromBottom(118).reduced(12, 4);
 
     // Left: Input Trim
-    inTrimKnob_.setBounds(knobStrip.removeFromLeft(92));
+    auto inputStrip = knobStrip.removeFromLeft(92);
+    chainInputBtn_.setBounds(inputStrip.removeFromBottom(20));
+    inTrimKnob_.setBounds(inputStrip);
 
     // Right: Mix & Output Master
-    outMasterKnob_.setBounds(knobStrip.removeFromRight(92));
+    auto outputStrip = knobStrip.removeFromRight(92);
+    matchOutputBtn_.setBounds(outputStrip.removeFromBottom(20));
+    outMasterKnob_.setBounds(outputStrip);
     mixKnob_.setBounds(knobStrip.removeFromRight(92));
 
     // Center: Dynamic Circuit Potentiometers. One row while every knob keeps a

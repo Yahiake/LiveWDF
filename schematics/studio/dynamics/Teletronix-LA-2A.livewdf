@@ -23,7 +23,9 @@
       "id": "IN",
       "type": "in",
       "properties": {},
-      "values": {},
+      "values": {
+        "referenceMillivoltsRms": 615.604382
+      },
       "visual": {
         "x": 7,
         "y": 25,
@@ -545,7 +547,7 @@
       "type": "out",
       "properties": {},
       "values": {
-        "fullScaleVolts": 4.7
+        "fullScaleVolts": 10.015524
       },
       "visual": {
         "x": 217,
