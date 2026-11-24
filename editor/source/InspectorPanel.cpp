@@ -803,17 +803,17 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
                         && (!std::isfinite(value) || value <= 0.)))
                 return;
 
-            // A pot position is a normalized fraction, not a resistance. This
-            // field is shown in engineering notation, so "1M" reads as one
-            // million -- the same text that means one megohm in a resistance
-            // field. Clamp here so the document cannot store a position the
-            // engine would only clamp later; 0 and 1 are the physical ends.
             if (key == "externalDefaultOhms") {
                 if (value == 0. && !it->values.count(key)) return;
                 const auto lo = it->values.find("externalMinOhms"), hi = it->values.find("externalMaxOhms");
                 if (value != 0. && (lo == it->values.end() || hi == it->values.end() ||
                                     !(value >= lo->second && value <= hi->second))) return;
             }
+            // A pot position is a normalized fraction, not a resistance. This
+            // field is shown in engineering notation, so "1M" reads as one
+            // million -- the same text that means one megohm in a resistance
+            // field. Clamp here so the document cannot store a position the
+            // engine would only clamp later; 0 and 1 are the physical ends.
             if (key == "pos" && (it->type == "pot" || it->type == "varres"))
                 value = std::clamp(value, 0.0, 1.0);
 

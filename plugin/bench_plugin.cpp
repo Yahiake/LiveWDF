@@ -671,7 +671,19 @@ bool checkExternalImpedanceDefaults() {
     // A named resistor is already present in the drawing and stays at its marked value.
     doc.components.front().properties["externalResistor"] = "R1";
     doc.components[3].properties["externalResistor"] = "R2";
-    return processor.loadCircuitDocument(doc) && checkGain("Original named resistors", .5);
+    if (!processor.loadCircuitDocument(doc) || !checkGain("Original named resistors", .5)) return false;
+    const auto source = *wdf::portImpedanceRange(doc, true);
+    auto* knob = parameters.getParameter("source_impedance");
+    if (!source.atDefault(knob->getValue())) return false;
+    parameters.getParameter("export_4x")->setValueNotifyingHost(0.f);
+    processor.setNonRealtime(true);
+    for (const double position : {.6, source.defaultPosition, .2, 0.}) {
+        knob->setValueNotifyingHost(static_cast<float>(position));
+        for (int i = 0; i < 64; ++i) output();
+        const double resistance = position > 0. ? source.ohmsAt(knob->getValue()) : source.wiredOhms;
+        if (!checkGain("Automated named resistor", 1000. / (resistance + 1000.))) return false;
+    }
+    return true;
 }
 
 
