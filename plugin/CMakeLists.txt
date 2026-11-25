@@ -25,7 +25,7 @@ if(ANDROID)
             include(FetchContent)
             FetchContent_Declare(android_usb_audio_source
                 GIT_REPOSITORY https://github.com/jopdorp/android-usb-audio.git
-                GIT_TAG ee7278a8f0cbaf392c84d7ba214b2cdac8002893)
+                GIT_TAG 61a121ab324751d5e4e97f00bcbc0198e0bc1d9c)
             FetchContent_MakeAvailable(android_usb_audio_source)
         endif()
         target_link_libraries(LiveWDF_Plugin PRIVATE android_usb_audio)
