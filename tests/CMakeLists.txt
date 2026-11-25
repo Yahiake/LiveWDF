@@ -30,6 +30,7 @@ add_executable(livewdf_tests
     main.cpp
 
     smoke/test_smoke.cpp
+    smoke/test_runtime_kernels.cpp
 
     engine/test_engine_smoke.cpp
     engine/test_accounting.cpp
@@ -103,6 +104,9 @@ add_executable(livewdf_tests
     integration/test_oracle_ngspice_transistors.cpp
     integration/test_oracle_wdf_compiler.cpp)
 target_link_libraries(livewdf_tests PRIVATE livewdf_test_support)
+if(livewdf_avx2_kernels)
+    target_compile_definitions(livewdf_tests PRIVATE LIVEWDF_BUILD_AVX2)
+endif()
 target_include_directories(livewdf_tests SYSTEM PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/../third_party/catch2")
 
