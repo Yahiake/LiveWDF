@@ -63,7 +63,7 @@ void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
 
 bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBenefit) {
     loadedJunction_ = {};
-    if (!nD_ || K_ > 64 || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
+    if (!nD_ || K_ > LoadedJunctionPlan::maxPorts || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
         !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
         return false;
 
@@ -263,14 +263,26 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
             for (int i = 0; i < m; ++i)
                 p.mutual[i * m + col - k] = sense(p.laws[i].sense, x.data());
     }
-    const int poles = static_cast<int>(p.linearPoles.size());
-    p.poleMap.resize(k * poles);
-    for (int j = 0; j < poles; ++j) {
-        const auto& pole = p.linearPoles[j];
-        for (int i = 0; i < k; ++i)
-            x[i] = -Z_[i * k + pole.port] * pole.currentGain * pole.historyGain;
+    std::vector<int> affineIndex(k, -1);
+    auto affineRow = [&](int port) {
+        if (affineIndex[port] < 0) {
+            affineIndex[port] = static_cast<int>(p.affineRows.size());
+            p.affineRows.push_back(port);
+        }
+        return affineIndex[port];
+    };
+    for (const auto& e : p.linear)
+        if (independent(e.row))
+            p.affineStamps.push_back({affineRow(e.row), e.col, e.value});
+    for (auto& pole : p.linearPoles) pole.affineRow = affineRow(pole.port);
+    const int affineRows = static_cast<int>(p.affineRows.size());
+    p.affineMap.resize(k * affineRows);
+    for (int j = 0; j < affineRows; ++j) {
+        for (int i = 0; i < k; ++i) x[i] = Z_[i * k + p.affineRows[j]];
         detail::solveLUData(lu.data(), pivot.data(), x.data(), k);
-        for (int i = 0; i < k; ++i) p.poleMap[i * poles + j] = x[i];
+        if (!std::all_of(x.begin(), x.end(), [](double v) { return std::isfinite(v); }))
+            return false;
+        for (int i = 0; i < k; ++i) p.affineMap[i * affineRows + j] = x[i];
     }
     for (int j = 0; j < m; ++j) {
         auto& law = p.laws[j];
@@ -325,6 +337,9 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
         }
     }
     p.open.resize(k);
+    p.affineSources.resize(affineRows);
+    p.affineColumns.resize(k * affineRows);
+    p.packAffineColumns(k);
     p.drive.resize(m); p.q.resize(m); p.raw.resize(m); p.correction.resize(m);
     p.matrix.resize(m * m); p.pivots.resize(m); p.low.resize(m); p.high.resize(m);
     p.revision = linearRebuilds();
@@ -355,11 +370,18 @@ bool EngineStep::tryLoadedJunctionRoot() noexcept {
     p.cooldown = (1 << (p.misses - 1)) - 1;
     const bool seed = p.seed;
     p.seed = true; // A declined solve must restart from the native solution next sample.
-    const int poles = static_cast<int>(p.linearPoles.size());
-    for (int i = 0; i < k; ++i) {
-        p.open[i] = p.offset[i] + dot(&p.openMap[i * k], vOc_.data(), k);
-        for (int j = 0; j < poles; ++j)
-            p.open[i] += p.poleMap[i * poles + j] * opAmpVp_[p.linearPoles[j].device];
+    // With T = (I + ZJ)^-1 Z, the identity (I + ZJ)^-1 = I - TJ
+    // applies the same linear network using only its affine-current rows.
+    std::fill(p.affineSources.begin(), p.affineSources.end(), 0.0);
+    for (const auto& e : p.affineStamps) p.affineSources[e.row] += e.value * vOc_[e.col];
+    for (const auto& pole : p.linearPoles)
+        p.affineSources[pole.affineRow] += pole.currentGain * pole.historyGain * opAmpVp_[pole.device];
+    double* LIVEWDF_RESTRICT out = p.open.data();
+    const double* LIVEWDF_RESTRICT column = p.affineColumns.data();
+    for (int i = 0; i < k; ++i) out[i] = vOc_[i] + p.offset[i];
+    for (double current : p.affineSources) {
+        for (int i = 0; i < k; ++i) out[i] -= column[i] * current;
+        column += k;
     }
     for (int i = 0; i < m; ++i) {
         const auto& law = p.laws[i];

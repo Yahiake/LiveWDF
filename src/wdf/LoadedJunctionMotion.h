@@ -17,7 +17,7 @@ namespace wdf::engine {
 inline bool updateJunctionLoading(LoadedJunctionPlan& plan,
                                   std::span<const double> impedance,
                                   std::span<const int> independentRows) noexcept {
-    constexpr int maxPorts = 64;
+    constexpr int maxPorts = LoadedJunctionPlan::maxPorts;
     constexpr int maxRank = 4;
     const int ports = static_cast<int>(independentRows.size());
     const int laws = static_cast<int>(plan.laws.size());
@@ -95,11 +95,11 @@ inline bool updateJunctionLoading(LoadedJunctionPlan& plan,
         for (int i = 0; i < ports; ++i)
             if (independentRows[i] >= 0) projection[0] += v[i] * plan.constant[i];
         apply(plan.offset, 1);
-        for (int i = 0; i < poles; ++i) {
-            const auto& pole = plan.linearPoles[i];
-            projection[i] = v[pole.port] * pole.currentGain * pole.historyGain;
-        }
-        apply(plan.poleMap, poles);
+        const int affineRows = static_cast<int>(plan.affineRows.size());
+        // affineMap has the opposite sign to maps of injected currents.
+        for (int j = 0; j < affineRows; ++j)
+            projection[j] = -v[plan.affineRows[j]];
+        apply(plan.affineMap, affineRows);
     }
 
     for (int i = 0; i < laws; ++i) {
@@ -122,6 +122,7 @@ inline bool updateJunctionLoading(LoadedJunctionPlan& plan,
             row[i] += law.resistance;
         }
     }
+    plan.packAffineColumns(ports);
     std::copy(impedance.begin(), impedance.end(), difference.begin());
     return true;
 }

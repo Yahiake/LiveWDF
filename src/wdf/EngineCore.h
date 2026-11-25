@@ -48,6 +48,7 @@
 #include "devices/PowerSupply.h"
 #include "spice/Net.h"
 #include "wdf/DenseTopology.h"
+#include "wdf/RuntimeKernels.h"
 #include "wdf/state/DenseDiagnostics.h"
 #include "wdf/state/DenseState.h"
 
@@ -508,6 +509,8 @@ protected:
     /// Compile the netlist into ports, element conductances and root ports.
     EngineCore(const Circuit& circuit, double fs, bool gridCurrent)
         : circuit_(circuit), fs_(fs), T_(1.0 / fs) {
+        // Resolve CPU features during circuit setup, before the first sample.
+        detail::runtimeKernels();
         // Diagnostic knob for A/B measurements of the block-fallback gate.
         // Default 16 samples (measured A/B sweep 0/2/4/8/16/32); zero disables
         // the cooldown entirely for control runs.
@@ -767,14 +770,8 @@ protected:
         int start;
         int end;
     };
-    static constexpr int rootPanelWidth = 8;
-    struct RootPanel {
-        int node;
-        int colStart;
-        int colCount;
-        size_t valueStart;
-    };
-    std::vector<RootPanel> rootPanels_;
+    static constexpr int rootPanelWidth = detail::rootPanelWidth;
+    std::vector<detail::RootPanel> rootPanels_;
     std::vector<double> rootPanelValues_;
     std::vector<SparseRow1> xrRows1_;
     std::vector<SparseRow2> xrRows2_;
