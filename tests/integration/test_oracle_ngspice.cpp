@@ -945,7 +945,9 @@ TEST_CASE("ngspice oracle: every factory schematic exports and matches in DC and
             name.resize(last + 1);
             if (name.size() > 4 && name.front() == 'v' && name[1] == '(' && name.back() == ')')
                 name = name.substr(2, name.size() - 3);
-            out[name] = std::stod(line.substr(eq + 1));
+            double value = 0.0;
+            REQUIRE(static_cast<bool>(std::istringstream(line.substr(eq + 1)) >> value));
+            out[name] = value;
         }
         REQUIRE_FALSE(out.empty());
         return out;
