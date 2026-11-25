@@ -1,5 +1,6 @@
 #include "OutputEffects.h"
 #include "SplitReverb.h"
+#include "FactoryImpulseData.h"
 
 #include <juce_audio_formats/juce_audio_formats.h>
 
@@ -21,8 +22,83 @@ constexpr double echoSeconds = 0.25;
 constexpr float echoFeedback = 0.42f;
 constexpr auto cabinetWave = "cabinet_ir_wave";
 constexpr auto cabinetName = "cabinet_ir_name";
+constexpr auto cabinetFactory = "cabinet_ir_factory";
 constexpr auto reverbWave = "reverb_ir_wave";
 constexpr auto reverbName = "reverb_ir_name";
+constexpr auto reverbFactory = "reverb_ir_factory";
+
+constexpr FactoryImpulse factoryCabinets[] = {
+    {"synthetic-cab", "Studio Cab (Synthetic)", nullptr},
+    {"jensen-sm57", "Jensen SM57", "jensen-sm57.wav"},
+    {"jensen-e606", "Jensen e606", "jensen-e606.wav"},
+    {"hk-celestion-sm57", "H&K Celestion SM57", "hk-celestion-sm57.wav"},
+    {"hk-celestion-c414", "H&K Celestion C414", "hk-celestion-c414.wav"},
+    {"engl-v30-sm57", "ENGL V30 SM57", "engl-v30-sm57.wav"},
+    {"engl-v30-e606", "ENGL V30 e606", "engl-v30-e606.wav"},
+    {"bg412s-v30-sm57", "BG412S V30 SM57", "bg412s-v30-sm57.wav"},
+    {"bg412s-dv77-sm57", "BG412S DV-77 SM57", "bg412s-dv77-sm57.wav"},
+    {"bg412s-rockdriver-e606", "BG412S Rockdriver e606", "bg412s-rockdriver-e606.wav"},
+    {"bg412s-v30-dv77-sm57", "BG412S V30 + DV-77", "bg412s-v30-dv77-sm57.wav"},
+    {"orange-ppc112-v30-sm57", "Orange 1x12 V30", "orange-ppc112-v30-sm57.wav"},
+    {"orange-ppc212v-neocreamback", "Orange 2x12 Neo Creamback", "orange-ppc212v-neocreamback.wav"},
+    {"mesa-412-os-v30", "Mesa 412 OS V30", "mesa-412-os-v30.wav"},
+    {"celestion-g12-vintage", "Celestion G12 Vintage", "celestion-g12-vintage.wav"},
+    {"eminence-governor", "Eminence Governor", "eminence-governor.wav"},
+    {"ampeg-810", "Ampeg 8x10", "ampeg-810.wav"},
+};
+
+constexpr FactoryImpulse factoryReverbs[] = {
+    {"studio-hall", "Studio Hall", nullptr},
+    {"plate-studio", "Studio Plate", "plate-studio.flac"},
+    {"plate-dark", "Dark Plate", "plate-dark.flac"},
+    {"spring-combo", "Combo Spring", "spring-combo.flac"},
+    {"spring-tank", "Long Tank Spring", "spring-tank.flac"},
+    {"hall-small", "Small Hall", "hall-small.flac"},
+    {"hall-concert", "Concert Hall", "hall-concert.flac"},
+};
+
+// Audition suggestions include alternatives where the bank lacks a capture
+// of the original combo speaker or the amp is a head or preamp.
+constexpr std::pair<std::string_view, const char*> cabinetSuggestions[] = {
+    {"Ampeg B-15N", "ampeg-810"},
+    {"ENGL E530", "engl-v30-sm57"},
+    {"EVH 5150 III", "bg412s-dv77-sm57"},
+    {"Fender Bassman", "jensen-e606"},
+    {"Fender Deluxe Reverb", "jensen-sm57"},
+    {"Fender Princeton Reverb", "jensen-sm57"},
+    {"Fender Tweed Champ", "jensen-sm57"},
+    {"Fender Tweed Deluxe", "jensen-e606"},
+    {"Fender Twin Reverb", "jensen-sm57"},
+    {"Hiwatt DR103", "hk-celestion-c414"},
+    {"Laney GH100L", "hk-celestion-sm57"},
+    {"Marshall 1959", "hk-celestion-sm57"},
+    {"Marshall 2555", "hk-celestion-sm57"},
+    {"Marshall JCM800", "hk-celestion-sm57"},
+    {"Marshall Valvestate", "hk-celestion-sm57"},
+    {"Mesa Boogie Dual Rectifier", "mesa-412-os-v30"},
+    {"Mesa Boogie Mark IIC+", "mesa-412-os-v30"},
+    {"Orange OR120", "orange-ppc112-v30-sm57"},
+    {"Orange Rockerverb 50w - Clean", "orange-ppc212v-neocreamback"},
+    {"Orange Rockerverb 50w - Dirty", "orange-ppc112-v30-sm57"},
+    {"Peavey 5150", "bg412s-dv77-sm57"},
+    {"Roland JC-120", "jensen-sm57"},
+    {"Soldano SLO-100", "mesa-412-os-v30"},
+    {"Vox AC15", "orange-ppc212v-neocreamback"},
+    {"Vox AC30", "orange-ppc212v-neocreamback"},
+};
+
+std::span<const char> factoryResource(std::string_view filename) {
+    for (int i = 0; i < FactoryImpulseData::namedResourceListSize; ++i) {
+        if (filename != FactoryImpulseData::originalFilenames[i])
+            continue;
+        int size = 0;
+        const auto* data = FactoryImpulseData::getNamedResource(FactoryImpulseData::namedResourceList[i], size);
+        if (data != nullptr && size > 0)
+            return {data, static_cast<size_t>(size)};
+        break;
+    }
+    return {};
+}
 
 Buffer cabinetImpulse() {
     // The same symmetric synthetic cabinet IR used by the GP-50 pack.
@@ -174,10 +250,12 @@ void OutputEffects::publish(std::unique_ptr<Prepared> next) {
     }
 }
 
-OutputEffects::Impulse OutputEffects::decode(juce::MemoryBlock wave, const juce::String& name) {
+OutputEffects::Impulse OutputEffects::decode(juce::MemoryBlock wave, const juce::String& name, bool flac) {
     if (wave.isEmpty())
         return {};
-    juce::WavAudioFormat format;
+    juce::WavAudioFormat wavFormat;
+    juce::FlacAudioFormat flacFormat;
+    juce::AudioFormat& format = flac ? static_cast<juce::AudioFormat&>(flacFormat) : wavFormat;
     const std::unique_ptr<juce::AudioFormatReader> reader(
         format.createReaderFor(new juce::MemoryInputStream(wave, false), true));
     if (!reader || reader->numChannels < 1 || reader->numChannels > 2 || reader->lengthInSamples <= 0
@@ -185,7 +263,7 @@ OutputEffects::Impulse OutputEffects::decode(juce::MemoryBlock wave, const juce:
         || !std::isfinite(reader->sampleRate) || reader->sampleRate <= 0.0)
         return {};
     const size_t bytesPerFrame = ((reader->bitsPerSample + 7u) / 8u) * reader->numChannels;
-    if (bytesPerFrame == 0 || static_cast<size_t>(reader->lengthInSamples) > wave.getSize() / bytesPerFrame)
+    if (!flac && (bytesPerFrame == 0 || static_cast<size_t>(reader->lengthInSamples) > wave.getSize() / bytesPerFrame))
         return {};
     Buffer samples(static_cast<int>(reader->numChannels), static_cast<int>(reader->lengthInSamples));
     if (!reader->read(samples.getArrayOfWritePointers(), samples.getNumChannels(), 0, samples.getNumSamples()))
@@ -196,6 +274,60 @@ OutputEffects::Impulse OutputEffects::decode(juce::MemoryBlock wave, const juce:
             return {};
     }
     return { std::move(wave), name, std::move(samples), reader->sampleRate };
+}
+
+std::span<const FactoryImpulse> OutputEffects::factoryImpulses(bool room) noexcept {
+    return room ? std::span<const FactoryImpulse>(factoryReverbs) : std::span<const FactoryImpulse>(factoryCabinets);
+}
+
+juce::String OutputEffects::suggestedCabinet(std::string_view circuit) {
+    for (const auto& [prefix, cabinet] : cabinetSuggestions)
+        if (circuit.starts_with(prefix)) return cabinet;
+    return {};
+}
+
+juce::String OutputEffects::factoryCredits() {
+    juce::String credits;
+    for (const auto* name : {"CABINET-IR-SOURCES.md", "LICENSE-TONE3000.txt", "REVERB-IR-SOURCES.md"}) {
+        const auto data = factoryResource(name);
+        if (!data.empty())
+            credits << juce::String::fromUTF8(data.data(), static_cast<int>(data.size())) << "\n\n";
+    }
+    return credits;
+}
+
+OutputEffects::Impulse OutputEffects::factoryImpulse(bool room, juce::StringRef id) {
+    const auto entries = factoryImpulses(room);
+    const auto entry = std::find_if(entries.begin(), entries.end(),
+        [id](const auto& item) { return id == juce::StringRef(item.id); });
+    if (entry == entries.end())
+        return {};
+
+    Impulse result;
+    if (entry->file != nullptr) {
+        const std::string_view file(entry->file);
+        const auto data = factoryResource(file);
+        if (!data.empty())
+            result = decode(juce::MemoryBlock(data.data(), data.size()), entry->name, file.ends_with(".flac"));
+        if (result.samples.getNumSamples() == 0)
+            return {};
+        result.wave.reset();
+    }
+    result.name = entry->name;
+    result.factoryId = entry->id;
+    return result;
+}
+
+bool OutputEffects::selectFactoryImpulse(bool room, juce::StringRef id) {
+    try {
+        auto impulse = factoryImpulse(room, id);
+        if (impulse.factoryId.isEmpty())
+            return false;
+        setImpulse(room, std::move(impulse));
+        return true;
+    } catch (const std::exception&) {
+        return false;
+    }
 }
 
 Buffer OutputEffects::atRate(const Impulse& impulse, double rate) {
@@ -247,7 +379,13 @@ void OutputEffects::resetImpulse(bool room) { setImpulse(room, {}); }
 juce::String OutputEffects::impulseName(bool room) const {
     std::lock_guard lock(setupMutex_);
     const auto& impulse = room ? reverb_ : cabinet_;
-    return impulse.wave.isEmpty() ? juce::String("Built-in") : impulse.name;
+    return impulse.name.isEmpty() ? juce::String(factoryImpulses(room).front().name) : impulse.name;
+}
+
+juce::String OutputEffects::impulseId(bool room) const {
+    std::lock_guard lock(setupMutex_);
+    const auto& impulse = room ? reverb_ : cabinet_;
+    return impulse.name.isEmpty() ? juce::String(factoryImpulses(room).front().id) : impulse.factoryId;
 }
 
 void OutputEffects::save(juce::ValueTree& state) const {
@@ -255,24 +393,30 @@ void OutputEffects::save(juce::ValueTree& state) const {
     if (!cabinet_.wave.isEmpty()) {
         state.setProperty(cabinetWave, cabinet_.wave, nullptr);
         state.setProperty(cabinetName, cabinet_.name, nullptr);
+    } else if (cabinet_.factoryId.isNotEmpty()) {
+        state.setProperty(cabinetFactory, cabinet_.factoryId, nullptr);
     }
     if (!reverb_.wave.isEmpty()) {
         state.setProperty(reverbWave, reverb_.wave, nullptr);
         state.setProperty(reverbName, reverb_.name, nullptr);
+    } else if (reverb_.factoryId.isNotEmpty()) {
+        state.setProperty(reverbFactory, reverb_.factoryId, nullptr);
     }
 }
 
 void OutputEffects::restore(juce::ValueTree& state) {
-    const auto read = [&state](const char* waveKey, const char* nameKey) {
+    const auto read = [&state](bool room, const char* waveKey, const char* nameKey, const char* factoryKey) {
         const auto data = state[waveKey];
         const auto name = state[nameKey].toString();
-        auto impulse = data.getBinaryData() ? decode(*data.getBinaryData(), name) : Impulse{};
+        const auto factory = state[factoryKey].toString();
+        auto impulse = data.getBinaryData() ? decode(*data.getBinaryData(), name) : factoryImpulse(room, factory);
         state.removeProperty(waveKey, nullptr);
         state.removeProperty(nameKey, nullptr);
+        state.removeProperty(factoryKey, nullptr);
         return impulse;
     };
-    auto cabinet = read(cabinetWave, cabinetName);
-    auto reverb = read(reverbWave, reverbName);
+    auto cabinet = read(false, cabinetWave, cabinetName, cabinetFactory);
+    auto reverb = read(true, reverbWave, reverbName, reverbFactory);
     std::lock_guard lock(setupMutex_);
     std::unique_ptr<Prepared> next;
     if (spec_.sampleRate > 0.0)

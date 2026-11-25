@@ -49,6 +49,17 @@ else()
     )
 endif()
 
+file(GLOB factory_impulse_files CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.wav"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.md"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.txt"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/reverb/*.flac"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/reverb/*.md")
+juce_add_binary_data(LiveWDF_FactoryImpulseData
+    HEADER_NAME FactoryImpulseData.h
+    NAMESPACE FactoryImpulseData
+    SOURCES ${factory_impulse_files})
+
 target_sources(LiveWDF_Plugin PRIVATE
     source/PluginProcessor.cpp
     source/PluginProcessorProcess.cpp
@@ -84,6 +95,7 @@ target_include_directories(LiveWDF_Plugin PRIVATE
 # windows, and it removes the second renderer that used to drift.
 target_link_libraries(LiveWDF_Plugin PRIVATE
     LiveWDF_EditorCore
+    LiveWDF_FactoryImpulseData
     livewdf
     livewdf_options
     juce::juce_audio_processors
@@ -132,6 +144,9 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
 
 if(LIVEWDF_BUILD_TESTS)
     add_test(NAME livewdf_output_effects_state COMMAND LiveWDF_PluginBench --check-output-effects-state)
+    add_test(NAME livewdf_factory_output_irs COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf"
+        --check-factory-output-irs)
     add_test(NAME livewdf_preview_pad COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
         --check-preview-pad)

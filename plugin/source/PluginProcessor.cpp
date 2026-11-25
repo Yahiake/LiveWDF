@@ -30,6 +30,14 @@ float halfBandLatency(wdf::OversamplingFactor factor) {
 
 std::atomic_flag affineWorkerBusy;
 
+void nameLegacyAmp(wdf::LiveWDFDocument& doc, const juce::File& file) {
+    if (!doc.name.empty() && doc.name != "Untitled Circuit")
+        return;
+    const auto title = file.getFileNameWithoutExtension().toStdString();
+    if (OutputEffects::suggestedCabinet(title).isNotEmpty())
+        doc.name = title;
+}
+
 struct AffineWorkerSlot {
     ~AffineWorkerSlot() { affineWorkerBusy.clear(std::memory_order_release); }
 };
@@ -249,6 +257,11 @@ double LiveWDFPluginProcessor::getTailLengthSeconds() const {
     return outputEffects_.tailSeconds(cabinetEnabled_->load(std::memory_order_relaxed) > 0.5f,
                                       echoMix_->load(std::memory_order_relaxed) > 0.0f,
                                       reverbMix_->load(std::memory_order_relaxed) > 0.0f);
+}
+
+juce::String LiveWDFPluginProcessor::suggestedCabinetId() const {
+    const std::lock_guard lock(loadMutex_);
+    return OutputEffects::suggestedCabinet(currentDoc_.name);
 }
 
 juce::dsp::Oversampling<float>* LiveWDFPluginProcessor::activePolyphaseOversampler() const noexcept {
@@ -961,6 +974,7 @@ bool LiveWDFPluginProcessor::loadCircuitFromFile(const juce::File& file) {
     wdf::LiveWDFDocument doc;
     std::string err;
     if (doc.loadFromFile(file.getFullPathName().toStdString(), err)) {
+        nameLegacyAmp(doc, file);
         if (loadCircuitDocument(doc)) {
             // Remember the file, so the plugin can be told to re-read it after
             // the editor has saved a new version. This is the whole point of
@@ -1004,6 +1018,7 @@ bool LiveWDFPluginProcessor::reloadCircuit() {
         return false;
     }
 
+    nameLegacyAmp(doc, file);
     if (!loadCircuitDocument(doc))
         return false;
 

@@ -61,8 +61,15 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
 
     bool loadOutputImpulse(bool reverb, const juce::File& file) { return outputEffects_.loadImpulse(reverb, file); }
+    bool selectFactoryOutputImpulse(bool reverb, juce::StringRef id) { return outputEffects_.selectFactoryImpulse(reverb, id); }
     void resetOutputImpulse(bool reverb) { outputEffects_.resetImpulse(reverb); }
     juce::String outputImpulseName(bool reverb) const { return outputEffects_.impulseName(reverb); }
+    juce::String outputImpulseId(bool reverb) const { return outputEffects_.impulseId(reverb); }
+    std::span<const FactoryImpulse> factoryOutputImpulses(bool reverb) const noexcept {
+        return OutputEffects::factoryImpulses(reverb);
+    }
+    juce::String suggestedCabinetId() const;
+    juce::String factoryOutputImpulseCredits() const { return OutputEffects::factoryCredits(); }
 
     // -------------------------------------------------------------------------
     // LiveWDF Circuit Management

@@ -12,6 +12,11 @@ namespace livewdf {
 
 namespace {
 
+constexpr int sourceRowHeight = 30;
+constexpr int sourceRowsHeight = 3 * sourceRowHeight + 8;
+
+const char* outputParameter(bool reverb) { return reverb ? "reverb_mix" : "cab_enabled"; }
+
 /// **The loader's own words, on the line that says what is playing.** Reading
 /// a geometry-only sheet can be successful and still worth saying something:
 /// a part type the library does not have, or a sheet with no `in`/`out` part
@@ -62,12 +67,8 @@ bool loadImpulseFromUrl(LiveWDFPluginProcessor& processor, bool reverb, const ju
 
 class LiveWDFPluginEditor::OutputEffectsPanel final : public juce::Component {
 public:
-    explicit OutputEffectsPanel(LiveWDFPluginEditor& editor)
-        : processor_(editor.processor_),
-          cabinetAttach_(processor_.getAPVTS(), "cab_enabled", cabinet_),
-          echoAttach_(processor_.getAPVTS(), "echo_mix", echo_),
-          reverbAttach_(processor_.getAPVTS(), "reverb_mix", reverb_) {
-        addAndMakeVisible(cabinet_);
+    explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters)
+        : echoAttach_(parameters, "echo_mix", echo_), reverbAttach_(parameters, "reverb_mix", reverb_) {
         addAndMakeVisible(echoLabel_);
         addAndMakeVisible(reverbLabel_);
         echo_.setName("Echo mix");
@@ -79,40 +80,9 @@ public:
             slider->setTextValueSuffix(" %");
             addAndMakeVisible(*slider);
         }
-
-        for (bool reverb : {false, true}) {
-            auto& row = impulse_[reverb];
-            const juce::String kind = reverb ? "Reverb IR" : "Cab IR";
-            row.load.setTitle("Load " + kind);
-            row.reset.setTitle("Reset " + kind);
-            row.load.setTooltip("Choose a WAV for " + kind);
-            row.reset.setTooltip("Restore the built-in " + kind);
-            row.load.onClick = [&editor, reverb] { editor.openOutputImpulseChooser(reverb); };
-            row.reset.onClick = [this, reverb] {
-                processor_.resetOutputImpulse(reverb);
-                refresh({});
-            };
-            addAndMakeVisible(row.name);
-            addAndMakeVisible(row.load);
-            addAndMakeVisible(row.reset);
-        }
-        message_.setColour(juce::Label::textColourId, juce::Colour(0xffffb86c));
-        addAndMakeVisible(message_);
     }
 
-    void refresh(const juce::String& message) {
-        for (bool reverb : {false, true}) {
-            auto& row = impulse_[reverb];
-            const auto name = processor_.outputImpulseName(reverb);
-            const juce::String description = (reverb ? "Reverb IR - " : "Cab IR - ") + name;
-            row.name.setText(description, juce::dontSendNotification);
-            row.name.setTooltip(description);
-            row.reset.setEnabled(name != "Built-in");
-        }
-        message_.setText(message, juce::dontSendNotification);
-    }
-
-    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 224); }
+    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 84); }
 
     void resized() override {
         auto bounds = getLocalBounds().reduced(10);
@@ -121,34 +91,13 @@ public:
             label.setBounds(row.removeFromLeft(87));
             slider.setBounds(row);
         };
-        const auto placeImpulse = [&](ImpulseRow& impulse) {
-            auto row = bounds.removeFromTop(34).reduced(0, 3);
-            impulse.reset.setBounds(row.removeFromRight(53));
-            row.removeFromRight(5);
-            impulse.load.setBounds(row.removeFromRight(78));
-            impulse.name.setBounds(row.reduced(0, 2));
-        };
-
-        cabinet_.setBounds(bounds.removeFromTop(28));
-        placeImpulse(impulse_[false]);
         placeMix(echoLabel_, echo_);
         placeMix(reverbLabel_, reverb_);
-        placeImpulse(impulse_[true]);
-        message_.setBounds(bounds);
     }
 
 private:
-    struct ImpulseRow {
-        juce::Label name;
-        juce::TextButton load{"Load WAV"}, reset{"Reset"};
-    };
-
-    LiveWDFPluginProcessor& processor_;
-    juce::ToggleButton cabinet_{"Cabinet"};
-    juce::Label echoLabel_{{}, "Echo mix"}, reverbLabel_{{}, "Reverb mix"}, message_;
+    juce::Label echoLabel_{{}, "Echo mix"}, reverbLabel_{{}, "Reverb mix"};
     juce::Slider echo_, reverb_;
-    ImpulseRow impulse_[2];
-    ButtonAttachment cabinetAttach_;
     SliderAttachment echoAttach_, reverbAttach_;
 };
 
@@ -171,16 +120,28 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
     presetStepper_.onPresetChosen = [this](const juce::File& file) { loadCircuitFile(file); };
 
-    // 2. Factory and Load File Buttons
+    // 2. Circuit and output selectors
     factoryBtn_.onClick = [this] { showFactoryBrowser(); };
+    factoryBtn_.setTitle("Browse factory circuits");
     factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
     addAndMakeVisible(factoryBtn_);
+    factoryBtn_.toBack();
+    factoryHint_.setJustificationType(juce::Justification::centred);
+    factoryHint_.setInterceptsMouseClicks(false, false);
+    addAndMakeVisible(factoryHint_);
+    for (auto* label : {&circuitLabel_, &cabinetLabel_, &reverbLabel_})
+        addAndMakeVisible(*label);
+    cabinetSelector_.onOpen = [this] { showOutputImpulseMenu(false); };
+    reverbSelector_.onOpen = [this] { showOutputImpulseMenu(true); };
+    addAndMakeVisible(cabinetSelector_);
+    addAndMakeVisible(reverbSelector_);
+    refreshOutputSelectors();
 
     loadFileBtn_.onClick = [this] { openCircuitFileChooser(); };
     addAndMakeVisible(loadFileBtn_);
 
     effectsBtn_.onClick = [this] { showOutputEffects(); };
-    effectsBtn_.setTooltip("Cabinet, echo, and reverb on the output");
+    effectsBtn_.setTooltip("Adjust the echo and reverb mixes");
     addAndMakeVisible(effectsBtn_);
 
     // 3. Reload Button
@@ -349,6 +310,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // The status line says what is playing, so the plugin is never a mystery.
     statusLabel_.setColour(juce::Label::textColourId, juce::Colour(0xFF94A3B8));
     statusLabel_.setFont(editor::Fonts::monoSemiBold(12.0f));
+    statusLabel_.setInterceptsMouseClicks(false, false);
     addAndMakeVisible(statusLabel_);
 }
 
@@ -372,10 +334,14 @@ juce::String LiveWDFPluginEditor::currentCircuitDescription(const wdf::LiveWDFDo
 
 LiveWDFPluginEditor::~LiveWDFPluginEditor() {
     fileChooser_.reset();
+    cabinetSelector_.hidePopup();
+    reverbSelector_.hidePopup();
     effectsBrowser_.reset();
     effectsPanel_.reset();
     if (factoryBrowser_ != nullptr)
         factoryBrowser_->dismiss();
+    if (factoryIrCredits_ != nullptr)
+        factoryIrCredits_->dismiss();
     setLookAndFeel(nullptr);
     stopTimer();
 }
@@ -658,14 +624,106 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
 #endif
 }
 
-void LiveWDFPluginEditor::showOutputEffects(const juce::String& message) {
+bool LiveWDFPluginEditor::outputEnabled(bool reverb) const {
+    return processor_.getAPVTS().getRawParameterValue(outputParameter(reverb))->load() > 0.0f;
+}
+
+void LiveWDFPluginEditor::setOutputEnabled(bool reverb, bool enabled) {
+    if (outputEnabled(reverb) != enabled) {
+        auto& parameter = *processor_.getAPVTS().getParameter(outputParameter(reverb));
+        parameter.beginChangeGesture();
+        parameter.setValueNotifyingHost(parameter.convertTo0to1(enabled ? (reverb ? 20.0f : 1.0f) : 0.0f));
+        parameter.endChangeGesture();
+    }
+    refreshOutputSelectors();
+}
+
+void LiveWDFPluginEditor::refreshOutputSelectors() {
+    for (bool reverb : {false, true}) {
+        auto& selector = reverb ? reverbSelector_ : cabinetSelector_;
+        const auto name = outputEnabled(reverb) ? processor_.outputImpulseName(reverb) : juce::String("Off");
+        if (selector.getText() != name) {
+            selector.setText(name, juce::dontSendNotification);
+            selector.setTooltip(name);
+        }
+    }
+}
+
+void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
+    enum { off = 1, suggested, imported, importWav, credits, firstFactory };
+    auto& selector = reverb ? reverbSelector_ : cabinetSelector_;
+    const auto entries = processor_.factoryOutputImpulses(reverb);
+    const auto current = processor_.outputImpulseId(reverb);
+    const auto recommendation = reverb ? juce::String{} : processor_.suggestedCabinetId();
+    const bool enabled = outputEnabled(reverb);
+
+    juce::PopupMenu menu;
+    menu.setLookAndFeel(&getLookAndFeel());
+    menu.addItem(off, "Off", true, !enabled);
+    for (const auto& entry : entries) {
+        if (recommendation == entry.id)
+            menu.addItem(suggested, "Suggested - " + juce::String(entry.name));
+    }
+    if (current.isEmpty())
+        menu.addItem(imported, processor_.outputImpulseName(reverb), true, enabled);
+    menu.addSeparator();
+    for (size_t i = 0; i < entries.size(); ++i) {
+        const auto& entry = entries[i];
+        menu.addItem(firstFactory + static_cast<int>(i), entry.name, true, enabled && current == entry.id);
+    }
+    menu.addSeparator();
+    menu.addItem(importWav, "Load WAV...");
+    menu.addItem(credits, "Factory IR credits...");
+
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&selector)
+                           .withParentComponent(this).withMinimumWidth(selector.getWidth()).withMaximumNumColumns(1),
+                       [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this), reverb, entries, recommendation](int choice) {
+        if (safe == nullptr)
+            return;
+        (reverb ? safe->reverbSelector_ : safe->cabinetSelector_).hidePopup();
+        switch (choice) {
+            case 0: return;
+            case off: safe->setOutputEnabled(reverb, false); return;
+            case imported: safe->setOutputEnabled(reverb, true); return;
+            case importWav: safe->openOutputImpulseChooser(reverb); return;
+            case credits: safe->showFactoryIrCredits(reverb); return;
+            default: break;
+        }
+        const auto id = choice == suggested ? recommendation
+                                            : juce::String(entries[static_cast<size_t>(choice - firstFactory)].id);
+        if (safe->processor_.selectFactoryOutputImpulse(reverb, id))
+            safe->setOutputEnabled(reverb, true);
+        else
+            juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                                  "Impulse unavailable", "Could not load the selected factory impulse.", "OK", safe.getComponent());
+    });
+}
+
+void LiveWDFPluginEditor::showFactoryIrCredits(bool reverb) {
+    if (factoryIrCredits_ != nullptr)
+        return;
+    auto document = std::make_unique<juce::TextEditor>();
+    document->setTitle("Factory IR credits");
+    document->setMultiLine(true, true);
+    document->setReadOnly(true);
+    document->setCaretVisible(false);
+    document->setScrollbarsShown(true);
+    document->setText(processor_.factoryOutputImpulseCredits(), false);
+    document->setCaretPosition(0);
+    document->setSize(juce::jlimit(1, 540, getWidth() - 32), juce::jlimit(1, 440, getHeight() - 50));
+    const auto bounds = (reverb ? reverbSelector_ : cabinetSelector_).getBounds();
+    auto& popup = juce::CallOutBox::launchAsynchronously(std::move(document), bounds, this);
+    popup.setDismissalMouseClicksAreAlwaysConsumed(true);
+    factoryIrCredits_ = &popup;
+}
+
+void LiveWDFPluginEditor::showOutputEffects() {
     if (effectsBrowser_ == nullptr) {
-        effectsPanel_ = std::make_unique<OutputEffectsPanel>(*this);
+        effectsPanel_ = std::make_unique<OutputEffectsPanel>(processor_.getAPVTS());
         effectsPanel_->fitWidth(getWidth());
         effectsBrowser_ = std::make_unique<juce::CallOutBox>(*effectsPanel_, effectsBtn_.getBounds(), this);
         effectsBrowser_->setDismissalMouseClicksAreAlwaysConsumed(true);
     }
-    effectsPanel_->refresh(message);
     effectsBrowser_->setVisible(true);
     if (!effectsBrowser_->isCurrentlyModal(false)) {
         const juce::Component::SafePointer<juce::CallOutBox> popup(effectsBrowser_.get());
@@ -677,9 +735,6 @@ void LiveWDFPluginEditor::showOutputEffects(const juce::String& message) {
 }
 
 void LiveWDFPluginEditor::openOutputImpulseChooser(bool reverb) {
-    // Release the callout's modal state before opening the system file picker.
-    effectsBrowser_->exitModalState(0);
-    effectsBrowser_->setVisible(false);
     const juce::String kind = reverb ? "Reverb IR" : "Cab IR";
     fileChooser_ = std::make_unique<juce::FileChooser>(
         "Select " + kind, juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
@@ -689,12 +744,14 @@ void LiveWDFPluginEditor::openOutputImpulseChooser(bool reverb) {
                                      reverb, kind](const juce::FileChooser& chooser) {
         if (safe == nullptr)
             return;
-        juce::String message;
         const auto url = chooser.getURLResult();
-        if (!url.isEmpty() && !loadImpulseFromUrl(safe->processor_, reverb, url))
-            message = kind + " needs a readable mono or stereo WAV.";
-        if (safe->isShowing())
-            safe->showOutputEffects(message);
+        if (url.isEmpty())
+            return;
+        if (loadImpulseFromUrl(safe->processor_, reverb, url))
+            safe->setOutputEnabled(reverb, true);
+        else if (safe->isShowing())
+            juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
+                                                  "Invalid WAV", kind + " needs a readable mono or stereo WAV.", "OK", safe.getComponent());
     });
 }
 
@@ -744,6 +801,7 @@ void LiveWDFPluginEditor::refreshSolveQuality() {
 }
 
 void LiveWDFPluginEditor::timerCallback() {
+    refreshOutputSelectors();
     const auto revision = processor_.getRestoredDocumentRevision();
     if (revision != restoredDocumentRevision_) {
         restoredDocumentRevision_ = revision;
@@ -803,11 +861,11 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
     // Toolbar background
     auto bounds = getLocalBounds();
     g.setColour(juce::Colour(0xFF12151A));
-    g.fillRect(bounds.removeFromTop(52));
+    g.fillRect(bounds.removeFromTop(52 + sourceRowsHeight));
 
     // Divider line below top bar
     g.setColour(juce::Colour(0xFF262E3B));
-    g.drawHorizontalLine(52, 0.0f, static_cast<float>(getWidth()));
+    g.drawHorizontalLine(52 + sourceRowsHeight, 0.0f, static_cast<float>(getWidth()));
 
     // Divider lines around control strip
     const int knobStripY = controlStripBounds_.getY();
@@ -841,6 +899,21 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
 #endif
 }
 
+void LiveWDFPluginEditor::layoutSourceSelectors(juce::Rectangle<int> bounds) {
+    bounds.reduce(0, 4);
+    const auto row = [&](juce::Label& label) {
+        auto area = bounds.removeFromTop(sourceRowHeight).reduced(0, 2);
+        label.setBounds(area.removeFromLeft(72));
+        return area;
+    };
+    auto circuit = row(circuitLabel_);
+    factoryBtn_.setBounds(circuit);
+    factoryHint_.setBounds(circuit.removeFromRight(65));
+    presetStepper_.setBounds(circuit.reduced(5, 2));
+    cabinetSelector_.setBounds(row(cabinetLabel_));
+    reverbSelector_.setBounds(row(reverbLabel_));
+}
+
 void LiveWDFPluginEditor::resized() {
 #if JUCE_ANDROID
     resizedMobile();
@@ -860,13 +933,11 @@ void LiveWDFPluginEditor::resized() {
     stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
     reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
     loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
-    factoryBtn_.setBounds(topBar.removeFromRight(92).reduced(6, 10));
-    const int nameWidth = juce::jmax(0, topBar.getWidth() - 22);
-    titleLabel_.setBounds(16, 7, juce::jmin(240, nameWidth), 20);
-    presetStepper_.setBounds({16, 27, nameWidth, 18});
+    titleLabel_.setBounds(16, 16, juce::jmin(240, juce::jmax(0, topBar.getWidth() - 22)), 20);
+    layoutSourceSelectors(bounds.removeFromTop(sourceRowsHeight).reduced(12, 0));
 
-    // 2. Bottom Oscilloscope (height 150px)
-    auto bottomScope = bounds.removeFromBottom(150);
+    // Keep the schematic visible when the host gives the selectors a short window.
+    auto bottomScope = bounds.removeFromBottom(juce::jlimit(76, 150, getHeight() - 540));
     oscilloscope_.setBounds(bottomScope.reduced(4));
 
     constexpr int fixedKnobWidth = 92;
@@ -936,10 +1007,9 @@ void LiveWDFPluginEditor::resized() {
 #if JUCE_ANDROID
 void LiveWDFPluginEditor::resizedMobile() {
     auto bounds = getLocalBounds().reduced(4);
-    presetStepper_.setBounds(bounds.removeFromTop(32));
+    layoutSourceSelectors(bounds.removeFromTop(sourceRowsHeight));
     auto actions = bounds.removeFromTop(39);
     effectsBtn_.setBounds(actions.removeFromRight(84).reduced(3, 2));
-    factoryBtn_.setBounds(actions.removeFromLeft(actions.getWidth() / 2).reduced(3, 2));
     loadFileBtn_.setBounds(actions.reduced(3, 2));
     auto options = bounds.removeFromTop(38);
     solveQualityCombo_.setBounds(options.removeFromLeft(options.getWidth() * 3 / 8).reduced(3, 2));

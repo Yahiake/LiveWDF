@@ -6,8 +6,16 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <span>
+#include <string_view>
 
 namespace livewdf {
+
+struct FactoryImpulse {
+    const char* id;
+    const char* name;
+    const char* file;
+};
 
 class OutputEffects {
 public:
@@ -19,8 +27,13 @@ public:
     void reclaim();
 
     bool loadImpulse(bool reverb, const juce::File&);
+    bool selectFactoryImpulse(bool reverb, juce::StringRef id);
     void resetImpulse(bool reverb);
     juce::String impulseName(bool reverb) const;
+    juce::String impulseId(bool reverb) const;
+    static std::span<const FactoryImpulse> factoryImpulses(bool reverb) noexcept;
+    static juce::String suggestedCabinet(std::string_view circuit);
+    static juce::String factoryCredits();
     void save(juce::ValueTree&) const;
     void restore(juce::ValueTree&);
 
@@ -33,10 +46,12 @@ private:
         juce::String name;
         juce::AudioBuffer<float> samples;
         double sampleRate = 0.0;
+        juce::String factoryId{};
     };
     struct Prepared;
 
-    static Impulse decode(juce::MemoryBlock, const juce::String&);
+    static Impulse decode(juce::MemoryBlock, const juce::String&, bool flac = false);
+    static Impulse factoryImpulse(bool reverb, juce::StringRef id);
     static juce::AudioBuffer<float> atRate(const Impulse&, double rate);
     void publish(std::unique_ptr<Prepared>);
     void setImpulse(bool reverb, Impulse);

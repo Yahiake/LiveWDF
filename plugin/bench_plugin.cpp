@@ -2401,6 +2401,33 @@ static bool checkOutputEffectsState() {
         [](float sample) { return std::abs(sample) > 1e-4f; });
 }
 
+static bool checkFactoryOutputIrState(const juce::File& amp) {
+    livewdf::LiveWDFPluginProcessor source;
+    for (bool reverb : {false, true}) {
+        for (const auto& preset : source.factoryOutputImpulses(reverb)) {
+            if (!source.selectFactoryOutputImpulse(reverb, preset.id)
+                || source.outputImpulseId(reverb) != preset.id
+                || source.outputImpulseName(reverb) != preset.name) {
+                std::fprintf(stderr, "Could not select bundled IR %s\n", preset.id);
+                return false;
+            }
+        }
+    }
+    if (!source.loadCircuitFromFile(amp) || !source.reloadCircuit()
+        || source.suggestedCabinetId() != "orange-ppc112-v30-sm57"
+        || !source.selectFactoryOutputImpulse(false, source.suggestedCabinetId())
+        || !source.selectFactoryOutputImpulse(true, "spring-combo"))
+        return false;
+
+    juce::MemoryBlock saved;
+    source.getStateInformation(saved);
+    livewdf::LiveWDFPluginProcessor restored;
+    restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    return restored.outputImpulseId(false) == "orange-ppc112-v30-sm57"
+        && restored.outputImpulseId(true) == "spring-combo"
+        && restored.suggestedCabinetId() == source.suggestedCabinetId();
+}
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
@@ -2424,6 +2451,8 @@ int main(int argc, char** argv) {
         return livewdf::checkLivePreviewPotMotion(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")
         return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-factory-output-irs")
+        return checkFactoryOutputIrState(file) ? 0 : 1;
 
     if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
         const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
