@@ -11,6 +11,9 @@ on:
     paths:
       - .github/workflows/build.yml
       - "**/CMakeLists.txt"
+      - src/wdf/RuntimeKernels*
+      - src/wdf/DenseSolve*
+      - tests/smoke/linux_sandy_bridge.sh
 
 concurrency:
   group: build-${{ github.event.pull_request.number || github.run_id }}
@@ -97,6 +100,12 @@ jobs:
 
       - name: Build
         run: cmake --build build --config Release --parallel 4 --target LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone LiveWDF_Editor
+
+      - name: Smoke test Linux x86-64 release on Sandy Bridge
+        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
+        run: |
+          apt-get install -y --no-install-recommends python3 qemu-user xauth xdotool xvfb
+          bash tests/smoke/linux_sandy_bridge.sh build
 
       - name: Run the unit tests on an emulated Pi Zero
         if: matrix.arch == 'armv6'
