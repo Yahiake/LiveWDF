@@ -65,7 +65,7 @@ public:
         usbBlockSize.setSelectedId(128, juce::dontSendNotification);
         usbBlockSize.setTitle("USB audio buffer");
         addAndMakeVisible(usbBlockSize);
-        for (auto* label : {&usbDiagnostics, &captureDiagnostics}) {
+        for (auto* label : {&usbPriority, &usbDiagnostics, &captureDiagnostics}) {
             label->setColour(juce::Label::textColourId, juce::Colour(0xffb8c6d6));
             label->setFont(juce::FontOptions(13.0f));
             addAndMakeVisible(*label);
@@ -97,7 +97,8 @@ public:
             testUsbOutput.setBounds(statusRow.removeFromRight(97).reduced(4, 2));
         auto diagnosticsRow = area.removeFromTop(37).reduced(5, 2);
         usbBlockSize.setBounds(diagnosticsRow.removeFromLeft(132));
-        usbDiagnostics.setBounds(diagnosticsRow.reduced(4, 0));
+        usbPriority.setBounds(diagnosticsRow.reduced(4, 0));
+        usbDiagnostics.setBounds(area.removeFromTop(22).reduced(7, 0));
         captureDiagnostics.setBounds(area.removeFromTop(22).reduced(7, 0));
 #else
         auto statusRow = area.removeFromTop(24);
@@ -123,6 +124,7 @@ public:
         deviceManager.removeAudioCallback(&player);
         deviceManager.closeAudioDevice();
         player.setProcessor(nullptr);
+        callActivity("allowScreenTimeout");
         if (releaseJavaConnection)
             callActivity("releaseUsbConnection");
         showStatus("Audio stopped");
@@ -175,6 +177,7 @@ public:
         processor.prepareToPlay(format.sampleRate, blockFrames);
         longestDspMicros.store(0, std::memory_order_relaxed);
         lateDspBlocks.store(0, std::memory_order_relaxed);
+        usbPriority.setText({}, juce::dontSendNotification);
         usbDiagnostics.setText({}, juce::dontSendNotification);
         captureDiagnostics.setText({}, juce::dontSendNotification);
         usbPrepared = true;
@@ -184,6 +187,7 @@ public:
             return message;
         }
 
+        callActivity("keepScreenOn");
         showStatus("USB direct · " + juce::String(format.sampleRate) + " Hz · "
                    + juce::String(inputChannels) + " in / " + juce::String(outputChannels) + " out · "
                    + juce::String(blockFrames) + " samples");
@@ -233,6 +237,7 @@ private:
         }
         player.setProcessor(&processor);
         deviceManager.addAudioCallback(&player);
+        callActivity("keepScreenOn");
         showStatus(device->getTypeName() + " · " + juce::String(device->getCurrentSampleRate(), 0)
                    + " Hz · " + juce::String(device->getCurrentBufferSizeSamples()) + " samples");
     }
@@ -260,11 +265,14 @@ private:
     void refreshUsbDiagnostics() {
         const auto counters = directUsb.statistics();
         const auto peak = longestDspMicros.load(std::memory_order_relaxed);
-        const auto timing = "USB errors " + juce::String(counters.packetErrors)
+        usbPriority.setText("Nice USB " + juce::String(counters.usbNice) + " / DSP " + juce::String(counters.dspNice),
+                            juce::dontSendNotification);
+        const auto timing = "Play gaps " + juce::String(counters.playbackRecoveries)
+            + " · USB errors " + juce::String(counters.packetErrors)
             + " · DSP " + juce::String(peak / 1000.0, 2) + " ms"
             + " · Late " + juce::String(lateDspBlocks.load(std::memory_order_relaxed));
         usbDiagnostics.setText(timing, juce::dontSendNotification);
-        const auto capture = "Recoveries " + juce::String(counters.captureRecoveries)
+        const auto capture = "Capture gaps " + juce::String(counters.captureRecoveries)
             + " · Input missing " + juce::String(counters.inputUnderruns)
             + " · Input dropped " + juce::String(counters.inputOverruns);
         captureDiagnostics.setText(capture, juce::dontSendNotification);
@@ -354,6 +362,7 @@ private:
     std::atomic<unsigned> longestDspMicros{0};
     std::atomic<unsigned> lateDspBlocks{0};
     juce::ComboBox usbBlockSize;
+    juce::Label usbPriority;
     juce::Label usbDiagnostics;
     juce::Label captureDiagnostics;
     juce::TextButton testUsbOutput{"Test output"};
