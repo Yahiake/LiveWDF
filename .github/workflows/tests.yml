@@ -3,8 +3,11 @@ name: Tests
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore: [README.md, 'media/**']
   push:
     branches: [main]
+    paths-ignore: [README.md, 'media/**']
   workflow_dispatch:
 
 concurrency:
@@ -16,6 +19,7 @@ permissions:
 
 jobs:
   linux:
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
