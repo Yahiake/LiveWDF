@@ -1,10 +1,10 @@
 {
-  "id": "livewdf-dod250",
-  "name": "LiveWDF DOD 250",
+  "id": "livewdf-gp50",
+  "name": "LiveWDF GP-50",
   "version": "0.1.0",
   "author": "LiveWDF contributors",
   "url": "https://github.com/Yahiake/LiveWDF",
   "licence": "AGPL-3.0-only",
-  "description": "LiveWDF circuit simulation with Gain, Level and bypass.",
+  "description": "LiveWDF DOD 250 and MXR Micro Amp circuits with optional cabinet, delay and reverb.",
   "platform": "0.8"
 }

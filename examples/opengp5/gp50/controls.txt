@@ -5,4 +5,8 @@
 0.70 foot
 0.85 shot bypassed
 1.10 foot
-1.25 shot reengaged
+1.20 right turn 1
+1.25 set Cab On
+1.30 set Delay 25
+1.35 set Reverb 20
+1.45 shot micro_amp

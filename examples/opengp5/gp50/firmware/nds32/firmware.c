@@ -2,12 +2,14 @@
 #include "gp5_ui.h"
 #include "fonts/sans_16.h"
 
-static const uint8_t rows[] = { GP5_P_GAIN, GP5_P_LEVEL, GP5_P_ON };
-static const int16_t steps[] = { 1, 2, 1 };
+static const uint8_t rows[] = {
+    GP5_P_GAIN, GP5_P_LEVEL, GP5_P_MODEL, GP5_P_CAB, GP5_P_DELAY, GP5_P_REVERB, GP5_P_ON
+};
+static const int16_t steps[] = { 1, 2, 1, 1, 5, 5, 1 };
 static const gp5_ui_theme_t theme = { 0x18130e, 0xfff1d8, 0xa59072, 0xf4b665, 0x24170a };
 static gp5_ui_page_t page = {
     .rows = rows, .n = sizeof rows, .steps = steps, .font = &gp5_font_sans_16,
-    .theme = &theme, .title = "DOD 250", .row_h = GP5_SCREEN_H / 4, .upper = 1,
+    .theme = &theme, .title = "LiveWDF", .row_h = GP5_SCREEN_H / 5, .upper = 1,
 };
 
 static void show_on(void)
@@ -32,9 +34,17 @@ int fw_draw(int force) { return gp5_ui_page_draw(&page, force); }
 #ifdef GP50_BOARD
 void fw_gp50_encoder_turn(unsigned encoder, int detents)
 {
-    if (encoder != GP50_ENCODER_LEFT && encoder != GP50_ENCODER_MIDDLE) return;
+    if (encoder > GP50_ENCODER_RIGHT) return;
     unsigned id = rows[encoder];
     gp5_param_set(id, gp5_param(id) + detents * steps[encoder]);
+}
+
+void fw_gp50_button(unsigned button, int down)
+{
+    if (down && button == GP50_BUTTON_FS2) {
+        int next = gp5_param(GP5_P_MODEL) + 1;
+        gp5_param_set(GP5_P_MODEL, next > gp5_param_table[GP5_P_MODEL].max ? 0 : next);
+    }
 }
 #endif
 
