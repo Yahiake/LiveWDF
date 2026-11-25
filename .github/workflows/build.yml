@@ -101,12 +101,6 @@ jobs:
       - name: Build
         run: cmake --build build --config Release --parallel 4 --target LiveWDF_Plugin_VST3 LiveWDF_Plugin_Standalone LiveWDF_Editor
 
-      - name: Smoke test Linux x86-64 release on Sandy Bridge
-        if: matrix.os == 'linux' && matrix.arch == 'x86_64'
-        run: |
-          apt-get install -y --no-install-recommends python3 qemu-user xauth xdotool xvfb
-          bash tests/smoke/linux_sandy_bridge.sh build
-
       - name: Run the unit tests on an emulated Pi Zero
         if: matrix.arch == 'armv6'
         run: |
@@ -187,6 +181,16 @@ jobs:
         env:
           INPUT: ${{ inputs.version }}
         run: echo "VERSION=${INPUT:-$(sed -n 's/^set(LIVEWDF_VERSION \([0-9.]*\) .*/\1/p' CMakeLists.txt)}" >> "$GITHUB_ENV"
+
+      - name: Smoke test Linux x86-64 release on Sandy Bridge
+        run: |
+          # Test the shipped ZIP with Ubuntu 24.04's QEMU, which emulates AVX.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends qemu-user xauth xdotool xvfb libasound2t64 libjack-jackd2-0
+          release_dir=$(mktemp -d)
+          name=LiveWDF-$VERSION-linux-x86_64
+          unzip -q "$name.zip" -d "$release_dir"
+          bash tests/smoke/linux_sandy_bridge.sh "$release_dir/$name"
 
       - name: Debian and RPM packages
         run: |
