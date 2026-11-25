@@ -6,21 +6,48 @@ option(LIVEWDF_VST3_MANIFEST "Write the VST3 moduleinfo.json, which loads the bu
 # LiveWDF Audio Plugin Target (VST3 & Standalone)
 # ==============================================================================
 
-juce_add_plugin(LiveWDF_Plugin
-    COMPANY_NAME "Yahia Kemari"
-    BUNDLE_ID "com.yahia.livewdf"
-    PLUGIN_MANUFACTURER_CODE "LWDF"
-    PLUGIN_CODE "LWDF"
-    FORMATS VST3 Standalone
-    PRODUCT_NAME "LiveWDF"
-    IS_SYNTH FALSE
-    NEEDS_MIDI_INPUT FALSE
-    NEEDS_MIDI_OUTPUT FALSE
-    IS_MIDI_EFFECT FALSE
-    EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    COPY_PLUGIN_AFTER_BUILD FALSE
-    VST3_AUTO_MANIFEST ${LIVEWDF_VST3_MANIFEST}
-)
+if(ANDROID)
+    # Gradle supplies the Android app bundle. The library exposes JUCE's app
+    # entry point and shares the processor and editor with the desktop plugin.
+    juce_add_gui_app(LiveWDF_Plugin PRODUCT_NAME "LiveWDF" BUNDLE_ID "com.yahia.livewdf")
+    set_target_properties(LiveWDF_Plugin PROPERTIES OUTPUT_NAME juce_jni)
+    set(android_standalone ../android/native/AndroidStandalone.cpp)
+    target_sources(LiveWDF_Plugin PRIVATE "${android_standalone}")
+    set_property(SOURCE "${android_standalone}" PROPERTY COMPILE_DEFINITIONS
+        JUCE_CORE_INCLUDE_JNI_HELPERS=1 LIVEWDF_VERSION_STRING="${PROJECT_VERSION}")
+
+    option(LIVEWDF_ENABLE_ANDROID_USB "Build the direct Android USB audio backend" ON)
+    set(LIVEWDF_ANDROID_USB_SOURCE_DIR "" CACHE PATH "Local checkout of the direct Android USB audio driver")
+    if(LIVEWDF_ENABLE_ANDROID_USB)
+        if(LIVEWDF_ANDROID_USB_SOURCE_DIR)
+            add_subdirectory("${LIVEWDF_ANDROID_USB_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/android-usb")
+        else()
+            include(FetchContent)
+            FetchContent_Declare(android_usb_audio_source
+                GIT_REPOSITORY https://github.com/jopdorp/android-usb-audio.git
+                GIT_TAG 61a121ab324751d5e4e97f00bcbc0198e0bc1d9c)
+            FetchContent_MakeAvailable(android_usb_audio_source)
+        endif()
+        target_link_libraries(LiveWDF_Plugin PRIVATE android_usb_audio)
+        set_property(SOURCE "${android_standalone}" APPEND PROPERTY COMPILE_DEFINITIONS LIVEWDF_ANDROID_USB=1)
+    endif()
+else()
+    juce_add_plugin(LiveWDF_Plugin
+        COMPANY_NAME "Yahia Kemari"
+        BUNDLE_ID "com.yahia.livewdf"
+        PLUGIN_MANUFACTURER_CODE "LWDF"
+        PLUGIN_CODE "LWDF"
+        FORMATS VST3 Standalone
+        PRODUCT_NAME "LiveWDF"
+        IS_SYNTH FALSE
+        NEEDS_MIDI_INPUT FALSE
+        NEEDS_MIDI_OUTPUT FALSE
+        IS_MIDI_EFFECT FALSE
+        EDITOR_WANTS_KEYBOARD_FOCUS TRUE
+        COPY_PLUGIN_AFTER_BUILD FALSE
+        VST3_AUTO_MANIFEST ${LIVEWDF_VST3_MANIFEST}
+    )
+endif()
 
 target_sources(LiveWDF_Plugin PRIVATE
     source/PluginProcessor.cpp
@@ -61,6 +88,10 @@ target_link_libraries(LiveWDF_Plugin PRIVATE
     juce::juce_gui_basics
     juce::juce_gui_extra
 )
+
+if(ANDROID)
+    return()
+endif()
 
 # Manual instrument, not a test and not part of the default build: times the
 # real processor's processBlock() path at several block sizes and oversampling

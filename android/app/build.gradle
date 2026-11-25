@@ -1,0 +1,70 @@
+plugins {
+    id 'com.android.application'
+}
+
+def juceModules = '../../modules/JUCE/modules'
+def livewdfVersion = providers.gradleProperty('livewdfVersion').getOrElse('0.1.3')
+def usbDriverDir = providers.gradleProperty('livewdfUsbDriverDir').orNull
+def usbDriverEnabled = providers.gradleProperty('livewdfDirectUsb').getOrElse('true').toBoolean()
+def legalAssets = layout.buildDirectory.dir('generated/livewdfAssets')
+def copyLegalAssets = tasks.register('copyLiveWdfLegalAssets', Copy) {
+    from rootProject.file('../LICENSE'), rootProject.file('../THIRD-PARTY-NOTICES.md')
+    into legalAssets.map { it.dir('licenses') }
+}
+
+android {
+    namespace 'com.yahia.livewdf'
+    compileSdk 35
+    ndkVersion '28.2.13676358'
+
+    defaultConfig {
+        applicationId 'com.yahia.livewdf'
+        minSdk 24
+        targetSdk 35
+        versionCode providers.gradleProperty('livewdfVersionCode').getOrElse('1').toInteger()
+        versionName livewdfVersion
+
+        ndk {
+            abiFilters.addAll(providers.gradleProperty('livewdfAbis').getOrElse('arm64-v8a').split(',') as List)
+        }
+
+        externalNativeBuild {
+            cmake {
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_WEAK_API_DEFS=ON',
+                          '-DLIVEWDF_BUILD_TESTS=OFF', '-DLIVEWDF_BUILD_EDITOR=OFF',
+                          "-DLIVEWDF_VERSION=${livewdfVersion}",
+                          "-DLIVEWDF_ENABLE_ANDROID_USB=${usbDriverEnabled ? 'ON' : 'OFF'}",
+                          "-DLIVEWDF_ANDROID_USB_SOURCE_DIR=${usbDriverDir == null ? '' : file(usbDriverDir).absolutePath}"
+                targets 'LiveWDF_Plugin'
+            }
+        }
+    }
+
+    // A playable test APK with release DSP optimization and the local debug key.
+    buildTypes {
+        debug {
+            externalNativeBuild.cmake.arguments '-DCMAKE_BUILD_TYPE=Release'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    externalNativeBuild {
+        cmake {
+            path '../../CMakeLists.txt'
+            version '3.31.6'
+        }
+    }
+
+    sourceSets.main.java.srcDirs += [
+        "${juceModules}/juce_core/native/javacore/init",
+        "${juceModules}/juce_core/native/javacore/app",
+        "${juceModules}/juce_audio_devices/native/javaopt/app"
+    ]
+    sourceSets.main.assets.srcDir legalAssets
+}
+
+tasks.named('preBuild').configure { dependsOn copyLegalAssets }
