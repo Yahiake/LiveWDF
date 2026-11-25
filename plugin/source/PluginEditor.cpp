@@ -88,10 +88,6 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(oversamplingCombo_);
     oversamplingAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "oversampling", oversamplingCombo_);
 
-    compiledPreviewBtn_.setTooltip("Use compiled circuit approximations in Fast Live when available.");
-    addAndMakeVisible(compiledPreviewBtn_);
-    compiledPreviewAttach_ = std::make_unique<ButtonAttachment>(
-        processor_.getAPVTS(), "compiled_preview", compiledPreviewBtn_);
     reportLatencyBtn_.setTooltip("Report oversampling delay to the DAW. Turning this off keeps the audio timing the same.");
     addAndMakeVisible(reportLatencyBtn_);
     reportLatencyAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "report_latency", reportLatencyBtn_);
@@ -103,11 +99,22 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
         processor_.getAPVTS(), "export_4x", oversampleExportBtn_);
 
     solveQualityCombo_.addItem("Accurate", 1);
-    solveQualityCombo_.addItem("Fast Live", 2);
-    solveQualityCombo_.setTooltip("Fast Live uses a looser solver tolerance.");
+    solveQualityCombo_.addItem("Fast", 2);
+    solveQualityCombo_.addItem("Preview", 3);
+    solveQualityCombo_.setTooltip("Preview uses compiled circuit approximations when available.");
     addAndMakeVisible(solveQualityCombo_);
-    solveQualityAttach_ = std::make_unique<ComboBoxAttachment>(
-        processor_.getAPVTS(), "solve_quality", solveQualityCombo_);
+    auto& parameters = processor_.getAPVTS();
+    const auto refreshQuality = [this](float) { refreshSolveQuality(); };
+    solveQualityAttach_ = std::make_unique<juce::ParameterAttachment>(
+        *parameters.getParameter("solve_quality"), refreshQuality);
+    compiledPreviewAttach_ = std::make_unique<juce::ParameterAttachment>(
+        *parameters.getParameter("compiled_preview"), refreshQuality);
+    solveQualityCombo_.onChange = [this] {
+        const int choice = solveQualityCombo_.getSelectedId();
+        compiledPreviewAttach_->setValueAsCompleteGesture(choice == 3 ? 1.0f : 0.0f);
+        solveQualityAttach_->setValueAsCompleteGesture(choice == 1 ? 0.0f : 1.0f);
+    };
+    refreshSolveQuality();
 
     accurateExportBtn_.setTooltip("Use Accurate when the host renders offline. "
                                   "Turn off to render with the selected Solve Quality.");
@@ -143,7 +150,6 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // 6. Dual-Trace Oscilloscope
     oscilloscope_.setBuffers(&processor_.getInputScopeBuffer(), &processor_.getOutputScopeBuffer());
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
-    compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
     addAndMakeVisible(oscilloscope_);
 
     inputRoute_.addItemList({"Track", "Previous LiveWDF"}, 1);
@@ -506,6 +512,13 @@ void LiveWDFPluginEditor::filesDropped(const juce::StringArray& files, int x, in
 // -----------------------------------------------------------------------------
 // Timer Callback (Periodic UI Refresh)
 // -----------------------------------------------------------------------------
+void LiveWDFPluginEditor::refreshSolveQuality() {
+    auto& parameters = processor_.getAPVTS();
+    const bool fast = parameters.getRawParameterValue("solve_quality")->load() > 0.5f;
+    const bool preview = parameters.getRawParameterValue("compiled_preview")->load() > 0.5f;
+    solveQualityCombo_.setSelectedId(fast ? (preview ? 3 : 2) : 1, juce::dontSendNotification);
+}
+
 void LiveWDFPluginEditor::timerCallback() {
     const auto revision = processor_.getRestoredDocumentRevision();
     if (revision != restoredDocumentRevision_) {
@@ -517,7 +530,6 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
-    compiledPreviewBtn_.setEnabled(solveQualityCombo_.getSelectedId() == 2);
     previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
     // The parameter can move from automation or host state restore, not only
@@ -608,9 +620,7 @@ void LiveWDFPluginEditor::resized() {
     // 1. Top Bar (height 52px)
     auto topBar = bounds.removeFromTop(52);
     aboutBtn_.setBounds(topBar.removeFromRight(70).reduced(6, 10));
-    auto playbackOptions = topBar.removeFromRight(122).reduced(6, 3);
-    compiledPreviewBtn_.setBounds(playbackOptions.removeFromTop(24));
-    reportLatencyBtn_.setBounds(playbackOptions);
+    reportLatencyBtn_.setBounds(topBar.removeFromRight(122).reduced(6, 10));
     auto oversamplingControls = topBar.removeFromRight(120).reduced(6, 3);
     oversamplingCombo_.setBounds(oversamplingControls.removeFromTop(27));
     oversampleExportBtn_.setBounds(oversamplingControls);

@@ -57,7 +57,6 @@ private:
     juce::TextButton aboutBtn_ { "ABOUT" };
 
     juce::ComboBox oversamplingCombo_;
-    juce::ToggleButton compiledPreviewBtn_{"Preview"};
     juce::ToggleButton reportLatencyBtn_{"Report latency"};
     juce::ToggleButton oversampleExportBtn_ { "4× export" };
     juce::ComboBox solveQualityCombo_;
@@ -127,9 +126,9 @@ private:
     std::unique_ptr<SliderAttachment> mixAttach_;
     std::unique_ptr<ComboBoxAttachment> oversamplingAttach_;
     std::unique_ptr<ButtonAttachment> reportLatencyAttach_;
-    std::unique_ptr<ButtonAttachment> compiledPreviewAttach_;
     std::unique_ptr<ButtonAttachment> oversampleExportAttach_;
-    std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
+    std::unique_ptr<juce::ParameterAttachment> solveQualityAttach_;
+    std::unique_ptr<juce::ParameterAttachment> compiledPreviewAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicKnobAttachments_;
@@ -138,6 +137,7 @@ private:
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
     juce::Component::SafePointer<editor::PresetLibraryPanel> factoryPanel_;
     bool showPreviewPresets_ = false;
+    void refreshSolveQuality();
     void refreshFactoryVisibility();
     bool loadFactoryPreset(const juce::File& file);
     editor::PresetLibraryPanel::View factoryView_;
