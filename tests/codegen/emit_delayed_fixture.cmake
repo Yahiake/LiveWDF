@@ -1,4 +1,0 @@
-execute_process(
-    COMMAND "${CODEGEN}" "${CIRCUIT}" 48000 "${FORM}"
-    OUTPUT_FILE "${HEADER}"
-    COMMAND_ERROR_IS_FATAL ANY)
