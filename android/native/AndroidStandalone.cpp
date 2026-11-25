@@ -57,8 +57,8 @@ public:
 #if LIVEWDF_ANDROID_USB
         usbAudio.onClick = [this] { requestAudio(true); };
         addAndMakeVisible(usbAudio);
-        usbBlockSize.addItem("USB 128 samples", 128);
-        usbBlockSize.addItem("USB 64 samples", 64);
+        for (const int frames : {64, 96, 128, 192, 256, 384, 512})
+            usbBlockSize.addItem("USB " + juce::String(frames) + " samples", frames);
         usbBlockSize.setSelectedId(128, juce::dontSendNotification);
         usbBlockSize.setTitle("USB audio buffer");
         addAndMakeVisible(usbBlockSize);
@@ -78,6 +78,9 @@ public:
 
     void resized() override {
         auto area = getLocalBounds();
+        const auto& displays = juce::Desktop::getInstance().getDisplays();
+        if (const auto* display = displays.getDisplayForRect(getScreenBounds()))
+            area = display->safeAreaInsets.subtractedFrom(area);
         auto controls = area.removeFromTop(45).reduced(5, 3);
         androidAudio.setBounds(controls.removeFromLeft(controls.getWidth() / buttonCount).reduced(3, 0));
         if (usbAudio.isVisible())
@@ -127,8 +130,11 @@ public:
 #if LIVEWDF_ANDROID_USB
     juce::String startDirectUsb(int fd, const std::vector<std::uint8_t>& descriptors) {
         stopAudio(false);
-        if (!directUsb.open(fd, descriptors))
-            return usbFailure();
+        if (!directUsb.open(fd, descriptors, 48000)) {
+            const auto firstError = usbFailure();
+            if (!directUsb.open(fd, descriptors, 44100))
+                return firstError + " (48 and 44.1 kHz tried)";
+        }
 
         const auto format = directUsb.format();
         const auto blockFrames = usbBlockSize.getSelectedId();
@@ -345,13 +351,24 @@ private:
     unsigned permissionRequest = 0;
 };
 
+class StandaloneWindow final : public juce::DocumentWindow {
+public:
+    using juce::DocumentWindow::DocumentWindow;
+
+    void parentSizeChanged() override {
+        juce::DocumentWindow::parentSizeChanged();
+        if (auto* content = getContentComponent())
+            content->resized();
+    }
+};
+
 class LiveWdfApplication final : public juce::JUCEApplication {
 public:
     const juce::String getApplicationName() override { return "LiveWDF"; }
     const juce::String getApplicationVersion() override { return LIVEWDF_VERSION_STRING; }
 
     void initialise(const juce::String&) override {
-        window = std::make_unique<juce::DocumentWindow>(getApplicationName(), juce::Colours::black, 0);
+        window = std::make_unique<StandaloneWindow>(getApplicationName(), juce::Colours::black, 0);
         player = new StandalonePlayer();
         window->setUsingNativeTitleBar(true);
         window->setFullScreen(true);
@@ -370,7 +387,7 @@ public:
     }
 
 private:
-    std::unique_ptr<juce::DocumentWindow> window;
+    std::unique_ptr<StandaloneWindow> window;
     StandalonePlayer* player = nullptr;
 };
 
