@@ -852,14 +852,8 @@ public:
     {
         if constexpr (N == 1) {
             if (!detail::solve1(M, r)) return false;
-        } else if constexpr (N == 2) {
-            if (!detail::solve2(M, r)) return false;
-        } else if constexpr (N == 3) {
-            if (!detail::solve3(M, r)) return false;
-        } else if constexpr (N == 4) {
-            if (!detail::solve4(M, r)) return false;
         } else {
-            if (!detail::solveFixed<N>(M, r)) return false;
+            if (!detail::solveData(M, r, N)) return false;
         }
         backsubFixed<N>(r, zRed, fData, K, dvData);
         return true;

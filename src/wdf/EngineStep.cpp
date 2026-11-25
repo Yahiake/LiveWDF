@@ -246,18 +246,9 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     std::memcpy(nodeData, uData, static_cast<size_t>(N_) * sizeof(double));
     if (K_ > 0) {
         const double* LIVEWDF_RESTRICT iiData = ii_.data();
-        for (const auto& panel : rootPanels_) {
-            double sums[rootPanelWidth]{};
-            const double* coeff = rootPanelValues_.data() + panel.valueStart;
-            for (int j = 0; j < panel.colCount; ++j) {
-                const double current = iiData[xrCols_[panel.colStart + j]];
-                for (int q = 0; q < rootPanelWidth; ++q)
-                    sums[q] += coeff[q] * current;
-                coeff += rootPanelWidth;
-            }
-            for (int q = 0; q < rootPanelWidth; ++q)
-                nodeData[panel.node + q] -= sums[q];
-        }
+        if (!rootPanels_.empty())
+            detail::runtimeKernels().applyRootPanels(rootPanels_.data(), rootPanels_.size(),
+                rootPanelValues_.data(), xrCols_.data(), iiData, nodeData);
         for (const auto& e : xrRows1_) {
             nodeData[e.node] -= e.val * iiData[e.col];
         }

@@ -16,14 +16,6 @@ if(MSVC)
 else()
     target_compile_options(livewdf_options INTERFACE -Wall -Wextra -Wpedantic)
 endif()
-# The compiler's target, because CMAKE_SYSTEM_PROCESSOR is the host for a Visual Studio -A build.
-set(LIVEWDF_ARCH "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}")
-if(NOT LIVEWDF_ARCH)
-    set(LIVEWDF_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-endif()
-if(LIVEWDF_ARCH MATCHES "^(x86_64|x64|X86|AMD64|i[3-6]86)$")
-    target_compile_options(livewdf_options INTERFACE "$<IF:$<BOOL:${MSVC}>,/arch:AVX2,-mavx2;-mfma>")
-endif()
 
 # --- Core library -------------------------------------------------------------
 # Layout (see docs/ARCHITECTURE.md):
@@ -44,6 +36,33 @@ target_include_directories(livewdf PUBLIC
 target_link_libraries(livewdf PRIVATE livewdf_options)
 target_compile_definitions(livewdf PRIVATE LIVEWDF_VERSION_STRING="${PROJECT_VERSION}")
 set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
+# Only the dispatched kernels may contain AVX2/FMA instructions. Keep this
+# translation unit out of LTO so its instructions cannot enter baseline code.
+# Visual Studio's -A sets the compiler target independently of the host.
+set(LIVEWDF_ARCH "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}")
+if(NOT LIVEWDF_ARCH)
+    set(LIVEWDF_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
+endif()
+string(TOLOWER "${LIVEWDF_ARCH}" LIVEWDF_ARCH)
+set(avx2_source src/wdf/RuntimeKernelsAvx2.cpp)
+if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # The compiler may be building the x86_64 slice of a universal binary.
+    set(livewdf_avx2_kernels ON)
+    set_source_files_properties(${avx2_source} PROPERTIES
+        COMPILE_OPTIONS "-Xarch_x86_64;-mavx2;-Xarch_x86_64;-mfma;-fno-lto")
+elseif(LIVEWDF_ARCH MATCHES "^(x86_64|x64|x86|amd64|i[3-6]86)$")
+    if(MSVC)
+        set(livewdf_avx2_kernels ON)
+        set_source_files_properties(${avx2_source} PROPERTIES COMPILE_OPTIONS "/arch:AVX2;/GL-")
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        set(livewdf_avx2_kernels ON)
+        set_source_files_properties(${avx2_source} PROPERTIES COMPILE_OPTIONS "-mavx2;-mfma;-fno-lto")
+    endif()
+endif()
+if(livewdf_avx2_kernels)
+    target_compile_definitions(livewdf PRIVATE LIVEWDF_BUILD_AVX2)
+endif()
 
 # --- Symbol artwork -----------------------------------------------------------
 # The parts' shapes live as SVG files and are embedded into the binary, exactly as
