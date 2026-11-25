@@ -27,7 +27,7 @@ At the center of both is the WDF engine, which handles the circuit simulation.
 
 LiveWDF is being built with a few different audiences in mind:
 
-- **Musicians and guitar players** who want to experiment with circuit-based amplifier and effect simulations without having to design circuits themselves. The searchable factory library includes amps, pedals, and studio circuits.
+- **Musicians and guitar players** who want to experiment with circuit-based amplifier and effect simulations without having to design circuits themselves. The [searchable factory library](docs/factory-presets.md) includes amps, pedals, and studio circuits.
 - **Circuit enthusiasts and tinkerers** who want to build their own circuits and experiment with analog components.
 - **Developers and researchers** interested in Wave Digital Filters, real-time simulation, numerical methods, and audio software development.
 
