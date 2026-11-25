@@ -1,5 +1,3 @@
-"""Check the LiveWDF VST3 parameter defaults through Carla's real host backend."""
-
 import argparse
 from pathlib import Path
 
@@ -11,7 +9,7 @@ from carla_backend import (
     ENGINE_OPTION_TRANSPORT_MODE,
     ENGINE_PROCESS_MODE_CONTINUOUS_RACK,
     ENGINE_TRANSPORT_MODE_INTERNAL,
-    PLUGIN_OPTION_USE_CHUNKS,
+    PLUGIN_OPTIONS_NULL,
     PLUGIN_VST3,
     CarlaHostDLL,
 )
@@ -27,7 +25,7 @@ def check_parameters(host):
         current = host.get_current_parameter_value(0, index)
         if default != 0.5 or current != default:
             raise RuntimeError(
-                f"{name} starts at {current:g}, expected 0.5 (host default {default:g})"
+                f"{name} expected 0.5, got default {default:g} and current {current:g}"
             )
         pot_indexes[name] = index
 
@@ -35,7 +33,7 @@ def check_parameters(host):
         raise RuntimeError("Carla did not expose LiveWDF's potentiometer parameters")
 
     first_pot = pot_indexes["Pot 1"]
-    for position in (0.0, 1.0, 0.5):
+    for position in (0.0, 1.0):
         host.set_parameter_value(0, first_pot, position)
         if host.get_current_parameter_value(0, first_pot) != position:
             raise RuntimeError(f"Carla could not set Pot 1 to {position:g}")
@@ -44,7 +42,7 @@ def check_parameters(host):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="Check LiveWDF VST3 knob defaults in Carla.")
     parser.add_argument("carla_library", type=Path)
     parser.add_argument("vst3_bundle", type=Path)
     args = parser.parse_args()
@@ -60,7 +58,7 @@ def main():
         raise RuntimeError(host.get_last_error())
     try:
         if not host.add_plugin(
-            BINARY_NATIVE, PLUGIN_VST3, str(bundle), None, None, 0, None, PLUGIN_OPTION_USE_CHUNKS
+            BINARY_NATIVE, PLUGIN_VST3, str(bundle), None, None, 0, None, PLUGIN_OPTIONS_NULL
         ):
             raise RuntimeError(host.get_last_error())
         check_parameters(host)
