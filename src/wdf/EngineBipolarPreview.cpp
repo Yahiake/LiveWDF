@@ -725,14 +725,6 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
     return true;
 }
 
-double Engine::bipolarPreviewInputScale() const noexcept {
-    return bipolarPreview_ ? bipolarPreview_->scale : 1.;
-}
-
-double Engine::bipolarPreviewPeakInput() const noexcept {
-    return bipolarPreview_ ? bipolarPreview_->peak : 0.;
-}
-
 bool Engine::bipolarPreviewActive() const noexcept {
     return bipolarPreview_ && bipolarPreview_->active;
 }
