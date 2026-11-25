@@ -48,6 +48,7 @@ void LiveWDFPluginProcessor::processDryDelay(juce::dsp::AudioBlock<float> block,
 
 void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buffer,
                                                    juce::MidiBuffer& midiMessages) {
+    juce::ScopedNoDenormals noDenormals;
     juce::ignoreUnused(midiMessages);
     const int inputChannels = std::min(getMainBusNumInputChannels(), buffer.getNumChannels());
     for (int ch = inputChannels; ch < buffer.getNumChannels(); ++ch)
@@ -55,6 +56,14 @@ void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buff
     if (inputChannels > 0)
         processDryDelay(juce::dsp::AudioBlock<float>(buffer).getSubsetChannelBlock(0, inputChannels),
                         true, processingLatencySamples_.load(std::memory_order_relaxed));
+    if (buffer.getNumChannels() > 0)
+        outputEffects_.process(juce::dsp::AudioBlock<float>(buffer), false, 0.0f, 0.0f, isNonRealtime());
+}
+
+void LiveWDFPluginProcessor::processOutputEffects(juce::dsp::AudioBlock<float> block) noexcept {
+    outputEffects_.process(block, cabinetEnabled_->load(std::memory_order_relaxed) > 0.5f,
+                           echoMix_->load(std::memory_order_relaxed) * 0.01f,
+                           reverbMix_->load(std::memory_order_relaxed) * 0.01f, isNonRealtime());
 }
 
 void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
@@ -72,6 +81,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int numSamples = buffer.getNumSamples();
 
     if (numChannels == 0 || numSamples == 0) return;
+
+    for (int ch = getMainBusNumInputChannels(); ch < numChannels; ++ch)
+        buffer.clear(ch, 0, numSamples);
 
     // A bounce can apply pending processing options itself. Host latency
     // notifications are sent by the control thread.
@@ -133,6 +145,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         const bool passThrough = (!chainInput && matchOutput) || (lock.owns_lock() && !leftEngine_);
         const float fallbackGain = passThrough ? outputGain : (1.0f - wetMix) * dryScale;
         buffer.applyGain(fallbackGain);
+        processOutputEffects(block);
         outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
         return;
     }
@@ -367,6 +380,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         }
     }
 
+    processOutputEffects(block);
     // Push output audio into circular scope buffer
     outputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
 }

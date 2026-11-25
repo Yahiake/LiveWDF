@@ -53,6 +53,10 @@ target_sources(LiveWDF_Plugin PRIVATE
     source/PluginProcessor.cpp
     source/PluginProcessorProcess.cpp
     source/PluginProcessor.h
+    source/OutputEffects.cpp
+    source/OutputEffects.h
+    source/SplitReverb.cpp
+    source/SplitReverb.h
     source/PluginEditor.cpp
     source/PluginEditor.h
     gui/VintageKnob.cpp
@@ -93,6 +97,13 @@ if(ANDROID)
     return()
 endif()
 
+if(LIVEWDF_BUILD_TESTS)
+    add_executable(livewdf_split_reverb_test tests/test_split_reverb.cpp source/SplitReverb.cpp)
+    target_compile_definitions(livewdf_split_reverb_test PRIVATE JUCE_USE_CURL=0)
+    target_link_libraries(livewdf_split_reverb_test PRIVATE livewdf_options juce::juce_dsp)
+    add_test(NAME livewdf_split_reverb COMMAND livewdf_split_reverb_test)
+endif()
+
 # Manual instrument, not a test and not part of the default build: times the
 # real processor's processBlock() path at several block sizes and oversampling
 # factors. Build target `LiveWDF_PluginBench`, run it from the repository root.
@@ -120,6 +131,7 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
 )
 
 if(LIVEWDF_BUILD_TESTS)
+    add_test(NAME livewdf_output_effects_state COMMAND LiveWDF_PluginBench --check-output-effects-state)
     add_test(NAME livewdf_preview_pad COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
         --check-preview-pad)

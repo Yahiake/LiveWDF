@@ -134,6 +134,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"preview_pad", 1}, "Preview pad", false));
 
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"cab_enabled", 1}, "Cabinet IR", false));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"echo_mix", 1}, "Echo Mix",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel("%")));
+    params.push_back(std::make_unique<juce::AudioParameterFloat>(
+        juce::ParameterID{"reverb_mix", 1}, "Reverb Mix",
+        juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
+        juce::AudioParameterFloatAttributes().withLabel("%")));
+
     return { params.begin(), params.end() };
 }
 
@@ -205,6 +216,8 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     // Scratch for the dry/wet copy. Pre-size larger than the announced host
     // block so an oversized callback never has to allocate on the audio thread.
     dryBuffer_.setSize(2, std::max(samplesPerBlock, 4096), false, false, true);
+    outputEffects_.prepare({sampleRate, static_cast<juce::uint32>(std::max(1, samplesPerBlock)),
+                            static_cast<juce::uint32>(std::max(1, getMainBusNumOutputChannels()))});
 
     // Rebuild engines with current sample rate and oversampling factor. This is
     // not a new document, so keep the user's pot positions. With no circuit
@@ -221,6 +234,7 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 }
 
 void LiveWDFPluginProcessor::releaseResources() {
+    outputEffects_.release();
     std::lock_guard<std::mutex> lock(engineMutex_);
     oversampler2x_->reset();
     oversampler4x_->reset();
@@ -229,6 +243,12 @@ void LiveWDFPluginProcessor::releaseResources() {
     halfBandOversamplerR_.reset();
     halfBandPadding_.reset();
     dryDelay_.reset();
+}
+
+double LiveWDFPluginProcessor::getTailLengthSeconds() const {
+    return outputEffects_.tailSeconds(cabinetEnabled_->load(std::memory_order_relaxed) > 0.5f,
+                                      echoMix_->load(std::memory_order_relaxed) > 0.0f,
+                                      reverbMix_->load(std::memory_order_relaxed) > 0.0f);
 }
 
 juce::dsp::Oversampling<float>* LiveWDFPluginProcessor::activePolyphaseOversampler() const noexcept {
@@ -266,6 +286,7 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
+    outputEffects_.reclaim();
     const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (liveControlUpdateFailed_.exchange(false, std::memory_order_relaxed))
         lastError_ = "Could not apply a live control setting";
@@ -1160,6 +1181,7 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
 void LiveWDFPluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     auto state = apvts_.copyState();
+    outputEffects_.save(state);
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
 
     // Save active LiveWDF JSON document
@@ -1183,7 +1205,11 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("preview_pad", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
+        restoreMissing("cab_enabled", 0.0f);
+        restoreMissing("echo_mix", 0.0f);
+        restoreMissing("reverb_mix", 0.0f);
         for (const auto id : portParameterIds) restoreMissing(id, 0.f);
+        outputEffects_.restore(state);
         apvts_.replaceState(state);
 
         // Restore custom LiveWDF JSON document

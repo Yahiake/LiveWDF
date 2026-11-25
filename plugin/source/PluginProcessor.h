@@ -4,6 +4,7 @@
 #include <juce_dsp/juce_dsp.h>
 #include "wdf/Engine.h"
 #include "dsp/HalfBandOversampler.h"
+#include "OutputEffects.h"
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
 #include "format/PortImpedance.h"
@@ -46,7 +47,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override;
 
     // The plugin no longer carries factory circuits: a saved host session is the
     // one program, and everything else is a `.livewdf` file the user loads.
@@ -58,6 +59,10 @@ public:
 
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
+
+    bool loadOutputImpulse(bool reverb, const juce::File& file) { return outputEffects_.loadImpulse(reverb, file); }
+    void resetOutputImpulse(bool reverb) { outputEffects_.resetImpulse(reverb); }
+    juce::String outputImpulseName(bool reverb) const { return outputEffects_.impulseName(reverb); }
 
     // -------------------------------------------------------------------------
     // LiveWDF Circuit Management
@@ -152,6 +157,11 @@ private:
     friend bool checkLivePreviewCapture(const juce::File& file);
     friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
+    OutputEffects outputEffects_;
+    const std::atomic<float>* cabinetEnabled_ = apvts_.getRawParameterValue("cab_enabled");
+    const std::atomic<float>* echoMix_ = apvts_.getRawParameterValue("echo_mix");
+    const std::atomic<float>* reverbMix_ = apvts_.getRawParameterValue("reverb_mix");
+    void processOutputEffects(juce::dsp::AudioBlock<float>) noexcept;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler2x_;

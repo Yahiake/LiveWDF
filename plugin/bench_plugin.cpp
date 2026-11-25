@@ -2329,9 +2329,83 @@ bool checkLivePreviewPotMotion(const juce::File& file) {
 
 } // namespace livewdf
 
+static bool checkOutputEffectsState() {
+    constexpr double sampleRate = 48000.0;
+    constexpr int blockSize = 128;
+    constexpr int echoSample = 12000;
+    constexpr int lateSample = 3000;
+    const auto render = [=](livewdf::LiveWDFPluginProcessor& processor) {
+        juce::AudioBuffer<float> result(2, echoSample + blockSize);
+        result.clear();
+        result.setSample(0, 0, 0.25f);
+        result.setSample(1, 0, 0.25f);
+        juce::MidiBuffer midi;
+        for (int offset = 0; offset < result.getNumSamples(); offset += blockSize) {
+            juce::AudioBuffer<float> block(result.getArrayOfWritePointers(), 2, offset,
+                std::min(blockSize, result.getNumSamples() - offset));
+            processor.processBlock(block, midi);
+        }
+        return result;
+    };
+
+    juce::MemoryBlock saved;
+    juce::String irName;
+    {
+        juce::TemporaryFile file(".wav");
+        irName = file.getFile().getFileName();
+        juce::AudioBuffer<float> ir(2, lateSample + 2);
+        ir.clear();
+        ir.setSample(0, 0, 0.5f);
+        ir.setSample(1, 0, 0.5f);
+        ir.setSample(0, lateSample, 0.25f);
+        ir.setSample(1, lateSample + 1, 0.25f);
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::OutputStream> stream = file.getFile().createOutputStream();
+        auto writer = format.createWriterFor(stream, juce::AudioFormatWriterOptions{}
+            .withSampleRate(sampleRate).withNumChannels(2).withBitsPerSample(24));
+        if (!writer || !writer->writeFromAudioSampleBuffer(ir, 0, ir.getNumSamples()))
+            return false;
+        writer.reset();
+
+        livewdf::LiveWDFPluginProcessor source;
+        if (!source.loadOutputImpulse(false, file.getFile()) || !source.loadOutputImpulse(true, file.getFile()))
+            return false;
+        source.getAPVTS().getParameter("cab_enabled")->setValueNotifyingHost(1.0f);
+        source.getAPVTS().getParameter("echo_mix")->setValueNotifyingHost(0.5f);
+        source.getAPVTS().getParameter("reverb_mix")->setValueNotifyingHost(1.0f);
+        source.getStateInformation(saved);
+    }
+    livewdf::LiveWDFPluginProcessor restored;
+    restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    restored.setNonRealtime(true);
+    restored.prepareToPlay(sampleRate, blockSize);
+    const auto audio = render(restored);
+    const auto close = [](float value, float expected) { return std::abs(value - expected) < 1e-5f; };
+    const bool customRestored = restored.outputImpulseName(false) == irName && restored.outputImpulseName(true) == irName
+        && restored.getTailLengthSeconds() > 4.0 && restored.getLatencySamples() == 0
+        && close(audio.getSample(0, 0), 0.03125f)
+        && close(audio.getSample(0, lateSample), 0.03125f)
+        && close(audio.getSample(1, lateSample), 0.0f)
+        && close(audio.getSample(1, lateSample + 1), 0.03125f)
+        && close(audio.getSample(0, 2 * lateSample), 0.0078125f)
+        && close(audio.getSample(0, echoSample), 0.03125f);
+    if (!customRestored)
+        return false;
+
+    restored.resetOutputImpulse(true);
+    restored.getAPVTS().getParameter("cab_enabled")->setValueNotifyingHost(0.0f);
+    restored.getAPVTS().getParameter("echo_mix")->setValueNotifyingHost(0.0f);
+    const auto hall = render(restored);
+    const auto* wet = hall.getReadPointer(0);
+    return close(wet[0], 0.0f) && std::any_of(wet + 1, wet + hall.getNumSamples(),
+        [](float sample) { return std::abs(sample) > 1e-4f; });
+}
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
+    if (argc == 2 && std::string(argv[1]) == "--check-output-effects-state")
+        return checkOutputEffectsState() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
         return checkExternalImpedanceDefaults() ? 0 : 1;
     const char* circuitPath = argc > 1 ? argv[1] : "";

@@ -41,6 +41,7 @@ private:
     juce::Label titleLabel_;
     juce::TextButton factoryBtn_ { "FACTORY" };
     juce::TextButton loadFileBtn_ { "Load .livewdf..." };
+    juce::TextButton effectsBtn_ { "Effects" };
 
     /// Re-read the file the circuit came from.
     ///
@@ -140,6 +141,9 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    class OutputEffectsPanel;
+    std::unique_ptr<OutputEffectsPanel> effectsPanel_;
+    std::unique_ptr<juce::CallOutBox> effectsBrowser_;
     void refreshSolveQuality();
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
@@ -151,6 +155,8 @@ private:
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
     void showFactoryBrowser();
+    void showOutputEffects(const juce::String& message = {});
+    void openOutputImpulseChooser(bool reverb);
 
     /// Load a file and update every part of the editor that depends on it.
     /// Returns false and puts the reason in the status line when the document
