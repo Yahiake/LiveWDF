@@ -169,9 +169,6 @@ if(LIVEWDF_FACTORY_SCHEMATICS AND COMMAND juce_add_binary_data)
 endif()
 
 # --- Tests --------------------------------------------------------------------
-add_executable(livewdf_codegen tools/codegen/main.cpp)
-target_link_libraries(livewdf_codegen PRIVATE livewdf livewdf_options)
-
 if(LIVEWDF_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
