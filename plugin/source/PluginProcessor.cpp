@@ -130,7 +130,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         juce::ParameterID{"export_4x", 1}, "4x export", true));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{"compiled_preview", 1}, "Compiled Preview", false));
+        juce::ParameterID{"compiled_preview", 1}, "Compiled Preview", true));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"chain_input", 1}, "Input from physical chain", false,
