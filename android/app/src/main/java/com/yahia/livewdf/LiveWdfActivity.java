@@ -18,6 +18,7 @@ import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Base64;
+import android.view.WindowManager;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -135,6 +136,14 @@ public final class LiveWdfActivity extends Activity {
     public void releaseUsbConnection() {
         pendingDevice = null;
         closeConnection();
+    }
+
+    public void keepScreenOn() {
+        runOnUiThread(() -> getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
+    }
+
+    public void allowScreenTimeout() {
+        runOnUiThread(() -> getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON));
     }
 
     private void requestUsbPermission(UsbDevice device) {
