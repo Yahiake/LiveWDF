@@ -162,10 +162,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             for (const auto& e : xeRows2_) {
                 uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
             }
-            if (!xeRowsN_.empty()) {
+            const bool packed = loadedJunctionEnabled_ && hasPackedDrivePlan();
+            if (packed)
+                detail::assignDrivePanels(packedDrive_.panels.data(), packedDrive_.panels.size(),
+                    packedDrive_.nodes.data(), packedDrive_.values.data(), xeCols_.data(), wData, uData);
+            const auto& remaining = packed ? packedDrive_.remaining : xeRowsN_;
+            if (!remaining.empty()) {
                 const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
                 const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-                for (const auto& e : xeRowsN_) {
+                for (const auto& e : remaining) {
                     double s = 0.0;
                     for (int idx = e.start; idx < e.end; ++idx)
                         s += xeVals[idx] * wData[xeCols[idx]];
@@ -177,6 +182,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     for (const auto& e : isrcRows_)
         uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
+    // Live knob changes correct the same base Xe transfer after evaluating it.
     if (adjustedTransfer)
         adjustableTransfer_.correctOpenCircuit(eoffData, uData);
 
@@ -259,7 +265,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     if (K_ > 0) {
         const double* LIVEWDF_RESTRICT iiData = ii_.data();
         if (!rootPanels_.empty())
-            detail::runtimeKernels().applyRootPanels(rootPanels_.data(), rootPanels_.size(),
+            detail::runtimeKernels().subtractTransferPanels(rootPanels_.data(), rootPanels_.size(),
                 rootPanelValues_.data(), xrCols_.data(), iiData, nodeData);
         for (const auto& e : xrRows1_) {
             nodeData[e.node] -= e.val * iiData[e.col];
