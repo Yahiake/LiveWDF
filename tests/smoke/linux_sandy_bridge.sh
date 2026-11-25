@@ -1,15 +1,26 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-artifacts="${1:?Pass the CMake build directory}/plugin/LiveWDF_Plugin_artefacts/Release"
+artifacts="${1:?Pass the extracted Linux release directory}"
 ulimit -c 0
 
-xvfb-run -a bash -euc '
+xvfb-run -a -e /dev/stderr bash -euc '
     qemu-x86_64 -cpu SandyBridge "$1" &
     app_pid=$!
     trap '\''kill "$app_pid" 2>/dev/null || true; wait "$app_pid" 2>/dev/null || true'\'' EXIT
-    timeout 45s xdotool search --sync --onlyvisible --name "^LiveWDF$"
-    kill -0 "$app_pid"
+    for ((attempt = 0; attempt < 180; ++attempt)); do
+        if ! kill -0 "$app_pid" 2>/dev/null; then
+            wait "$app_pid" || exit "$?"
+            echo "LiveWDF Standalone exited before opening a window" >&2
+            exit 1
+        fi
+        if xdotool search --onlyvisible --name "^LiveWDF$"; then
+            exit 0
+        fi
+        sleep 0.25
+    done
+    echo "LiveWDF Standalone did not open a window on Sandy Bridge" >&2
+    exit 1
 ' bash "$artifacts/Standalone/LiveWDF"
 
 # The manifest helper does not load the VST3 module. Load the shipped binary
