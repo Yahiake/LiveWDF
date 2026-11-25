@@ -102,7 +102,8 @@ def program(profile, take):
 
 
 def fixture(profile):
-    excerpts = [program(profile, i) for i in range(3)]
+    profiles = ('palm', 'chord', 'picked') if profile == 'amp' else (profile,) * 3
+    excerpts = [program(name, i) for i, name in enumerate(profiles)]
     parts = [np.zeros(REST)]
     for take, level in TRIALS:
         parts.extend([excerpts[take] * 10**(level / 20), np.zeros(REST)])
@@ -168,6 +169,8 @@ def run():
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--catalog', type=Path, default=ROOT / 'schematics')
     parser.add_argument('--filter', default='')
+    parser.add_argument('--amp-di', action='store_true',
+                        help='fit with palm mutes and strummed chords, then verify with picked notes')
     args = parser.parse_args()
     if args.fast_live and not args.verify:
         parser.error('--fast-live is a verification mode; fit once in Accurate')
@@ -178,7 +181,8 @@ def run():
         parser.error('no matching schematics or invalid worker count')
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
-        inputs = {p: fixture(p) for p in [*SOURCES, 'bus', 'voice']}
+        profiles = ('amp',) if args.amp_di else (*SOURCES, 'bus', 'voice')
+        inputs = {p: fixture(p) for p in profiles}
         for key, values in inputs.items():
             values.tofile(work / (key + '.f32'))
 
@@ -188,6 +192,8 @@ def run():
             try:
                 doc = json.loads(path.read_text())
                 profile, gate = family(path, doc)
+                if args.amp_di:
+                    profile = 'amp'
                 vin = next(c for c in doc['components'] if c['type'] == 'in')['values']['referenceMillivoltsRms'] / 89.01946956877224
                 out = next(c for c in doc['components'] if c['type'] == 'out').setdefault('values', {})
                 row.update(profile=profile, input_full_scale_V_peak=vin)
