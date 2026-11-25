@@ -98,6 +98,35 @@ ctest --test-dir build/core --output-on-failure
 
 The first build may take several minutes. The [circuit regression suite](tests/regression/README.md) requires Python 3.8 or newer and compares saved waveforms, control motion, and ngspice responses. Tests that run ngspice directly are skipped when it is unavailable.
 
+### Android Standalone
+
+The Android app is the preset player. It includes the factory circuits and can import `.livewdf` files through the Android file picker. For live guitar, connect headphones to your audio interface before choosing **Android audio** or **USB direct** in the app.
+
+On a Linux build host, install JDK 17 or newer and the Linux JUCE development dependencies (ALSA, FreeType, Fontconfig, X11 and its extensions) for the host helper. Use Android Studio's SDK Manager or `sdkmanager` to install `platforms;android-35`, `build-tools;35.0.0`, `cmake;3.31.6`, `ndk;28.2.13676358`, and `platform-tools`. Set `ANDROID_HOME` to the SDK directory and initialize the JUCE submodule.
+
+```sh
+git submodule update --init modules/JUCE
+cd android
+bash ./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+The debug APK is signed with your local Android debug key and uses optimized native code. Android requires the same key to install an update over an existing APK. `bash ./gradlew :app:assembleRelease` builds the unsigned release APK. The default ABI is `arm64-v8a`. Use `-PlivewdfAbis=x86_64` for an x86-64 emulator build.
+
+The build fetches a pinned revision of the [Android USB audio driver](https://github.com/jopdorp/android-usb-audio). Use `-PlivewdfUsbDriverDir=/absolute/path/to/android-usb-audio` to build against a local checkout, or `-PlivewdfDirectUsb=false` to build with standard Android audio only. In direct mode, LiveWDF processes the first two capture and playback channels and tries 48 kHz, then 44.1 kHz. Before opening USB audio, choose 64, 96, 128 (default), 192, 256, 384, or 512 samples. The status row shows the actual sample rate, capture recoveries, USB errors, and the slowest DSP block in the session. Playback-only interfaces show **Test output**, which plays a brief low-level tone through the interface. Android audio uses JUCE's standard device support. The USB interface and phone determine achievable latency.
+
+### LiveWDF VST3 in Carla
+
+Carla 2.5.10 can report fresh LiveWDF VST3 knobs at zero. The knobs initialize correctly with [Carla's 2.6 development backend](https://github.com/falkTX/Carla/tree/97a9e0740baf6df2df942495c02532a624c44682).
+
+Run [the Linux smoke test](tests/smoke/carla_vst3.py) with Carla's dummy audio driver.
+
+```bash
+PYTHONPATH=/path/to/Carla/source/frontend:/path/to/Carla/source \
+    python3 tests/smoke/carla_vst3.py \
+    /path/to/libcarla_standalone2.so /path/to/LiveWDF.vst3
+```
+
 ## Contributing
 
 LiveWDF is still taking shape, and there's plenty of room to get involved.

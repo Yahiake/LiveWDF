@@ -115,7 +115,12 @@ const char* findFactoryArchive(int& size) {
 } // anonymous
 
 juce::File FactorySchematics::folder() {
-    return juce::File::getSpecialLocation(juce::File::userDocumentsDirectory)
+#if JUCE_ANDROID
+    const auto location = juce::File::userApplicationDataDirectory;
+#else
+    const auto location = juce::File::userDocumentsDirectory;
+#endif
+    return juce::File::getSpecialLocation(location)
         .getChildFile("LiveWDF")
         .getChildFile("Factory");
 }

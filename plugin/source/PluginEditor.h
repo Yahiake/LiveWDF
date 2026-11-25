@@ -97,6 +97,12 @@ private:
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
 
+#if JUCE_ANDROID
+    juce::Component mobileControls_;
+    juce::Viewport mobileControlsViewport_;
+    void resizedMobile();
+#endif
+
     // Dynamic circuit controls: one knob per pot/rheostat group and one button
     // per SPDT group. Both are grouped by label, so a ganged pair takes one
     // place in the strip rather than two. The pot ceiling is the processor's,

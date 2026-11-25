@@ -6,18 +6,7 @@ on:
       version:
         required: true
         type: string
-  pull_request:
-    branches: [main]
-    paths:
-      - .github/workflows/build.yml
-      - "**/CMakeLists.txt"
-      - src/wdf/RuntimeKernels*
-      - src/wdf/DenseSolve*
-      - tests/smoke/linux_sandy_bridge.sh
-
-concurrency:
-  group: build-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  workflow_dispatch:
 
 permissions:
   contents: read
