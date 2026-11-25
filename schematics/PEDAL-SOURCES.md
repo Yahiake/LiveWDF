@@ -103,6 +103,12 @@ Use exact listed revisions. These are sources for component-level transcription,
 - Alternate identical notes: https://www.synfo.nl/servicemanuals/Boss/DS-1_SERVICE_NOTES.pdf
 - DS-1A board 70562634, PCB 2291732601; DIST 100kB, TONE 20kB, LEVEL 100kB. Include BJT input gain and op-amp distortion gain, D4/D5 diode pair, loaded passive tone network and output buffer. Preserve the tone network interaction instead of substituting independent EQ; transcribe actual diagram for exact connections and DC bias.
 
+### Boss DS-2 Turbo Distortion
+
+The reference is the BOSS drawing for ET board **7510952000** and VR board **7510954000**. The two Turbo positions select different paths around the discrete distortion amplifier and its filters. BOSS specifies −20 dBu nominal input and output, 1 MΩ input impedance, and a load of at least 10 kΩ. [Factory schematic](https://civade.com/AudioPro/Boss/Boss_DS-2_Turbo_Distortion_Schematic.pdf) · [BOSS specifications](https://www.boss.info/global/products/ds-2/)
+
+An independent measurement of a Malaysian pedal shows a pronounced midrange peak near 900 Hz and a dip near 2.5 kHz in Turbo II. The measurement includes the pedal's tone setting and production origin, which matter when comparing revisions. [Measured response for both modes](https://guitarpedalsvisualized.wordpress.com/2022/03/25/boss-ds-2/)
+
 ### Boss HM-2 Heavy Metal
 - Revision: Roland service notes **15 December 1983, First Edition**. Contains schematic and two board/volume-board revisions; choose the circuit as drawn and document board choice, do not infer component equivalence from layouts.
 - Direct original service-note PDF: https://civade.com/AudioPro/Boss/Boss_HM-2_Heavy_Metal_Distortion_Service_Manual.pdf
