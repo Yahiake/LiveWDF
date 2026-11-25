@@ -32,7 +32,7 @@
       },
       "circuit_sha256": "04525de4b735f611dbd8208876751284155cf465dbb99340e94de422e9a06783",
       "case": "EVH 5150 III 100S Stealth - Channel 3 (Preamp only)",
-      "wave": "EVH-5150-III-100S-Stealth---Channel-3--Preamp-only--accurate-34ed1b6bb5-63345d8607eb.f32.gz",
+      "wave": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885.f32.gz",
       "wave_sha256": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885",
       "reference_stride": 7
     },
@@ -66,7 +66,7 @@
       },
       "circuit_sha256": "04525de4b735f611dbd8208876751284155cf465dbb99340e94de422e9a06783",
       "case": "EVH 5150 III 100S Stealth - Channel 3 (Preamp only)",
-      "wave": "EVH-5150-III-100S-Stealth---Channel-3--Preamp-only--fast-2c748b7408-63345d8607eb.f32.gz",
+      "wave": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885.f32.gz",
       "wave_sha256": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885",
       "reference_stride": 7
     },
@@ -100,7 +100,7 @@
       },
       "circuit_sha256": "04525de4b735f611dbd8208876751284155cf465dbb99340e94de422e9a06783",
       "case": "EVH 5150 III 100S Stealth - Channel 3 (Preamp only)",
-      "wave": "EVH-5150-III-100S-Stealth---Channel-3--Preamp-only--preview-bc4e9d3df8-63345d8607eb.f32.gz",
+      "wave": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885.f32.gz",
       "wave_sha256": "63345d8607ebe16b4aa1d3242b10ebdd6761e61d773df4aa485c80ba88f1b885",
       "reference_stride": 7
     },
@@ -134,7 +134,7 @@
       },
       "circuit_sha256": "58ecbd7c288c0390c96dbe0f188d2adeff51db230fcb19ff01c20c408f572158",
       "case": "Marshall Valvestate 8100 - Boost Channel (Preamp)",
-      "wave": "Marshall-Valvestate-8100---Boost-Channel--Preamp--accurate-cf22dae795-6de89242ddba.f32.gz",
+      "wave": "6de89242ddba65e4bad81fe4d17101d3ad40793c9a6bd27b41a0c8a06a3bfb86.f32.gz",
       "wave_sha256": "6de89242ddba65e4bad81fe4d17101d3ad40793c9a6bd27b41a0c8a06a3bfb86",
       "reference_stride": 7
     },
@@ -168,7 +168,7 @@
       },
       "circuit_sha256": "58ecbd7c288c0390c96dbe0f188d2adeff51db230fcb19ff01c20c408f572158",
       "case": "Marshall Valvestate 8100 - Boost Channel (Preamp)",
-      "wave": "Marshall-Valvestate-8100---Boost-Channel--Preamp--fast-67b3e6f6c1-3817162f7eb0.f32.gz",
+      "wave": "3817162f7eb039cf4ffaeddf9339215033836ebaf59e76d6f0c4c8df89305c6d.f32.gz",
       "wave_sha256": "3817162f7eb039cf4ffaeddf9339215033836ebaf59e76d6f0c4c8df89305c6d",
       "reference_stride": 7
     },
@@ -202,7 +202,7 @@
       },
       "circuit_sha256": "58ecbd7c288c0390c96dbe0f188d2adeff51db230fcb19ff01c20c408f572158",
       "case": "Marshall Valvestate 8100 - Boost Channel (Preamp)",
-      "wave": "Marshall-Valvestate-8100---Boost-Channel--Preamp--preview-083f820a80-3817162f7eb0.f32.gz",
+      "wave": "3817162f7eb039cf4ffaeddf9339215033836ebaf59e76d6f0c4c8df89305c6d.f32.gz",
       "wave_sha256": "3817162f7eb039cf4ffaeddf9339215033836ebaf59e76d6f0c4c8df89305c6d",
       "reference_stride": 7
     },
@@ -236,7 +236,7 @@
       },
       "circuit_sha256": "e1fa6893d828a3f66b25cc97a3cadcb86cdb41a22c3d3c194938a3426e9a68d2",
       "case": "Mesa Boogie Dual Rectifier (Preamp Only)",
-      "wave": "Mesa-Boogie-Dual-Rectifier--Preamp-Only--accurate-f13ba55c76-314d44e7e4df.f32.gz",
+      "wave": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed.f32.gz",
       "wave_sha256": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed",
       "reference_stride": 7
     },
@@ -270,7 +270,7 @@
       },
       "circuit_sha256": "e1fa6893d828a3f66b25cc97a3cadcb86cdb41a22c3d3c194938a3426e9a68d2",
       "case": "Mesa Boogie Dual Rectifier (Preamp Only)",
-      "wave": "Mesa-Boogie-Dual-Rectifier--Preamp-Only--fast-babdc40954-314d44e7e4df.f32.gz",
+      "wave": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed.f32.gz",
       "wave_sha256": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed",
       "reference_stride": 7
     },
@@ -304,7 +304,7 @@
       },
       "circuit_sha256": "e1fa6893d828a3f66b25cc97a3cadcb86cdb41a22c3d3c194938a3426e9a68d2",
       "case": "Mesa Boogie Dual Rectifier (Preamp Only)",
-      "wave": "Mesa-Boogie-Dual-Rectifier--Preamp-Only--preview-59da766294-314d44e7e4df.f32.gz",
+      "wave": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed.f32.gz",
       "wave_sha256": "314d44e7e4dfe2853657f01131ef87e2bd84944b00f4f01ced0c7964af5e22ed",
       "reference_stride": 7
     },
@@ -338,7 +338,7 @@
       },
       "circuit_sha256": "5852a802d79d80e463dfac7501ebeb59d9f5dc387f32ba6e204c4f2998062fd5",
       "case": "Orange Rockerverb 50w - Clean Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Clean-Channel--Preamp-only--accurate-8035302f8c-26db9c05cab2.f32.gz",
+      "wave": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35.f32.gz",
       "wave_sha256": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35",
       "reference_stride": 7
     },
@@ -372,7 +372,7 @@
       },
       "circuit_sha256": "5852a802d79d80e463dfac7501ebeb59d9f5dc387f32ba6e204c4f2998062fd5",
       "case": "Orange Rockerverb 50w - Clean Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Clean-Channel--Preamp-only--fast-3400a59a1e-26db9c05cab2.f32.gz",
+      "wave": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35.f32.gz",
       "wave_sha256": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35",
       "reference_stride": 7
     },
@@ -406,7 +406,7 @@
       },
       "circuit_sha256": "5852a802d79d80e463dfac7501ebeb59d9f5dc387f32ba6e204c4f2998062fd5",
       "case": "Orange Rockerverb 50w - Clean Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Clean-Channel--Preamp-only--preview-46f833dc4d-26db9c05cab2.f32.gz",
+      "wave": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35.f32.gz",
       "wave_sha256": "26db9c05cab2e4ffd65b9716be050c900cb3df96f6cafce3c417c9025110ab35",
       "reference_stride": 7
     },
@@ -440,7 +440,7 @@
       },
       "circuit_sha256": "95bdbdae79236b0ada17c9a9e32b3aa4f677d1ed4801fcfc8b1a348537794fb6",
       "case": "Orange Rockerverb 50w - Dirty Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Dirty-Channel--Preamp-only--accurate-9685200392-dc3670d8aadd.f32.gz",
+      "wave": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817.f32.gz",
       "wave_sha256": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817",
       "reference_stride": 7
     },
@@ -474,7 +474,7 @@
       },
       "circuit_sha256": "95bdbdae79236b0ada17c9a9e32b3aa4f677d1ed4801fcfc8b1a348537794fb6",
       "case": "Orange Rockerverb 50w - Dirty Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Dirty-Channel--Preamp-only--fast-c9807cd99b-dc3670d8aadd.f32.gz",
+      "wave": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817.f32.gz",
       "wave_sha256": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817",
       "reference_stride": 7
     },
@@ -508,7 +508,7 @@
       },
       "circuit_sha256": "95bdbdae79236b0ada17c9a9e32b3aa4f677d1ed4801fcfc8b1a348537794fb6",
       "case": "Orange Rockerverb 50w - Dirty Channel (Preamp only)",
-      "wave": "Orange-Rockerverb-50w---Dirty-Channel--Preamp-only--preview-17542faf93-dc3670d8aadd.f32.gz",
+      "wave": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817.f32.gz",
       "wave_sha256": "dc3670d8aaddc3a30a7de4f6dfdb6e0c400ce0fe184bf816b64fb73b9b6fa817",
       "reference_stride": 7
     },
@@ -542,7 +542,7 @@
       },
       "circuit_sha256": "368340f6311c7004d2971e008fcc5b2e695d0c0f7da38bc893c94a12c615d5c3",
       "case": "Boss BD-2 Blues Driver",
-      "wave": "Boss-BD-2-Blues-Driver-accurate-d98ae00d5d-f10b1f18bfab.f32.gz",
+      "wave": "f10b1f18bfab6d20b0e1b3795628cc1fc4cf2b6d42731e97041c2095a0025457.f32.gz",
       "wave_sha256": "f10b1f18bfab6d20b0e1b3795628cc1fc4cf2b6d42731e97041c2095a0025457",
       "reference_stride": 7
     },
@@ -576,7 +576,7 @@
       },
       "circuit_sha256": "368340f6311c7004d2971e008fcc5b2e695d0c0f7da38bc893c94a12c615d5c3",
       "case": "Boss BD-2 Blues Driver",
-      "wave": "Boss-BD-2-Blues-Driver-fast-e9c7061d5c-aff12f4ff36b.f32.gz",
+      "wave": "aff12f4ff36bbbb5383d3a0717433074f5e7164f07b4b78fc913c1dac456e94c.f32.gz",
       "wave_sha256": "aff12f4ff36bbbb5383d3a0717433074f5e7164f07b4b78fc913c1dac456e94c",
       "reference_stride": 7
     },
@@ -610,7 +610,7 @@
       },
       "circuit_sha256": "368340f6311c7004d2971e008fcc5b2e695d0c0f7da38bc893c94a12c615d5c3",
       "case": "Boss BD-2 Blues Driver",
-      "wave": "Boss-BD-2-Blues-Driver-preview-d5e3db7fe7-af74b1e62a4c.f32.gz",
+      "wave": "af74b1e62a4c2968b89584747ae1c3f0f2f4933ac188a88ab3052cbe6cf14bc1.f32.gz",
       "wave_sha256": "af74b1e62a4c2968b89584747ae1c3f0f2f4933ac188a88ab3052cbe6cf14bc1",
       "reference_stride": 7
     },
@@ -644,7 +644,7 @@
       },
       "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
       "case": "Boss BF-2 Flanger",
-      "wave": "Boss-BF-2-Flanger-accurate-d29be58476-0622a9d84a9e.f32.gz",
+      "wave": "0622a9d84a9ec74703ab98b25b015b2766c9c8ba984d0bbc47898fa360074e7d.f32.gz",
       "wave_sha256": "0622a9d84a9ec74703ab98b25b015b2766c9c8ba984d0bbc47898fa360074e7d",
       "reference_stride": 7
     },
@@ -678,7 +678,7 @@
       },
       "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
       "case": "Boss BF-2 Flanger",
-      "wave": "Boss-BF-2-Flanger-fast-c8fd9c2778-75beddd7cc43.f32.gz",
+      "wave": "75beddd7cc435f2af50bf86d6f3ade78d8c4f3b630423877d808cc3e1df4017c.f32.gz",
       "wave_sha256": "75beddd7cc435f2af50bf86d6f3ade78d8c4f3b630423877d808cc3e1df4017c",
       "reference_stride": 7
     },
@@ -712,7 +712,7 @@
       },
       "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
       "case": "Boss BF-2 Flanger",
-      "wave": "Boss-BF-2-Flanger-preview-dc0a5284bf-f17cc575916a.f32.gz",
+      "wave": "f17cc575916a1fc21e4bbf95595fe85f110aa4a967054cc50c669ed4ddcfebf5.f32.gz",
       "wave_sha256": "f17cc575916a1fc21e4bbf95595fe85f110aa4a967054cc50c669ed4ddcfebf5",
       "reference_stride": 7
     },
@@ -746,7 +746,7 @@
       },
       "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
       "case": "Boss CE-2 Chorus",
-      "wave": "Boss-CE-2-Chorus-accurate-52316558f1-d32b0969e356.f32.gz",
+      "wave": "d32b0969e356954e7797b4f2165ca017a58c9b139982068eeb0c50ed37ee18d5.f32.gz",
       "wave_sha256": "d32b0969e356954e7797b4f2165ca017a58c9b139982068eeb0c50ed37ee18d5",
       "reference_stride": 7
     },
@@ -780,7 +780,7 @@
       },
       "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
       "case": "Boss CE-2 Chorus",
-      "wave": "Boss-CE-2-Chorus-fast-4f2c0328dc-0a99c3e00c66.f32.gz",
+      "wave": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2.f32.gz",
       "wave_sha256": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2",
       "reference_stride": 7
     },
@@ -814,7 +814,7 @@
       },
       "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
       "case": "Boss CE-2 Chorus",
-      "wave": "Boss-CE-2-Chorus-preview-becd0d292c-0a99c3e00c66.f32.gz",
+      "wave": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2.f32.gz",
       "wave_sha256": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2",
       "reference_stride": 7
     },
@@ -848,7 +848,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--accurate-26643e6c0d-20876b0260c6.f32.gz",
+      "wave": "20876b0260c659746248a58e09489d9b723590595683881786fc690eab0e2c18.f32.gz",
       "wave_sha256": "20876b0260c659746248a58e09489d9b723590595683881786fc690eab0e2c18",
       "reference_stride": 7
     },
@@ -882,7 +882,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--fast-ffffe7ffe6-9d71f6bf9b0a.f32.gz",
+      "wave": "9d71f6bf9b0afcdbe806619be901d65fe0d03e27ba72f650bbb1b86b6f82789f.f32.gz",
       "wave_sha256": "9d71f6bf9b0afcdbe806619be901d65fe0d03e27ba72f650bbb1b86b6f82789f",
       "reference_stride": 7
     },
@@ -916,7 +916,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--preview-78516d2cc3-9d71f6bf9b0a.f32.gz",
+      "wave": "9d71f6bf9b0afcdbe806619be901d65fe0d03e27ba72f650bbb1b86b6f82789f.f32.gz",
       "wave_sha256": "9d71f6bf9b0afcdbe806619be901d65fe0d03e27ba72f650bbb1b86b6f82789f",
       "reference_stride": 7
     },
@@ -950,7 +950,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "Boss-DM-2-Analog-Delay-accurate-538583cf7c-c544ee936533.f32.gz",
+      "wave": "c544ee936533b6230ef4749032157539ecd2a0183908f965bb69357e41c7c1c5.f32.gz",
       "wave_sha256": "c544ee936533b6230ef4749032157539ecd2a0183908f965bb69357e41c7c1c5",
       "reference_stride": 7
     },
@@ -984,7 +984,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "Boss-DM-2-Analog-Delay-fast-a9daaf0122-b13f9c159ef0.f32.gz",
+      "wave": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b.f32.gz",
       "wave_sha256": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b",
       "reference_stride": 7
     },
@@ -1018,7 +1018,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "Boss-DM-2-Analog-Delay-preview-8b97112858-b13f9c159ef0.f32.gz",
+      "wave": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b.f32.gz",
       "wave_sha256": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b",
       "reference_stride": 7
     },
@@ -1052,7 +1052,7 @@
       },
       "circuit_sha256": "60b833737063995e33158af03f08c8a8c707d832c4c8ea6b88cbe58264f8ea03",
       "case": "Boss DS-1A Distortion",
-      "wave": "Boss-DS-1A-Distortion-accurate-719bb288d6-0839ac278a71.f32.gz",
+      "wave": "0839ac278a71d17f6e108150cf5c549fe358b1a6bde5e4746b639da5574c1b0c.f32.gz",
       "wave_sha256": "0839ac278a71d17f6e108150cf5c549fe358b1a6bde5e4746b639da5574c1b0c",
       "reference_stride": 7
     },
@@ -1086,7 +1086,7 @@
       },
       "circuit_sha256": "60b833737063995e33158af03f08c8a8c707d832c4c8ea6b88cbe58264f8ea03",
       "case": "Boss DS-1A Distortion",
-      "wave": "Boss-DS-1A-Distortion-fast-7673bc7e7e-dbbc5929b9bd.f32.gz",
+      "wave": "dbbc5929b9bd12ec3ee4e09d06d5ed6bf5a1f425c411e6a024c736c9d83afbdd.f32.gz",
       "wave_sha256": "dbbc5929b9bd12ec3ee4e09d06d5ed6bf5a1f425c411e6a024c736c9d83afbdd",
       "reference_stride": 7
     },
@@ -1120,7 +1120,7 @@
       },
       "circuit_sha256": "60b833737063995e33158af03f08c8a8c707d832c4c8ea6b88cbe58264f8ea03",
       "case": "Boss DS-1A Distortion",
-      "wave": "Boss-DS-1A-Distortion-preview-8471993385-3e1c09fe5e96.f32.gz",
+      "wave": "3e1c09fe5e969058ff692ff15dc4df98ab800c961a98010347894ec711243cf4.f32.gz",
       "wave_sha256": "3e1c09fe5e969058ff692ff15dc4df98ab800c961a98010347894ec711243cf4",
       "reference_stride": 7
     },
@@ -1154,7 +1154,7 @@
       },
       "circuit_sha256": "378428d0281d42528f90fc64380aedb1a86970348642f35d86f4669a29652982",
       "case": "Boss DS-2 Turbo Distortion",
-      "wave": "Boss-DS-2-Turbo-Distortion-accurate-4d416e1d05-804a3e3d3a30.f32.gz",
+      "wave": "804a3e3d3a30c5e717e7bb9a406f9458e5eaa883515ea10e92902e2529367047.f32.gz",
       "wave_sha256": "804a3e3d3a30c5e717e7bb9a406f9458e5eaa883515ea10e92902e2529367047",
       "reference_stride": 7
     },
@@ -1188,7 +1188,7 @@
       },
       "circuit_sha256": "378428d0281d42528f90fc64380aedb1a86970348642f35d86f4669a29652982",
       "case": "Boss DS-2 Turbo Distortion",
-      "wave": "Boss-DS-2-Turbo-Distortion-fast-44a3dc4542-c142543caa45.f32.gz",
+      "wave": "c142543caa452c0a2ea535a8609227311677834a7df74274beb68993bd2ea5f2.f32.gz",
       "wave_sha256": "c142543caa452c0a2ea535a8609227311677834a7df74274beb68993bd2ea5f2",
       "reference_stride": 7
     },
@@ -1222,7 +1222,7 @@
       },
       "circuit_sha256": "378428d0281d42528f90fc64380aedb1a86970348642f35d86f4669a29652982",
       "case": "Boss DS-2 Turbo Distortion",
-      "wave": "Boss-DS-2-Turbo-Distortion-preview-ddd553ef17-eb38bb0d27df.f32.gz",
+      "wave": "eb38bb0d27df8b618294d7a45bd2c478e9836ade3c532b5b5e8bdd9cae9e5468.f32.gz",
       "wave_sha256": "eb38bb0d27df8b618294d7a45bd2c478e9836ade3c532b5b5e8bdd9cae9e5468",
       "reference_stride": 7
     },
@@ -1256,7 +1256,7 @@
       },
       "circuit_sha256": "bbc6d61850d371f71e3c6ac4fbcb10c5e99851169a1d2583f768f3a900629c0d",
       "case": "Boss GE-7 Equalizer",
-      "wave": "Boss-GE-7-Equalizer-accurate-4053acf8c0-85bd7ccaf1ec.f32.gz",
+      "wave": "85bd7ccaf1ec7a7efa9558dcc22f4e34232ef69a59f693c13ebd02c3b83c59f9.f32.gz",
       "wave_sha256": "85bd7ccaf1ec7a7efa9558dcc22f4e34232ef69a59f693c13ebd02c3b83c59f9",
       "reference_stride": 7
     },
@@ -1290,7 +1290,7 @@
       },
       "circuit_sha256": "bbc6d61850d371f71e3c6ac4fbcb10c5e99851169a1d2583f768f3a900629c0d",
       "case": "Boss GE-7 Equalizer",
-      "wave": "Boss-GE-7-Equalizer-fast-bb1eea5886-0ffcfb32ce71.f32.gz",
+      "wave": "0ffcfb32ce7148261fb90eba88c2be34d841943cbca895b768d82ceca10f7967.f32.gz",
       "wave_sha256": "0ffcfb32ce7148261fb90eba88c2be34d841943cbca895b768d82ceca10f7967",
       "reference_stride": 7
     },
@@ -1324,7 +1324,7 @@
       },
       "circuit_sha256": "bbc6d61850d371f71e3c6ac4fbcb10c5e99851169a1d2583f768f3a900629c0d",
       "case": "Boss GE-7 Equalizer",
-      "wave": "Boss-GE-7-Equalizer-preview-d76e3e1ae8-0ffcfb32ce71.f32.gz",
+      "wave": "0ffcfb32ce7148261fb90eba88c2be34d841943cbca895b768d82ceca10f7967.f32.gz",
       "wave_sha256": "0ffcfb32ce7148261fb90eba88c2be34d841943cbca895b768d82ceca10f7967",
       "reference_stride": 7
     },
@@ -1358,7 +1358,7 @@
       },
       "circuit_sha256": "b715823fc114e9dc5035248ba37a1c6b1dabfdecd7748f977216088351ca0103",
       "case": "Boss HM-2 Heavy Metal",
-      "wave": "Boss-HM-2-Heavy-Metal-accurate-b133b8ce07-f54d0d9fa434.f32.gz",
+      "wave": "f54d0d9fa4349ef7051db3e306c268416611303345169010b21a2de2ff993f96.f32.gz",
       "wave_sha256": "f54d0d9fa4349ef7051db3e306c268416611303345169010b21a2de2ff993f96",
       "reference_stride": 7
     },
@@ -1392,7 +1392,7 @@
       },
       "circuit_sha256": "b715823fc114e9dc5035248ba37a1c6b1dabfdecd7748f977216088351ca0103",
       "case": "Boss HM-2 Heavy Metal",
-      "wave": "Boss-HM-2-Heavy-Metal-fast-b6a365bdc3-c52bb81c3310.f32.gz",
+      "wave": "c52bb81c3310e4cc068ad68a15b3d78df891dde19609f3984ab97a5c460ec70e.f32.gz",
       "wave_sha256": "c52bb81c3310e4cc068ad68a15b3d78df891dde19609f3984ab97a5c460ec70e",
       "reference_stride": 7
     },
@@ -1426,7 +1426,7 @@
       },
       "circuit_sha256": "b715823fc114e9dc5035248ba37a1c6b1dabfdecd7748f977216088351ca0103",
       "case": "Boss HM-2 Heavy Metal",
-      "wave": "Boss-HM-2-Heavy-Metal-preview-2406159fb0-20986d727b44.f32.gz",
+      "wave": "20986d727b44b645ad55c729afcca96cf36f6353fc3a6122edbba9ed48e36fd1.f32.gz",
       "wave_sha256": "20986d727b44b645ad55c729afcca96cf36f6353fc3a6122edbba9ed48e36fd1",
       "reference_stride": 7
     },
@@ -1460,7 +1460,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone",
-      "wave": "Boss-MT-2-Metal-Zone-accurate-69d31545b7-2ed00c3c0ac1.f32.gz",
+      "wave": "2ed00c3c0ac1d9cadd48a5dc343edd511bb4f961c7de1858a4e6eebbc050cc58.f32.gz",
       "wave_sha256": "2ed00c3c0ac1d9cadd48a5dc343edd511bb4f961c7de1858a4e6eebbc050cc58",
       "reference_stride": 7
     },
@@ -1494,7 +1494,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone",
-      "wave": "Boss-MT-2-Metal-Zone-fast-231f3179d4-25c52d786d91.f32.gz",
+      "wave": "25c52d786d9168801f10547ec423605d378e85217887bd97bf6f4f503d6d1a46.f32.gz",
       "wave_sha256": "25c52d786d9168801f10547ec423605d378e85217887bd97bf6f4f503d6d1a46",
       "reference_stride": 7
     },
@@ -1528,7 +1528,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone",
-      "wave": "Boss-MT-2-Metal-Zone-preview-2e238b8419-af52b2b057d5.f32.gz",
+      "wave": "af52b2b057d55c19a6512d86099f662de649f919ffaf881654f6efa6dcb98ce7.f32.gz",
       "wave_sha256": "af52b2b057d55c19a6512d86099f662de649f919ffaf881654f6efa6dcb98ce7",
       "reference_stride": 7
     },
@@ -1562,7 +1562,7 @@
       },
       "circuit_sha256": "fca12e76ae082fa3bf9066ec7f16d85c20861ebfefdc59e0936034cdface1408",
       "case": "Boss NS-2 Noise Suppressor",
-      "wave": "Boss-NS-2-Noise-Suppressor-accurate-0d8f327d09-673bbdb671e8.f32.gz",
+      "wave": "673bbdb671e841a7676ae0394f8ca9f7bd0c93342a64e169ca2483d9d2c6d118.f32.gz",
       "wave_sha256": "673bbdb671e841a7676ae0394f8ca9f7bd0c93342a64e169ca2483d9d2c6d118",
       "reference_stride": 7
     },
@@ -1596,7 +1596,7 @@
       },
       "circuit_sha256": "fca12e76ae082fa3bf9066ec7f16d85c20861ebfefdc59e0936034cdface1408",
       "case": "Boss NS-2 Noise Suppressor",
-      "wave": "Boss-NS-2-Noise-Suppressor-fast-4a1b4e27a5-fc1767561d5b.f32.gz",
+      "wave": "fc1767561d5bf50e3899622bf458f468a72f713427f2218dbd8af8dd93e7a3df.f32.gz",
       "wave_sha256": "fc1767561d5bf50e3899622bf458f468a72f713427f2218dbd8af8dd93e7a3df",
       "reference_stride": 7
     },
@@ -1630,7 +1630,7 @@
       },
       "circuit_sha256": "fca12e76ae082fa3bf9066ec7f16d85c20861ebfefdc59e0936034cdface1408",
       "case": "Boss NS-2 Noise Suppressor",
-      "wave": "Boss-NS-2-Noise-Suppressor-preview-0acb8abac2-fc1767561d5b.f32.gz",
+      "wave": "fc1767561d5bf50e3899622bf458f468a72f713427f2218dbd8af8dd93e7a3df.f32.gz",
       "wave_sha256": "fc1767561d5bf50e3899622bf458f468a72f713427f2218dbd8af8dd93e7a3df",
       "reference_stride": 7
     },
@@ -1664,7 +1664,7 @@
       },
       "circuit_sha256": "0780d3de80cc7c3d35c02350a85aa0029b42052c18fbfcdd15bbfe9250bcaec3",
       "case": "Boss PQ-4 Parametric EQ",
-      "wave": "Boss-PQ-4-Parametric-EQ-accurate-cb52428c39-9b24ea1c844e.f32.gz",
+      "wave": "9b24ea1c844e1b61fbfdef63b286bac304437da4740311b4b0c72e103ee633ee.f32.gz",
       "wave_sha256": "9b24ea1c844e1b61fbfdef63b286bac304437da4740311b4b0c72e103ee633ee",
       "reference_stride": 7
     },
@@ -1698,7 +1698,7 @@
       },
       "circuit_sha256": "0780d3de80cc7c3d35c02350a85aa0029b42052c18fbfcdd15bbfe9250bcaec3",
       "case": "Boss PQ-4 Parametric EQ",
-      "wave": "Boss-PQ-4-Parametric-EQ-fast-40380cff54-b1e4cfb798fe.f32.gz",
+      "wave": "b1e4cfb798fe9a66709f663954beacab850562a8de3fe70f6092afd4ca164970.f32.gz",
       "wave_sha256": "b1e4cfb798fe9a66709f663954beacab850562a8de3fe70f6092afd4ca164970",
       "reference_stride": 7
     },
@@ -1732,7 +1732,7 @@
       },
       "circuit_sha256": "0780d3de80cc7c3d35c02350a85aa0029b42052c18fbfcdd15bbfe9250bcaec3",
       "case": "Boss PQ-4 Parametric EQ",
-      "wave": "Boss-PQ-4-Parametric-EQ-preview-ff7a6a7a70-b1e4cfb798fe.f32.gz",
+      "wave": "b1e4cfb798fe9a66709f663954beacab850562a8de3fe70f6092afd4ca164970.f32.gz",
       "wave_sha256": "b1e4cfb798fe9a66709f663954beacab850562a8de3fe70f6092afd4ca164970",
       "reference_stride": 7
     },
@@ -1766,7 +1766,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive",
-      "wave": "Boss-SD-1-Super-OverDrive-accurate-f3cca2205d-416345b22af6.f32.gz",
+      "wave": "416345b22af6a9f465f78d092953ad32297b794ef5f75427d3771a5469d19353.f32.gz",
       "wave_sha256": "416345b22af6a9f465f78d092953ad32297b794ef5f75427d3771a5469d19353",
       "reference_stride": 7
     },
@@ -1800,7 +1800,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive",
-      "wave": "Boss-SD-1-Super-OverDrive-fast-877694588a-2e6e44f0bf21.f32.gz",
+      "wave": "2e6e44f0bf21cf702b460d463bc7b813ade607a8c8ba8a1a99f312b1dcef4d6b.f32.gz",
       "wave_sha256": "2e6e44f0bf21cf702b460d463bc7b813ade607a8c8ba8a1a99f312b1dcef4d6b",
       "reference_stride": 7
     },
@@ -1834,7 +1834,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive",
-      "wave": "Boss-SD-1-Super-OverDrive-preview-851fcc5a8f-1b7f11fa64e1.f32.gz",
+      "wave": "1b7f11fa64e161e91259910587613005b50f2451d152bf9a429c36b3f5d1dee6.f32.gz",
       "wave_sha256": "1b7f11fa64e161e91259910587613005b50f2451d152bf9a429c36b3f5d1dee6",
       "reference_stride": 7
     },
@@ -1868,7 +1868,7 @@
       },
       "circuit_sha256": "10dd4fdb59d32a9586786e02a9d114297af2ade33cabd03529c2d05ce6d5b883",
       "case": "Boss TR-2 Tremolo",
-      "wave": "Boss-TR-2-Tremolo-accurate-446fc29540-8a3f65acf3f2.f32.gz",
+      "wave": "8a3f65acf3f27bf29698b177c40cfd23d6919d1c6500408973bcbf530d1c66d1.f32.gz",
       "wave_sha256": "8a3f65acf3f27bf29698b177c40cfd23d6919d1c6500408973bcbf530d1c66d1",
       "reference_stride": 7
     },
@@ -1902,7 +1902,7 @@
       },
       "circuit_sha256": "10dd4fdb59d32a9586786e02a9d114297af2ade33cabd03529c2d05ce6d5b883",
       "case": "Boss TR-2 Tremolo",
-      "wave": "Boss-TR-2-Tremolo-fast-04d97f45e4-97e67b838ccc.f32.gz",
+      "wave": "97e67b838ccca3537a2e78c35cc0301069e2c7d85418f17bf633a8cd8c93df1a.f32.gz",
       "wave_sha256": "97e67b838ccca3537a2e78c35cc0301069e2c7d85418f17bf633a8cd8c93df1a",
       "reference_stride": 7
     },
@@ -1936,7 +1936,7 @@
       },
       "circuit_sha256": "10dd4fdb59d32a9586786e02a9d114297af2ade33cabd03529c2d05ce6d5b883",
       "case": "Boss TR-2 Tremolo",
-      "wave": "Boss-TR-2-Tremolo-preview-039a4c8350-97e67b838ccc.f32.gz",
+      "wave": "97e67b838ccca3537a2e78c35cc0301069e2c7d85418f17bf633a8cd8c93df1a.f32.gz",
       "wave_sha256": "97e67b838ccca3537a2e78c35cc0301069e2c7d85418f17bf633a8cd8c93df1a",
       "reference_stride": 7
     },
@@ -1970,7 +1970,7 @@
       },
       "circuit_sha256": "d10b3ccb062133ef49e25ee478f3c2831330d58c0fd54c53af70981a9e97a588",
       "case": "Colorsound Power Boost 18V",
-      "wave": "Colorsound-Power-Boost-18V-accurate-1342fbfedb-9382e09f1d1e.f32.gz",
+      "wave": "9382e09f1d1eca090a91cdbd26d7d050f3519ada3471f2207385a092f711ce7f.f32.gz",
       "wave_sha256": "9382e09f1d1eca090a91cdbd26d7d050f3519ada3471f2207385a092f711ce7f",
       "reference_stride": 7
     },
@@ -2004,7 +2004,7 @@
       },
       "circuit_sha256": "d10b3ccb062133ef49e25ee478f3c2831330d58c0fd54c53af70981a9e97a588",
       "case": "Colorsound Power Boost 18V",
-      "wave": "Colorsound-Power-Boost-18V-fast-71cd192ad6-998a98a70bb0.f32.gz",
+      "wave": "998a98a70bb0be9185783cb2444151311f1314316e6033651f759d8b8a102abd.f32.gz",
       "wave_sha256": "998a98a70bb0be9185783cb2444151311f1314316e6033651f759d8b8a102abd",
       "reference_stride": 7
     },
@@ -2038,7 +2038,7 @@
       },
       "circuit_sha256": "d10b3ccb062133ef49e25ee478f3c2831330d58c0fd54c53af70981a9e97a588",
       "case": "Colorsound Power Boost 18V",
-      "wave": "Colorsound-Power-Boost-18V-preview-2b3d63412d-998a98a70bb0.f32.gz",
+      "wave": "998a98a70bb0be9185783cb2444151311f1314316e6033651f759d8b8a102abd.f32.gz",
       "wave_sha256": "998a98a70bb0be9185783cb2444151311f1314316e6033651f759d8b8a102abd",
       "reference_stride": 7
     },
@@ -2072,7 +2072,7 @@
       },
       "circuit_sha256": "e9b6057019c5a6da0f0a4766e6396156eb6d9d7f1417534fc4887045b8c1bc00",
       "case": "DOD 250 Overdrive Preamp Gray",
-      "wave": "DOD-250-Overdrive-Preamp-Gray-accurate-f054a50bd4-c88ae833831d.f32.gz",
+      "wave": "c88ae833831dfc5eca6fa713cb6309b671eb7cfea7b2fa42aab147fe57b9f095.f32.gz",
       "wave_sha256": "c88ae833831dfc5eca6fa713cb6309b671eb7cfea7b2fa42aab147fe57b9f095",
       "reference_stride": 7
     },
@@ -2106,7 +2106,7 @@
       },
       "circuit_sha256": "e9b6057019c5a6da0f0a4766e6396156eb6d9d7f1417534fc4887045b8c1bc00",
       "case": "DOD 250 Overdrive Preamp Gray",
-      "wave": "DOD-250-Overdrive-Preamp-Gray-fast-3e5d87a164-6fb9d6bddaa9.f32.gz",
+      "wave": "6fb9d6bddaa9199e87bce0240abc7c828d0c87634edde727bd7f95e6195beaa2.f32.gz",
       "wave_sha256": "6fb9d6bddaa9199e87bce0240abc7c828d0c87634edde727bd7f95e6195beaa2",
       "reference_stride": 7
     },
@@ -2140,7 +2140,7 @@
       },
       "circuit_sha256": "e9b6057019c5a6da0f0a4766e6396156eb6d9d7f1417534fc4887045b8c1bc00",
       "case": "DOD 250 Overdrive Preamp Gray",
-      "wave": "DOD-250-Overdrive-Preamp-Gray-preview-2488199974-25861207de41.f32.gz",
+      "wave": "25861207de4180d1b5e7ea6ad3c1a45e11ac0a02bd48b202bc4f51662c3a79fe.f32.gz",
       "wave_sha256": "25861207de4180d1b5e7ea6ad3c1a45e11ac0a02bd48b202bc4f51662c3a79fe",
       "reference_stride": 7
     },
@@ -2174,7 +2174,7 @@
       },
       "circuit_sha256": "4f89d1c186034cc2cec65d07ed35c9be27055b1fe6a535fabdd2d222baae7db2",
       "case": "Dan Armstrong Orange Squeezer",
-      "wave": "Dan-Armstrong-Orange-Squeezer-accurate-dcb268ea6d-b7ccd39a7dfd.f32.gz",
+      "wave": "b7ccd39a7dfd8c5833c2d91124f8ce9cd0576a1dcd44592195ec6cb931ae27f7.f32.gz",
       "wave_sha256": "b7ccd39a7dfd8c5833c2d91124f8ce9cd0576a1dcd44592195ec6cb931ae27f7",
       "reference_stride": 7
     },
@@ -2208,7 +2208,7 @@
       },
       "circuit_sha256": "4f89d1c186034cc2cec65d07ed35c9be27055b1fe6a535fabdd2d222baae7db2",
       "case": "Dan Armstrong Orange Squeezer",
-      "wave": "Dan-Armstrong-Orange-Squeezer-fast-760afb97fa-57f7402385fb.f32.gz",
+      "wave": "57f7402385fbcfa447b58481f18a36c03424b74014a65cd163e9efb700af2edd.f32.gz",
       "wave_sha256": "57f7402385fbcfa447b58481f18a36c03424b74014a65cd163e9efb700af2edd",
       "reference_stride": 7
     },
@@ -2242,7 +2242,7 @@
       },
       "circuit_sha256": "4f89d1c186034cc2cec65d07ed35c9be27055b1fe6a535fabdd2d222baae7db2",
       "case": "Dan Armstrong Orange Squeezer",
-      "wave": "Dan-Armstrong-Orange-Squeezer-preview-8b5cd173d7-653468e489a0.f32.gz",
+      "wave": "653468e489a07a67bd998b740b377eeda428080153ed4323ab66e9f7d0c0b5f1.f32.gz",
       "wave_sha256": "653468e489a07a67bd998b740b377eeda428080153ed4323ab66e9f7d0c0b5f1",
       "reference_stride": 7
     },
@@ -2276,7 +2276,7 @@
       },
       "circuit_sha256": "ccbae8f2b6d67fd78182089cdd05961839994b46316ed4e372f875f026577f4e",
       "case": "Diamond CPR-1 (Quartz Reference)",
-      "wave": "Diamond-CPR-1--Quartz-Reference--accurate-551e257343-eaf5f8c68fd4.f32.gz",
+      "wave": "eaf5f8c68fd44c21c471ceda994d43b048692dbbced81bc172cec172238bce7a.f32.gz",
       "wave_sha256": "eaf5f8c68fd44c21c471ceda994d43b048692dbbced81bc172cec172238bce7a",
       "reference_stride": 7
     },
@@ -2310,7 +2310,7 @@
       },
       "circuit_sha256": "ccbae8f2b6d67fd78182089cdd05961839994b46316ed4e372f875f026577f4e",
       "case": "Diamond CPR-1 (Quartz Reference)",
-      "wave": "Diamond-CPR-1--Quartz-Reference--fast-2df99c7c29-590b5fff7f17.f32.gz",
+      "wave": "590b5fff7f1721a82c43887f2275c7146cd0705afe7f8f62cc499fda9e45aaae.f32.gz",
       "wave_sha256": "590b5fff7f1721a82c43887f2275c7146cd0705afe7f8f62cc499fda9e45aaae",
       "reference_stride": 7
     },
@@ -2344,7 +2344,7 @@
       },
       "circuit_sha256": "ccbae8f2b6d67fd78182089cdd05961839994b46316ed4e372f875f026577f4e",
       "case": "Diamond CPR-1 (Quartz Reference)",
-      "wave": "Diamond-CPR-1--Quartz-Reference--preview-1811b62d8c-590b5fff7f17.f32.gz",
+      "wave": "590b5fff7f1721a82c43887f2275c7146cd0705afe7f8f62cc499fda9e45aaae.f32.gz",
       "wave_sha256": "590b5fff7f1721a82c43887f2275c7146cd0705afe7f8f62cc499fda9e45aaae",
       "reference_stride": 7
     },
@@ -2378,7 +2378,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95",
-      "wave": "Dunlop-Cry-Baby-GCB-95-accurate-e2769efece-ee78b44146b7.f32.gz",
+      "wave": "ee78b44146b741e11b7309214800944ae98259c0f5d8a1b70cbfb0d647c70354.f32.gz",
       "wave_sha256": "ee78b44146b741e11b7309214800944ae98259c0f5d8a1b70cbfb0d647c70354",
       "reference_stride": 7
     },
@@ -2412,7 +2412,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95",
-      "wave": "Dunlop-Cry-Baby-GCB-95-fast-a7991b3b69-21dae33d8da6.f32.gz",
+      "wave": "21dae33d8da69bf8ab87835abe2d6dcea423430caff67e79d8c5d55a88362aea.f32.gz",
       "wave_sha256": "21dae33d8da69bf8ab87835abe2d6dcea423430caff67e79d8c5d55a88362aea",
       "reference_stride": 7
     },
@@ -2446,7 +2446,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95",
-      "wave": "Dunlop-Cry-Baby-GCB-95-preview-8a20271566-21dae33d8da6.f32.gz",
+      "wave": "21dae33d8da69bf8ab87835abe2d6dcea423430caff67e79d8c5d55a88362aea.f32.gz",
       "wave_sha256": "21dae33d8da69bf8ab87835abe2d6dcea423430caff67e79d8c5d55a88362aea",
       "reference_stride": 7
     },
@@ -2480,7 +2480,7 @@
       },
       "circuit_sha256": "7418484756346cf029121b55c2a8e2e688351a12205ff0fd8965af271226a215",
       "case": "EHX Big Muff Pi Ram's Head Violet",
-      "wave": "EHX-Big-Muff-Pi-Ram-s-Head-Violet-accurate-49926d68ae-9716e9c71c03.f32.gz",
+      "wave": "9716e9c71c0319c37b7bc25c05012db418413f43bc6c022d7ab556453412339e.f32.gz",
       "wave_sha256": "9716e9c71c0319c37b7bc25c05012db418413f43bc6c022d7ab556453412339e",
       "reference_stride": 7
     },
@@ -2514,7 +2514,7 @@
       },
       "circuit_sha256": "7418484756346cf029121b55c2a8e2e688351a12205ff0fd8965af271226a215",
       "case": "EHX Big Muff Pi Ram's Head Violet",
-      "wave": "EHX-Big-Muff-Pi-Ram-s-Head-Violet-fast-9d8007aab6-3563168e0f9a.f32.gz",
+      "wave": "3563168e0f9a517c267056c807666b2e7b12e0c57f3841d5b1414767536ed43a.f32.gz",
       "wave_sha256": "3563168e0f9a517c267056c807666b2e7b12e0c57f3841d5b1414767536ed43a",
       "reference_stride": 7
     },
@@ -2548,7 +2548,7 @@
       },
       "circuit_sha256": "7418484756346cf029121b55c2a8e2e688351a12205ff0fd8965af271226a215",
       "case": "EHX Big Muff Pi Ram's Head Violet",
-      "wave": "EHX-Big-Muff-Pi-Ram-s-Head-Violet-preview-5bb1a41bf6-524686c734c7.f32.gz",
+      "wave": "524686c734c765b5b884cc992ce9081390f4485449c6fdf73438d2caad08f881.f32.gz",
       "wave_sha256": "524686c734c765b5b884cc992ce9081390f4485449c6fdf73438d2caad08f881",
       "reference_stride": 7
     },
@@ -2582,7 +2582,7 @@
       },
       "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
       "case": "EHX Deluxe Memory Man",
-      "wave": "EHX-Deluxe-Memory-Man-accurate-36c2e56756-c675c529bf10.f32.gz",
+      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
       "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
       "reference_stride": 7
     },
@@ -2616,7 +2616,7 @@
       },
       "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
       "case": "EHX Deluxe Memory Man",
-      "wave": "EHX-Deluxe-Memory-Man-fast-bba7af5588-c675c529bf10.f32.gz",
+      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
       "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
       "reference_stride": 7
     },
@@ -2650,7 +2650,7 @@
       },
       "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
       "case": "EHX Deluxe Memory Man",
-      "wave": "EHX-Deluxe-Memory-Man-preview-6065f44ae7-c675c529bf10.f32.gz",
+      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
       "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
       "reference_stride": 7
     },
@@ -2684,7 +2684,7 @@
       },
       "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
       "case": "EHX Electric Mistress 9V",
-      "wave": "EHX-Electric-Mistress-9V-accurate-6e4618eca8-dec9f42e692e.f32.gz",
+      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
       "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
       "reference_stride": 7
     },
@@ -2718,7 +2718,7 @@
       },
       "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
       "case": "EHX Electric Mistress 9V",
-      "wave": "EHX-Electric-Mistress-9V-fast-ae84ac1eb9-dec9f42e692e.f32.gz",
+      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
       "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
       "reference_stride": 7
     },
@@ -2752,7 +2752,7 @@
       },
       "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
       "case": "EHX Electric Mistress 9V",
-      "wave": "EHX-Electric-Mistress-9V-preview-2c2210edf4-dec9f42e692e.f32.gz",
+      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
       "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
       "reference_stride": 7
     },
@@ -2786,7 +2786,7 @@
       },
       "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
       "case": "EHX Small Clone MN3007",
-      "wave": "EHX-Small-Clone-MN3007-accurate-a40a6b6c78-5e10adc13b0c.f32.gz",
+      "wave": "5e10adc13b0c20c532dd3c28fd3bc3c899be0f751c195c0510861b3b7dea2e27.f32.gz",
       "wave_sha256": "5e10adc13b0c20c532dd3c28fd3bc3c899be0f751c195c0510861b3b7dea2e27",
       "reference_stride": 7
     },
@@ -2820,7 +2820,7 @@
       },
       "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
       "case": "EHX Small Clone MN3007",
-      "wave": "EHX-Small-Clone-MN3007-fast-87fea7972d-0eda098e15e0.f32.gz",
+      "wave": "0eda098e15e050f60c95ca0f33a8d3e046c3472bb2ee86023044af9e41bbee02.f32.gz",
       "wave_sha256": "0eda098e15e050f60c95ca0f33a8d3e046c3472bb2ee86023044af9e41bbee02",
       "reference_stride": 7
     },
@@ -2854,7 +2854,7 @@
       },
       "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
       "case": "EHX Small Clone MN3007",
-      "wave": "EHX-Small-Clone-MN3007-preview-a5242815fd-b3134ebf86d2.f32.gz",
+      "wave": "b3134ebf86d2a2ff16a83afbe1cd3e4e869c2ed69692de176d843bfadeef896b.f32.gz",
       "wave_sha256": "b3134ebf86d2a2ff16a83afbe1cd3e4e869c2ed69692de176d843bfadeef896b",
       "reference_stride": 7
     },
@@ -2888,7 +2888,7 @@
       },
       "circuit_sha256": "3b508fe6fa577d9ff2fffc0b017a384f9f62dcdfb3d78aca7c2ede4fb249b9a2",
       "case": "EHX Small Stone Issue J",
-      "wave": "EHX-Small-Stone-Issue-J-accurate-99be311b70-c91715d28a7a.f32.gz",
+      "wave": "c91715d28a7a94ff23c8bb740756ce16d5fe97dd929edc356343ac2f7b8752b8.f32.gz",
       "wave_sha256": "c91715d28a7a94ff23c8bb740756ce16d5fe97dd929edc356343ac2f7b8752b8",
       "reference_stride": 7
     },
@@ -2922,7 +2922,7 @@
       },
       "circuit_sha256": "3b508fe6fa577d9ff2fffc0b017a384f9f62dcdfb3d78aca7c2ede4fb249b9a2",
       "case": "EHX Small Stone Issue J",
-      "wave": "EHX-Small-Stone-Issue-J-fast-4769d2a54a-e33434e1f5db.f32.gz",
+      "wave": "e33434e1f5db43b4728a276d93a3162db6391249be5727cf8610fa33f42114d8.f32.gz",
       "wave_sha256": "e33434e1f5db43b4728a276d93a3162db6391249be5727cf8610fa33f42114d8",
       "reference_stride": 7
     },
@@ -2956,7 +2956,7 @@
       },
       "circuit_sha256": "3b508fe6fa577d9ff2fffc0b017a384f9f62dcdfb3d78aca7c2ede4fb249b9a2",
       "case": "EHX Small Stone Issue J",
-      "wave": "EHX-Small-Stone-Issue-J-preview-cfd8d2b3eb-e33434e1f5db.f32.gz",
+      "wave": "e33434e1f5db43b4728a276d93a3162db6391249be5727cf8610fa33f42114d8.f32.gz",
       "wave_sha256": "e33434e1f5db43b4728a276d93a3162db6391249be5727cf8610fa33f42114d8",
       "reference_stride": 7
     },
@@ -2990,7 +2990,7 @@
       },
       "circuit_sha256": "664d9af6fa5853eea5881ca96bded4f243605c3e483de9f5f322c75f0257328d",
       "case": "Fuzz Face",
-      "wave": "Fuzz-Face-accurate-684c313d9b-69ed394cb643.f32.gz",
+      "wave": "69ed394cb64352f418230cd9cabfdb0d63a3428bdb1941df1b1ee16e3aad5214.f32.gz",
       "wave_sha256": "69ed394cb64352f418230cd9cabfdb0d63a3428bdb1941df1b1ee16e3aad5214",
       "reference_stride": 7
     },
@@ -3024,7 +3024,7 @@
       },
       "circuit_sha256": "664d9af6fa5853eea5881ca96bded4f243605c3e483de9f5f322c75f0257328d",
       "case": "Fuzz Face",
-      "wave": "Fuzz-Face-fast-1e88b62e7d-21003a020172.f32.gz",
+      "wave": "21003a020172394cd8ee6ff96d238ce9934a51fb6128280ee7d1d9e6a36490a3.f32.gz",
       "wave_sha256": "21003a020172394cd8ee6ff96d238ce9934a51fb6128280ee7d1d9e6a36490a3",
       "reference_stride": 7
     },
@@ -3058,7 +3058,7 @@
       },
       "circuit_sha256": "664d9af6fa5853eea5881ca96bded4f243605c3e483de9f5f322c75f0257328d",
       "case": "Fuzz Face",
-      "wave": "Fuzz-Face-preview-2aecf5ea3d-21003a020172.f32.gz",
+      "wave": "21003a020172394cd8ee6ff96d238ce9934a51fb6128280ee7d1d9e6a36490a3.f32.gz",
       "wave_sha256": "21003a020172394cd8ee6ff96d238ce9934a51fb6128280ee7d1d9e6a36490a3",
       "reference_stride": 7
     },
@@ -3092,7 +3092,7 @@
       },
       "circuit_sha256": "a6e89bc29a00bd7c7d697067e6d27e48835583d3d4f141ff5914fa9cd8421e74",
       "case": "ISP Decimator II G String (Noise Terminator Reference)",
-      "wave": "ISP-Decimator-II-G-String--Noise-Terminator-Reference--accurate-d1638626bc-7778ec065d79.f32.gz",
+      "wave": "7778ec065d79b24b4fbd2e13a6342bd4aae97699d9729f371db6a1057a2d543b.f32.gz",
       "wave_sha256": "7778ec065d79b24b4fbd2e13a6342bd4aae97699d9729f371db6a1057a2d543b",
       "reference_stride": 7
     },
@@ -3126,7 +3126,7 @@
       },
       "circuit_sha256": "a6e89bc29a00bd7c7d697067e6d27e48835583d3d4f141ff5914fa9cd8421e74",
       "case": "ISP Decimator II G String (Noise Terminator Reference)",
-      "wave": "ISP-Decimator-II-G-String--Noise-Terminator-Reference--fast-0131bd1d8d-4adf677595d5.f32.gz",
+      "wave": "4adf677595d55ad6a2d9d3e76019ebeb9937f780d7e2a7a380edabef4f0266b9.f32.gz",
       "wave_sha256": "4adf677595d55ad6a2d9d3e76019ebeb9937f780d7e2a7a380edabef4f0266b9",
       "reference_stride": 7
     },
@@ -3160,7 +3160,7 @@
       },
       "circuit_sha256": "a6e89bc29a00bd7c7d697067e6d27e48835583d3d4f141ff5914fa9cd8421e74",
       "case": "ISP Decimator II G String (Noise Terminator Reference)",
-      "wave": "ISP-Decimator-II-G-String--Noise-Terminator-Reference--preview-5a3fe6da18-4adf677595d5.f32.gz",
+      "wave": "4adf677595d55ad6a2d9d3e76019ebeb9937f780d7e2a7a380edabef4f0266b9.f32.gz",
       "wave_sha256": "4adf677595d55ad6a2d9d3e76019ebeb9937f780d7e2a7a380edabef4f0266b9",
       "reference_stride": 7
     },
@@ -3194,7 +3194,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808",
-      "wave": "Ibanez-TS-808-accurate-de603f7ca1-59a5a3eca71d.f32.gz",
+      "wave": "59a5a3eca71d1721c86b44593a02ab16734175b291bdbd06f53633165206e731.f32.gz",
       "wave_sha256": "59a5a3eca71d1721c86b44593a02ab16734175b291bdbd06f53633165206e731",
       "reference_stride": 7
     },
@@ -3228,7 +3228,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808",
-      "wave": "Ibanez-TS-808-fast-0fa2e9cdbc-59a5a3eca71d.f32.gz",
+      "wave": "59a5a3eca71d1721c86b44593a02ab16734175b291bdbd06f53633165206e731.f32.gz",
       "wave_sha256": "59a5a3eca71d1721c86b44593a02ab16734175b291bdbd06f53633165206e731",
       "reference_stride": 7
     },
@@ -3262,7 +3262,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808",
-      "wave": "Ibanez-TS-808-preview-985992b448-f7aee0df534b.f32.gz",
+      "wave": "f7aee0df534b896e53986530049b9425deb267c05a42cb7ea2cc22a68ea008ba.f32.gz",
       "wave_sha256": "f7aee0df534b896e53986530049b9425deb267c05a42cb7ea2cc22a68ea008ba",
       "reference_stride": 7
     },
@@ -3296,7 +3296,7 @@
       },
       "circuit_sha256": "79f5defc11c70c136a35fd597356ef9f2e0c0827ffb4eb95c972473f7f0232d4",
       "case": "Klon Centaur",
-      "wave": "Klon-Centaur-accurate-6a6d8ae1de-f5a7b4b34b31.f32.gz",
+      "wave": "f5a7b4b34b31dcaf9bfcaa67a88edf8d0a4ef76e1ac03754aa6d6d5c9f36612e.f32.gz",
       "wave_sha256": "f5a7b4b34b31dcaf9bfcaa67a88edf8d0a4ef76e1ac03754aa6d6d5c9f36612e",
       "reference_stride": 7
     },
@@ -3330,7 +3330,7 @@
       },
       "circuit_sha256": "79f5defc11c70c136a35fd597356ef9f2e0c0827ffb4eb95c972473f7f0232d4",
       "case": "Klon Centaur",
-      "wave": "Klon-Centaur-fast-e6952844c6-f5a7b4b34b31.f32.gz",
+      "wave": "f5a7b4b34b31dcaf9bfcaa67a88edf8d0a4ef76e1ac03754aa6d6d5c9f36612e.f32.gz",
       "wave_sha256": "f5a7b4b34b31dcaf9bfcaa67a88edf8d0a4ef76e1ac03754aa6d6d5c9f36612e",
       "reference_stride": 7
     },
@@ -3364,7 +3364,7 @@
       },
       "circuit_sha256": "79f5defc11c70c136a35fd597356ef9f2e0c0827ffb4eb95c972473f7f0232d4",
       "case": "Klon Centaur",
-      "wave": "Klon-Centaur-preview-9acc87ad8d-cf5b33097990.f32.gz",
+      "wave": "cf5b3309799036787f10b41c4644627f0f1fb74508fddb67784b7b25e032751e.f32.gz",
       "wave_sha256": "cf5b3309799036787f10b41c4644627f0f1fb74508fddb67784b7b25e032751e",
       "reference_stride": 7
     },
@@ -3398,7 +3398,7 @@
       },
       "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "MXR-Carbon-Copy-Analog-Delay-accurate-3a498398de-e3012cbef431.f32.gz",
+      "wave": "e3012cbef43161dbc82157fa9178bde54ffc71188654d5e75750c39a8df381f4.f32.gz",
       "wave_sha256": "e3012cbef43161dbc82157fa9178bde54ffc71188654d5e75750c39a8df381f4",
       "reference_stride": 7
     },
@@ -3432,7 +3432,7 @@
       },
       "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "MXR-Carbon-Copy-Analog-Delay-fast-f9f6441367-e310acb0aca8.f32.gz",
+      "wave": "e310acb0aca82cfdc077308d381ae24a7db780fc5fb9021a2f9f14cf5a44163f.f32.gz",
       "wave_sha256": "e310acb0aca82cfdc077308d381ae24a7db780fc5fb9021a2f9f14cf5a44163f",
       "reference_stride": 7
     },
@@ -3466,7 +3466,7 @@
       },
       "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "MXR-Carbon-Copy-Analog-Delay-preview-73f848403d-07acbe26a150.f32.gz",
+      "wave": "07acbe26a150d41de232684cd4e03c5fd5245716e932599636c47dbb29addae9.f32.gz",
       "wave_sha256": "07acbe26a150d41de232684cd4e03c5fd5245716e932599636c47dbb29addae9",
       "reference_stride": 7
     },
@@ -3500,7 +3500,7 @@
       },
       "circuit_sha256": "de1fe9cbf5b17e384f718d8e91bbeef6fc2b9aab8123c32bb070d04bc047c6a0",
       "case": "MXR Dyna Comp CA3080",
-      "wave": "MXR-Dyna-Comp-CA3080-accurate-8b10ee9941-4b701cc92f18.f32.gz",
+      "wave": "4b701cc92f18ad1b5c4ea86b0b144d0021bb288b3df301a48cef02ab3cc05adb.f32.gz",
       "wave_sha256": "4b701cc92f18ad1b5c4ea86b0b144d0021bb288b3df301a48cef02ab3cc05adb",
       "reference_stride": 7
     },
@@ -3534,7 +3534,7 @@
       },
       "circuit_sha256": "de1fe9cbf5b17e384f718d8e91bbeef6fc2b9aab8123c32bb070d04bc047c6a0",
       "case": "MXR Dyna Comp CA3080",
-      "wave": "MXR-Dyna-Comp-CA3080-fast-1e675b4056-477ef39d8762.f32.gz",
+      "wave": "477ef39d87626d3bfb2bc1be429382cb0b5d497f4ba021998cfcb8d9c9e03f91.f32.gz",
       "wave_sha256": "477ef39d87626d3bfb2bc1be429382cb0b5d497f4ba021998cfcb8d9c9e03f91",
       "reference_stride": 7
     },
@@ -3568,7 +3568,7 @@
       },
       "circuit_sha256": "de1fe9cbf5b17e384f718d8e91bbeef6fc2b9aab8123c32bb070d04bc047c6a0",
       "case": "MXR Dyna Comp CA3080",
-      "wave": "MXR-Dyna-Comp-CA3080-preview-5d961ab6a2-a4c86bcc3295.f32.gz",
+      "wave": "a4c86bcc3295d3f5337faeb26382e0cc3361886eded80fd49ceeffc9ed84e839.f32.gz",
       "wave_sha256": "a4c86bcc3295d3f5337faeb26382e0cc3361886eded80fd49ceeffc9ed84e839",
       "reference_stride": 7
     },
@@ -3602,7 +3602,7 @@
       },
       "circuit_sha256": "f8b60efac289072ad3a1afe27f4324fb7d54cee1880cd3d2798cc7a908c211d7",
       "case": "MXR M108S Ten Band EQ (Rev E Reference)",
-      "wave": "MXR-M108S-Ten-Band-EQ--Rev-E-Reference--accurate-bf1fb59082-763d0d641f9d.f32.gz",
+      "wave": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea.f32.gz",
       "wave_sha256": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea",
       "reference_stride": 7
     },
@@ -3636,7 +3636,7 @@
       },
       "circuit_sha256": "f8b60efac289072ad3a1afe27f4324fb7d54cee1880cd3d2798cc7a908c211d7",
       "case": "MXR M108S Ten Band EQ (Rev E Reference)",
-      "wave": "MXR-M108S-Ten-Band-EQ--Rev-E-Reference--fast-b2942f70e2-763d0d641f9d.f32.gz",
+      "wave": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea.f32.gz",
       "wave_sha256": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea",
       "reference_stride": 7
     },
@@ -3670,7 +3670,7 @@
       },
       "circuit_sha256": "f8b60efac289072ad3a1afe27f4324fb7d54cee1880cd3d2798cc7a908c211d7",
       "case": "MXR M108S Ten Band EQ (Rev E Reference)",
-      "wave": "MXR-M108S-Ten-Band-EQ--Rev-E-Reference--preview-5f41b669c8-763d0d641f9d.f32.gz",
+      "wave": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea.f32.gz",
       "wave_sha256": "763d0d641f9decbb31a20434d98024796917024b8eb6e41f9ea16fcc7b5989ea",
       "reference_stride": 7
     },
@@ -3704,7 +3704,7 @@
       },
       "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
       "case": "MXR M234 Analog Chorus",
-      "wave": "MXR-M234-Analog-Chorus-accurate-96b4c66398-4243936307c7.f32.gz",
+      "wave": "4243936307c755501e81a08ea45d0cece17727fcdc3b690339c8a4bd4805b0ce.f32.gz",
       "wave_sha256": "4243936307c755501e81a08ea45d0cece17727fcdc3b690339c8a4bd4805b0ce",
       "reference_stride": 7
     },
@@ -3738,7 +3738,7 @@
       },
       "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
       "case": "MXR M234 Analog Chorus",
-      "wave": "MXR-M234-Analog-Chorus-fast-118d613564-47f815ecc058.f32.gz",
+      "wave": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1.f32.gz",
       "wave_sha256": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1",
       "reference_stride": 7
     },
@@ -3772,7 +3772,7 @@
       },
       "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
       "case": "MXR M234 Analog Chorus",
-      "wave": "MXR-M234-Analog-Chorus-preview-928f66cf05-47f815ecc058.f32.gz",
+      "wave": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1.f32.gz",
       "wave_sha256": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1",
       "reference_stride": 7
     },
@@ -3806,7 +3806,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp",
-      "wave": "MXR-Micro-Amp-accurate-0bc44c4441-4e697e4d7f58.f32.gz",
+      "wave": "4e697e4d7f5854abe8f99011dfe8bfedab8da69d5698ed762e216f83ea9d56c5.f32.gz",
       "wave_sha256": "4e697e4d7f5854abe8f99011dfe8bfedab8da69d5698ed762e216f83ea9d56c5",
       "reference_stride": 7
     },
@@ -3840,7 +3840,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp",
-      "wave": "MXR-Micro-Amp-fast-0c9b75bc66-e052264878a9.f32.gz",
+      "wave": "e052264878a9523bc0460761dc8033c042ccbd5db95423991c972ffd9de74378.f32.gz",
       "wave_sha256": "e052264878a9523bc0460761dc8033c042ccbd5db95423991c972ffd9de74378",
       "reference_stride": 7
     },
@@ -3874,7 +3874,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp",
-      "wave": "MXR-Micro-Amp-preview-a03bffa939-ecf429251095.f32.gz",
+      "wave": "ecf42925109549f448d420898b8df62f781e2657b152ba0c90c6846bd3cfa5e0.f32.gz",
       "wave_sha256": "ecf42925109549f448d420898b8df62f781e2657b152ba0c90c6846bd3cfa5e0",
       "reference_stride": 7
     },
@@ -3908,7 +3908,7 @@
       },
       "circuit_sha256": "2dd574f84295b154b08b4d3e4c1b750642c463f666f34df98d561ec5bcfd0fec",
       "case": "MXR Phase 90 Script",
-      "wave": "MXR-Phase-90-Script-accurate-60cd0ccd52-677753a9cb5d.f32.gz",
+      "wave": "677753a9cb5da9d80e0f17fa648207141702901aab70b451a12b66f1c6cb51b2.f32.gz",
       "wave_sha256": "677753a9cb5da9d80e0f17fa648207141702901aab70b451a12b66f1c6cb51b2",
       "reference_stride": 7
     },
@@ -3942,7 +3942,7 @@
       },
       "circuit_sha256": "2dd574f84295b154b08b4d3e4c1b750642c463f666f34df98d561ec5bcfd0fec",
       "case": "MXR Phase 90 Script",
-      "wave": "MXR-Phase-90-Script-fast-44ad578334-2050f4d58755.f32.gz",
+      "wave": "2050f4d5875567d04a5cbf064f156fa878d7ce654d245bee9e22a717463960b6.f32.gz",
       "wave_sha256": "2050f4d5875567d04a5cbf064f156fa878d7ce654d245bee9e22a717463960b6",
       "reference_stride": 7
     },
@@ -3976,7 +3976,7 @@
       },
       "circuit_sha256": "2dd574f84295b154b08b4d3e4c1b750642c463f666f34df98d561ec5bcfd0fec",
       "case": "MXR Phase 90 Script",
-      "wave": "MXR-Phase-90-Script-preview-d2eab603b5-4f4ae3eaf88a.f32.gz",
+      "wave": "4f4ae3eaf88a7f527381194182eda9ac283599a573594baa7fb2b077ceb23bfa.f32.gz",
       "wave_sha256": "4f4ae3eaf88a7f527381194182eda9ac283599a573594baa7fb2b077ceb23bfa",
       "reference_stride": 7
     },
@@ -4010,7 +4010,7 @@
       },
       "circuit_sha256": "a68de09ebea1ca0bf1e011fa40b8da6567bc2c90b23969bc10f8927df73b914b",
       "case": "Maestro FZ-1 Fuzz-Tone 1962",
-      "wave": "Maestro-FZ-1-Fuzz-Tone-1962-accurate-946e4de230-62a930a413c0.f32.gz",
+      "wave": "62a930a413c050d1f05b4197a6142e2f7812b573e4fc09bdbc88fa19d6131fea.f32.gz",
       "wave_sha256": "62a930a413c050d1f05b4197a6142e2f7812b573e4fc09bdbc88fa19d6131fea",
       "reference_stride": 7
     },
@@ -4044,7 +4044,7 @@
       },
       "circuit_sha256": "a68de09ebea1ca0bf1e011fa40b8da6567bc2c90b23969bc10f8927df73b914b",
       "case": "Maestro FZ-1 Fuzz-Tone 1962",
-      "wave": "Maestro-FZ-1-Fuzz-Tone-1962-fast-1c99a399fc-b1d4f47d1c27.f32.gz",
+      "wave": "b1d4f47d1c27cebed1ed5a1d59f316528beba171935839f2acb14bfcc3d2b702.f32.gz",
       "wave_sha256": "b1d4f47d1c27cebed1ed5a1d59f316528beba171935839f2acb14bfcc3d2b702",
       "reference_stride": 7
     },
@@ -4078,7 +4078,7 @@
       },
       "circuit_sha256": "a68de09ebea1ca0bf1e011fa40b8da6567bc2c90b23969bc10f8927df73b914b",
       "case": "Maestro FZ-1 Fuzz-Tone 1962",
-      "wave": "Maestro-FZ-1-Fuzz-Tone-1962-preview-06cef3f46e-75fccdd6fa2b.f32.gz",
+      "wave": "75fccdd6fa2bd5242994e1794e03a275cece5960ca7bae030faf61bf8901a5df.f32.gz",
       "wave_sha256": "75fccdd6fa2bd5242994e1794e03a275cece5960ca7bae030faf61bf8901a5df",
       "reference_stride": 7
     },
@@ -4112,7 +4112,7 @@
       },
       "circuit_sha256": "02900b7e3f7c51f4c3484826f32742d30397a6a277bbd19567756630e5e2d43a",
       "case": "Marshall Bluesbreaker Mk I",
-      "wave": "Marshall-Bluesbreaker-Mk-I-accurate-7a83808b01-1bc1fb592b37.f32.gz",
+      "wave": "1bc1fb592b37e399ef8aab02e0a53a5323535632e7d86a3531f0a53d29287d3e.f32.gz",
       "wave_sha256": "1bc1fb592b37e399ef8aab02e0a53a5323535632e7d86a3531f0a53d29287d3e",
       "reference_stride": 7
     },
@@ -4146,7 +4146,7 @@
       },
       "circuit_sha256": "02900b7e3f7c51f4c3484826f32742d30397a6a277bbd19567756630e5e2d43a",
       "case": "Marshall Bluesbreaker Mk I",
-      "wave": "Marshall-Bluesbreaker-Mk-I-fast-edd8dce060-e0eb78ba00be.f32.gz",
+      "wave": "e0eb78ba00beebc2f862e371b13f283920e8cb0f385be0e81e925f8a7e722b4b.f32.gz",
       "wave_sha256": "e0eb78ba00beebc2f862e371b13f283920e8cb0f385be0e81e925f8a7e722b4b",
       "reference_stride": 7
     },
@@ -4180,7 +4180,7 @@
       },
       "circuit_sha256": "02900b7e3f7c51f4c3484826f32742d30397a6a277bbd19567756630e5e2d43a",
       "case": "Marshall Bluesbreaker Mk I",
-      "wave": "Marshall-Bluesbreaker-Mk-I-preview-60f0d091e4-970c0260c3ef.f32.gz",
+      "wave": "970c0260c3ef079f67cfb1107414161a92fe568f4794575459a1eab7232f4359.f32.gz",
       "wave_sha256": "970c0260c3ef079f67cfb1107414161a92fe568f4794575459a1eab7232f4359",
       "reference_stride": 7
     },
@@ -4214,7 +4214,7 @@
       },
       "circuit_sha256": "bc0f4eb68de62a3cb283725bf9a5803c6ad567b7ce3f9bfacf82e760ecbbe132",
       "case": "Marshall Guv'nor",
-      "wave": "Marshall-Guv-nor-accurate-6323d1e7f5-044aea2dd059.f32.gz",
+      "wave": "044aea2dd059516afab9161e1c4114ee497e1c05d3aa677626c67870b0576170.f32.gz",
       "wave_sha256": "044aea2dd059516afab9161e1c4114ee497e1c05d3aa677626c67870b0576170",
       "reference_stride": 7
     },
@@ -4248,7 +4248,7 @@
       },
       "circuit_sha256": "bc0f4eb68de62a3cb283725bf9a5803c6ad567b7ce3f9bfacf82e760ecbbe132",
       "case": "Marshall Guv'nor",
-      "wave": "Marshall-Guv-nor-fast-2155ce4a48-0764de8391d9.f32.gz",
+      "wave": "0764de8391d9d11c358e97d38cad92621865aaa77dc6f8c7c9d5798b179edea4.f32.gz",
       "wave_sha256": "0764de8391d9d11c358e97d38cad92621865aaa77dc6f8c7c9d5798b179edea4",
       "reference_stride": 7
     },
@@ -4282,7 +4282,7 @@
       },
       "circuit_sha256": "bc0f4eb68de62a3cb283725bf9a5803c6ad567b7ce3f9bfacf82e760ecbbe132",
       "case": "Marshall Guv'nor",
-      "wave": "Marshall-Guv-nor-preview-0f45019819-febcc15c4aa1.f32.gz",
+      "wave": "febcc15c4aa1f80628bf7db3cd2271f325f23591d32eaaa773de171b88e442db.f32.gz",
       "wave_sha256": "febcc15c4aa1f80628bf7db3cd2271f325f23591d32eaaa773de171b88e442db",
       "reference_stride": 7
     },
@@ -4316,7 +4316,7 @@
       },
       "circuit_sha256": "9455ee79a02d1a3c566c3142ab3cfe947ab1b1de56f177d7590c03fbc95200d8",
       "case": "Mosrite Fuzzrite Silicon",
-      "wave": "Mosrite-Fuzzrite-Silicon-accurate-8105a11158-11d21d931f83.f32.gz",
+      "wave": "11d21d931f833d4a8df71ab176414e746e3bc64a31815e8be1edd939817bfc27.f32.gz",
       "wave_sha256": "11d21d931f833d4a8df71ab176414e746e3bc64a31815e8be1edd939817bfc27",
       "reference_stride": 7
     },
@@ -4350,7 +4350,7 @@
       },
       "circuit_sha256": "9455ee79a02d1a3c566c3142ab3cfe947ab1b1de56f177d7590c03fbc95200d8",
       "case": "Mosrite Fuzzrite Silicon",
-      "wave": "Mosrite-Fuzzrite-Silicon-fast-48ac44a3f7-75b774ea4265.f32.gz",
+      "wave": "75b774ea426550f36ab300ee92f3f0aabb734f485715303ef68b9c8445525875.f32.gz",
       "wave_sha256": "75b774ea426550f36ab300ee92f3f0aabb734f485715303ef68b9c8445525875",
       "reference_stride": 7
     },
@@ -4384,7 +4384,7 @@
       },
       "circuit_sha256": "9455ee79a02d1a3c566c3142ab3cfe947ab1b1de56f177d7590c03fbc95200d8",
       "case": "Mosrite Fuzzrite Silicon",
-      "wave": "Mosrite-Fuzzrite-Silicon-preview-66d2cded21-75b774ea4265.f32.gz",
+      "wave": "75b774ea426550f36ab300ee92f3f0aabb734f485715303ef68b9c8445525875.f32.gz",
       "wave_sha256": "75b774ea426550f36ab300ee92f3f0aabb734f485715303ef68b9c8445525875",
       "reference_stride": 7
     },
@@ -4418,7 +4418,7 @@
       },
       "circuit_sha256": "6847351ce3ac3bfb8c7f9d500eb1684ca6bfb6f0751c6f6a71ae9487cb8d71bf",
       "case": "Musitronics Mu-Tron III",
-      "wave": "Musitronics-Mu-Tron-III-accurate-365e4b0b31-157a77cd7225.f32.gz",
+      "wave": "157a77cd7225c2da81adb59dcf3524a5949eec36309f94fd2e682a6b31fa39fc.f32.gz",
       "wave_sha256": "157a77cd7225c2da81adb59dcf3524a5949eec36309f94fd2e682a6b31fa39fc",
       "reference_stride": 7
     },
@@ -4452,7 +4452,7 @@
       },
       "circuit_sha256": "6847351ce3ac3bfb8c7f9d500eb1684ca6bfb6f0751c6f6a71ae9487cb8d71bf",
       "case": "Musitronics Mu-Tron III",
-      "wave": "Musitronics-Mu-Tron-III-fast-acae3876ac-dc7b0c9dc6ba.f32.gz",
+      "wave": "dc7b0c9dc6ba916994c545410feb05486ceda960700f053cc053593bd661e876.f32.gz",
       "wave_sha256": "dc7b0c9dc6ba916994c545410feb05486ceda960700f053cc053593bd661e876",
       "reference_stride": 7
     },
@@ -4486,7 +4486,7 @@
       },
       "circuit_sha256": "6847351ce3ac3bfb8c7f9d500eb1684ca6bfb6f0751c6f6a71ae9487cb8d71bf",
       "case": "Musitronics Mu-Tron III",
-      "wave": "Musitronics-Mu-Tron-III-preview-3eabea3514-dc7b0c9dc6ba.f32.gz",
+      "wave": "dc7b0c9dc6ba916994c545410feb05486ceda960700f053cc053593bd661e876.f32.gz",
       "wave_sha256": "dc7b0c9dc6ba916994c545410feb05486ceda960700f053cc053593bd661e876",
       "reference_stride": 7
     },
@@ -4520,7 +4520,7 @@
       },
       "circuit_sha256": "f7bd2b25b48f53d0fb89d6b1c901cba5db9ba3c2e527df3f0ebcd8e7e8fd63bb",
       "case": "Nobels ODR-1 Natural Overdrive",
-      "wave": "Nobels-ODR-1-Natural-Overdrive-accurate-f031cfbf8b-36fecca7beef.f32.gz",
+      "wave": "36fecca7beefc32c0351065c5ae4e199ee0dbffe56d1d1d94b922cebce6c84b5.f32.gz",
       "wave_sha256": "36fecca7beefc32c0351065c5ae4e199ee0dbffe56d1d1d94b922cebce6c84b5",
       "reference_stride": 7
     },
@@ -4554,7 +4554,7 @@
       },
       "circuit_sha256": "f7bd2b25b48f53d0fb89d6b1c901cba5db9ba3c2e527df3f0ebcd8e7e8fd63bb",
       "case": "Nobels ODR-1 Natural Overdrive",
-      "wave": "Nobels-ODR-1-Natural-Overdrive-fast-11f218f5d6-075183ee71ec.f32.gz",
+      "wave": "075183ee71ec579fd0b2a2c0b7321968b23a0ae50034715352df1d3731f250e3.f32.gz",
       "wave_sha256": "075183ee71ec579fd0b2a2c0b7321968b23a0ae50034715352df1d3731f250e3",
       "reference_stride": 7
     },
@@ -4588,7 +4588,7 @@
       },
       "circuit_sha256": "f7bd2b25b48f53d0fb89d6b1c901cba5db9ba3c2e527df3f0ebcd8e7e8fd63bb",
       "case": "Nobels ODR-1 Natural Overdrive",
-      "wave": "Nobels-ODR-1-Natural-Overdrive-preview-6944c2ba5f-16f0fcb957ee.f32.gz",
+      "wave": "16f0fcb957eef996872a14b5c219a9c880220992129327ad2e68303eeb7e24b4.f32.gz",
       "wave_sha256": "16f0fcb957eef996872a14b5c219a9c880220992129327ad2e68303eeb7e24b4",
       "reference_stride": 7
     },
@@ -4622,7 +4622,7 @@
       },
       "circuit_sha256": "df5c3e97a18de8ecce4275899bb452c026dde3c182d9dcca3c00f37e970ad2a9",
       "case": "Origin Effects Cali76 FET Compressor (Circuit Approximation)",
-      "wave": "Origin-Effects-Cali76-FET-Compressor--Circuit-Approximation--accu-31d68c088d-d61c7a20e650.f32.gz",
+      "wave": "d61c7a20e6509c9a1c3942184b01606551f7073776cd57953c8b84eef35c13f3.f32.gz",
       "wave_sha256": "d61c7a20e6509c9a1c3942184b01606551f7073776cd57953c8b84eef35c13f3",
       "reference_stride": 7
     },
@@ -4656,7 +4656,7 @@
       },
       "circuit_sha256": "df5c3e97a18de8ecce4275899bb452c026dde3c182d9dcca3c00f37e970ad2a9",
       "case": "Origin Effects Cali76 FET Compressor (Circuit Approximation)",
-      "wave": "Origin-Effects-Cali76-FET-Compressor--Circuit-Approximation--fast-3595ecb50e-69f43054a157.f32.gz",
+      "wave": "69f43054a157961fc5dc33b0538823bea4d346f283fe737efabcf337e0df8742.f32.gz",
       "wave_sha256": "69f43054a157961fc5dc33b0538823bea4d346f283fe737efabcf337e0df8742",
       "reference_stride": 7
     },
@@ -4690,7 +4690,7 @@
       },
       "circuit_sha256": "df5c3e97a18de8ecce4275899bb452c026dde3c182d9dcca3c00f37e970ad2a9",
       "case": "Origin Effects Cali76 FET Compressor (Circuit Approximation)",
-      "wave": "Origin-Effects-Cali76-FET-Compressor--Circuit-Approximation--prev-a03df1b422-fcd37efb3954.f32.gz",
+      "wave": "fcd37efb39543c34334006e6964d9049ad3907fd3f0da8c4a27e75420febf5f0.f32.gz",
       "wave_sha256": "fcd37efb39543c34334006e6964d9049ad3907fd3f0da8c4a27e75420febf5f0",
       "reference_stride": 7
     },
@@ -4724,7 +4724,7 @@
       },
       "circuit_sha256": "e54f483c75aaeb976b344b27715b8611c60832304faafcf9190ece1e19a48b86",
       "case": "Pro Co RAT LM308",
-      "wave": "Pro-Co-RAT-LM308-accurate-d6a4ccdfc4-791934520e39.f32.gz",
+      "wave": "791934520e395af5edb4cad17eb5ae247ef1cc8d5154f617358229717ca34178.f32.gz",
       "wave_sha256": "791934520e395af5edb4cad17eb5ae247ef1cc8d5154f617358229717ca34178",
       "reference_stride": 7
     },
@@ -4758,7 +4758,7 @@
       },
       "circuit_sha256": "e54f483c75aaeb976b344b27715b8611c60832304faafcf9190ece1e19a48b86",
       "case": "Pro Co RAT LM308",
-      "wave": "Pro-Co-RAT-LM308-fast-b914a9c222-0072d51ca975.f32.gz",
+      "wave": "0072d51ca975af376e066febbdf0563ca9497c85eac4df64c9f1013a61cf5fe7.f32.gz",
       "wave_sha256": "0072d51ca975af376e066febbdf0563ca9497c85eac4df64c9f1013a61cf5fe7",
       "reference_stride": 7
     },
@@ -4792,7 +4792,7 @@
       },
       "circuit_sha256": "e54f483c75aaeb976b344b27715b8611c60832304faafcf9190ece1e19a48b86",
       "case": "Pro Co RAT LM308",
-      "wave": "Pro-Co-RAT-LM308-preview-5445e72212-eaf2dde3c8e2.f32.gz",
+      "wave": "eaf2dde3c8e24b85ecc87f96ba009b18bbe7f435559d621312807cc5aad6eef5.f32.gz",
       "wave_sha256": "eaf2dde3c8e24b85ecc87f96ba009b18bbe7f435559d621312807cc5aad6eef5",
       "reference_stride": 7
     },
@@ -4826,7 +4826,7 @@
       },
       "circuit_sha256": "964908f671f5d22fd974950785a7463ee26f93c065d74001645b00bc7ea0055d",
       "case": "Roger Mayer Octavia Transistor",
-      "wave": "Roger-Mayer-Octavia-Transistor-accurate-fe58185406-d404a45fe0f4.f32.gz",
+      "wave": "d404a45fe0f46d5c518f355999750e53c050116bca017b164d0df99c02c5027f.f32.gz",
       "wave_sha256": "d404a45fe0f46d5c518f355999750e53c050116bca017b164d0df99c02c5027f",
       "reference_stride": 7
     },
@@ -4860,7 +4860,7 @@
       },
       "circuit_sha256": "964908f671f5d22fd974950785a7463ee26f93c065d74001645b00bc7ea0055d",
       "case": "Roger Mayer Octavia Transistor",
-      "wave": "Roger-Mayer-Octavia-Transistor-fast-726726df59-e908b5638947.f32.gz",
+      "wave": "e908b56389479b698e63c44b95be647eede241856f39cd8970367351c7aef11d.f32.gz",
       "wave_sha256": "e908b56389479b698e63c44b95be647eede241856f39cd8970367351c7aef11d",
       "reference_stride": 7
     },
@@ -4894,7 +4894,7 @@
       },
       "circuit_sha256": "964908f671f5d22fd974950785a7463ee26f93c065d74001645b00bc7ea0055d",
       "case": "Roger Mayer Octavia Transistor",
-      "wave": "Roger-Mayer-Octavia-Transistor-preview-5f6c2efd6b-6c4aefd240ea.f32.gz",
+      "wave": "6c4aefd240ead25a12e6ab344557552151c5e46e98ecbb1bac6c588e155ae54e.f32.gz",
       "wave_sha256": "6c4aefd240ead25a12e6ab344557552151c5e46e98ecbb1bac6c588e155ae54e",
       "reference_stride": 7
     },
@@ -4928,7 +4928,7 @@
       },
       "circuit_sha256": "1ce89fbbc867a83b39539a5416a48e110b64b3659efcf592310a19d7b638c0d0",
       "case": "Shin-ei Univox Uni-Vibe 915",
-      "wave": "Shin-ei-Univox-Uni-Vibe-915-accurate-276f0ee228-6ddd6c3fcafb.f32.gz",
+      "wave": "6ddd6c3fcafb90c5f68c53f84d09e3af727a87a70b156ecd3bf2478794fc74d0.f32.gz",
       "wave_sha256": "6ddd6c3fcafb90c5f68c53f84d09e3af727a87a70b156ecd3bf2478794fc74d0",
       "reference_stride": 7
     },
@@ -4962,7 +4962,7 @@
       },
       "circuit_sha256": "1ce89fbbc867a83b39539a5416a48e110b64b3659efcf592310a19d7b638c0d0",
       "case": "Shin-ei Univox Uni-Vibe 915",
-      "wave": "Shin-ei-Univox-Uni-Vibe-915-fast-56498b8a95-eb4133cf208f.f32.gz",
+      "wave": "eb4133cf208fe27251712653b993198226942a0f20a3978aaa30233a8226857d.f32.gz",
       "wave_sha256": "eb4133cf208fe27251712653b993198226942a0f20a3978aaa30233a8226857d",
       "reference_stride": 7
     },
@@ -4996,7 +4996,7 @@
       },
       "circuit_sha256": "1ce89fbbc867a83b39539a5416a48e110b64b3659efcf592310a19d7b638c0d0",
       "case": "Shin-ei Univox Uni-Vibe 915",
-      "wave": "Shin-ei-Univox-Uni-Vibe-915-preview-8e406d17f5-d789bd13b9f6.f32.gz",
+      "wave": "d789bd13b9f613229e510f7f78cde6a09f771fb4b2f108dcc00e5ecfd66d4bb3.f32.gz",
       "wave_sha256": "d789bd13b9f613229e510f7f78cde6a09f771fb4b2f108dcc00e5ecfd66d4bb3",
       "reference_stride": 7
     },
@@ -5030,7 +5030,7 @@
       },
       "circuit_sha256": "f1b58f5656db4887259e33ec6259e438d15efd7b294d47aea1a3f29fb25c35a3",
       "case": "Sola Sound Tone Bender Professional Mk II",
-      "wave": "Sola-Sound-Tone-Bender-Professional-Mk-II-accurate-2f37cf8bff-ad39abedeee1.f32.gz",
+      "wave": "ad39abedeee15104be5087e19e34d12a7d4d7b35933235cfd66c9997fc134066.f32.gz",
       "wave_sha256": "ad39abedeee15104be5087e19e34d12a7d4d7b35933235cfd66c9997fc134066",
       "reference_stride": 7
     },
@@ -5064,7 +5064,7 @@
       },
       "circuit_sha256": "f1b58f5656db4887259e33ec6259e438d15efd7b294d47aea1a3f29fb25c35a3",
       "case": "Sola Sound Tone Bender Professional Mk II",
-      "wave": "Sola-Sound-Tone-Bender-Professional-Mk-II-fast-f3b173fb61-4c5f60175b79.f32.gz",
+      "wave": "4c5f60175b7976d39266444ba8ece217662d73e79e947ee688a2938239927e8e.f32.gz",
       "wave_sha256": "4c5f60175b7976d39266444ba8ece217662d73e79e947ee688a2938239927e8e",
       "reference_stride": 7
     },
@@ -5098,7 +5098,7 @@
       },
       "circuit_sha256": "f1b58f5656db4887259e33ec6259e438d15efd7b294d47aea1a3f29fb25c35a3",
       "case": "Sola Sound Tone Bender Professional Mk II",
-      "wave": "Sola-Sound-Tone-Bender-Professional-Mk-II-preview-7d0055af45-4c5f60175b79.f32.gz",
+      "wave": "4c5f60175b7976d39266444ba8ece217662d73e79e947ee688a2938239927e8e.f32.gz",
       "wave_sha256": "4c5f60175b7976d39266444ba8ece217662d73e79e947ee688a2938239927e8e",
       "reference_stride": 7
     },
@@ -5132,7 +5132,7 @@
       },
       "circuit_sha256": "6239a7ded889ad6d3417e3f5abf40e13608df9585ce53ff8bbe70de9f9049229",
       "case": "ZVEX Fuzz Factory",
-      "wave": "ZVEX-Fuzz-Factory-accurate-5daf2621d9-8de6a66daada.f32.gz",
+      "wave": "8de6a66daada905b8d32d03d03fd5bdd9b6baa6dd724ffeffb9f52fe6c790b03.f32.gz",
       "wave_sha256": "8de6a66daada905b8d32d03d03fd5bdd9b6baa6dd724ffeffb9f52fe6c790b03",
       "reference_stride": 7
     },
@@ -5166,7 +5166,7 @@
       },
       "circuit_sha256": "6239a7ded889ad6d3417e3f5abf40e13608df9585ce53ff8bbe70de9f9049229",
       "case": "ZVEX Fuzz Factory",
-      "wave": "ZVEX-Fuzz-Factory-fast-6bcb960abd-25933db400ec.f32.gz",
+      "wave": "25933db400ec0bc52f7d858472dbbe48e742a0f6757944820351b2799e57e3ef.f32.gz",
       "wave_sha256": "25933db400ec0bc52f7d858472dbbe48e742a0f6757944820351b2799e57e3ef",
       "reference_stride": 7
     },
@@ -5200,7 +5200,7 @@
       },
       "circuit_sha256": "6239a7ded889ad6d3417e3f5abf40e13608df9585ce53ff8bbe70de9f9049229",
       "case": "ZVEX Fuzz Factory",
-      "wave": "ZVEX-Fuzz-Factory-preview-9782b85eb2-25933db400ec.f32.gz",
+      "wave": "25933db400ec0bc52f7d858472dbbe48e742a0f6757944820351b2799e57e3ef.f32.gz",
       "wave_sha256": "25933db400ec0bc52f7d858472dbbe48e742a0f6757944820351b2799e57e3ef",
       "reference_stride": 7
     },
@@ -5234,7 +5234,7 @@
       },
       "circuit_sha256": "af296cc0d58e6481825c5fe2ff40c80221e07e1c7bfab80680acf36fc1e008ee",
       "case": "ADR-Compex-F760X-RS",
-      "wave": "ADR-Compex-F760X-RS-accurate-7e016ee55e-99470e52caae.f32.gz",
+      "wave": "99470e52caae81605c9ea6f716d4a2094fa1861e921453ade3af1cea05e9ce22.f32.gz",
       "wave_sha256": "99470e52caae81605c9ea6f716d4a2094fa1861e921453ade3af1cea05e9ce22",
       "reference_stride": 7
     },
@@ -5268,7 +5268,7 @@
       },
       "circuit_sha256": "af296cc0d58e6481825c5fe2ff40c80221e07e1c7bfab80680acf36fc1e008ee",
       "case": "ADR-Compex-F760X-RS",
-      "wave": "ADR-Compex-F760X-RS-fast-c7d1b665db-c2d53c002720.f32.gz",
+      "wave": "c2d53c00272080ff2e3f37c547367ff8b300888760c666e5673069508360f5ff.f32.gz",
       "wave_sha256": "c2d53c00272080ff2e3f37c547367ff8b300888760c666e5673069508360f5ff",
       "reference_stride": 7
     },
@@ -5302,7 +5302,7 @@
       },
       "circuit_sha256": "af296cc0d58e6481825c5fe2ff40c80221e07e1c7bfab80680acf36fc1e008ee",
       "case": "ADR-Compex-F760X-RS",
-      "wave": "ADR-Compex-F760X-RS-preview-f9a2878de2-ed14065e8900.f32.gz",
+      "wave": "ed14065e89002a365381e402932a6b95c4bf5ffbe9a6f1ad59537674df621d51.f32.gz",
       "wave_sha256": "ed14065e89002a365381e402932a6b95c4bf5ffbe9a6f1ad59537674df621d51",
       "reference_stride": 7
     },
@@ -5336,7 +5336,7 @@
       },
       "circuit_sha256": "43f96df5cb23d0004f56f314e605e3dc1c262e005de49fecb73a7fee45b3b1de",
       "case": "API-2500",
-      "wave": "API-2500-accurate-587ad46e69-097aec86fe99.f32.gz",
+      "wave": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125.f32.gz",
       "wave_sha256": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125",
       "reference_stride": 7
     },
@@ -5370,7 +5370,7 @@
       },
       "circuit_sha256": "43f96df5cb23d0004f56f314e605e3dc1c262e005de49fecb73a7fee45b3b1de",
       "case": "API-2500",
-      "wave": "API-2500-fast-ec28fe385c-097aec86fe99.f32.gz",
+      "wave": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125.f32.gz",
       "wave_sha256": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125",
       "reference_stride": 7
     },
@@ -5404,7 +5404,7 @@
       },
       "circuit_sha256": "43f96df5cb23d0004f56f314e605e3dc1c262e005de49fecb73a7fee45b3b1de",
       "case": "API-2500",
-      "wave": "API-2500-preview-2f69c872d2-097aec86fe99.f32.gz",
+      "wave": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125.f32.gz",
       "wave_sha256": "097aec86fe9921ef708c9fb8001307d65c2ae321af2f98caef1e89573dff8125",
       "reference_stride": 7
     },
@@ -5438,7 +5438,7 @@
       },
       "circuit_sha256": "79bab9254e1b31b3ba5b07d3349125c3d452c2e8df33d9de8c1b91999f04016c",
       "case": "Altec-436C",
-      "wave": "Altec-436C-accurate-7180c999b0-2db65b69e934.f32.gz",
+      "wave": "2db65b69e93406b8fc0e19f2127d8b7086e6b4bab4518647346c6f93392a62a7.f32.gz",
       "wave_sha256": "2db65b69e93406b8fc0e19f2127d8b7086e6b4bab4518647346c6f93392a62a7",
       "reference_stride": 7
     },
@@ -5472,7 +5472,7 @@
       },
       "circuit_sha256": "79bab9254e1b31b3ba5b07d3349125c3d452c2e8df33d9de8c1b91999f04016c",
       "case": "Altec-436C",
-      "wave": "Altec-436C-fast-3bd7566627-4026ed9cf943.f32.gz",
+      "wave": "4026ed9cf9430a526742b128f9436770ef6425dcb63d31e20d344bf5b7a1ff33.f32.gz",
       "wave_sha256": "4026ed9cf9430a526742b128f9436770ef6425dcb63d31e20d344bf5b7a1ff33",
       "reference_stride": 7
     },
@@ -5506,7 +5506,7 @@
       },
       "circuit_sha256": "79bab9254e1b31b3ba5b07d3349125c3d452c2e8df33d9de8c1b91999f04016c",
       "case": "Altec-436C",
-      "wave": "Altec-436C-preview-c6dc30bf63-e7196e654256.f32.gz",
+      "wave": "e7196e6542568efdc052d073e9d62581aafbb60f2b0a94c63892afa3d37b01b1.f32.gz",
       "wave_sha256": "e7196e6542568efdc052d073e9d62581aafbb60f2b0a94c63892afa3d37b01b1",
       "reference_stride": 7
     },
@@ -5540,7 +5540,7 @@
       },
       "circuit_sha256": "d960172556f2a5789915587dc16ad1c4572244879f3dabe3d05fb782d5d4ec25",
       "case": "Drawmer-DS201",
-      "wave": "Drawmer-DS201-accurate-6c70837559-e7ee35a99b86.f32.gz",
+      "wave": "e7ee35a99b86a343ece15da108a189b190e270df6cb59930b130c7e143100544.f32.gz",
       "wave_sha256": "e7ee35a99b86a343ece15da108a189b190e270df6cb59930b130c7e143100544",
       "reference_stride": 7
     },
@@ -5574,7 +5574,7 @@
       },
       "circuit_sha256": "d960172556f2a5789915587dc16ad1c4572244879f3dabe3d05fb782d5d4ec25",
       "case": "Drawmer-DS201",
-      "wave": "Drawmer-DS201-fast-18eeb198d5-427216993440.f32.gz",
+      "wave": "42721699344018178349da0261af9f5c932cf6d4ec8a24e2878b922ebaed44e8.f32.gz",
       "wave_sha256": "42721699344018178349da0261af9f5c932cf6d4ec8a24e2878b922ebaed44e8",
       "reference_stride": 7
     },
@@ -5608,7 +5608,7 @@
       },
       "circuit_sha256": "d960172556f2a5789915587dc16ad1c4572244879f3dabe3d05fb782d5d4ec25",
       "case": "Drawmer-DS201",
-      "wave": "Drawmer-DS201-preview-56b2e6f6d7-c88c7238eecb.f32.gz",
+      "wave": "c88c7238eecb73dea80b8e0146cf660da93f35d34616e1a988876790a7931f6c.f32.gz",
       "wave_sha256": "c88c7238eecb73dea80b8e0146cf660da93f35d34616e1a988876790a7931f6c",
       "reference_stride": 7
     },
@@ -5642,7 +5642,7 @@
       },
       "circuit_sha256": "c868cb89d2b8e0027e4cd3d747ddea01d5117bd88d3f18dc53c75b14d87250e0",
       "case": "EMI-RS124",
-      "wave": "EMI-RS124-accurate-395c3ccc80-fec757fe9485.f32.gz",
+      "wave": "fec757fe9485222310c2df742b9a7968612002971577370ad06b99dd0f1b8188.f32.gz",
       "wave_sha256": "fec757fe9485222310c2df742b9a7968612002971577370ad06b99dd0f1b8188",
       "reference_stride": 7
     },
@@ -5676,7 +5676,7 @@
       },
       "circuit_sha256": "c868cb89d2b8e0027e4cd3d747ddea01d5117bd88d3f18dc53c75b14d87250e0",
       "case": "EMI-RS124",
-      "wave": "EMI-RS124-fast-acf47b827a-93cd40548f45.f32.gz",
+      "wave": "93cd40548f45cca4b379340fc16b9100bb5405fa24c8eb7a3cd87b5a02da45e5.f32.gz",
       "wave_sha256": "93cd40548f45cca4b379340fc16b9100bb5405fa24c8eb7a3cd87b5a02da45e5",
       "reference_stride": 7
     },
@@ -5710,7 +5710,7 @@
       },
       "circuit_sha256": "c868cb89d2b8e0027e4cd3d747ddea01d5117bd88d3f18dc53c75b14d87250e0",
       "case": "EMI-RS124",
-      "wave": "EMI-RS124-preview-411e749c58-ec2c976a93b4.f32.gz",
+      "wave": "ec2c976a93b4a08d4673759a73bfc1d025b2a547bbad21408c8eadc0be277cb4.f32.gz",
       "wave_sha256": "ec2c976a93b4a08d4673759a73bfc1d025b2a547bbad21408c8eadc0be277cb4",
       "reference_stride": 7
     },
@@ -5744,7 +5744,7 @@
       },
       "circuit_sha256": "439bb73fe51380b1bde1802a2a2fbc873a170128e4e6b7af2239869db8444bd9",
       "case": "Empirical Labs FATSO EL7",
-      "wave": "Empirical-Labs-FATSO-EL7-accurate-8382a1f73d-6f85c5aedc53.f32.gz",
+      "wave": "6f85c5aedc53e27173fc178d6a2028bdae5618193f3e646d15672241f96ecd3b.f32.gz",
       "wave_sha256": "6f85c5aedc53e27173fc178d6a2028bdae5618193f3e646d15672241f96ecd3b",
       "reference_stride": 7
     },
@@ -5778,7 +5778,7 @@
       },
       "circuit_sha256": "439bb73fe51380b1bde1802a2a2fbc873a170128e4e6b7af2239869db8444bd9",
       "case": "Empirical Labs FATSO EL7",
-      "wave": "Empirical-Labs-FATSO-EL7-fast-e6e12295bf-cfb11f1bf1ec.f32.gz",
+      "wave": "cfb11f1bf1ec79642605ac7f1b3fba4606c7f59e5168292375aae4157aa644c8.f32.gz",
       "wave_sha256": "cfb11f1bf1ec79642605ac7f1b3fba4606c7f59e5168292375aae4157aa644c8",
       "reference_stride": 7
     },
@@ -5812,7 +5812,7 @@
       },
       "circuit_sha256": "439bb73fe51380b1bde1802a2a2fbc873a170128e4e6b7af2239869db8444bd9",
       "case": "Empirical Labs FATSO EL7",
-      "wave": "Empirical-Labs-FATSO-EL7-preview-f19899f737-cfb11f1bf1ec.f32.gz",
+      "wave": "cfb11f1bf1ec79642605ac7f1b3fba4606c7f59e5168292375aae4157aa644c8.f32.gz",
       "wave_sha256": "cfb11f1bf1ec79642605ac7f1b3fba4606c7f59e5168292375aae4157aa644c8",
       "reference_stride": 7
     },
@@ -5846,7 +5846,7 @@
       },
       "circuit_sha256": "5cee439efa72a49fdca3d74c1de13c9663cfb69b0d50e0fd30ee8b59c0ca9c1a",
       "case": "Fairchild-660",
-      "wave": "Fairchild-660-accurate-6224a6fb4c-7d5732bc1bb6.f32.gz",
+      "wave": "7d5732bc1bb616a9e991802a79365a0d3f362311a07a06d043702f2a11426a95.f32.gz",
       "wave_sha256": "7d5732bc1bb616a9e991802a79365a0d3f362311a07a06d043702f2a11426a95",
       "reference_stride": 7
     },
@@ -5880,7 +5880,7 @@
       },
       "circuit_sha256": "5cee439efa72a49fdca3d74c1de13c9663cfb69b0d50e0fd30ee8b59c0ca9c1a",
       "case": "Fairchild-660",
-      "wave": "Fairchild-660-fast-cacba9562e-b635bab193bf.f32.gz",
+      "wave": "b635bab193bf058b1db189f0c0156426c01152ef2a08d89039f69da498641425.f32.gz",
       "wave_sha256": "b635bab193bf058b1db189f0c0156426c01152ef2a08d89039f69da498641425",
       "reference_stride": 7
     },
@@ -5914,7 +5914,7 @@
       },
       "circuit_sha256": "5cee439efa72a49fdca3d74c1de13c9663cfb69b0d50e0fd30ee8b59c0ca9c1a",
       "case": "Fairchild-660",
-      "wave": "Fairchild-660-preview-a02ac32394-153d27005756.f32.gz",
+      "wave": "153d27005756f9c753d0382640c75c455d551d68b2cdce04d8818950c94ca350.f32.gz",
       "wave_sha256": "153d27005756f9c753d0382640c75c455d551d68b2cdce04d8818950c94ca350",
       "reference_stride": 7
     },
@@ -5948,7 +5948,7 @@
       },
       "circuit_sha256": "e1ed5df17226f3a35cfd861a74f40f061ccaa074c4f3bdc40398135c860ebab2",
       "case": "Gates-Sta-Level-M5167",
-      "wave": "Gates-Sta-Level-M5167-accurate-bdfd1f143a-a3c1f9fde946.f32.gz",
+      "wave": "a3c1f9fde9467b1455f533768793f4e7c0eaad9c4fb2d43120512df0a0b07705.f32.gz",
       "wave_sha256": "a3c1f9fde9467b1455f533768793f4e7c0eaad9c4fb2d43120512df0a0b07705",
       "reference_stride": 7
     },
@@ -5982,7 +5982,7 @@
       },
       "circuit_sha256": "e1ed5df17226f3a35cfd861a74f40f061ccaa074c4f3bdc40398135c860ebab2",
       "case": "Gates-Sta-Level-M5167",
-      "wave": "Gates-Sta-Level-M5167-fast-734491ea79-3d64a291cbfc.f32.gz",
+      "wave": "3d64a291cbfc427596d9125b7faf39435c5fe6a1fb5e0bcd48f1ab0da1440db0.f32.gz",
       "wave_sha256": "3d64a291cbfc427596d9125b7faf39435c5fe6a1fb5e0bcd48f1ab0da1440db0",
       "reference_stride": 7
     },
@@ -6016,7 +6016,7 @@
       },
       "circuit_sha256": "e1ed5df17226f3a35cfd861a74f40f061ccaa074c4f3bdc40398135c860ebab2",
       "case": "Gates-Sta-Level-M5167",
-      "wave": "Gates-Sta-Level-M5167-preview-b3bf9769f5-5cef07effb61.f32.gz",
+      "wave": "5cef07effb61a6dde87906f84c8ec1a5b686394dca292ecfed01a3e8844c9236.f32.gz",
       "wave_sha256": "5cef07effb61a6dde87906f84c8ec1a5b686394dca292ecfed01a3e8844c9236",
       "reference_stride": 7
     },
@@ -6050,7 +6050,7 @@
       },
       "circuit_sha256": "ac8dc7657035a8c6da86c3d855b0fb6dde7efba1f0a93d40c49103a00c2bcb2b",
       "case": "Manley-Variable-Mu",
-      "wave": "Manley-Variable-Mu-accurate-5ade6b3771-14f6c645af12.f32.gz",
+      "wave": "14f6c645af1225ac36c8212820183507cae60b2de36a6e10bc2eb6f062b597ce.f32.gz",
       "wave_sha256": "14f6c645af1225ac36c8212820183507cae60b2de36a6e10bc2eb6f062b597ce",
       "reference_stride": 7
     },
@@ -6084,7 +6084,7 @@
       },
       "circuit_sha256": "ac8dc7657035a8c6da86c3d855b0fb6dde7efba1f0a93d40c49103a00c2bcb2b",
       "case": "Manley-Variable-Mu",
-      "wave": "Manley-Variable-Mu-fast-e9406f8df7-5cea2c676b97.f32.gz",
+      "wave": "5cea2c676b970f96934b7fd862f429469795c78bee6548ed2f3fffc5574df96d.f32.gz",
       "wave_sha256": "5cea2c676b970f96934b7fd862f429469795c78bee6548ed2f3fffc5574df96d",
       "reference_stride": 7
     },
@@ -6118,7 +6118,7 @@
       },
       "circuit_sha256": "ac8dc7657035a8c6da86c3d855b0fb6dde7efba1f0a93d40c49103a00c2bcb2b",
       "case": "Manley-Variable-Mu",
-      "wave": "Manley-Variable-Mu-preview-3944cf99e2-9bf8f3cb5aeb.f32.gz",
+      "wave": "9bf8f3cb5aeb08e720bbb0f335d536b37238554222b7f6077547192a4887b297.f32.gz",
       "wave_sha256": "9bf8f3cb5aeb08e720bbb0f335d536b37238554222b7f6077547192a4887b297",
       "reference_stride": 7
     },
@@ -6152,7 +6152,7 @@
       },
       "circuit_sha256": "ab2f064e8aa74f4e6ab5ebade5d3d7335e88e2d894d9e4f4bd3489eb16d90381",
       "case": "Neve-33609J",
-      "wave": "Neve-33609J-accurate-f7e45340dc-234b9e9dcfa9.f32.gz",
+      "wave": "234b9e9dcfa9636b36acce8c0aa1177595cdc896b501dbec11c400de35745f70.f32.gz",
       "wave_sha256": "234b9e9dcfa9636b36acce8c0aa1177595cdc896b501dbec11c400de35745f70",
       "reference_stride": 7
     },
@@ -6186,7 +6186,7 @@
       },
       "circuit_sha256": "ab2f064e8aa74f4e6ab5ebade5d3d7335e88e2d894d9e4f4bd3489eb16d90381",
       "case": "Neve-33609J",
-      "wave": "Neve-33609J-fast-3333824de1-c719a9c822cf.f32.gz",
+      "wave": "c719a9c822cf918a536b264be93bad8f9d0812e6dfb54aa909c054f9a3caa101.f32.gz",
       "wave_sha256": "c719a9c822cf918a536b264be93bad8f9d0812e6dfb54aa909c054f9a3caa101",
       "reference_stride": 7
     },
@@ -6220,7 +6220,7 @@
       },
       "circuit_sha256": "ab2f064e8aa74f4e6ab5ebade5d3d7335e88e2d894d9e4f4bd3489eb16d90381",
       "case": "Neve-33609J",
-      "wave": "Neve-33609J-preview-936fbe9cf8-bc9756cf4f89.f32.gz",
+      "wave": "bc9756cf4f89ef0849ecb21935fd4e49a729a33121aff889bab886f0baf0bb5e.f32.gz",
       "wave_sha256": "bc9756cf4f89ef0849ecb21935fd4e49a729a33121aff889bab886f0baf0bb5e",
       "reference_stride": 7
     },
@@ -6254,7 +6254,7 @@
       },
       "circuit_sha256": "9a906da12f3728d3f48b0ffc9e5c6112494440109f6b6352c9398a4473f34e35",
       "case": "Pye-4060",
-      "wave": "Pye-4060-accurate-0b5a2215f4-ac4c8d76da38.f32.gz",
+      "wave": "ac4c8d76da38783e4c6257b3e1e8e1887cf860b3685f7b1dba95763653d0e6e7.f32.gz",
       "wave_sha256": "ac4c8d76da38783e4c6257b3e1e8e1887cf860b3685f7b1dba95763653d0e6e7",
       "reference_stride": 7
     },
@@ -6288,7 +6288,7 @@
       },
       "circuit_sha256": "9a906da12f3728d3f48b0ffc9e5c6112494440109f6b6352c9398a4473f34e35",
       "case": "Pye-4060",
-      "wave": "Pye-4060-fast-afad7c850b-2db1194c8504.f32.gz",
+      "wave": "2db1194c8504655931a9ec3c607c59acf9663a8168fffcda5c94cead41a1d650.f32.gz",
       "wave_sha256": "2db1194c8504655931a9ec3c607c59acf9663a8168fffcda5c94cead41a1d650",
       "reference_stride": 7
     },
@@ -6322,7 +6322,7 @@
       },
       "circuit_sha256": "9a906da12f3728d3f48b0ffc9e5c6112494440109f6b6352c9398a4473f34e35",
       "case": "Pye-4060",
-      "wave": "Pye-4060-preview-e43edeb8b7-2db1194c8504.f32.gz",
+      "wave": "2db1194c8504655931a9ec3c607c59acf9663a8168fffcda5c94cead41a1d650.f32.gz",
       "wave_sha256": "2db1194c8504655931a9ec3c607c59acf9663a8168fffcda5c94cead41a1d650",
       "reference_stride": 7
     },
@@ -6356,7 +6356,7 @@
       },
       "circuit_sha256": "0a3956fd978777823255a08fe3f28164b5ba45655b394afa08bddc57fa83e009",
       "case": "SPL Transient Designer 9842 DET Model",
-      "wave": "SPL-Transient-Designer-9842-DET-Model-accurate-7917b60090-b5041a247e91.f32.gz",
+      "wave": "b5041a247e91324776372649c6667916a6ffa57ffe281b670e15ac15eddf4a5e.f32.gz",
       "wave_sha256": "b5041a247e91324776372649c6667916a6ffa57ffe281b670e15ac15eddf4a5e",
       "reference_stride": 7
     },
@@ -6390,7 +6390,7 @@
       },
       "circuit_sha256": "0a3956fd978777823255a08fe3f28164b5ba45655b394afa08bddc57fa83e009",
       "case": "SPL Transient Designer 9842 DET Model",
-      "wave": "SPL-Transient-Designer-9842-DET-Model-fast-6dd1275b82-2c57d8c0f6f3.f32.gz",
+      "wave": "2c57d8c0f6f3534f0f71abc0fe33e3315b3277da173412b8523cc95c7b12613f.f32.gz",
       "wave_sha256": "2c57d8c0f6f3534f0f71abc0fe33e3315b3277da173412b8523cc95c7b12613f",
       "reference_stride": 7
     },
@@ -6424,7 +6424,7 @@
       },
       "circuit_sha256": "0a3956fd978777823255a08fe3f28164b5ba45655b394afa08bddc57fa83e009",
       "case": "SPL Transient Designer 9842 DET Model",
-      "wave": "SPL-Transient-Designer-9842-DET-Model-preview-c3bc8d03d2-fc4993630b9d.f32.gz",
+      "wave": "fc4993630b9d8e91396ac916f80da289f9a9ee6c5aad4e57f7760fc31d80353c.f32.gz",
       "wave_sha256": "fc4993630b9d8e91396ac916f80da289f9a9ee6c5aad4e57f7760fc31d80353c",
       "reference_stride": 7
     },
@@ -6458,7 +6458,7 @@
       },
       "circuit_sha256": "76aeba895b0439ff573598361f71f6d05fad8b5f4b2bb4b1d1b23100e3c2a811",
       "case": "SSL-4000-G-Bus-Compressor",
-      "wave": "SSL-4000-G-Bus-Compressor-accurate-2f2623db99-8461ad3aeebc.f32.gz",
+      "wave": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d.f32.gz",
       "wave_sha256": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d",
       "reference_stride": 7
     },
@@ -6492,7 +6492,7 @@
       },
       "circuit_sha256": "76aeba895b0439ff573598361f71f6d05fad8b5f4b2bb4b1d1b23100e3c2a811",
       "case": "SSL-4000-G-Bus-Compressor",
-      "wave": "SSL-4000-G-Bus-Compressor-fast-8451bf6a7c-8461ad3aeebc.f32.gz",
+      "wave": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d.f32.gz",
       "wave_sha256": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d",
       "reference_stride": 7
     },
@@ -6526,7 +6526,7 @@
       },
       "circuit_sha256": "76aeba895b0439ff573598361f71f6d05fad8b5f4b2bb4b1d1b23100e3c2a811",
       "case": "SSL-4000-G-Bus-Compressor",
-      "wave": "SSL-4000-G-Bus-Compressor-preview-4e5977ce8c-8461ad3aeebc.f32.gz",
+      "wave": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d.f32.gz",
       "wave_sha256": "8461ad3aeebc86fad4e8a7925ea6a42f9c1ca0331bdc206a710bb86f2f860c1d",
       "reference_stride": 7
     },
@@ -6560,7 +6560,7 @@
       },
       "circuit_sha256": "b60930ad1839462485914fa0a0f438207c6005baea04ec1fd5394174f8ad6a14",
       "case": "Teletronix-LA-2A",
-      "wave": "Teletronix-LA-2A-accurate-b9044c0e20-4a4c9a216c05.f32.gz",
+      "wave": "4a4c9a216c0597151f428ead0f1731aa6c2126ad41f4d9ad05a0939177637477.f32.gz",
       "wave_sha256": "4a4c9a216c0597151f428ead0f1731aa6c2126ad41f4d9ad05a0939177637477",
       "reference_stride": 7
     },
@@ -6594,7 +6594,7 @@
       },
       "circuit_sha256": "b60930ad1839462485914fa0a0f438207c6005baea04ec1fd5394174f8ad6a14",
       "case": "Teletronix-LA-2A",
-      "wave": "Teletronix-LA-2A-fast-cef3595aa7-2c005a5a7bb0.f32.gz",
+      "wave": "2c005a5a7bb0d81e34aad73da0c9f624f3c1c129d89df064c55b0de71c350158.f32.gz",
       "wave_sha256": "2c005a5a7bb0d81e34aad73da0c9f624f3c1c129d89df064c55b0de71c350158",
       "reference_stride": 7
     },
@@ -6628,7 +6628,7 @@
       },
       "circuit_sha256": "b60930ad1839462485914fa0a0f438207c6005baea04ec1fd5394174f8ad6a14",
       "case": "Teletronix-LA-2A",
-      "wave": "Teletronix-LA-2A-preview-fa7e6e3c21-2c005a5a7bb0.f32.gz",
+      "wave": "2c005a5a7bb0d81e34aad73da0c9f624f3c1c129d89df064c55b0de71c350158.f32.gz",
       "wave_sha256": "2c005a5a7bb0d81e34aad73da0c9f624f3c1c129d89df064c55b0de71c350158",
       "reference_stride": 7
     },
@@ -6662,7 +6662,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D",
-      "wave": "UREI-1176LN-Rev-D-accurate-6d096be249-871b7d7e4208.f32.gz",
+      "wave": "871b7d7e42085c162c518f361fbf91b6857733bbbb7c9709ab3298c419b31e42.f32.gz",
       "wave_sha256": "871b7d7e42085c162c518f361fbf91b6857733bbbb7c9709ab3298c419b31e42",
       "reference_stride": 7
     },
@@ -6696,7 +6696,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D",
-      "wave": "UREI-1176LN-Rev-D-fast-73caa12915-4b371d555804.f32.gz",
+      "wave": "4b371d555804c110d5fdbc09e7ca351a71ca1e4d2da22ed6d1a230254854eea1.f32.gz",
       "wave_sha256": "4b371d555804c110d5fdbc09e7ca351a71ca1e4d2da22ed6d1a230254854eea1",
       "reference_stride": 7
     },
@@ -6730,7 +6730,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D",
-      "wave": "UREI-1176LN-Rev-D-preview-9ff849606a-c021c194e571.f32.gz",
+      "wave": "c021c194e5712c039cedc74f05b2282ae7ae0b9836c736c2f7aeacc4159a0c3c.f32.gz",
       "wave_sha256": "c021c194e5712c039cedc74f05b2282ae7ae0b9836c736c2f7aeacc4159a0c3c",
       "reference_stride": 7
     },
@@ -6764,7 +6764,7 @@
       },
       "circuit_sha256": "024db3468540da6a256b493ad708f02ec016885b7422b47c59ffc4e518951203",
       "case": "UREI-LA-3A",
-      "wave": "UREI-LA-3A-accurate-5a96e47822-c9639a74c407.f32.gz",
+      "wave": "c9639a74c407d730ff2abb8534a0e96427a462a636f4a0861c89162d11c97ad9.f32.gz",
       "wave_sha256": "c9639a74c407d730ff2abb8534a0e96427a462a636f4a0861c89162d11c97ad9",
       "reference_stride": 7
     },
@@ -6798,7 +6798,7 @@
       },
       "circuit_sha256": "024db3468540da6a256b493ad708f02ec016885b7422b47c59ffc4e518951203",
       "case": "UREI-LA-3A",
-      "wave": "UREI-LA-3A-fast-222b0587de-8942f15e529a.f32.gz",
+      "wave": "8942f15e529ab7ab0d05f4da653e09a73051b5eeabf491e2a6ba193bd3759ac4.f32.gz",
       "wave_sha256": "8942f15e529ab7ab0d05f4da653e09a73051b5eeabf491e2a6ba193bd3759ac4",
       "reference_stride": 7
     },
@@ -6832,7 +6832,7 @@
       },
       "circuit_sha256": "024db3468540da6a256b493ad708f02ec016885b7422b47c59ffc4e518951203",
       "case": "UREI-LA-3A",
-      "wave": "UREI-LA-3A-preview-54daf4fa12-ff8471880c45.f32.gz",
+      "wave": "ff8471880c455fad75cb9f7c32f421332978b04f1bb7239c196ad4b5db2f27c1.f32.gz",
       "wave_sha256": "ff8471880c455fad75cb9f7c32f421332978b04f1bb7239c196ad4b5db2f27c1",
       "reference_stride": 7
     },
@@ -6866,7 +6866,7 @@
       },
       "circuit_sha256": "042ddc646dfb494928bb967833eeeea88f3cdc65909ffef44dd5f69ea6086e86",
       "case": "dbx 902 De-Esser",
-      "wave": "dbx-902-De-Esser-accurate-987db77366-cb26df69bb53.f32.gz",
+      "wave": "cb26df69bb531eb83b562024ee3075a9fa8b72509040fa8374c664767b3bf079.f32.gz",
       "wave_sha256": "cb26df69bb531eb83b562024ee3075a9fa8b72509040fa8374c664767b3bf079",
       "reference_stride": 7
     },
@@ -6900,7 +6900,7 @@
       },
       "circuit_sha256": "042ddc646dfb494928bb967833eeeea88f3cdc65909ffef44dd5f69ea6086e86",
       "case": "dbx 902 De-Esser",
-      "wave": "dbx-902-De-Esser-fast-40ed28ce34-fde6aa2d4fc3.f32.gz",
+      "wave": "fde6aa2d4fc378673fd8189f41691e910a3c4ee6de7a7ee86d2840519d20bc4f.f32.gz",
       "wave_sha256": "fde6aa2d4fc378673fd8189f41691e910a3c4ee6de7a7ee86d2840519d20bc4f",
       "reference_stride": 7
     },
@@ -6934,7 +6934,7 @@
       },
       "circuit_sha256": "042ddc646dfb494928bb967833eeeea88f3cdc65909ffef44dd5f69ea6086e86",
       "case": "dbx 902 De-Esser",
-      "wave": "dbx-902-De-Esser-preview-db4c1ee897-fde6aa2d4fc3.f32.gz",
+      "wave": "fde6aa2d4fc378673fd8189f41691e910a3c4ee6de7a7ee86d2840519d20bc4f.f32.gz",
       "wave_sha256": "fde6aa2d4fc378673fd8189f41691e910a3c4ee6de7a7ee86d2840519d20bc4f",
       "reference_stride": 7
     },
@@ -6968,7 +6968,7 @@
       },
       "circuit_sha256": "057acddad90944904e98dee1442c22ccdc1febdee3e6a0a09976680c1105f057",
       "case": "dbx-160-VU",
-      "wave": "dbx-160-VU-accurate-a5f9a51ccb-3828243bf579.f32.gz",
+      "wave": "3828243bf579de8dcc01b842f1d1d2019b69fce6e6d97e9efaa7d384e69ce0b0.f32.gz",
       "wave_sha256": "3828243bf579de8dcc01b842f1d1d2019b69fce6e6d97e9efaa7d384e69ce0b0",
       "reference_stride": 7
     },
@@ -7002,7 +7002,7 @@
       },
       "circuit_sha256": "057acddad90944904e98dee1442c22ccdc1febdee3e6a0a09976680c1105f057",
       "case": "dbx-160-VU",
-      "wave": "dbx-160-VU-fast-283dd6916c-ffa158168a96.f32.gz",
+      "wave": "ffa158168a962a446534b761964b663c8e134a3ee95bb57f0e882bfaed799a72.f32.gz",
       "wave_sha256": "ffa158168a962a446534b761964b663c8e134a3ee95bb57f0e882bfaed799a72",
       "reference_stride": 7
     },
@@ -7036,7 +7036,7 @@
       },
       "circuit_sha256": "057acddad90944904e98dee1442c22ccdc1febdee3e6a0a09976680c1105f057",
       "case": "dbx-160-VU",
-      "wave": "dbx-160-VU-preview-87ddf0c954-ffa158168a96.f32.gz",
+      "wave": "ffa158168a962a446534b761964b663c8e134a3ee95bb57f0e882bfaed799a72.f32.gz",
       "wave_sha256": "ffa158168a962a446534b761964b663c8e134a3ee95bb57f0e882bfaed799a72",
       "reference_stride": 7
     },
@@ -7070,7 +7070,7 @@
       },
       "circuit_sha256": "abdf7fa492d8a538b94e9e822a488fff9bb28367bc45497cf33c84c6b164531c",
       "case": "Aphex Aural Exciter Type B",
-      "wave": "Aphex-Aural-Exciter-Type-B-accurate-775c1c4cb3-37a10fbdb0f0.f32.gz",
+      "wave": "37a10fbdb0f0d20cbfc374c81985528eab360118e7a4d8b4156b535fcb05c659.f32.gz",
       "wave_sha256": "37a10fbdb0f0d20cbfc374c81985528eab360118e7a4d8b4156b535fcb05c659",
       "reference_stride": 7
     },
@@ -7104,7 +7104,7 @@
       },
       "circuit_sha256": "abdf7fa492d8a538b94e9e822a488fff9bb28367bc45497cf33c84c6b164531c",
       "case": "Aphex Aural Exciter Type B",
-      "wave": "Aphex-Aural-Exciter-Type-B-fast-cbe9706ca3-f1fd6b984599.f32.gz",
+      "wave": "f1fd6b9845994007727f37c383b923edf1166db4f396d7f3f2ff9a0bd94f3a34.f32.gz",
       "wave_sha256": "f1fd6b9845994007727f37c383b923edf1166db4f396d7f3f2ff9a0bd94f3a34",
       "reference_stride": 7
     },
@@ -7138,7 +7138,7 @@
       },
       "circuit_sha256": "abdf7fa492d8a538b94e9e822a488fff9bb28367bc45497cf33c84c6b164531c",
       "case": "Aphex Aural Exciter Type B",
-      "wave": "Aphex-Aural-Exciter-Type-B-preview-d912a9ea4f-f1fd6b984599.f32.gz",
+      "wave": "f1fd6b9845994007727f37c383b923edf1166db4f396d7f3f2ff9a0bd94f3a34.f32.gz",
       "wave_sha256": "f1fd6b9845994007727f37c383b923edf1166db4f396d7f3f2ff9a0bd94f3a34",
       "reference_stride": 7
     },
@@ -7172,7 +7172,7 @@
       },
       "circuit_sha256": "b0fb0bf8f20af928a0556bf694d2aa62883507b0f3ba2267268342d120199847",
       "case": "BBE 482i Sonic Maximizer Channel B",
-      "wave": "BBE-482i-Sonic-Maximizer-Channel-B-accurate-3075428574-d9d5cdc83e08.f32.gz",
+      "wave": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f.f32.gz",
       "wave_sha256": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f",
       "reference_stride": 7
     },
@@ -7206,7 +7206,7 @@
       },
       "circuit_sha256": "b0fb0bf8f20af928a0556bf694d2aa62883507b0f3ba2267268342d120199847",
       "case": "BBE 482i Sonic Maximizer Channel B",
-      "wave": "BBE-482i-Sonic-Maximizer-Channel-B-fast-283063e490-d9d5cdc83e08.f32.gz",
+      "wave": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f.f32.gz",
       "wave_sha256": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f",
       "reference_stride": 7
     },
@@ -7240,7 +7240,7 @@
       },
       "circuit_sha256": "b0fb0bf8f20af928a0556bf694d2aa62883507b0f3ba2267268342d120199847",
       "case": "BBE 482i Sonic Maximizer Channel B",
-      "wave": "BBE-482i-Sonic-Maximizer-Channel-B-preview-3979aeba05-d9d5cdc83e08.f32.gz",
+      "wave": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f.f32.gz",
       "wave_sha256": "d9d5cdc83e08f1589725ae896aa4f447b06e141976b5952ea08c9fd7912fdd2f",
       "reference_stride": 7
     },
@@ -7274,7 +7274,7 @@
       },
       "circuit_sha256": "caf614ae0112fd93209d6d1cb1912a05b76b63253609dc62d9d2d84b5b04bfed",
       "case": "Thermionic-Culture-Vulture",
-      "wave": "Thermionic-Culture-Vulture-accurate-29e3cbaa59-b64f3fd86466.f32.gz",
+      "wave": "b64f3fd864661d591ff73e8759c52ad63d37ca4bc6f627fe22852b1a7c25cdd5.f32.gz",
       "wave_sha256": "b64f3fd864661d591ff73e8759c52ad63d37ca4bc6f627fe22852b1a7c25cdd5",
       "reference_stride": 7
     },
@@ -7308,7 +7308,7 @@
       },
       "circuit_sha256": "caf614ae0112fd93209d6d1cb1912a05b76b63253609dc62d9d2d84b5b04bfed",
       "case": "Thermionic-Culture-Vulture",
-      "wave": "Thermionic-Culture-Vulture-fast-c446aa00f9-6aec2d903872.f32.gz",
+      "wave": "6aec2d90387211f2f76fd2ce9b01c29b11def01b45ec7e2e0c7d9ed57998de08.f32.gz",
       "wave_sha256": "6aec2d90387211f2f76fd2ce9b01c29b11def01b45ec7e2e0c7d9ed57998de08",
       "reference_stride": 7
     },
@@ -7342,7 +7342,7 @@
       },
       "circuit_sha256": "caf614ae0112fd93209d6d1cb1912a05b76b63253609dc62d9d2d84b5b04bfed",
       "case": "Thermionic-Culture-Vulture",
-      "wave": "Thermionic-Culture-Vulture-preview-cf43b97445-6aec2d903872.f32.gz",
+      "wave": "6aec2d90387211f2f76fd2ce9b01c29b11def01b45ec7e2e0c7d9ed57998de08.f32.gz",
       "wave_sha256": "6aec2d90387211f2f76fd2ce9b01c29b11def01b45ec7e2e0c7d9ed57998de08",
       "reference_stride": 7
     },
@@ -7376,7 +7376,7 @@
       },
       "circuit_sha256": "d9f37f7d10a519969c9500b5cbf88c0be91b7881a352f2220f2730ce72f0da82",
       "case": "API 550A Proportional-Q Circuit Model",
-      "wave": "API-550A-Proportional-Q-Circuit-Model-accurate-23e6d9d7f8-6a822dd12c04.f32.gz",
+      "wave": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e.f32.gz",
       "wave_sha256": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e",
       "reference_stride": 7
     },
@@ -7410,7 +7410,7 @@
       },
       "circuit_sha256": "d9f37f7d10a519969c9500b5cbf88c0be91b7881a352f2220f2730ce72f0da82",
       "case": "API 550A Proportional-Q Circuit Model",
-      "wave": "API-550A-Proportional-Q-Circuit-Model-fast-ea1fa2ec3a-6a822dd12c04.f32.gz",
+      "wave": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e.f32.gz",
       "wave_sha256": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e",
       "reference_stride": 7
     },
@@ -7444,7 +7444,7 @@
       },
       "circuit_sha256": "d9f37f7d10a519969c9500b5cbf88c0be91b7881a352f2220f2730ce72f0da82",
       "case": "API 550A Proportional-Q Circuit Model",
-      "wave": "API-550A-Proportional-Q-Circuit-Model-preview-76a7ca134b-6a822dd12c04.f32.gz",
+      "wave": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e.f32.gz",
       "wave_sha256": "6a822dd12c04ce260a2d4d259e4903151f8eb11d3f5330ba0cd6944e8659733e",
       "reference_stride": 7
     },
@@ -7478,7 +7478,7 @@
       },
       "circuit_sha256": "ac63c135dffac4828865510b3d4cb94b62c6dd21c14babc7572235e940addd55",
       "case": "API 560 Graphic EQ Gyrator Model",
-      "wave": "API-560-Graphic-EQ-Gyrator-Model-accurate-357190c043-5e1e6a50ff41.f32.gz",
+      "wave": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596.f32.gz",
       "wave_sha256": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596",
       "reference_stride": 7
     },
@@ -7512,7 +7512,7 @@
       },
       "circuit_sha256": "ac63c135dffac4828865510b3d4cb94b62c6dd21c14babc7572235e940addd55",
       "case": "API 560 Graphic EQ Gyrator Model",
-      "wave": "API-560-Graphic-EQ-Gyrator-Model-fast-af34e2eed6-5e1e6a50ff41.f32.gz",
+      "wave": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596.f32.gz",
       "wave_sha256": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596",
       "reference_stride": 7
     },
@@ -7546,7 +7546,7 @@
       },
       "circuit_sha256": "ac63c135dffac4828865510b3d4cb94b62c6dd21c14babc7572235e940addd55",
       "case": "API 560 Graphic EQ Gyrator Model",
-      "wave": "API-560-Graphic-EQ-Gyrator-Model-preview-ed1e3904a7-5e1e6a50ff41.f32.gz",
+      "wave": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596.f32.gz",
       "wave_sha256": "5e1e6a50ff419896259a9128031feb4523567fc9ba47c0ed5caae8d8dcc0c596",
       "reference_stride": 7
     },
@@ -7580,7 +7580,7 @@
       },
       "circuit_sha256": "a34fd9c53e3cd1d3945c8bf507f8cd8babc3201c127a353081296bd07b2e164c",
       "case": "GML 8200 Series II Circuit Model",
-      "wave": "GML-8200-Series-II-Circuit-Model-accurate-175bf4c083-d6e0c026f117.f32.gz",
+      "wave": "d6e0c026f117a8793843f37f458d8e5e369feeac96b50ebe23218497d411e203.f32.gz",
       "wave_sha256": "d6e0c026f117a8793843f37f458d8e5e369feeac96b50ebe23218497d411e203",
       "reference_stride": 7
     },
@@ -7614,7 +7614,7 @@
       },
       "circuit_sha256": "a34fd9c53e3cd1d3945c8bf507f8cd8babc3201c127a353081296bd07b2e164c",
       "case": "GML 8200 Series II Circuit Model",
-      "wave": "GML-8200-Series-II-Circuit-Model-fast-8d62abf67f-4b53101d3ab3.f32.gz",
+      "wave": "4b53101d3ab31db6e0a5d7749b8b181275607fd2a19646081573b82e72a98379.f32.gz",
       "wave_sha256": "4b53101d3ab31db6e0a5d7749b8b181275607fd2a19646081573b82e72a98379",
       "reference_stride": 7
     },
@@ -7648,7 +7648,7 @@
       },
       "circuit_sha256": "a34fd9c53e3cd1d3945c8bf507f8cd8babc3201c127a353081296bd07b2e164c",
       "case": "GML 8200 Series II Circuit Model",
-      "wave": "GML-8200-Series-II-Circuit-Model-preview-2c33185751-4b53101d3ab3.f32.gz",
+      "wave": "4b53101d3ab31db6e0a5d7749b8b181275607fd2a19646081573b82e72a98379.f32.gz",
       "wave_sha256": "4b53101d3ab31db6e0a5d7749b8b181275607fd2a19646081573b82e72a98379",
       "reference_stride": 7
     },
@@ -7682,7 +7682,7 @@
       },
       "circuit_sha256": "ed655aaad846525534ab905486d75e2aaad067d4973eaf44fece355d44ccd1e2",
       "case": "Harrison 32-Series 3232 Channel EQ",
-      "wave": "Harrison-32-Series-3232-Channel-EQ-accurate-ad7b571cee-6478f7f962af.f32.gz",
+      "wave": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0.f32.gz",
       "wave_sha256": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0",
       "reference_stride": 7
     },
@@ -7716,7 +7716,7 @@
       },
       "circuit_sha256": "ed655aaad846525534ab905486d75e2aaad067d4973eaf44fece355d44ccd1e2",
       "case": "Harrison 32-Series 3232 Channel EQ",
-      "wave": "Harrison-32-Series-3232-Channel-EQ-fast-c899482bc8-6478f7f962af.f32.gz",
+      "wave": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0.f32.gz",
       "wave_sha256": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0",
       "reference_stride": 7
     },
@@ -7750,7 +7750,7 @@
       },
       "circuit_sha256": "ed655aaad846525534ab905486d75e2aaad067d4973eaf44fece355d44ccd1e2",
       "case": "Harrison 32-Series 3232 Channel EQ",
-      "wave": "Harrison-32-Series-3232-Channel-EQ-preview-fb5fec8a42-6478f7f962af.f32.gz",
+      "wave": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0.f32.gz",
       "wave_sha256": "6478f7f962af433c21d13958ec4f0a75789890e80832d0d28ccce80bed9fe6d0",
       "reference_stride": 7
     },
@@ -7784,7 +7784,7 @@
       },
       "circuit_sha256": "f72375e266986a202675d04578108b9f32a342da4601553c71257baa7aa566f4",
       "case": "Helios Type 69 Musicland EQ",
-      "wave": "Helios-Type-69-Musicland-EQ-accurate-d2cfdf11bc-f5afd6338bcf.f32.gz",
+      "wave": "f5afd6338bcf6fb5f5459789b5add9095138ca0b4e1e2bce1cad0aae3bd64d13.f32.gz",
       "wave_sha256": "f5afd6338bcf6fb5f5459789b5add9095138ca0b4e1e2bce1cad0aae3bd64d13",
       "reference_stride": 7
     },
@@ -7818,7 +7818,7 @@
       },
       "circuit_sha256": "f72375e266986a202675d04578108b9f32a342da4601553c71257baa7aa566f4",
       "case": "Helios Type 69 Musicland EQ",
-      "wave": "Helios-Type-69-Musicland-EQ-fast-e065bb1929-6797d08c9b7b.f32.gz",
+      "wave": "6797d08c9b7b0f5315d675db7ddbd8ae839032a9b75b0a2572c508bf7cbfb4c1.f32.gz",
       "wave_sha256": "6797d08c9b7b0f5315d675db7ddbd8ae839032a9b75b0a2572c508bf7cbfb4c1",
       "reference_stride": 7
     },
@@ -7852,7 +7852,7 @@
       },
       "circuit_sha256": "f72375e266986a202675d04578108b9f32a342da4601553c71257baa7aa566f4",
       "case": "Helios Type 69 Musicland EQ",
-      "wave": "Helios-Type-69-Musicland-EQ-preview-6d91f1cce5-e3153cab3a8e.f32.gz",
+      "wave": "e3153cab3a8e52596b10b5dcd493614db0b625c0a4c533b2f04f77bdc2065be1.f32.gz",
       "wave_sha256": "e3153cab3a8e52596b10b5dcd493614db0b625c0a4c533b2f04f77bdc2065be1",
       "reference_stride": 7
     },
@@ -7886,7 +7886,7 @@
       },
       "circuit_sha256": "e13436104ea5882354ac96358195df939887caf937333ec73f8b3dba6ecaea5c",
       "case": "Maag EQ4-500 Parallel Circuit Model",
-      "wave": "Maag-EQ4-500-Parallel-Circuit-Model-accurate-e3fbf51659-04df74aa620e.f32.gz",
+      "wave": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab.f32.gz",
       "wave_sha256": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab",
       "reference_stride": 7
     },
@@ -7920,7 +7920,7 @@
       },
       "circuit_sha256": "e13436104ea5882354ac96358195df939887caf937333ec73f8b3dba6ecaea5c",
       "case": "Maag EQ4-500 Parallel Circuit Model",
-      "wave": "Maag-EQ4-500-Parallel-Circuit-Model-fast-93ea292769-04df74aa620e.f32.gz",
+      "wave": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab.f32.gz",
       "wave_sha256": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab",
       "reference_stride": 7
     },
@@ -7954,7 +7954,7 @@
       },
       "circuit_sha256": "e13436104ea5882354ac96358195df939887caf937333ec73f8b3dba6ecaea5c",
       "case": "Maag EQ4-500 Parallel Circuit Model",
-      "wave": "Maag-EQ4-500-Parallel-Circuit-Model-preview-41619621b2-04df74aa620e.f32.gz",
+      "wave": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab.f32.gz",
       "wave_sha256": "04df74aa620ef9c49d8b22b2f1a21c8f11c529f6c2af70de638c159b8280e6ab",
       "reference_stride": 7
     },
@@ -7988,7 +7988,7 @@
       },
       "circuit_sha256": "cb6895d9c9425feb76929d781ee539130d6f383f62b8a84cc1408f848268afcf",
       "case": "Manley Massive Passive Standard Circuit Model",
-      "wave": "Manley-Massive-Passive-Standard-Circuit-Model-accurate-75fc4acaba-6d686b996b2a.f32.gz",
+      "wave": "6d686b996b2a3bd9cb7b0082d991d4dec1b316e07689c1d0be0b8aa17bcf74f0.f32.gz",
       "wave_sha256": "6d686b996b2a3bd9cb7b0082d991d4dec1b316e07689c1d0be0b8aa17bcf74f0",
       "reference_stride": 7
     },
@@ -8022,7 +8022,7 @@
       },
       "circuit_sha256": "cb6895d9c9425feb76929d781ee539130d6f383f62b8a84cc1408f848268afcf",
       "case": "Manley Massive Passive Standard Circuit Model",
-      "wave": "Manley-Massive-Passive-Standard-Circuit-Model-fast-c35033a2d9-8e2ecfad2c30.f32.gz",
+      "wave": "8e2ecfad2c303009eef1b92b05fb4bd118eba86e50086e330a4205d0a01ba441.f32.gz",
       "wave_sha256": "8e2ecfad2c303009eef1b92b05fb4bd118eba86e50086e330a4205d0a01ba441",
       "reference_stride": 7
     },
@@ -8056,7 +8056,7 @@
       },
       "circuit_sha256": "cb6895d9c9425feb76929d781ee539130d6f383f62b8a84cc1408f848268afcf",
       "case": "Manley Massive Passive Standard Circuit Model",
-      "wave": "Manley-Massive-Passive-Standard-Circuit-Model-preview-7f69e50f46-8e2ecfad2c30.f32.gz",
+      "wave": "8e2ecfad2c303009eef1b92b05fb4bd118eba86e50086e330a4205d0a01ba441.f32.gz",
       "wave_sha256": "8e2ecfad2c303009eef1b92b05fb4bd118eba86e50086e330a4205d0a01ba441",
       "reference_stride": 7
     },
@@ -8090,7 +8090,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer",
-      "wave": "Neve-1081-Gold-Label-Equalizer-accurate-c23a024cbf-7dafa57d46e5.f32.gz",
+      "wave": "7dafa57d46e59dfe685ffc6f402e8aeab119834a56a1027d1875774c728bc88f.f32.gz",
       "wave_sha256": "7dafa57d46e59dfe685ffc6f402e8aeab119834a56a1027d1875774c728bc88f",
       "reference_stride": 7
     },
@@ -8124,7 +8124,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer",
-      "wave": "Neve-1081-Gold-Label-Equalizer-fast-57ae828edc-dbbba7bb92a0.f32.gz",
+      "wave": "dbbba7bb92a034f6e57aca65926802b2dc8f0e28b7d3b7e8e3c6b12c479e3c8d.f32.gz",
       "wave_sha256": "dbbba7bb92a034f6e57aca65926802b2dc8f0e28b7d3b7e8e3c6b12c479e3c8d",
       "reference_stride": 7
     },
@@ -8158,7 +8158,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer",
-      "wave": "Neve-1081-Gold-Label-Equalizer-preview-35d68d3ecf-28c1c550ef38.f32.gz",
+      "wave": "28c1c550ef38aeb6fbbb3af01b60affeb87ed27be8d7be878391125c0281e833.f32.gz",
       "wave_sha256": "28c1c550ef38aeb6fbbb3af01b60affeb87ed27be8d7be878391125c0281e833",
       "reference_stride": 7
     },
@@ -8192,7 +8192,7 @@
       },
       "circuit_sha256": "71e97a95b17e0f949c85145ca331e6424e5e21d112fb22c6bf6dc22877cbdbbe",
       "case": "Pultec EQP-1A Program Equalizer",
-      "wave": "Pultec-EQP-1A-Program-Equalizer-accurate-c62d0274e8-828e49b3605e.f32.gz",
+      "wave": "828e49b3605ef39fce3ece54c33d102587c7ca82ef67313192d9d04767c7505a.f32.gz",
       "wave_sha256": "828e49b3605ef39fce3ece54c33d102587c7ca82ef67313192d9d04767c7505a",
       "reference_stride": 7
     },
@@ -8226,7 +8226,7 @@
       },
       "circuit_sha256": "71e97a95b17e0f949c85145ca331e6424e5e21d112fb22c6bf6dc22877cbdbbe",
       "case": "Pultec EQP-1A Program Equalizer",
-      "wave": "Pultec-EQP-1A-Program-Equalizer-fast-a91f13a83a-135f9469e2db.f32.gz",
+      "wave": "135f9469e2db5f212e35954041cbdefa04ba8e36f9740cd61d3dd133909c9db4.f32.gz",
       "wave_sha256": "135f9469e2db5f212e35954041cbdefa04ba8e36f9740cd61d3dd133909c9db4",
       "reference_stride": 7
     },
@@ -8260,7 +8260,7 @@
       },
       "circuit_sha256": "71e97a95b17e0f949c85145ca331e6424e5e21d112fb22c6bf6dc22877cbdbbe",
       "case": "Pultec EQP-1A Program Equalizer",
-      "wave": "Pultec-EQP-1A-Program-Equalizer-preview-447ceb2758-135f9469e2db.f32.gz",
+      "wave": "135f9469e2db5f212e35954041cbdefa04ba8e36f9740cd61d3dd133909c9db4.f32.gz",
       "wave_sha256": "135f9469e2db5f212e35954041cbdefa04ba8e36f9740cd61d3dd133909c9db4",
       "reference_stride": 7
     },
@@ -8294,7 +8294,7 @@
       },
       "circuit_sha256": "5e041c722c3b8274a4774763d9222430f13995af0cbdd21b18a73c47ca56f588",
       "case": "Pultec MEQ-5 Mid-Range Equalizer",
-      "wave": "Pultec-MEQ-5-Mid-Range-Equalizer-accurate-13e5d377d2-f22088ef1e75.f32.gz",
+      "wave": "f22088ef1e75847cad216e94854a76cd593aad0acf914856d2ed269f52211eaa.f32.gz",
       "wave_sha256": "f22088ef1e75847cad216e94854a76cd593aad0acf914856d2ed269f52211eaa",
       "reference_stride": 7
     },
@@ -8328,7 +8328,7 @@
       },
       "circuit_sha256": "5e041c722c3b8274a4774763d9222430f13995af0cbdd21b18a73c47ca56f588",
       "case": "Pultec MEQ-5 Mid-Range Equalizer",
-      "wave": "Pultec-MEQ-5-Mid-Range-Equalizer-fast-f042006676-d4610e31a9d0.f32.gz",
+      "wave": "d4610e31a9d045a540f8c7ce7a368e85e974fbe092f0458a06691d22f7b67377.f32.gz",
       "wave_sha256": "d4610e31a9d045a540f8c7ce7a368e85e974fbe092f0458a06691d22f7b67377",
       "reference_stride": 7
     },
@@ -8362,7 +8362,7 @@
       },
       "circuit_sha256": "5e041c722c3b8274a4774763d9222430f13995af0cbdd21b18a73c47ca56f588",
       "case": "Pultec MEQ-5 Mid-Range Equalizer",
-      "wave": "Pultec-MEQ-5-Mid-Range-Equalizer-preview-49c9014dec-d4610e31a9d0.f32.gz",
+      "wave": "d4610e31a9d045a540f8c7ce7a368e85e974fbe092f0458a06691d22f7b67377.f32.gz",
       "wave_sha256": "d4610e31a9d045a540f8c7ce7a368e85e974fbe092f0458a06691d22f7b67377",
       "reference_stride": 7
     },
@@ -8396,7 +8396,7 @@
       },
       "circuit_sha256": "8dd6bd93dde1300a2ffd57bbaf78b11ce8fa2a75c0093424c3ed68c99ef11e0a",
       "case": "SSL 4000 E 82E242 Black EQ",
-      "wave": "SSL-4000-E-82E242-Black-EQ-accurate-263773de97-97be44141f2a.f32.gz",
+      "wave": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572.f32.gz",
       "wave_sha256": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572",
       "reference_stride": 7
     },
@@ -8430,7 +8430,7 @@
       },
       "circuit_sha256": "8dd6bd93dde1300a2ffd57bbaf78b11ce8fa2a75c0093424c3ed68c99ef11e0a",
       "case": "SSL 4000 E 82E242 Black EQ",
-      "wave": "SSL-4000-E-82E242-Black-EQ-fast-92f04e80ae-97be44141f2a.f32.gz",
+      "wave": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572.f32.gz",
       "wave_sha256": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572",
       "reference_stride": 7
     },
@@ -8464,7 +8464,7 @@
       },
       "circuit_sha256": "8dd6bd93dde1300a2ffd57bbaf78b11ce8fa2a75c0093424c3ed68c99ef11e0a",
       "case": "SSL 4000 E 82E242 Black EQ",
-      "wave": "SSL-4000-E-82E242-Black-EQ-preview-f1a756b6f7-97be44141f2a.f32.gz",
+      "wave": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572.f32.gz",
       "wave_sha256": "97be44141f2ac2dac3237921c490da040e8e673bf797da6bee88a8a327565572",
       "reference_stride": 7
     },
@@ -8498,7 +8498,7 @@
       },
       "circuit_sha256": "7324b451cfb05e3cd78823e8fb54d9dec2fd6617c845580d85950511c9bb67da",
       "case": "Sontec MES-432C-9 Circuit Model",
-      "wave": "Sontec-MES-432C-9-Circuit-Model-accurate-7be8ee7819-adaad41bc449.f32.gz",
+      "wave": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760.f32.gz",
       "wave_sha256": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760",
       "reference_stride": 7
     },
@@ -8532,7 +8532,7 @@
       },
       "circuit_sha256": "7324b451cfb05e3cd78823e8fb54d9dec2fd6617c845580d85950511c9bb67da",
       "case": "Sontec MES-432C-9 Circuit Model",
-      "wave": "Sontec-MES-432C-9-Circuit-Model-fast-1c337a082b-adaad41bc449.f32.gz",
+      "wave": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760.f32.gz",
       "wave_sha256": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760",
       "reference_stride": 7
     },
@@ -8566,7 +8566,7 @@
       },
       "circuit_sha256": "7324b451cfb05e3cd78823e8fb54d9dec2fd6617c845580d85950511c9bb67da",
       "case": "Sontec MES-432C-9 Circuit Model",
-      "wave": "Sontec-MES-432C-9-Circuit-Model-preview-1823fea03a-adaad41bc449.f32.gz",
+      "wave": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760.f32.gz",
       "wave_sha256": "adaad41bc449ecceb9195fb3a7f999d0c29c5bab678a904d07939a5a487c4760",
       "reference_stride": 7
     },
@@ -8600,7 +8600,7 @@
       },
       "circuit_sha256": "74d8ebcc11461ea1045f62f3556207aed4d7fbb12a1f4871a8e8e2216d672782",
       "case": "Soundcraft Series 600 Mono Input",
-      "wave": "Soundcraft-Series-600-Mono-Input-accurate-a6867930b3-266b92bda1a4.f32.gz",
+      "wave": "266b92bda1a4bddc4c36ff41effe5610432a0330cf732b8d6ef988b4b1ebc467.f32.gz",
       "wave_sha256": "266b92bda1a4bddc4c36ff41effe5610432a0330cf732b8d6ef988b4b1ebc467",
       "reference_stride": 7
     },
@@ -8634,7 +8634,7 @@
       },
       "circuit_sha256": "74d8ebcc11461ea1045f62f3556207aed4d7fbb12a1f4871a8e8e2216d672782",
       "case": "Soundcraft Series 600 Mono Input",
-      "wave": "Soundcraft-Series-600-Mono-Input-fast-83aaf8646a-d2b2b9a657ae.f32.gz",
+      "wave": "d2b2b9a657aeb9b4f483336e7d811ab9c91690630c02a111ef34494d31578ae5.f32.gz",
       "wave_sha256": "d2b2b9a657aeb9b4f483336e7d811ab9c91690630c02a111ef34494d31578ae5",
       "reference_stride": 7
     },
@@ -8668,7 +8668,7 @@
       },
       "circuit_sha256": "74d8ebcc11461ea1045f62f3556207aed4d7fbb12a1f4871a8e8e2216d672782",
       "case": "Soundcraft Series 600 Mono Input",
-      "wave": "Soundcraft-Series-600-Mono-Input-preview-1b7520ed8b-d2b2b9a657ae.f32.gz",
+      "wave": "d2b2b9a657aeb9b4f483336e7d811ab9c91690630c02a111ef34494d31578ae5.f32.gz",
       "wave_sha256": "d2b2b9a657aeb9b4f483336e7d811ab9c91690630c02a111ef34494d31578ae5",
       "reference_stride": 7
     },
@@ -8702,7 +8702,7 @@
       },
       "circuit_sha256": "27e97c9b72f9a7d3dd4014856aa0dcacced9e9aa69d7f58bab9a1a3889407ecd",
       "case": "Trident A-Range 1038 Four-Band EQ ED3001",
-      "wave": "Trident-A-Range-1038-Four-Band-EQ-ED3001-accurate-2103fefee6-e0f3f9bb692e.f32.gz",
+      "wave": "e0f3f9bb692eb6084dc71c43290479d162e65e711d6cb72a43d2434242dfb891.f32.gz",
       "wave_sha256": "e0f3f9bb692eb6084dc71c43290479d162e65e711d6cb72a43d2434242dfb891",
       "reference_stride": 7
     },
@@ -8736,7 +8736,7 @@
       },
       "circuit_sha256": "27e97c9b72f9a7d3dd4014856aa0dcacced9e9aa69d7f58bab9a1a3889407ecd",
       "case": "Trident A-Range 1038 Four-Band EQ ED3001",
-      "wave": "Trident-A-Range-1038-Four-Band-EQ-ED3001-fast-3bc6544c2e-6a149658c664.f32.gz",
+      "wave": "6a149658c664921aaed833a0ffb5cb75a7695d038d71cca65741e5f6dba76ffb.f32.gz",
       "wave_sha256": "6a149658c664921aaed833a0ffb5cb75a7695d038d71cca65741e5f6dba76ffb",
       "reference_stride": 7
     },
@@ -8770,7 +8770,7 @@
       },
       "circuit_sha256": "27e97c9b72f9a7d3dd4014856aa0dcacced9e9aa69d7f58bab9a1a3889407ecd",
       "case": "Trident A-Range 1038 Four-Band EQ ED3001",
-      "wave": "Trident-A-Range-1038-Four-Band-EQ-ED3001-preview-9cf2e2dfe5-19ba6357b602.f32.gz",
+      "wave": "19ba6357b602b9b30f87ecdf0b6453121427be0f0f0e002e71d6d4058c62b197.f32.gz",
       "wave_sha256": "19ba6357b602b9b30f87ecdf0b6453121427be0f0f0e002e71d6d4058c62b197",
       "reference_stride": 7
     },
@@ -8804,7 +8804,7 @@
       },
       "circuit_sha256": "8976211f4b110b3eb2bf80e6f041b7bace7e96b2558aa305912200d1f1c0491b",
       "case": "Trident Series 80B Four-Band EQ S800",
-      "wave": "Trident-Series-80B-Four-Band-EQ-S800-accurate-a76cfbfd07-99b2ec962d3c.f32.gz",
+      "wave": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54.f32.gz",
       "wave_sha256": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54",
       "reference_stride": 7
     },
@@ -8838,7 +8838,7 @@
       },
       "circuit_sha256": "8976211f4b110b3eb2bf80e6f041b7bace7e96b2558aa305912200d1f1c0491b",
       "case": "Trident Series 80B Four-Band EQ S800",
-      "wave": "Trident-Series-80B-Four-Band-EQ-S800-fast-6f089c6c37-99b2ec962d3c.f32.gz",
+      "wave": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54.f32.gz",
       "wave_sha256": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54",
       "reference_stride": 7
     },
@@ -8872,7 +8872,7 @@
       },
       "circuit_sha256": "8976211f4b110b3eb2bf80e6f041b7bace7e96b2558aa305912200d1f1c0491b",
       "case": "Trident Series 80B Four-Band EQ S800",
-      "wave": "Trident-Series-80B-Four-Band-EQ-S800-preview-5942d28dfd-99b2ec962d3c.f32.gz",
+      "wave": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54.f32.gz",
       "wave_sha256": "99b2ec962d3cadce5e5bacf146a2c8d91030fc24937cd42c8eb9d53096703d54",
       "reference_stride": 7
     },
@@ -8906,7 +8906,7 @@
       },
       "circuit_sha256": "af4c95f3120a8833126a9ba4c1b5de0397fef66c651bb58baa90742e17f6a8a0",
       "case": "UREI 545 Parametric Equalizer",
-      "wave": "UREI-545-Parametric-Equalizer-accurate-7dd924b8de-eb92d6a2851d.f32.gz",
+      "wave": "eb92d6a2851d4765ee81513808a8eb8bb9282895619217a944d933ae1eb48d27.f32.gz",
       "wave_sha256": "eb92d6a2851d4765ee81513808a8eb8bb9282895619217a944d933ae1eb48d27",
       "reference_stride": 7
     },
@@ -8940,7 +8940,7 @@
       },
       "circuit_sha256": "af4c95f3120a8833126a9ba4c1b5de0397fef66c651bb58baa90742e17f6a8a0",
       "case": "UREI 545 Parametric Equalizer",
-      "wave": "UREI-545-Parametric-Equalizer-fast-6ddad97ffd-4531372d50b7.f32.gz",
+      "wave": "4531372d50b7039dba2127ac343dadd204a97c48dac64984128b8d0b1fccbdaf.f32.gz",
       "wave_sha256": "4531372d50b7039dba2127ac343dadd204a97c48dac64984128b8d0b1fccbdaf",
       "reference_stride": 7
     },
@@ -8974,7 +8974,7 @@
       },
       "circuit_sha256": "af4c95f3120a8833126a9ba4c1b5de0397fef66c651bb58baa90742e17f6a8a0",
       "case": "UREI 545 Parametric Equalizer",
-      "wave": "UREI-545-Parametric-Equalizer-preview-950f702c4a-4531372d50b7.f32.gz",
+      "wave": "4531372d50b7039dba2127ac343dadd204a97c48dac64984128b8d0b1fccbdaf.f32.gz",
       "wave_sha256": "4531372d50b7039dba2127ac343dadd204a97c48dac64984128b8d0b1fccbdaf",
       "reference_stride": 7
     },
@@ -9008,7 +9008,7 @@
       },
       "circuit_sha256": "866a4dfc51b4a729905453eb0460c7b340df8910a5bd962c42d28cfba0e08e25",
       "case": "API 312 Preamp VP312 Rev A",
-      "wave": "API-312-Preamp-VP312-Rev-A-accurate-af417d0aba-1a0f8113489a.f32.gz",
+      "wave": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799.f32.gz",
       "wave_sha256": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799",
       "reference_stride": 7
     },
@@ -9042,7 +9042,7 @@
       },
       "circuit_sha256": "866a4dfc51b4a729905453eb0460c7b340df8910a5bd962c42d28cfba0e08e25",
       "case": "API 312 Preamp VP312 Rev A",
-      "wave": "API-312-Preamp-VP312-Rev-A-fast-92b076dcd4-1a0f8113489a.f32.gz",
+      "wave": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799.f32.gz",
       "wave_sha256": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799",
       "reference_stride": 7
     },
@@ -9076,7 +9076,7 @@
       },
       "circuit_sha256": "866a4dfc51b4a729905453eb0460c7b340df8910a5bd962c42d28cfba0e08e25",
       "case": "API 312 Preamp VP312 Rev A",
-      "wave": "API-312-Preamp-VP312-Rev-A-preview-de18b9cbb0-1a0f8113489a.f32.gz",
+      "wave": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799.f32.gz",
       "wave_sha256": "1a0f8113489a03c6de1906bbb0337997a67cd4d384fbdcb45a5c5ea79ec97799",
       "reference_stride": 7
     },
@@ -9110,7 +9110,7 @@
       },
       "circuit_sha256": "8b33fd81f907af885c5975a47c2c9c2fd31d07cf50427f304a628a91cf9ce348",
       "case": "MCI JH-400B Mic Preamp 43E241",
-      "wave": "MCI-JH-400B-Mic-Preamp-43E241-accurate-d455bc4aa9-fe3d5e32a05f.f32.gz",
+      "wave": "fe3d5e32a05fed6c8892db5b4ea9e54fe60d143a402b54dc6048e1ffb7686940.f32.gz",
       "wave_sha256": "fe3d5e32a05fed6c8892db5b4ea9e54fe60d143a402b54dc6048e1ffb7686940",
       "reference_stride": 7
     },
@@ -9144,7 +9144,7 @@
       },
       "circuit_sha256": "8b33fd81f907af885c5975a47c2c9c2fd31d07cf50427f304a628a91cf9ce348",
       "case": "MCI JH-400B Mic Preamp 43E241",
-      "wave": "MCI-JH-400B-Mic-Preamp-43E241-fast-715e44244b-06959473eeb5.f32.gz",
+      "wave": "06959473eeb55f26341088de35beeb1c8e041c926c6139e1904c352f8f7fc5fa.f32.gz",
       "wave_sha256": "06959473eeb55f26341088de35beeb1c8e041c926c6139e1904c352f8f7fc5fa",
       "reference_stride": 7
     },
@@ -9178,7 +9178,7 @@
       },
       "circuit_sha256": "8b33fd81f907af885c5975a47c2c9c2fd31d07cf50427f304a628a91cf9ce348",
       "case": "MCI JH-400B Mic Preamp 43E241",
-      "wave": "MCI-JH-400B-Mic-Preamp-43E241-preview-97a04083cb-06959473eeb5.f32.gz",
+      "wave": "06959473eeb55f26341088de35beeb1c8e041c926c6139e1904c352f8f7fc5fa.f32.gz",
       "wave_sha256": "06959473eeb55f26341088de35beeb1c8e041c926c6139e1904c352f8f7fc5fa",
       "reference_stride": 7
     },
@@ -9212,7 +9212,7 @@
       },
       "circuit_sha256": "0ac03b3176581fa0b290b8a9cbe422584ee89ff18b52ab48710a674cd7ded00d",
       "case": "Neve 1073 Line Preamp EH10023",
-      "wave": "Neve-1073-Line-Preamp-EH10023-accurate-d4a7313cf7-5a61a7e85625.f32.gz",
+      "wave": "5a61a7e85625c6aba375467f030849c96ba75a70a4b2974c76f3f17b92c75f0f.f32.gz",
       "wave_sha256": "5a61a7e85625c6aba375467f030849c96ba75a70a4b2974c76f3f17b92c75f0f",
       "reference_stride": 7
     },
@@ -9246,7 +9246,7 @@
       },
       "circuit_sha256": "0ac03b3176581fa0b290b8a9cbe422584ee89ff18b52ab48710a674cd7ded00d",
       "case": "Neve 1073 Line Preamp EH10023",
-      "wave": "Neve-1073-Line-Preamp-EH10023-fast-357b83c736-ac1287a9e102.f32.gz",
+      "wave": "ac1287a9e102861ab9595bbc26bc6c13b3843d0089c3e0afc84702ad55cf8546.f32.gz",
       "wave_sha256": "ac1287a9e102861ab9595bbc26bc6c13b3843d0089c3e0afc84702ad55cf8546",
       "reference_stride": 7
     },
@@ -9280,7 +9280,7 @@
       },
       "circuit_sha256": "0ac03b3176581fa0b290b8a9cbe422584ee89ff18b52ab48710a674cd7ded00d",
       "case": "Neve 1073 Line Preamp EH10023",
-      "wave": "Neve-1073-Line-Preamp-EH10023-preview-94608d1210-970746399607.f32.gz",
+      "wave": "9707463996074b707bd252583b7ee12423b1ba0b5a201d326677e32ed1207970.f32.gz",
       "wave_sha256": "9707463996074b707bd252583b7ee12423b1ba0b5a201d326677e32ed1207970",
       "reference_stride": 7
     }

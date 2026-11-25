@@ -32,7 +32,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.2",
-      "wave": "MXR-Micro-Amp-Gain-0-2-accurate-05528a38b0-99989a0ad84f.f32.gz",
+      "wave": "99989a0ad84fee3702e5a33604509a78235795a8c544deb5f1681828361b80fe.f32.gz",
       "wave_sha256": "99989a0ad84fee3702e5a33604509a78235795a8c544deb5f1681828361b80fe",
       "reference_stride": 7
     },
@@ -66,7 +66,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.2",
-      "wave": "MXR-Micro-Amp-Gain-0-2-fast-2685a7ae28-03a720d768c0.f32.gz",
+      "wave": "03a720d768c0ec04b8594dc549a8047150c27d08455e5a35ac7ba507187c0b62.f32.gz",
       "wave_sha256": "03a720d768c0ec04b8594dc549a8047150c27d08455e5a35ac7ba507187c0b62",
       "reference_stride": 7
     },
@@ -100,7 +100,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.2",
-      "wave": "MXR-Micro-Amp-Gain-0-2-preview-56131231ac-03a720d768c0.f32.gz",
+      "wave": "03a720d768c0ec04b8594dc549a8047150c27d08455e5a35ac7ba507187c0b62.f32.gz",
       "wave_sha256": "03a720d768c0ec04b8594dc549a8047150c27d08455e5a35ac7ba507187c0b62",
       "reference_stride": 7
     },
@@ -134,7 +134,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.5",
-      "wave": "MXR-Micro-Amp-Gain-0-5-accurate-7568413c8c-965f84cee515.f32.gz",
+      "wave": "965f84cee515313d6511459f7e89f1039c2803a49393a599e0996ab59feeada0.f32.gz",
       "wave_sha256": "965f84cee515313d6511459f7e89f1039c2803a49393a599e0996ab59feeada0",
       "reference_stride": 7
     },
@@ -168,7 +168,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.5",
-      "wave": "MXR-Micro-Amp-Gain-0-5-fast-492f005763-d2c7d981f3ed.f32.gz",
+      "wave": "d2c7d981f3ed0efebd2419ed3d31d9861f4137d09cabd183921a9b7419b7b30d.f32.gz",
       "wave_sha256": "d2c7d981f3ed0efebd2419ed3d31d9861f4137d09cabd183921a9b7419b7b30d",
       "reference_stride": 7
     },
@@ -202,7 +202,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.5",
-      "wave": "MXR-Micro-Amp-Gain-0-5-preview-ea8010e1f1-00a0d1871152.f32.gz",
+      "wave": "00a0d1871152771d347d5aee37255fa64635218e96a83fc2e0e92727664e6703.f32.gz",
       "wave_sha256": "00a0d1871152771d347d5aee37255fa64635218e96a83fc2e0e92727664e6703",
       "reference_stride": 7
     },
@@ -236,7 +236,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.8",
-      "wave": "MXR-Micro-Amp-Gain-0-8-accurate-f7a118f862-8ba633b8e521.f32.gz",
+      "wave": "8ba633b8e521a50a00d524b1c1662215b53daac4b7df1e83f66610e9b0f4ff98.f32.gz",
       "wave_sha256": "8ba633b8e521a50a00d524b1c1662215b53daac4b7df1e83f66610e9b0f4ff98",
       "reference_stride": 7
     },
@@ -270,7 +270,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.8",
-      "wave": "MXR-Micro-Amp-Gain-0-8-fast-25b536a850-1cfbe16ce26c.f32.gz",
+      "wave": "1cfbe16ce26cd65a60100613507f5e6af200776ee17dc36c83ceeada04b8679c.f32.gz",
       "wave_sha256": "1cfbe16ce26cd65a60100613507f5e6af200776ee17dc36c83ceeada04b8679c",
       "reference_stride": 7
     },
@@ -304,7 +304,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/0.8",
-      "wave": "MXR-Micro-Amp-Gain-0-8-preview-c1fd7cc053-1cfbe16ce26c.f32.gz",
+      "wave": "1cfbe16ce26cd65a60100613507f5e6af200776ee17dc36c83ceeada04b8679c.f32.gz",
       "wave_sha256": "1cfbe16ce26cd65a60100613507f5e6af200776ee17dc36c83ceeada04b8679c",
       "reference_stride": 7
     },
@@ -338,7 +338,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/moving",
-      "wave": "MXR-Micro-Amp-Gain-moving-accurate-c2d3d59d6f-47f8a59f5420.f32.gz",
+      "wave": "47f8a59f54203144d7502beb30a830b97a9710e871357e1c259a06fea3f82725.f32.gz",
       "wave_sha256": "47f8a59f54203144d7502beb30a830b97a9710e871357e1c259a06fea3f82725",
       "reference_stride": 7
     },
@@ -372,7 +372,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/moving",
-      "wave": "MXR-Micro-Amp-Gain-moving-fast-ef895c3579-5d36bf11b901.f32.gz",
+      "wave": "5d36bf11b90126c794bb4b10e6b542ec696cb0aaa2577c2fcd7165744cc0ffda.f32.gz",
       "wave_sha256": "5d36bf11b90126c794bb4b10e6b542ec696cb0aaa2577c2fcd7165744cc0ffda",
       "reference_stride": 7
     },
@@ -406,7 +406,7 @@
       },
       "circuit_sha256": "2fa2f4dea2969e3aed12589296f3b9f22f39ebf6b72f83279a340d2992aff7bf",
       "case": "MXR Micro Amp/Gain/moving",
-      "wave": "MXR-Micro-Amp-Gain-moving-preview-f23fe3eefb-dc3424d4f61d.f32.gz",
+      "wave": "dc3424d4f61de524f9d86707c1eb5bf78c27bf9f00ab06ed5e5d83082f20ba63.f32.gz",
       "wave_sha256": "dc3424d4f61de524f9d86707c1eb5bf78c27bf9f00ab06ed5e5d83082f20ba63",
       "reference_stride": 7
     },
@@ -440,7 +440,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-2-accurate-a397f40997-11ced37461bc.f32.gz",
+      "wave": "11ced37461bc1aaa16159a08f3bd3b609b12ee4859dc676ae498aeb7ca4c41b5.f32.gz",
       "wave_sha256": "11ced37461bc1aaa16159a08f3bd3b609b12ee4859dc676ae498aeb7ca4c41b5",
       "reference_stride": 7
     },
@@ -474,7 +474,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-2-fast-732ad134b3-383edd7591aa.f32.gz",
+      "wave": "383edd7591aabc52ad084d1aa6d71ba7b35cf829dacd2fd46871298f66955e53.f32.gz",
       "wave_sha256": "383edd7591aabc52ad084d1aa6d71ba7b35cf829dacd2fd46871298f66955e53",
       "reference_stride": 7
     },
@@ -508,7 +508,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-2-preview-5de8da29de-aafe55f74db8.f32.gz",
+      "wave": "aafe55f74db85ad576901d1d9e0e74d7f2751569fef96fb3826eea51fc193837.f32.gz",
       "wave_sha256": "aafe55f74db85ad576901d1d9e0e74d7f2751569fef96fb3826eea51fc193837",
       "reference_stride": 7
     },
@@ -542,7 +542,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-5-accurate-f4b79800e2-5f8f250879a5.f32.gz",
+      "wave": "5f8f250879a52f761a690037e8854f1290a52818ef504fe3b721e120569c7ffc.f32.gz",
       "wave_sha256": "5f8f250879a52f761a690037e8854f1290a52818ef504fe3b721e120569c7ffc",
       "reference_stride": 7
     },
@@ -576,7 +576,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-5-fast-edbb695291-ed1eadaa24ac.f32.gz",
+      "wave": "ed1eadaa24acb9a47254fd640a095977a138f1dadb9bad04af49ee93ce9177e0.f32.gz",
       "wave_sha256": "ed1eadaa24acb9a47254fd640a095977a138f1dadb9bad04af49ee93ce9177e0",
       "reference_stride": 7
     },
@@ -610,7 +610,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-5-preview-9cd488c110-5b0abcaf69c7.f32.gz",
+      "wave": "5b0abcaf69c730232e361534c2774f44d49ded605e84d9f963eb2c947891169e.f32.gz",
       "wave_sha256": "5b0abcaf69c730232e361534c2774f44d49ded605e84d9f963eb2c947891169e",
       "reference_stride": 7
     },
@@ -644,7 +644,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-8-accurate-0da01842ac-75cb1b90d713.f32.gz",
+      "wave": "75cb1b90d713bc38bcdf9c187b26577b772de70416d78b5002913bd6dcd3173d.f32.gz",
       "wave_sha256": "75cb1b90d713bc38bcdf9c187b26577b772de70416d78b5002913bd6dcd3173d",
       "reference_stride": 7
     },
@@ -678,7 +678,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-8-fast-0cf895a977-885099930c13.f32.gz",
+      "wave": "885099930c132af02d10f237fc06f3c21e76089763e420fe2b6d1a8177723904.f32.gz",
       "wave_sha256": "885099930c132af02d10f237fc06f3c21e76089763e420fe2b6d1a8177723904",
       "reference_stride": 7
     },
@@ -712,7 +712,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-0-8-preview-3969f478cb-1cc46c02fdc0.f32.gz",
+      "wave": "1cc46c02fdc0ce9b69e409c8c2c1ee8cb5940c7fb9402969bee91915fb031818.f32.gz",
       "wave_sha256": "1cc46c02fdc0ce9b69e409c8c2c1ee8cb5940c7fb9402969bee91915fb031818",
       "reference_stride": 7
     },
@@ -746,7 +746,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-moving-accurate-4559f68711-3ed10cd7a3e1.f32.gz",
+      "wave": "3ed10cd7a3e1722b85697bc63fdea0cbfea281574b4d9f91ac8f0fc980c930ec.f32.gz",
       "wave_sha256": "3ed10cd7a3e1722b85697bc63fdea0cbfea281574b4d9f91ac8f0fc980c930ec",
       "reference_stride": 7
     },
@@ -780,7 +780,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-moving-fast-13a053c354-cb5d0352fe71.f32.gz",
+      "wave": "cb5d0352fe713d5c3ca7077e4092c27415b3bd4ba38e8d962c55fb7d1784c7a1.f32.gz",
       "wave_sha256": "cb5d0352fe713d5c3ca7077e4092c27415b3bd4ba38e8d962c55fb7d1784c7a1",
       "reference_stride": 7
     },
@@ -814,7 +814,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Drive/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Drive-moving-preview-bd4212dc9f-1b7a05c0ef3f.f32.gz",
+      "wave": "1b7a05c0ef3fd73ba308c2fec3a704412bce86b6e64264cb8e13a2043134715d.f32.gz",
       "wave_sha256": "1b7a05c0ef3fd73ba308c2fec3a704412bce86b6e64264cb8e13a2043134715d",
       "reference_stride": 7
     },
@@ -848,7 +848,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-2-accurate-3e6fa48126-4ba8b713c53d.f32.gz",
+      "wave": "4ba8b713c53d7dd3656b4f99abf939a5d40df821c27128a68b3772f16670bee7.f32.gz",
       "wave_sha256": "4ba8b713c53d7dd3656b4f99abf939a5d40df821c27128a68b3772f16670bee7",
       "reference_stride": 7
     },
@@ -882,7 +882,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-2-fast-5dc70bb375-81ebb08e5a3f.f32.gz",
+      "wave": "81ebb08e5a3f751216a5af4ada1b31875609db95f1730d4a5850786bd9405d9a.f32.gz",
       "wave_sha256": "81ebb08e5a3f751216a5af4ada1b31875609db95f1730d4a5850786bd9405d9a",
       "reference_stride": 7
     },
@@ -916,7 +916,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-2-preview-81a52086e3-e29719578a2d.f32.gz",
+      "wave": "e29719578a2d36f09c6e7513a8da211a02d305b8b4d435cf937b3992d7381930.f32.gz",
       "wave_sha256": "e29719578a2d36f09c6e7513a8da211a02d305b8b4d435cf937b3992d7381930",
       "reference_stride": 7
     },
@@ -950,7 +950,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-5-accurate-1df8dde596-5f8f250879a5.f32.gz",
+      "wave": "5f8f250879a52f761a690037e8854f1290a52818ef504fe3b721e120569c7ffc.f32.gz",
       "wave_sha256": "5f8f250879a52f761a690037e8854f1290a52818ef504fe3b721e120569c7ffc",
       "reference_stride": 7
     },
@@ -984,7 +984,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-5-fast-45be88a793-ed1eadaa24ac.f32.gz",
+      "wave": "ed1eadaa24acb9a47254fd640a095977a138f1dadb9bad04af49ee93ce9177e0.f32.gz",
       "wave_sha256": "ed1eadaa24acb9a47254fd640a095977a138f1dadb9bad04af49ee93ce9177e0",
       "reference_stride": 7
     },
@@ -1018,7 +1018,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-5-preview-887e28c81d-5b0abcaf69c7.f32.gz",
+      "wave": "5b0abcaf69c730232e361534c2774f44d49ded605e84d9f963eb2c947891169e.f32.gz",
       "wave_sha256": "5b0abcaf69c730232e361534c2774f44d49ded605e84d9f963eb2c947891169e",
       "reference_stride": 7
     },
@@ -1052,7 +1052,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-8-accurate-699e295a8d-1549128a5773.f32.gz",
+      "wave": "1549128a5773ed250acf6447da2c5240cd0e2fa5a4109a0d764f7df9b64c3bfc.f32.gz",
       "wave_sha256": "1549128a5773ed250acf6447da2c5240cd0e2fa5a4109a0d764f7df9b64c3bfc",
       "reference_stride": 7
     },
@@ -1086,7 +1086,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-8-fast-2e7522a48d-5776f62ae1f8.f32.gz",
+      "wave": "5776f62ae1f862232ca23dbb9162c6c4b0ae3fac3578799b0b2eb1b3c3f0ea6c.f32.gz",
       "wave_sha256": "5776f62ae1f862232ca23dbb9162c6c4b0ae3fac3578799b0b2eb1b3c3f0ea6c",
       "reference_stride": 7
     },
@@ -1120,7 +1120,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-0-8-preview-108e183d7d-67704f0be99d.f32.gz",
+      "wave": "67704f0be99dd5aba1bae99edf0838d12fa495a543384ec9c0a2030159c43191.f32.gz",
       "wave_sha256": "67704f0be99dd5aba1bae99edf0838d12fa495a543384ec9c0a2030159c43191",
       "reference_stride": 7
     },
@@ -1154,7 +1154,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-moving-accurate-6dd3221b57-51221fba793b.f32.gz",
+      "wave": "51221fba793b5ea7d739df4db1277a0428cb3793f2e0e99ef47f9896bf57f6b7.f32.gz",
       "wave_sha256": "51221fba793b5ea7d739df4db1277a0428cb3793f2e0e99ef47f9896bf57f6b7",
       "reference_stride": 7
     },
@@ -1188,7 +1188,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-moving-fast-49eddec644-f35814061f39.f32.gz",
+      "wave": "f35814061f39aa8362ec6ae738f72a980f05e62b9b67f81a7e573a763888f335.f32.gz",
       "wave_sha256": "f35814061f39aa8362ec6ae738f72a980f05e62b9b67f81a7e573a763888f335",
       "reference_stride": 7
     },
@@ -1222,7 +1222,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Tone/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Tone-moving-preview-1e7be00968-653565ad8ea0.f32.gz",
+      "wave": "653565ad8ea06861af97c1f3b4b5949f06742fd3ee25bfa3915013ca260580e3.f32.gz",
       "wave_sha256": "653565ad8ea06861af97c1f3b4b5949f06742fd3ee25bfa3915013ca260580e3",
       "reference_stride": 7
     },
@@ -1256,7 +1256,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-2-accurate-e2e018f939-3040f76cbd77.f32.gz",
+      "wave": "3040f76cbd7766453302178e3e92f2b27bad01de84abbe82aea7370f75d42713.f32.gz",
       "wave_sha256": "3040f76cbd7766453302178e3e92f2b27bad01de84abbe82aea7370f75d42713",
       "reference_stride": 7
     },
@@ -1290,7 +1290,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-2-fast-a8bcdbcad0-597908510dbb.f32.gz",
+      "wave": "597908510dbb5194ac6f42238273bf8baac9754c6a5ce4800dfef89945a3cd1d.f32.gz",
       "wave_sha256": "597908510dbb5194ac6f42238273bf8baac9754c6a5ce4800dfef89945a3cd1d",
       "reference_stride": 7
     },
@@ -1324,7 +1324,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.2",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-2-preview-36dd7ab48c-8d9ce481de3f.f32.gz",
+      "wave": "8d9ce481de3f205fcfd43767c8ffa45d28aaa4703b2e6ec1adc198eca40bf61b.f32.gz",
       "wave_sha256": "8d9ce481de3f205fcfd43767c8ffa45d28aaa4703b2e6ec1adc198eca40bf61b",
       "reference_stride": 7
     },
@@ -1358,7 +1358,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-5-accurate-cae02fee6b-b51e9bae676e.f32.gz",
+      "wave": "b51e9bae676eccd863f1cc16772de0e6a20e01a1768575c2af592a7ebf88be6f.f32.gz",
       "wave_sha256": "b51e9bae676eccd863f1cc16772de0e6a20e01a1768575c2af592a7ebf88be6f",
       "reference_stride": 7
     },
@@ -1392,7 +1392,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-5-fast-bb316052ca-f6e66a072df0.f32.gz",
+      "wave": "f6e66a072df025a3b1277feee460f73c9e591c6f6219c45fe2d82144987206b2.f32.gz",
       "wave_sha256": "f6e66a072df025a3b1277feee460f73c9e591c6f6219c45fe2d82144987206b2",
       "reference_stride": 7
     },
@@ -1426,7 +1426,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.5",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-5-preview-dc493e43fb-10582b247d40.f32.gz",
+      "wave": "10582b247d40a7370a1dbd890262623c275ee0b53c7ee74be220bce17b4c1826.f32.gz",
       "wave_sha256": "10582b247d40a7370a1dbd890262623c275ee0b53c7ee74be220bce17b4c1826",
       "reference_stride": 7
     },
@@ -1460,7 +1460,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-8-accurate-6fa3675f90-ae1e1e10d05d.f32.gz",
+      "wave": "ae1e1e10d05df7f4a06dd69510dcc4476cefd4354fb8b695122bdd7f08b43939.f32.gz",
       "wave_sha256": "ae1e1e10d05df7f4a06dd69510dcc4476cefd4354fb8b695122bdd7f08b43939",
       "reference_stride": 7
     },
@@ -1494,7 +1494,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-8-fast-6a2c1c310f-8b124eac15b3.f32.gz",
+      "wave": "8b124eac15b32b780216899c9f844dc6a1d245d4d9572fd9387b6e81e2320ede.f32.gz",
       "wave_sha256": "8b124eac15b32b780216899c9f844dc6a1d245d4d9572fd9387b6e81e2320ede",
       "reference_stride": 7
     },
@@ -1528,7 +1528,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/0.8",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-0-8-preview-e4f3556482-d233058ad061.f32.gz",
+      "wave": "d233058ad0614cc788adb9a6e27949f3d5e2da0b6f2066e6f8596bcfc61a9594.f32.gz",
       "wave_sha256": "d233058ad0614cc788adb9a6e27949f3d5e2da0b6f2066e6f8596bcfc61a9594",
       "reference_stride": 7
     },
@@ -1562,7 +1562,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-moving-accurate-1a29f1a62a-86cfde6976d3.f32.gz",
+      "wave": "86cfde6976d3909ee847c4154b5ae5eba4b222e9503214413393637df6b978de.f32.gz",
       "wave_sha256": "86cfde6976d3909ee847c4154b5ae5eba4b222e9503214413393637df6b978de",
       "reference_stride": 7
     },
@@ -1596,7 +1596,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-moving-fast-a2a5028e37-06d6edc53bec.f32.gz",
+      "wave": "06d6edc53bec9075b83905779a1a1cd0180e392ff123e74ddd07c5a47d6abc86.f32.gz",
       "wave_sha256": "06d6edc53bec9075b83905779a1a1cd0180e392ff123e74ddd07c5a47d6abc86",
       "reference_stride": 7
     },
@@ -1630,7 +1630,7 @@
       },
       "circuit_sha256": "50af42190756e7a9686a7861bab90001119be557f42c86e02144efa401b90159",
       "case": "Boss SD-1 Super OverDrive/Level/moving",
-      "wave": "Boss-SD-1-Super-OverDrive-Level-moving-preview-3553855a2c-4b32a0c4fa31.f32.gz",
+      "wave": "4b32a0c4fa3177b6045a81d4f9ad4a4571a16f878f433342d6192a587658e9bf.f32.gz",
       "wave_sha256": "4b32a0c4fa3177b6045a81d4f9ad4a4571a16f878f433342d6192a587658e9bf",
       "reference_stride": 7
     },
@@ -1664,7 +1664,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.2",
-      "wave": "Ibanez-TS-808-TONE-0-2-accurate-9066c214c8-4a9eda415190.f32.gz",
+      "wave": "4a9eda415190a2812402ec61988529a4d4f2c6000fa3ba5e71c9c2db40843216.f32.gz",
       "wave_sha256": "4a9eda415190a2812402ec61988529a4d4f2c6000fa3ba5e71c9c2db40843216",
       "reference_stride": 7
     },
@@ -1698,7 +1698,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.2",
-      "wave": "Ibanez-TS-808-TONE-0-2-fast-d1dc6640bb-4a9eda415190.f32.gz",
+      "wave": "4a9eda415190a2812402ec61988529a4d4f2c6000fa3ba5e71c9c2db40843216.f32.gz",
       "wave_sha256": "4a9eda415190a2812402ec61988529a4d4f2c6000fa3ba5e71c9c2db40843216",
       "reference_stride": 7
     },
@@ -1732,7 +1732,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.2",
-      "wave": "Ibanez-TS-808-TONE-0-2-preview-1a45665585-624c6c02edfe.f32.gz",
+      "wave": "624c6c02edfeed9399699a739d6c2bddfeb659b2d519f2ff88122aabf290a3cf.f32.gz",
       "wave_sha256": "624c6c02edfeed9399699a739d6c2bddfeb659b2d519f2ff88122aabf290a3cf",
       "reference_stride": 7
     },
@@ -1766,7 +1766,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.5",
-      "wave": "Ibanez-TS-808-TONE-0-5-accurate-366285b9c2-fd8736457470.f32.gz",
+      "wave": "fd8736457470b2f77d9d6503a9d464323d85184ba55c3b9d41f12210d4912a77.f32.gz",
       "wave_sha256": "fd8736457470b2f77d9d6503a9d464323d85184ba55c3b9d41f12210d4912a77",
       "reference_stride": 7
     },
@@ -1800,7 +1800,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.5",
-      "wave": "Ibanez-TS-808-TONE-0-5-fast-dfc455fa24-fd8736457470.f32.gz",
+      "wave": "fd8736457470b2f77d9d6503a9d464323d85184ba55c3b9d41f12210d4912a77.f32.gz",
       "wave_sha256": "fd8736457470b2f77d9d6503a9d464323d85184ba55c3b9d41f12210d4912a77",
       "reference_stride": 7
     },
@@ -1834,7 +1834,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.5",
-      "wave": "Ibanez-TS-808-TONE-0-5-preview-8dc7c06daa-e5ce15c3bc61.f32.gz",
+      "wave": "e5ce15c3bc61a355c46986d3996e8e934c84a3f172db5d5b9ef532d444cf32ee.f32.gz",
       "wave_sha256": "e5ce15c3bc61a355c46986d3996e8e934c84a3f172db5d5b9ef532d444cf32ee",
       "reference_stride": 7
     },
@@ -1868,7 +1868,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.8",
-      "wave": "Ibanez-TS-808-TONE-0-8-accurate-677413d8df-3a968ebb9d8c.f32.gz",
+      "wave": "3a968ebb9d8c7b510339661e7f35e202c439cf86ec1b21d34d5577f7f8339c37.f32.gz",
       "wave_sha256": "3a968ebb9d8c7b510339661e7f35e202c439cf86ec1b21d34d5577f7f8339c37",
       "reference_stride": 7
     },
@@ -1902,7 +1902,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.8",
-      "wave": "Ibanez-TS-808-TONE-0-8-fast-6f9cb4d93a-3a968ebb9d8c.f32.gz",
+      "wave": "3a968ebb9d8c7b510339661e7f35e202c439cf86ec1b21d34d5577f7f8339c37.f32.gz",
       "wave_sha256": "3a968ebb9d8c7b510339661e7f35e202c439cf86ec1b21d34d5577f7f8339c37",
       "reference_stride": 7
     },
@@ -1936,7 +1936,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/0.8",
-      "wave": "Ibanez-TS-808-TONE-0-8-preview-9e7f71e7e1-5391a20ba5de.f32.gz",
+      "wave": "5391a20ba5dee1601eacbf3716c4aa2a1009c46ad530f4e135f58c547fee41a7.f32.gz",
       "wave_sha256": "5391a20ba5dee1601eacbf3716c4aa2a1009c46ad530f4e135f58c547fee41a7",
       "reference_stride": 7
     },
@@ -1970,7 +1970,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/moving",
-      "wave": "Ibanez-TS-808-TONE-moving-accurate-b587b42ff4-41b4e5376d02.f32.gz",
+      "wave": "41b4e5376d029763df200173e877d00a3b6c76f213a0c238ee2611a33732224a.f32.gz",
       "wave_sha256": "41b4e5376d029763df200173e877d00a3b6c76f213a0c238ee2611a33732224a",
       "reference_stride": 7
     },
@@ -2004,7 +2004,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/moving",
-      "wave": "Ibanez-TS-808-TONE-moving-fast-2e4430db99-17a06f596b9f.f32.gz",
+      "wave": "17a06f596b9f274fc37e75cecb0d640f539f744e0c911747623a95da11d4cda1.f32.gz",
       "wave_sha256": "17a06f596b9f274fc37e75cecb0d640f539f744e0c911747623a95da11d4cda1",
       "reference_stride": 7
     },
@@ -2038,7 +2038,7 @@
       },
       "circuit_sha256": "c9b6f5087faca38952087493d569951bcba985fe11034c153fc123d8790a3872",
       "case": "Ibanez TS_808/TONE/moving",
-      "wave": "Ibanez-TS-808-TONE-moving-preview-65417458ea-92482d9522fc.f32.gz",
+      "wave": "92482d9522fcab8eeb442c510c275b69214cde2d1dab5ceb91e6f32c0f3d8040.f32.gz",
       "wave_sha256": "92482d9522fcab8eeb442c510c275b69214cde2d1dab5ceb91e6f32c0f3d8040",
       "reference_stride": 7
     },
@@ -2072,7 +2072,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.2",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-2-accurate-7d4c7184d1-1c6a6dd1696b.f32.gz",
+      "wave": "1c6a6dd1696b54da9e1ec24f1625b0c147b051cb764534926a5f93e40b0b6185.f32.gz",
       "wave_sha256": "1c6a6dd1696b54da9e1ec24f1625b0c147b051cb764534926a5f93e40b0b6185",
       "reference_stride": 7
     },
@@ -2106,7 +2106,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.2",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-2-fast-5c6df748c4-c568d9004bd4.f32.gz",
+      "wave": "c568d9004bd4bc25aaef63f40b68b6e2a213567404eedf8496013de4fe6459c4.f32.gz",
       "wave_sha256": "c568d9004bd4bc25aaef63f40b68b6e2a213567404eedf8496013de4fe6459c4",
       "reference_stride": 7
     },
@@ -2140,7 +2140,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.2",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-2-preview-d2958908e0-8ba2a9bd7d2f.f32.gz",
+      "wave": "8ba2a9bd7d2ff5d8e31e344c2dba76c304f6b3b8351b274d431487f158e9802d.f32.gz",
       "wave_sha256": "8ba2a9bd7d2ff5d8e31e344c2dba76c304f6b3b8351b274d431487f158e9802d",
       "reference_stride": 7
     },
@@ -2174,7 +2174,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.5",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-5-accurate-a546da723c-cfd8f75a7eed.f32.gz",
+      "wave": "cfd8f75a7eed9826ef7e871ec70db5022c5dfcf4cb96e81c8849ae812737337f.f32.gz",
       "wave_sha256": "cfd8f75a7eed9826ef7e871ec70db5022c5dfcf4cb96e81c8849ae812737337f",
       "reference_stride": 7
     },
@@ -2208,7 +2208,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.5",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-5-fast-12b082d924-93fc19d44548.f32.gz",
+      "wave": "93fc19d44548b970913edb2b271449918f245931aa4df89943e300a5cc9a907b.f32.gz",
       "wave_sha256": "93fc19d44548b970913edb2b271449918f245931aa4df89943e300a5cc9a907b",
       "reference_stride": 7
     },
@@ -2242,7 +2242,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.5",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-5-preview-bc5e6390bf-5dc750f0d261.f32.gz",
+      "wave": "5dc750f0d261fbe5077f06dc33cede53b72c8cf26929a016de91f750b3dcb139.f32.gz",
       "wave_sha256": "5dc750f0d261fbe5077f06dc33cede53b72c8cf26929a016de91f750b3dcb139",
       "reference_stride": 7
     },
@@ -2276,7 +2276,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.8",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-8-accurate-51e54c55e0-7a1a1a938a26.f32.gz",
+      "wave": "7a1a1a938a261574ebdcde415874f1ba627597498e4835c411213667fa625db4.f32.gz",
       "wave_sha256": "7a1a1a938a261574ebdcde415874f1ba627597498e4835c411213667fa625db4",
       "reference_stride": 7
     },
@@ -2310,7 +2310,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.8",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-8-fast-a2c9370cfc-cac0d7453859.f32.gz",
+      "wave": "cac0d74538591d2fe50aee1773c220693c90b457c06a08138a8278fe7a47e095.f32.gz",
       "wave_sha256": "cac0d74538591d2fe50aee1773c220693c90b457c06a08138a8278fe7a47e095",
       "reference_stride": 7
     },
@@ -2344,7 +2344,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/0.8",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-0-8-preview-18b59fb29a-20f47d8f9501.f32.gz",
+      "wave": "20f47d8f950177ade69f04257d9680d4a53c1fd54b0d23b8e60349b339352cc3.f32.gz",
       "wave_sha256": "20f47d8f950177ade69f04257d9680d4a53c1fd54b0d23b8e60349b339352cc3",
       "reference_stride": 7
     },
@@ -2378,7 +2378,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/moving",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-moving-accurate-d9e1034f05-1e1976332494.f32.gz",
+      "wave": "1e1976332494074bd37b6fee048429d736f6ac5306157fa3561504277946b37f.f32.gz",
       "wave_sha256": "1e1976332494074bd37b6fee048429d736f6ac5306157fa3561504277946b37f",
       "reference_stride": 7
     },
@@ -2412,7 +2412,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/moving",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-moving-fast-0254950ae4-f7499d041325.f32.gz",
+      "wave": "f7499d04132575d2b3c7cb3b46e00be024ccbe3b7b18143c7d1234d8b78ddbab.f32.gz",
       "wave_sha256": "f7499d04132575d2b3c7cb3b46e00be024ccbe3b7b18143c7d1234d8b78ddbab",
       "reference_stride": 7
     },
@@ -2446,7 +2446,7 @@
       },
       "circuit_sha256": "8a9b49df3583fedbfc741203da9f75aeb0d00ab245c3f5aad3bd7f8394989394",
       "case": "Boss MT-2 Metal Zone/Mid Freq/moving",
-      "wave": "Boss-MT-2-Metal-Zone-Mid-Freq-moving-preview-8466289b21-6d46f73ef9e4.f32.gz",
+      "wave": "6d46f73ef9e4ace633269a9e0b29e210dc6a71a77705fdebe1f932c79a0752ad.f32.gz",
       "wave_sha256": "6d46f73ef9e4ace633269a9e0b29e210dc6a71a77705fdebe1f932c79a0752ad",
       "reference_stride": 7
     },
@@ -2480,7 +2480,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.2",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-2-accurate-d64f7caa4c-0b3ba841f485.f32.gz",
+      "wave": "0b3ba841f485ce81e2d06258f1448e74a7d3f61e1f30820d0f6ddaef30e32386.f32.gz",
       "wave_sha256": "0b3ba841f485ce81e2d06258f1448e74a7d3f61e1f30820d0f6ddaef30e32386",
       "reference_stride": 7
     },
@@ -2514,7 +2514,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.2",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-2-fast-903a5ff8e2-b1db86d8f45f.f32.gz",
+      "wave": "b1db86d8f45f3caf06e51f66c32a081961d0e4ec809b967cf3d48797325e0308.f32.gz",
       "wave_sha256": "b1db86d8f45f3caf06e51f66c32a081961d0e4ec809b967cf3d48797325e0308",
       "reference_stride": 7
     },
@@ -2548,7 +2548,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.2",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-2-preview-ab29dca9a0-b1db86d8f45f.f32.gz",
+      "wave": "b1db86d8f45f3caf06e51f66c32a081961d0e4ec809b967cf3d48797325e0308.f32.gz",
       "wave_sha256": "b1db86d8f45f3caf06e51f66c32a081961d0e4ec809b967cf3d48797325e0308",
       "reference_stride": 7
     },
@@ -2582,7 +2582,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.5",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-5-accurate-8abee57bde-18d2f5a59dfc.f32.gz",
+      "wave": "18d2f5a59dfc63ff3a0096496b2d569b9c54978685e172f0c8e42c1d1b5fbc79.f32.gz",
       "wave_sha256": "18d2f5a59dfc63ff3a0096496b2d569b9c54978685e172f0c8e42c1d1b5fbc79",
       "reference_stride": 7
     },
@@ -2616,7 +2616,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.5",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-5-fast-f17a88331b-e6cd4bda1671.f32.gz",
+      "wave": "e6cd4bda16719f3722e45840fd50559d9b55aac4174804ffbbfb883b3bef5c2b.f32.gz",
       "wave_sha256": "e6cd4bda16719f3722e45840fd50559d9b55aac4174804ffbbfb883b3bef5c2b",
       "reference_stride": 7
     },
@@ -2650,7 +2650,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.5",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-5-preview-7793f929ef-bd99eda27e97.f32.gz",
+      "wave": "bd99eda27e9721730f869c6b3e4986a33db7df52c22b1078ad848d80d9b087e8.f32.gz",
       "wave_sha256": "bd99eda27e9721730f869c6b3e4986a33db7df52c22b1078ad848d80d9b087e8",
       "reference_stride": 7
     },
@@ -2684,7 +2684,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.8",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-8-accurate-6038adceb8-1cc20c78650d.f32.gz",
+      "wave": "1cc20c78650da09ff505dba1d04474e950af41f3db508c1065e64da743abcec1.f32.gz",
       "wave_sha256": "1cc20c78650da09ff505dba1d04474e950af41f3db508c1065e64da743abcec1",
       "reference_stride": 7
     },
@@ -2718,7 +2718,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.8",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-8-fast-4e13b52d94-f886afe07b49.f32.gz",
+      "wave": "f886afe07b49dfa5920b964060a9f50fc0366901b6c96bf6e49809e5af6947a7.f32.gz",
       "wave_sha256": "f886afe07b49dfa5920b964060a9f50fc0366901b6c96bf6e49809e5af6947a7",
       "reference_stride": 7
     },
@@ -2752,7 +2752,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/0.8",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-0-8-preview-1a28432f99-f886afe07b49.f32.gz",
+      "wave": "f886afe07b49dfa5920b964060a9f50fc0366901b6c96bf6e49809e5af6947a7.f32.gz",
       "wave_sha256": "f886afe07b49dfa5920b964060a9f50fc0366901b6c96bf6e49809e5af6947a7",
       "reference_stride": 7
     },
@@ -2786,7 +2786,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/moving",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-moving-accurate-95cb110bff-1f07d3f4afd5.f32.gz",
+      "wave": "1f07d3f4afd5c311937f5fa170fd101a4c77622516bf9f758bc2b0b1ca140be5.f32.gz",
       "wave_sha256": "1f07d3f4afd5c311937f5fa170fd101a4c77622516bf9f758bc2b0b1ca140be5",
       "reference_stride": 7
     },
@@ -2820,7 +2820,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/moving",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-moving-fast-0ba9e211c2-a398633258ce.f32.gz",
+      "wave": "a398633258ce7a49e2e190723d875cd680f1355b3b08c9d61d2316d98e24307c.f32.gz",
       "wave_sha256": "a398633258ce7a49e2e190723d875cd680f1355b3b08c9d61d2316d98e24307c",
       "reference_stride": 7
     },
@@ -2854,7 +2854,7 @@
       },
       "circuit_sha256": "382e18622b6dd3917f5d1f87632f0dcf3e54795ae8ccc8433f1e6106f188f7d2",
       "case": "Dunlop Cry Baby GCB-95/WAH WAH/moving",
-      "wave": "Dunlop-Cry-Baby-GCB-95-WAH-WAH-moving-preview-2e1030df0e-45407e779870.f32.gz",
+      "wave": "45407e779870cd32d54911ed6e82de31687341a9070ff08021b3c05bda83817d.f32.gz",
       "wave_sha256": "45407e779870cd32d54911ed6e82de31687341a9070ff08021b3c05bda83817d",
       "reference_stride": 7
     },
@@ -2888,7 +2888,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.2",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-2-accurate-d9689c59bb-ed1d1107b42a.f32.gz",
+      "wave": "ed1d1107b42ae89815888aeab80d84073819767b8b544c566f7d976b84f8208d.f32.gz",
       "wave_sha256": "ed1d1107b42ae89815888aeab80d84073819767b8b544c566f7d976b84f8208d",
       "reference_stride": 7
     },
@@ -2922,7 +2922,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.2",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-2-fast-bf25122020-e718ac4fd49a.f32.gz",
+      "wave": "e718ac4fd49a6f666678f57b498f468a320ef2732cd82761d72d8e9b8f739a57.f32.gz",
       "wave_sha256": "e718ac4fd49a6f666678f57b498f468a320ef2732cd82761d72d8e9b8f739a57",
       "reference_stride": 7
     },
@@ -2956,7 +2956,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.2",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-2-preview-5605936b69-bd68a2de135c.f32.gz",
+      "wave": "bd68a2de135c9f3fd50ffec22117f8466177e70533187f49df128e607737c490.f32.gz",
       "wave_sha256": "bd68a2de135c9f3fd50ffec22117f8466177e70533187f49df128e607737c490",
       "reference_stride": 7
     },
@@ -2990,7 +2990,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.5",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-5-accurate-b26e48ec14-4a72fc0f73af.f32.gz",
+      "wave": "4a72fc0f73af8db657ddd57aa1e546f049278b1d534fef0c96b97ae02d8dfbaf.f32.gz",
       "wave_sha256": "4a72fc0f73af8db657ddd57aa1e546f049278b1d534fef0c96b97ae02d8dfbaf",
       "reference_stride": 7
     },
@@ -3024,7 +3024,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.5",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-5-fast-0970e8a501-4afbd03b7fa1.f32.gz",
+      "wave": "4afbd03b7fa10e65b0a7e5c9ad7b5046071a17223c2a668e62ae72a8cbfaeef8.f32.gz",
       "wave_sha256": "4afbd03b7fa10e65b0a7e5c9ad7b5046071a17223c2a668e62ae72a8cbfaeef8",
       "reference_stride": 7
     },
@@ -3058,7 +3058,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.5",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-5-preview-92736421d0-3328fd071f9c.f32.gz",
+      "wave": "3328fd071f9cd76f08362851171b292f0517384c90a633a4f938b5e4397e902c.f32.gz",
       "wave_sha256": "3328fd071f9cd76f08362851171b292f0517384c90a633a4f938b5e4397e902c",
       "reference_stride": 7
     },
@@ -3092,7 +3092,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.8",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-8-accurate-9011a223d2-7aac2cc9b266.f32.gz",
+      "wave": "7aac2cc9b266d77da3eaf7800e2b3e6252593f43baeeca3ecc4aa5baf00bad4c.f32.gz",
       "wave_sha256": "7aac2cc9b266d77da3eaf7800e2b3e6252593f43baeeca3ecc4aa5baf00bad4c",
       "reference_stride": 7
     },
@@ -3126,7 +3126,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.8",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-8-fast-d0aebd95c7-68e588c9f804.f32.gz",
+      "wave": "68e588c9f80418ebd22a341898f424a0f02bb64e4ad9e3605975bcc77ad24799.f32.gz",
       "wave_sha256": "68e588c9f80418ebd22a341898f424a0f02bb64e4ad9e3605975bcc77ad24799",
       "reference_stride": 7
     },
@@ -3160,7 +3160,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/0.8",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-0-8-preview-dfaeb37125-14969cbfc899.f32.gz",
+      "wave": "14969cbfc89989ae04307fa714233b7b005e71595c05647b8bdac0670461ad9f.f32.gz",
       "wave_sha256": "14969cbfc89989ae04307fa714233b7b005e71595c05647b8bdac0670461ad9f",
       "reference_stride": 7
     },
@@ -3194,7 +3194,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/moving",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-moving-accurate-5944e59c6f-a79f0b60a67b.f32.gz",
+      "wave": "a79f0b60a67b56c87e4d0232436a799fa7f93510002cec7427d61269c84c36b5.f32.gz",
       "wave_sha256": "a79f0b60a67b56c87e4d0232436a799fa7f93510002cec7427d61269c84c36b5",
       "reference_stride": 7
     },
@@ -3228,7 +3228,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/moving",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-moving-fast-8f290c849b-86a09408bde2.f32.gz",
+      "wave": "86a09408bde216e272e9e9121b2a24d36708c6e053a67b784f1607ece79f4a9e.f32.gz",
       "wave_sha256": "86a09408bde216e272e9e9121b2a24d36708c6e053a67b784f1607ece79f4a9e",
       "reference_stride": 7
     },
@@ -3262,7 +3262,7 @@
       },
       "circuit_sha256": "81093ad3073d9c5e2868f4658307c651ecd60020d8f0efbeda9981244ccb8505",
       "case": "Neve 1081 Gold Label Equalizer/Bass Gain/moving",
-      "wave": "Neve-1081-Gold-Label-Equalizer-Bass-Gain-moving-preview-2458841225-8b57d57b15ba.f32.gz",
+      "wave": "8b57d57b15ba5508d51371e5f2988d832f91e50359b1e4e73c805aed40d686d4.f32.gz",
       "wave_sha256": "8b57d57b15ba5508d51371e5f2988d832f91e50359b1e4e73c805aed40d686d4",
       "reference_stride": 7
     },
@@ -3296,7 +3296,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.2",
-      "wave": "UREI-1176LN-Rev-D-Input-0-2-accurate-43aa5111e2-adbf38647758.f32.gz",
+      "wave": "adbf38647758eb21e8aca87ba2d5e2781d88cedbbed75ecaac9d3a84a69b3e73.f32.gz",
       "wave_sha256": "adbf38647758eb21e8aca87ba2d5e2781d88cedbbed75ecaac9d3a84a69b3e73",
       "reference_stride": 7
     },
@@ -3330,7 +3330,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.2",
-      "wave": "UREI-1176LN-Rev-D-Input-0-2-fast-77f0bf8fe4-5c6fea30875e.f32.gz",
+      "wave": "5c6fea30875ec7e8d659df6be1daa067aaf2819282d842edb39dbd73af88f36b.f32.gz",
       "wave_sha256": "5c6fea30875ec7e8d659df6be1daa067aaf2819282d842edb39dbd73af88f36b",
       "reference_stride": 7
     },
@@ -3364,7 +3364,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.2",
-      "wave": "UREI-1176LN-Rev-D-Input-0-2-preview-c7f740f736-de3f206f337a.f32.gz",
+      "wave": "de3f206f337af6b77c549939972f166aa43bc5953040b3c48a281fd13682409d.f32.gz",
       "wave_sha256": "de3f206f337af6b77c549939972f166aa43bc5953040b3c48a281fd13682409d",
       "reference_stride": 7
     },
@@ -3398,7 +3398,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.5",
-      "wave": "UREI-1176LN-Rev-D-Input-0-5-accurate-eb9f132813-d55b6fce9684.f32.gz",
+      "wave": "d55b6fce96849d12b298fa6d3fe90271609051761f84b1f176b784cecf303e22.f32.gz",
       "wave_sha256": "d55b6fce96849d12b298fa6d3fe90271609051761f84b1f176b784cecf303e22",
       "reference_stride": 7
     },
@@ -3432,7 +3432,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.5",
-      "wave": "UREI-1176LN-Rev-D-Input-0-5-fast-39d79bc811-a8ef06ea0d14.f32.gz",
+      "wave": "a8ef06ea0d144ae79f7220afd6c957eec45bc84a481eab1ba4742bd36961a423.f32.gz",
       "wave_sha256": "a8ef06ea0d144ae79f7220afd6c957eec45bc84a481eab1ba4742bd36961a423",
       "reference_stride": 7
     },
@@ -3466,7 +3466,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.5",
-      "wave": "UREI-1176LN-Rev-D-Input-0-5-preview-5c96caa76f-c52d76c4eb8e.f32.gz",
+      "wave": "c52d76c4eb8ed1fd3669910a3165cade87d03fa97596c1e12b091e868e66693a.f32.gz",
       "wave_sha256": "c52d76c4eb8ed1fd3669910a3165cade87d03fa97596c1e12b091e868e66693a",
       "reference_stride": 7
     },
@@ -3500,7 +3500,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.8",
-      "wave": "UREI-1176LN-Rev-D-Input-0-8-accurate-228b0f0869-212a2ca3874a.f32.gz",
+      "wave": "212a2ca3874a1f498f7bfcca57fefdde0e2055bd353d5401239c39b2889582c7.f32.gz",
       "wave_sha256": "212a2ca3874a1f498f7bfcca57fefdde0e2055bd353d5401239c39b2889582c7",
       "reference_stride": 7
     },
@@ -3534,7 +3534,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.8",
-      "wave": "UREI-1176LN-Rev-D-Input-0-8-fast-a1ccfe1648-797efeee132b.f32.gz",
+      "wave": "797efeee132bd801efe3f08f4d75243179801b19b8996044a69f20bda0ed0375.f32.gz",
       "wave_sha256": "797efeee132bd801efe3f08f4d75243179801b19b8996044a69f20bda0ed0375",
       "reference_stride": 7
     },
@@ -3568,7 +3568,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/0.8",
-      "wave": "UREI-1176LN-Rev-D-Input-0-8-preview-0aede84eba-8d98a79388f8.f32.gz",
+      "wave": "8d98a79388f8cb251ff500d258097958bdd766fcb0c9b6a461c0635bdde8a7b1.f32.gz",
       "wave_sha256": "8d98a79388f8cb251ff500d258097958bdd766fcb0c9b6a461c0635bdde8a7b1",
       "reference_stride": 7
     },
@@ -3602,7 +3602,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/moving",
-      "wave": "UREI-1176LN-Rev-D-Input-moving-accurate-497049ccbc-b84e0b17d9c1.f32.gz",
+      "wave": "b84e0b17d9c1f71a6e273bb8d4193e2dc8f5e04641a879a3dc5036c88227018f.f32.gz",
       "wave_sha256": "b84e0b17d9c1f71a6e273bb8d4193e2dc8f5e04641a879a3dc5036c88227018f",
       "reference_stride": 7
     },
@@ -3636,7 +3636,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/moving",
-      "wave": "UREI-1176LN-Rev-D-Input-moving-fast-3e2ffc3a34-1b2da9de98e9.f32.gz",
+      "wave": "1b2da9de98e9ba85237b2d2cf91bf07a8ded6ba1ed2e4aea29aac18116c9965a.f32.gz",
       "wave_sha256": "1b2da9de98e9ba85237b2d2cf91bf07a8ded6ba1ed2e4aea29aac18116c9965a",
       "reference_stride": 7
     },
@@ -3670,7 +3670,7 @@
       },
       "circuit_sha256": "2e4442dbd7cf3d45a00d1d8a396daf56b02304acb9afa330cd531b39b4597ee8",
       "case": "UREI-1176LN-Rev-D/Input/moving",
-      "wave": "UREI-1176LN-Rev-D-Input-moving-preview-8c742f657b-ddd55b9a3615.f32.gz",
+      "wave": "ddd55b9a3615515b5dd51566a2c7af02a3b803f442e1e35def7b929f9d7f54ef.f32.gz",
       "wave_sha256": "ddd55b9a3615515b5dd51566a2c7af02a3b803f442e1e35def7b929f9d7f54ef",
       "reference_stride": 7
     },
@@ -3704,7 +3704,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.2",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-2-accurat-72a88a6795-03a5eb105966.f32.gz",
+      "wave": "03a5eb10596689bff64ab9e648185e291b4bbce32697e7696f69f3ff5943a092.f32.gz",
       "wave_sha256": "03a5eb10596689bff64ab9e648185e291b4bbce32697e7696f69f3ff5943a092",
       "reference_stride": 7
     },
@@ -3738,7 +3738,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.2",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-2-fast-b669d0c4bd-d42ec261cd41.f32.gz",
+      "wave": "d42ec261cd41b4e0f5f05ef09eed65c2422ad4509568b40f50100bd126a40721.f32.gz",
       "wave_sha256": "d42ec261cd41b4e0f5f05ef09eed65c2422ad4509568b40f50100bd126a40721",
       "reference_stride": 7
     },
@@ -3772,7 +3772,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.2",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-2-preview-e400ca5c52-d42ec261cd41.f32.gz",
+      "wave": "d42ec261cd41b4e0f5f05ef09eed65c2422ad4509568b40f50100bd126a40721.f32.gz",
       "wave_sha256": "d42ec261cd41b4e0f5f05ef09eed65c2422ad4509568b40f50100bd126a40721",
       "reference_stride": 7
     },
@@ -3806,7 +3806,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.5",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-5-accurat-3058da3bda-7d90e0bddd7f.f32.gz",
+      "wave": "7d90e0bddd7fb5ce5863b5b42f8fc218e793b1757b547d46939caa242123af9c.f32.gz",
       "wave_sha256": "7d90e0bddd7fb5ce5863b5b42f8fc218e793b1757b547d46939caa242123af9c",
       "reference_stride": 7
     },
@@ -3840,7 +3840,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.5",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-5-fast-ceabf4db34-fbb0fd2fdcf0.f32.gz",
+      "wave": "fbb0fd2fdcf0e5ca2afcea9b0cf23d62b61871c49b070b8b744d5602352c04ac.f32.gz",
       "wave_sha256": "fbb0fd2fdcf0e5ca2afcea9b0cf23d62b61871c49b070b8b744d5602352c04ac",
       "reference_stride": 7
     },
@@ -3874,7 +3874,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.5",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-5-preview-39329ec7eb-fbb0fd2fdcf0.f32.gz",
+      "wave": "fbb0fd2fdcf0e5ca2afcea9b0cf23d62b61871c49b070b8b744d5602352c04ac.f32.gz",
       "wave_sha256": "fbb0fd2fdcf0e5ca2afcea9b0cf23d62b61871c49b070b8b744d5602352c04ac",
       "reference_stride": 7
     },
@@ -3908,7 +3908,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.8",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-8-accurat-f3469b83e3-3f6f3fd3e26a.f32.gz",
+      "wave": "3f6f3fd3e26abdddcdc4c335880200701adfe60120ce6566659427dedd534c48.f32.gz",
       "wave_sha256": "3f6f3fd3e26abdddcdc4c335880200701adfe60120ce6566659427dedd534c48",
       "reference_stride": 7
     },
@@ -3942,7 +3942,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.8",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-8-fast-d506d97540-77b6c2fdf85c.f32.gz",
+      "wave": "77b6c2fdf85cd9678760b69bb70a0f5b019d0c267cc762f7266c1b503539443f.f32.gz",
       "wave_sha256": "77b6c2fdf85cd9678760b69bb70a0f5b019d0c267cc762f7266c1b503539443f",
       "reference_stride": 7
     },
@@ -3976,7 +3976,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/0.8",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-0-8-preview-f77dadbde3-77b6c2fdf85c.f32.gz",
+      "wave": "77b6c2fdf85cd9678760b69bb70a0f5b019d0c267cc762f7266c1b503539443f.f32.gz",
       "wave_sha256": "77b6c2fdf85cd9678760b69bb70a0f5b019d0c267cc762f7266c1b503539443f",
       "reference_stride": 7
     },
@@ -4010,7 +4010,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/moving",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-moving-accu-b779ae497a-bf15b8ade46e.f32.gz",
+      "wave": "bf15b8ade46ea7d53ca3e80d9c050f84a121895015079ec46b6e3cbb65d30138.f32.gz",
       "wave_sha256": "bf15b8ade46ea7d53ca3e80d9c050f84a121895015079ec46b6e3cbb65d30138",
       "reference_stride": 7
     },
@@ -4044,7 +4044,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/moving",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-moving-fast-e41ff69c41-5c329cf25cf3.f32.gz",
+      "wave": "5c329cf25cf353bb53c66e1d048ca4a3bfc608744ddaea59019efec5e770079b.f32.gz",
       "wave_sha256": "5c329cf25cf353bb53c66e1d048ca4a3bfc608744ddaea59019efec5e770079b",
       "reference_stride": 7
     },
@@ -4078,7 +4078,7 @@
       },
       "circuit_sha256": "7e82bb9a991d6b93de693ff90f9b95c0e8b66b2d1a4aecf97b454c42c581a654",
       "case": "Boss CS-3 Compression Sustainer (August 1986)/Sustain/moving",
-      "wave": "Boss-CS-3-Compression-Sustainer--August-1986--Sustain-moving-prev-529b67f282-5d7364bdcd53.f32.gz",
+      "wave": "5d7364bdcd53f4dea787ad77339cb0725b53128997cacb59cdf5a71e7ee3ccf6.f32.gz",
       "wave_sha256": "5d7364bdcd53f4dea787ad77339cb0725b53128997cacb59cdf5a71e7ee3ccf6",
       "reference_stride": 7
     },
@@ -4112,7 +4112,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.2",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-2-accurate-ecc05b26af-3cec195ecdea.f32.gz",
+      "wave": "3cec195ecdea27cf38e18c011d31b573fb96a40dd7dac2bbf0e6b4cf7c0091e7.f32.gz",
       "wave_sha256": "3cec195ecdea27cf38e18c011d31b573fb96a40dd7dac2bbf0e6b4cf7c0091e7",
       "reference_stride": 7
     },
@@ -4146,7 +4146,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.2",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-2-fast-bc48bad129-d7491d7f3791.f32.gz",
+      "wave": "d7491d7f37914990bf0e0187445eb3fe48b07d458b6fc6f50611bd6ba46a097d.f32.gz",
       "wave_sha256": "d7491d7f37914990bf0e0187445eb3fe48b07d458b6fc6f50611bd6ba46a097d",
       "reference_stride": 7
     },
@@ -4180,7 +4180,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.2",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-2-preview-55c61da0aa-d7491d7f3791.f32.gz",
+      "wave": "d7491d7f37914990bf0e0187445eb3fe48b07d458b6fc6f50611bd6ba46a097d.f32.gz",
       "wave_sha256": "d7491d7f37914990bf0e0187445eb3fe48b07d458b6fc6f50611bd6ba46a097d",
       "reference_stride": 7
     },
@@ -4214,7 +4214,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.5",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-5-accurate-ba754a26d4-b1c7cafc7cd8.f32.gz",
+      "wave": "b1c7cafc7cd836807573e500b0b487b72ad2f8b43ac225175b6e5e083b3a967f.f32.gz",
       "wave_sha256": "b1c7cafc7cd836807573e500b0b487b72ad2f8b43ac225175b6e5e083b3a967f",
       "reference_stride": 7
     },
@@ -4248,7 +4248,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.5",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-5-fast-280af0c2b6-3ffa221e759b.f32.gz",
+      "wave": "3ffa221e759bacef942b5fcfe2d050219610a71410653286e633fbf1887f82ef.f32.gz",
       "wave_sha256": "3ffa221e759bacef942b5fcfe2d050219610a71410653286e633fbf1887f82ef",
       "reference_stride": 7
     },
@@ -4282,7 +4282,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.5",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-5-preview-0017f51d64-3ffa221e759b.f32.gz",
+      "wave": "3ffa221e759bacef942b5fcfe2d050219610a71410653286e633fbf1887f82ef.f32.gz",
       "wave_sha256": "3ffa221e759bacef942b5fcfe2d050219610a71410653286e633fbf1887f82ef",
       "reference_stride": 7
     },
@@ -4316,7 +4316,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.8",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-8-accurate-94cd2fe3a3-aea8aec67fe7.f32.gz",
+      "wave": "aea8aec67fe746ee41f744666855b9a12218e4187ca3874a8cf5917cb685e3e4.f32.gz",
       "wave_sha256": "aea8aec67fe746ee41f744666855b9a12218e4187ca3874a8cf5917cb685e3e4",
       "reference_stride": 7
     },
@@ -4350,7 +4350,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.8",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-8-fast-0f368098c4-d5213554e5ff.f32.gz",
+      "wave": "d5213554e5ff3c75a7c6922e4ec8389ea95b7089c0d7ec99427cc539858556e2.f32.gz",
       "wave_sha256": "d5213554e5ff3c75a7c6922e4ec8389ea95b7089c0d7ec99427cc539858556e2",
       "reference_stride": 7
     },
@@ -4384,7 +4384,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/0.8",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-0-8-preview-9565dc5a97-d5213554e5ff.f32.gz",
+      "wave": "d5213554e5ff3c75a7c6922e4ec8389ea95b7089c0d7ec99427cc539858556e2.f32.gz",
       "wave_sha256": "d5213554e5ff3c75a7c6922e4ec8389ea95b7089c0d7ec99427cc539858556e2",
       "reference_stride": 7
     },
@@ -4418,7 +4418,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/moving",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-moving-accurate-6255360bfb-323019c2d984.f32.gz",
+      "wave": "323019c2d984694a37b7b28452753baa49cb1634ecd8181c18f34e07d9e037a0.f32.gz",
       "wave_sha256": "323019c2d984694a37b7b28452753baa49cb1634ecd8181c18f34e07d9e037a0",
       "reference_stride": 7
     },
@@ -4452,7 +4452,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/moving",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-moving-fast-d03dbabfc4-29b63abe1601.f32.gz",
+      "wave": "29b63abe1601dc64163b73ab21fc14049dcdb08e08ab16c74b9b50d74c4e6b6d.f32.gz",
       "wave_sha256": "29b63abe1601dc64163b73ab21fc14049dcdb08e08ab16c74b9b50d74c4e6b6d",
       "reference_stride": 7
     },
@@ -4486,7 +4486,7 @@
       },
       "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
       "case": "Boss DM-2 Analog Delay/Echo/moving",
-      "wave": "Boss-DM-2-Analog-Delay-Echo-moving-preview-cbc1944f66-24fa6a24018b.f32.gz",
+      "wave": "24fa6a24018b0147433462940ae4f004d7d0c8ecfd83a6753683f5533efc4b1e.f32.gz",
       "wave_sha256": "24fa6a24018b0147433462940ae4f004d7d0c8ecfd83a6753683f5533efc4b1e",
       "reference_stride": 7
     }

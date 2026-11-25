@@ -225,7 +225,7 @@ def check_reference(wave, report, saved, baseline, mode):
     return failures, observations
 
 
-def save_reference(wave, report, key, directory, stride=1):
+def save_reference(wave, report, directory, stride=1):
     if type(stride) is not int or stride not in (1, 7):
         raise ValueError('Reference stride must be 1 or 7')
     # Seven is coprime to the coherent stimulus periods (8, 32 and 128).
@@ -235,8 +235,9 @@ def save_reference(wave, report, key, directory, stride=1):
         data.byteswap()
     raw = data.tobytes()
     digest = hashlib.sha256(raw).hexdigest()
-    destination = directory / (key + '-' + digest[:12] + '.f32.gz')
-    destination.write_bytes(gzip.compress(raw, mtime=0))
+    destination = directory / (digest + '.f32.gz')
+    if not destination.exists():
+        destination.write_bytes(gzip.compress(raw, mtime=0))
     timing = {'blocks', 'mean_cpu_us', 'max_cpu_us', 'late_cpu_blocks'}
     recorded = {name: value for name, value in report.items() if name not in timing}
     return {**recorded, 'wave': destination.name, 'wave_sha256': digest,
@@ -358,12 +359,11 @@ def main():
                 continue
             for mode in MODES:
                 name = case['name'] + '/' + mode
-                key = case_key(name)
                 try:
                     wave, report = render(args.renderer, case, mode, Path(directory))
                     report['case'] = case['name']
                     if args.record:
-                        reference['cases'][name] = save_reference(wave, report, key, Path(directory), args.reference_stride)
+                        reference['cases'][name] = save_reference(wave, report, Path(directory), args.reference_stride)
                         errors, observations = [], []
                     else:
                         errors, observations = check_reference(wave, report, reference['cases'][name], args.baseline, mode)

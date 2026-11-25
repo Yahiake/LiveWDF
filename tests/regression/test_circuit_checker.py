@@ -36,7 +36,7 @@ class SnapshotChecks(unittest.TestCase):
         self.directory = tempfile.TemporaryDirectory()
         self.root = Path(self.directory.name)
         self.wave = sine()
-        self.saved = CHECKER.save_reference(self.wave, report_for(self.wave), 'sine', self.root)
+        self.saved = CHECKER.save_reference(self.wave, report_for(self.wave), self.root)
 
     def tearDown(self):
         self.directory.cleanup()
@@ -52,7 +52,7 @@ class SnapshotChecks(unittest.TestCase):
         report = report_for(self.wave)
         timing = {'blocks': [{'cpu_us': 1}], 'mean_cpu_us': 1, 'max_cpu_us': 1, 'late_cpu_blocks': 0}
         report.update(timing)
-        saved = CHECKER.save_reference(self.wave, report, 'timed', self.root)
+        saved = CHECKER.save_reference(self.wave, report, self.root)
         self.assertTrue(saved.keys().isdisjoint(timing))
 
     def test_nonfinite_saved_ac_response_fails(self):
@@ -111,14 +111,14 @@ class SnapshotChecks(unittest.TestCase):
         self.assertEqual(len(self.saved['wave_sha256']), 64)
 
     def test_sampled_reference_matches_all_expected_checkpoints(self):
-        saved = CHECKER.save_reference(self.wave, report_for(self.wave), 'sampled', self.root, stride=7)
+        saved = CHECKER.save_reference(self.wave, report_for(self.wave), self.root, stride=7)
         raw = gzip.decompress((self.root / saved['wave']).read_bytes())
         self.assertEqual(len(raw), ((len(self.wave) + 6) // 7) * 4)
         failures, _ = CHECKER.check_reference(self.wave, report_for(self.wave), saved, self.root, 'accurate')
         self.assertEqual(failures, [])
 
     def test_spike_between_checkpoints_still_fails_full_rate_bounds(self):
-        saved = CHECKER.save_reference(self.wave, report_for(self.wave), 'sampled', self.root, stride=7)
+        saved = CHECKER.save_reference(self.wave, report_for(self.wave), self.root, stride=7)
         changed = array('d', self.wave)
         changed[32] *= 2  # Not a stored checkpoint.
         report = report_for(changed)
@@ -128,7 +128,7 @@ class SnapshotChecks(unittest.TestCase):
         self.assertTrue(any('Full-wave max_step' in failure for failure in failures), failures)
 
     def test_sampled_reference_requires_full_rate_bounds(self):
-        saved = CHECKER.save_reference(self.wave, report_for(self.wave), 'sampled', self.root, stride=7)
+        saved = CHECKER.save_reference(self.wave, report_for(self.wave), self.root, stride=7)
         del saved['wave_bounds']
         failures, _ = CHECKER.check_reference(self.wave, report_for(self.wave), saved, self.root, 'accurate')
         self.assertTrue(any('full-rate bounds' in failure for failure in failures), failures)
@@ -139,7 +139,7 @@ class SnapshotChecks(unittest.TestCase):
         self.assertTrue(any('reference stride' in failure for failure in failures), failures)
 
     def test_truncated_sampled_reference_is_rejected(self):
-        saved = CHECKER.save_reference(self.wave, report_for(self.wave), 'sampled', self.root, stride=7)
+        saved = CHECKER.save_reference(self.wave, report_for(self.wave), self.root, stride=7)
         path = self.root / saved['wave']
         path.write_bytes(gzip.compress(gzip.decompress(path.read_bytes())[:-4], mtime=0))
         failures, _ = CHECKER.check_reference(self.wave, report_for(self.wave), saved, self.root, 'accurate')
