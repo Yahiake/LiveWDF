@@ -115,6 +115,18 @@ The debug APK is signed with your local Android debug key and uses optimized nat
 
 The build fetches a pinned revision of the [Android USB audio driver](https://github.com/jopdorp/android-usb-audio). Use `-PlivewdfUsbDriverDir=/absolute/path/to/android-usb-audio` to build against a local checkout, or `-PlivewdfDirectUsb=false` to build with standard Android audio only. In direct mode, LiveWDF processes the first two capture and playback channels and tries 48 kHz, then 44.1 kHz. Before opening USB audio, choose 64, 96, 128 (default), 192, 256, 384, or 512 samples. The status row shows the actual sample rate, capture recoveries, USB errors, and the slowest DSP block in the session. Playback-only interfaces show **Test output**, which plays a brief low-level tone through the interface. Android audio uses JUCE's standard device support. The USB interface and phone determine achievable latency.
 
+### LiveWDF VST3 in Carla
+
+Carla 2.5.10 can report fresh LiveWDF VST3 knobs at zero. The knobs initialize correctly with [Carla's 2.6 development backend](https://github.com/falkTX/Carla/tree/97a9e0740baf6df2df942495c02532a624c44682).
+
+Run [the Linux smoke test](tests/smoke/carla_vst3.py) with Carla's dummy audio driver.
+
+```bash
+PYTHONPATH=/path/to/Carla/source/frontend:/path/to/Carla/source \
+    python3 tests/smoke/carla_vst3.py \
+    /path/to/libcarla_standalone2.so /path/to/LiveWDF.vst3
+```
+
 ## Contributing
 
 LiveWDF is still taking shape, and there's plenty of room to get involved.
