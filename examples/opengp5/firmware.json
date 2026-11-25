@@ -1,0 +1,9 @@
+{
+  "id": "livewdf",
+  "name": "LiveWDF",
+  "version": "0.1.0",
+  "licence": "AGPL-3.0-only",
+  "description": "An RC low-pass circuit exported by LiveWDF.",
+  "platform": "0.8",
+  "audio": { "sample_rate": 44100 }
+}

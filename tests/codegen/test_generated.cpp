@@ -6,6 +6,9 @@
 #include <limits>
 #include <stdexcept>
 
+extern "C" void test_c99_reset(void);
+extern "C" float test_c99_step(float input);
+
 #define CircuitStep GeneratedRLC
 #include "generated_rlc.h"
 #undef CircuitStep
@@ -56,12 +59,29 @@ void compare(int count) {
             throw std::runtime_error("generated sample disagrees with reference");
     }
 }
+void compareC99() {
+    test_c99_reset();
+    wdf::Engine reference(recurrenceFixture(0), 44100.);
+    const auto& [rep, offset] = reference.compiled().info.at("out");
+    auto source = reference.dcValues();
+    for (int n = 0; n < 4096; ++n) {
+        const float input = static_cast<float>(.1 + 2. * std::sin(.039 * n) + .6 * std::sin(.41 * n));
+        source[0] = input;
+        const auto& v = reference.step(source.data(), source.size(), 60, 1e-10);
+        const double expected = (rep.empty() ? 0. : v.at(reference.nodeIndex(rep))) +
+                                wdf::evalOff(offset, source.data());
+        if (reference.lastStateRejected() || !(std::abs(test_c99_step(input) - expected) < 1e-5))
+            throw std::runtime_error("generated C99 sample disagrees with reference");
+    }
+}
+
 int main() {
     try {
         compare<GeneratedRLC>(0);
         compare<GeneratedDiode>(1);
         compare<GeneratedExternal>(2);
         compare<GeneratedAmp>(3);
+        compareC99();
     } catch (const std::exception& e) {
         std::cerr << e.what() << '\n';
         return 1;

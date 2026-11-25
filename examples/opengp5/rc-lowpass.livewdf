@@ -1,0 +1,17 @@
+{
+  "version": 3,
+  "name": "RC low-pass",
+  "components": [
+    {"id": "IN1", "type": "in", "visual": {"x": 0, "y": 0, "rotation": 0}, "values": {}},
+    {"id": "R1", "type": "res", "visual": {"x": 6, "y": 0, "rotation": 270}, "values": {"value": 1000}},
+    {"id": "C1", "type": "cap", "visual": {"x": 10, "y": 4, "rotation": 0}, "values": {"value": 0.000001}},
+    {"id": "OUT1", "type": "out", "visual": {"x": 16, "y": 0, "rotation": 0}, "values": {}},
+    {"id": "GND1", "type": "gnd", "visual": {"x": 10, "y": 10, "rotation": 0}, "values": {}}
+  ],
+  "wires": [
+    {"points": [{"x": 2, "y": 0}, {"x": 4, "y": 0}]},
+    {"points": [{"x": 8, "y": 0}, {"x": 10, "y": 0}, {"x": 14, "y": 0}]},
+    {"points": [{"x": 10, "y": 0}, {"x": 10, "y": 2}]},
+    {"points": [{"x": 10, "y": 6}, {"x": 10, "y": 8}]}
+  ]
+}

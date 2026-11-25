@@ -1,6 +1,7 @@
 #include "compiler/EmitRecurrence.h"
 #include "wdf/Engine.h"
 
+#include <algorithm>
 #include <iomanip>
 #include <limits>
 #include <locale>
@@ -21,15 +22,22 @@ void add(Row& target, const Row& term, double gain) {
 
 struct Names {
     int states, sources;
+    int input = -1;
     std::string operator()(int k) const {
         if (k == 0) return {};
         if (--k < states) return "state[" + std::to_string(k) + "]";
-        if ((k -= states) < sources) return "source[" + std::to_string(k) + "]";
+        if ((k -= states) < sources) return k == input ? "input" : "source[" + std::to_string(k) + "]";
         return "current[" + std::to_string(k - sources) + "]";
     }
 };
 
-void expression(std::ostream& out, const Row& row, Names names) {
+void floatLiteral(std::ostream& out, double value) {
+    if (!std::isfinite(value) || std::abs(value) > std::numeric_limits<float>::max())
+        throw std::invalid_argument("value is outside the C99 float range");
+    out << std::hexfloat << static_cast<float>(value) << 'f' << std::defaultfloat;
+}
+
+void expression(std::ostream& out, const Row& row, Names names, bool useFloat = false) {
     bool first = true;
     for (size_t i = 0; i < row.size(); ++i) {
         double v = row[i];
@@ -37,13 +45,14 @@ void expression(std::ostream& out, const Row& row, Names names) {
         if (!std::isfinite(v)) throw std::invalid_argument("non-finite recurrence coefficient");
         out << (first ? (v < 0 ? "-" : "") : (v < 0 ? " - " : " + "));
         if (i == 0 || std::abs(v) != 1) {
-            out << std::abs(v);
+            if (useFloat) floatLiteral(out, std::abs(v));
+            else out << std::abs(v);
             if (i != 0) out << " * ";
         }
         out << names(static_cast<int>(i));
         first = false;
     }
-    if (first) out << "0.0";
+    if (first) out << (useFloat ? "0.0f" : "0.0");
 }
 
 void literals(std::ostream& out, const std::vector<double>& values) {
@@ -54,13 +63,60 @@ void literals(std::ostream& out, const std::vector<double>& values) {
     }
     out << '}';
 }
+
+void emitC99(std::ostream& out, const Row& initial, const Row& dc, int input,
+            const Row& output, const std::vector<Row>& next, double sampleRate) {
+    const Names names{static_cast<int>(initial.size()), static_cast<int>(dc.size()), input};
+    const auto emit = [&](Row row) {
+        for (int j = 0; j < names.sources; ++j) {
+            if (j == input) continue;
+            auto& coefficient = row[1 + names.states + j];
+            row[0] += coefficient * dc[j];
+            coefficient = 0.0;
+        }
+        expression(out, row, names, true);
+    };
+
+    out << "// Generated for fixed component values at " << sampleRate << " Hz.\n"
+        << "#ifndef LIVEWDF_GENERATED_CIRCUIT_H\n#define LIVEWDF_GENERATED_CIRCUIT_H\n\n"
+        << "typedef struct { float state[" << std::max(1, names.states) << "]; } LiveWdfCircuit;\n\n"
+        << "static inline void livewdf_reset(LiveWdfCircuit *circuit) {\n"
+        << "    const LiveWdfCircuit initial = {{";
+    if (initial.empty()) out << "0.0f";
+    for (size_t j = 0; j < initial.size(); ++j) {
+        if (j) out << ", ";
+        floatLiteral(out, initial[j]);
+    }
+    out << "}};\n    *circuit = initial;\n}\n\n"
+        << "static inline float livewdf_step(LiveWdfCircuit *circuit, float input) {\n"
+        << "    (void)input;\n";
+    if (next.empty()) {
+        out << "    (void)circuit;\n    return ";
+        emit(output);
+        out << ";\n";
+    } else {
+        out << "    float *state = circuit->state;\n    const float result = ";
+        emit(output);
+        out << ";\n    const float next[] = {\n";
+        for (const auto& row : next) {
+            out << "        ";
+            emit(row);
+            out << ",\n";
+        }
+        out << "    };\n    for (int i = 0; i < " << names.states
+            << "; ++i) state[i] = next[i];\n    return result;\n";
+    }
+    out << "}\n\n#endif\n";
+}
 } // namespace
 
 void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
-                    const std::string& outputNet, bool externalRoots) {
+                    const std::string& outputNet, bool externalRoots, RecurrenceTarget target) {
     const int ns = e.sourceCount(), nx = e.capCount() + e.inductorCount(), k = e.rootCount();
     if (inputSource < 0 || inputSource >= ns)
         throw std::invalid_argument("audio input must be a voltage source");
+    if (target == RecurrenceTarget::C99Float && k)
+        throw std::invalid_argument("--c99-float requires a linear circuit without nonlinear roots");
     if (e.currentSourceCount() || !e.compiled().photoSensePorts.empty() ||
         !e.compiled().vcaSensePorts.empty() || !e.compiled().otaSensePorts.empty() ||
         !e.compiled().dbx200BiasPorts.empty() || e.hasAdjustedLiveTransfer())
@@ -132,9 +188,16 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
     outRow[0] += potential[0];
     for (int j = 0; j < ns; ++j) outRow[sourceBase+j] += potential[1+j];
 
+    Row initial = e.capacitorStates();
+    initial.insert(initial.end(), e.inductorStates().begin(), e.inductorStates().end());
     std::ostringstream out;
     out.imbue(std::locale::classic());
     out << std::setprecision(std::numeric_limits<double>::max_digits10);
+    if (target == RecurrenceTarget::C99Float) {
+        emitC99(out, initial, e.dcValues(), inputSource, outRow, next, e.fs());
+        output << out.str();
+        return;
+    }
     out << "// Generated for fixed component values at " << e.fs() << " Hz.\n"
         << "#pragma once\n#include <algorithm>\n#include <array>\n#include <cmath>\n#include <cstddef>\n#include <optional>\n";
     if (scalarDiode) out << "#include \"devices/Diode.h\"\n";
@@ -157,8 +220,6 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
         out << "        "; literals(out, z); out << ",\n";
     }
     out << "    }};\n    State state = ";
-    Row initial = e.capacitorStates();
-    initial.insert(initial.end(), e.inductorStates().begin(), e.inductorStates().end());
     literals(out, initial);
     if (scalarAmp) out << ";\n    double pole = " << e.opAmpPole(0);
     out << ";\n\n    Ports openCircuit([[maybe_unused]] const Sources& source) const {\n        return {\n";

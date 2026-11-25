@@ -13,7 +13,8 @@
 
 int main(int argc, char** argv) {
     if (argc < 3 || argc > 4) {
-        std::cerr << "Usage: livewdf_codegen circuit.livewdf sample-rate [--external-roots | --delayed | --delayed-reverse]\n";
+        std::cerr << "Usage: livewdf_codegen circuit.livewdf sample-rate"
+                     " [--c99-float | --external-roots | --delayed | --delayed-reverse]\n";
         return 2;
     }
     try {
@@ -25,7 +26,9 @@ int main(int argc, char** argv) {
         const std::string_view mode = argc == 4 ? argv[3] : "";
         const bool reverse = mode == "--delayed-reverse";
         const bool delayed = mode == "--delayed" || reverse;
-        if (!mode.empty() && mode != "--external-roots" && !delayed)
+        const bool externalRoots = mode == "--external-roots" || delayed;
+        const bool c99 = mode == "--c99-float";
+        if (!mode.empty() && !externalRoots && !c99)
             throw std::invalid_argument("unknown option");
         wdf::LiveWDFDocument doc;
         std::string error;
@@ -38,7 +41,8 @@ int main(int argc, char** argv) {
         wdf::Engine engine(circuit, rate);
         std::ostringstream header;
         livewdf::compiler::emitRecurrence(header, engine, static_cast<int>(source - circuit.src.begin()),
-                                      doc.outputNet(), !mode.empty());
+                                      doc.outputNet(), externalRoots, c99 ? livewdf::compiler::RecurrenceTarget::C99Float
+                                                                          : livewdf::compiler::RecurrenceTarget::Cxx);
         if (delayed) livewdf::compiler::emitDelayed(header, engine, rate, reverse);
         std::cout << header.str();
         if (!std::cout) throw std::runtime_error("failed to write generated header");
