@@ -176,6 +176,7 @@ if(LIVEWDF_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
+add_subdirectory(examples/opengp5/dod250)
 
 # --- Shared Schematic GUI / Standalone Editor ---------------------------------
 # The drawing surface for .livewdf circuits owns the schematic GUI: the model,

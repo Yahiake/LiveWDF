@@ -1,0 +1,8 @@
+0.15 shot enabled
+0.25 left turn 4
+0.40 middle turn -8
+0.55 shot adjusted
+0.70 foot
+0.85 shot bypassed
+1.10 foot
+1.25 shot reengaged
