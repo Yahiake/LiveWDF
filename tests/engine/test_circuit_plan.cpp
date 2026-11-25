@@ -969,3 +969,83 @@ TEST_CASE("An op-amp feedback control can revoke uniqueness and recover it",
     REQUIRE(hits[3] < 480);
     REQUIRE(hits[4] > 480);
 }
+
+namespace {
+
+wdf::Circuit largeLoadedOpAmpChain(int amps) {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 0.0);
+    circuit.addPot("in", "drive", "0", 10000.0, .5, wdf::PotTaper::Linear, "Level");
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(5.0, 5.0);
+    std::string previous = "drive";
+    for (int index = 0; index < amps; ++index) {
+        const auto output = "stage" + std::to_string(index);
+        circuit.addOpAmp(output, output, previous, "0", "0", model,
+                         "U" + std::to_string(index));
+        circuit.addRes(output, "0", 100000.0);
+        previous = output;
+    }
+    circuit.addRes(previous, "out", 2200.0);
+    circuit.addCap("out", "0", 10e-9);
+    circuit.addDiode("out", "0", wdf::DiodeModel(2e-12, 1.1, 4.0), "D1");
+    circuit.addDiode("0", "out", wdf::DiodeModel(2e-12, 1.1, 4.0), "D2");
+    return circuit;
+}
+
+} // namespace
+
+TEST_CASE("Large loaded junction plans retain live controls and op-amp overload recovery",
+          "[engine][circuit-plan][live-junction][large-junction]") {
+    auto circuit = largeLoadedOpAmpChain(21);
+    wdf::Engine preview(circuit, 48000.0), accurate(circuit, 48000.0);
+    REQUIRE(preview.rootCount() == 65);
+    preview.prepareLiveControls();
+    accurate.prepareLiveControls();
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    preview.useLoadedJunctionPreview(true);
+    const auto output = preview.nodeIndex("out");
+    REQUIRE(output >= 0);
+    long long quietHits = 0, overloadFallbacks = 0, recoveryHits = 0;
+    for (int frame = 0; frame < 2048; ++frame) {
+        if (frame == 256 || frame == 768 || frame == 1536) {
+            const double position = frame == 768 ? .8 : .3;
+            REQUIRE(preview.setLiveControls({{0, position}}, {}));
+            REQUIRE(accurate.setLiveControls({{0, position}}, {}));
+        }
+        const bool overload = frame >= 768 && frame < 1024;
+        const double input = (overload ? 20.0 : .08) * std::sin(.079 * frame);
+        const auto previousHits = preview.loadedJunctionHits();
+        const auto& expectedNodes = accurate.step(&input, 1, 60, 1e-9);
+        const auto& actualNodes = preview.step(&input, 1, 60, 1e-9);
+        const double expected = expectedNodes[output];
+        const double actual = actualNodes[output];
+        for (size_t node = 0; node < actualNodes.size(); ++node)
+            REQUIRE(actualNodes[node] == Approx(expectedNodes[node]).margin(.001));
+        REQUIRE(preview.getCapacitorState(0) == Approx(accurate.getCapacitorState(0)).margin(.002));
+        REQUIRE(std::isfinite(actual));
+        REQUIRE_FALSE(preview.lastStateRejected());
+        REQUIRE_FALSE(accurate.lastStateRejected());
+        REQUIRE(actual == Approx(expected).margin(.001));
+        const bool hit = preview.loadedJunctionHits() != previousHits;
+        if (frame < 768) quietHits += hit;
+        if (overload) overloadFallbacks += !hit;
+        if (frame >= 1536) recoveryHits += hit;
+    }
+    CHECK(quietHits > 600);
+    CHECK(overloadFallbacks > 100);
+    CHECK(recoveryHits > 400);
+    CHECK(preview.hasLoadedJunctionPreview());
+}
+
+TEST_CASE("Loaded junction port capacity is bounded consistently",
+          "[engine][circuit-plan][large-junction]") {
+    auto supported = largeLoadedOpAmpChain(42);
+    wdf::Engine boundary(supported, 48000.0);
+    REQUIRE(boundary.rootCount() == wdf::LoadedJunctionPlan::maxPorts);
+    REQUIRE(boundary.prepareLoadedJunctionPreview(0, false));
+    auto oversized = largeLoadedOpAmpChain(43);
+    wdf::Engine declined(oversized, 48000.0);
+    REQUIRE(declined.rootCount() > wdf::LoadedJunctionPlan::maxPorts);
+    CHECK_FALSE(declined.prepareLoadedJunctionPreview(0, false));
+}
