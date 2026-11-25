@@ -100,9 +100,9 @@ The first build may take several minutes. Some tests use ngspice as an external 
 
 ### LiveWDF VST3 in Carla
 
-Carla 2.5.10's bundled JUCE VST3 host can report all circuit controls at zero in a fresh LiveWDF instance. LiveWDF's VST3 was verified with [Carla's 2.6 development backend](https://github.com/falkTX/Carla/tree/97a9e0740baf6df2df942495c02532a624c44682), which reads the initial knob values correctly.
+Carla 2.5.10 can report fresh LiveWDF VST3 knobs at zero. The knobs initialize correctly with [Carla's 2.6 development backend](https://github.com/falkTX/Carla/tree/97a9e0740baf6df2df942495c02532a624c44682).
 
-To check your Carla build on Linux, run [the VST3 smoke test](tests/smoke/carla_vst3.py) against its backend library and the LiveWDF bundle. The smoke test uses Carla's dummy audio driver.
+Run [the Linux smoke test](tests/smoke/carla_vst3.py) with Carla's dummy audio driver.
 
 ```bash
 PYTHONPATH=/path/to/Carla/source/frontend:/path/to/Carla/source \
