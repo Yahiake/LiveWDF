@@ -178,8 +178,7 @@ public:
         return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
     }
     bool hasPackedDrivePlan() const noexcept {
-        return packedDrive_.transfer == linearRebuilds() &&
-               packedDrive_.controls == liveControlRevision() && !hasAdjustedLiveTransfer();
+        return packedDrive_.revision == linearRebuilds();
     }
     bool hasAffineRootPlan() const noexcept {
         return circuitPlanPrepared() && !hasAdjustedLiveTransfer() && !affineRoot_.rows.empty();
@@ -344,8 +343,9 @@ protected:
     bool tryCompiledRoot(double tolerance) noexcept;
     bool applyCompiledDrive(const double* sources, size_t count) noexcept;
     struct PackedDrive {
-        long long transfer = -1, controls = -1;
-        std::vector<detail::TransferPanel> panels;
+        long long revision = -1;
+        std::vector<detail::DrivePanel> panels;
+        std::vector<int> nodes;
         std::vector<double> values;
         std::vector<SparseRowN> remaining;
     };

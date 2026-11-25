@@ -5,6 +5,7 @@
 namespace wdf::detail {
 
 inline constexpr int transferPanelWidth = 8;
+inline constexpr int smallDrivePanelWidth = transferPanelWidth / 2;
 
 struct TransferPanel {
     int node;
@@ -13,8 +14,16 @@ struct TransferPanel {
     std::size_t valueStart;
 };
 
-void assignTransferPanels(const TransferPanel*, std::size_t, const double*, const int*,
-                          const double*, double*) noexcept;
+struct DrivePanel {
+    std::size_t rowStart;
+    std::size_t valueStart;
+    int colStart;
+    int colCount;
+    int width;
+};
+
+void assignDrivePanels(const DrivePanel*, std::size_t, const int*,
+                       const double*, const int*, const double*, double*) noexcept;
 
 struct RuntimeKernels {
     bool (*solve)(double*, double*, int);

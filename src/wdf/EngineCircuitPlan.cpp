@@ -1,6 +1,9 @@
 #include "wdf/EngineStep.h"
 
+#include <algorithm>
 #include <array>
+#include <map>
+#include <span>
 
 namespace wdf {
 namespace {
@@ -77,24 +80,45 @@ bool uniqueClippedRoot(const std::vector<double>& full, std::vector<double>& bas
 
 void EngineStep::preparePackedDrive() {
     packedDrive_ = {};
-    if (networkFactors_.active || hasAdjustedLiveTransfer() || hasLinearDrivePlan())
+    if (networkFactors_.active)
         return;
+
+    using Columns = std::span<const int>;
+    const auto less = [](Columns a, Columns b) {
+        return std::ranges::lexicographical_compare(a, b);
+    };
+    std::map<Columns, std::vector<SparseRowN>, decltype(less)> groups(less);
     auto& plan = packedDrive_;
-    for (size_t i = 0; i < xeRowsN_.size();) {
-        const auto& row = xeRowsN_[i];
-        if (packTransferPanel(row.node, xeRowOffsets_, xeCols_, xeVals_, plan.panels, plan.values)) {
-            i += transferPanelWidth;
-        } else {
+    for (const auto& row : xeRowsN_) {
+        const int degree = row.end - row.start;
+        if (degree >= detail::smallDrivePanelWidth)
+            groups[Columns(xeCols_).subspan(row.start, degree)].push_back(row);
+        else
             plan.remaining.push_back(row);
-            ++i;
+    }
+    // Share the input loads across equal sparse rows without padding with zeros.
+    for (const auto& [columns, rows] : groups) {
+        size_t first = 0;
+        while (rows.size() - first >= detail::smallDrivePanelWidth) {
+            const int width = rows.size() - first >= transferPanelWidth
+                ? transferPanelWidth : detail::smallDrivePanelWidth;
+            plan.panels.push_back({plan.nodes.size(), plan.values.size(), rows[first].start,
+                                   static_cast<int>(columns.size()), width});
+            for (int lane = 0; lane < width; ++lane)
+                plan.nodes.push_back(rows[first + lane].node);
+            for (size_t column = 0; column < columns.size(); ++column)
+                for (int lane = 0; lane < width; ++lane)
+                    plan.values.push_back(xeVals_[rows[first + lane].start + column]);
+            first += width;
         }
+        plan.remaining.insert(plan.remaining.end(), rows.begin() + first, rows.end());
     }
     if (plan.panels.empty()) {
         plan = {};
         return;
     }
-    plan.transfer = linearRebuilds();
-    plan.controls = liveControlRevision();
+    std::ranges::sort(plan.remaining, {}, &SparseRowN::node);
+    plan.revision = linearRebuilds();
 }
 
 void EngineStep::prepareCircuitPlan() {

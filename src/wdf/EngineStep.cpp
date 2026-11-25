@@ -164,8 +164,8 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             }
             const bool packed = loadedJunctionEnabled_ && hasPackedDrivePlan();
             if (packed)
-                detail::assignTransferPanels(packedDrive_.panels.data(), packedDrive_.panels.size(),
-                    packedDrive_.values.data(), xeCols_.data(), wData, uData);
+                detail::assignDrivePanels(packedDrive_.panels.data(), packedDrive_.panels.size(),
+                    packedDrive_.nodes.data(), packedDrive_.values.data(), xeCols_.data(), wData, uData);
             const auto& remaining = packed ? packedDrive_.remaining : xeRowsN_;
             if (!remaining.empty()) {
                 const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
@@ -182,6 +182,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     for (const auto& e : isrcRows_)
         uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
+    // Live knob changes correct the same base Xe transfer after evaluating it.
     if (adjustedTransfer)
         adjustableTransfer_.correctOpenCircuit(eoffData, uData);
 

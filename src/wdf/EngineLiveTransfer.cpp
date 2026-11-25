@@ -147,10 +147,8 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
-            if (!packedDrive_.panels.empty()) {
-                packedDrive_.transfer = linearRebuilds();
-                packedDrive_.controls = liveControlRevision();
-            }
+            if (!packedDrive_.panels.empty())
+                packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);
             adoptBipolarPreview(preparedEngine);
             swapLoadedJunctionPreview(preparedEngine);

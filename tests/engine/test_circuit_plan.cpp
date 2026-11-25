@@ -6,16 +6,26 @@
 
 #include "wdf/Engine.h"
 
-TEST_CASE("Packed Preview drive follows the sparse drive through a factory EQ knob turn",
+TEST_CASE("Packed Preview drive follows the sparse drive through factory knob turns",
           "[engine][circuit-plan][packed-drive]") {
     struct Engine : wdf::Engine {
         using wdf::Engine::Engine;
         void disablePackedDrive() { packedDrive_ = {}; }
         void useNodeTransfer() { affineNodes_ = {}; }
+        bool hasScatteredShortPanel() const {
+            return std::ranges::any_of(packedDrive_.panels, [&](const auto& panel) {
+                const auto* nodes = packedDrive_.nodes.data() + panel.rowStart;
+                return panel.width == wdf::detail::smallDrivePanelWidth &&
+                       nodes[panel.width - 1] != nodes[0] + panel.width - 1;
+            });
+        }
     };
+    const bool scattered = GENERATE(false, true);
+    const auto file = scattered ? "schematics/amps/EVH 5150 III 100S Stealth - Channel 3 (Preamp only).livewdf"
+                                : "schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf";
     wdf::LiveWDFDocument document;
     std::string error;
-    REQUIRE(document.loadFromFile("schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf", error));
+    REQUIRE(document.loadFromFile(file, error));
     const auto circuit = wdf::circuitWithPortImpedances(document);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     REQUIRE(source != circuit.src.end());
@@ -29,23 +39,29 @@ TEST_CASE("Packed Preview drive follows the sparse drive through a factory EQ kn
     preview.useCircuitPlan(true);
     preview.useNodeTransfer();
     REQUIRE(preview.hasPackedDrivePlan());
+    if (scattered)
+        REQUIRE(preview.hasScatteredShortPanel());
     REQUIRE_FALSE(preview.hasLinearDrivePlan());
     Engine reference = preview;
     reference.disablePackedDrive();
     auto sources = preview.dcValues();
 
     wdf::Engine::LiveTransferSetup stale(circuit);
-    REQUIRE(preview.captureLiveTransferSetup(stale, true));
-    stale.build(input, false);
-    stale.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
     for (int sample = 0; sample < 256; ++sample) {
         CAPTURE(sample);
         if (sample >= 128 && sample % 8 == 0) {
             const std::vector<std::pair<int, double>> knob{{0, .35 + .25 * std::abs(std::sin(.05 * sample))}};
             REQUIRE(preview.setLiveControls(knob, {}));
             REQUIRE(reference.setLiveControls(knob, {}));
-            REQUIRE_FALSE(preview.hasPackedDrivePlan());
-            REQUIRE_FALSE(preview.canInstallLiveTransferSetup(stale));
+            REQUIRE(preview.hasAdjustedLiveTransfer());
+            REQUIRE(preview.hasPackedDrivePlan());
+            if (sample == 128) {
+                REQUIRE(preview.captureLiveTransferSetup(stale, false));
+                stale.build(input, false);
+                REQUIRE(preview.canInstallLiveTransferSetup(stale));
+            } else {
+                REQUIRE_FALSE(preview.canInstallLiveTransferSetup(stale));
+            }
         }
         sources[input] = document.previewPeakVolts() * .4 * std::sin(.13 * sample);
         REQUIRE(preview.step(sources, 60, wdf::Engine::kFastLiveTolerance) ==
@@ -70,6 +86,8 @@ TEST_CASE("Packed Preview drive follows the sparse drive through a factory EQ kn
                 reference.step(sources, 60, wdf::Engine::kFastLiveTolerance));
         REQUIRE_FALSE(preview.lastStateRejected());
     }
+    REQUIRE(preview.setPotPosition(0, .8));
+    REQUIRE_FALSE(preview.hasPackedDrivePlan());
 }
 
 TEST_CASE("Compiled RLC drive preserves reactive history, sources and transfer edits", "[engine][circuit-plan]") {
