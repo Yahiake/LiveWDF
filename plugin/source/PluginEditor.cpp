@@ -158,18 +158,22 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
 
 #if JUCE_ANDROID
     mobileControlsViewport_.setViewedComponent(&mobileControls_, false);
-    mobileControlsViewport_.setScrollBarsShown(false, true);
-    mobileControlsViewport_.setScrollBarThickness(14);
-    mobileControls_.addAndMakeVisible(inTrimKnob_);
-    mobileControls_.addAndMakeVisible(mixKnob_);
-    mobileControls_.addAndMakeVisible(outMasterKnob_);
+    mobileControlsViewport_.setScrollBarsShown(true, false);
+    mobileControlsViewport_.setScrollBarThickness(10);
+    mobileControlsViewport_.setViewportIgnoreDragFlag(true);
+    for (auto* knob : {&inTrimKnob_, &mixKnob_, &outMasterKnob_}) {
+        knob->setViewportIgnoreDragFlag(true);
+        mobileControls_.addAndMakeVisible(*knob);
+    }
     addAndMakeVisible(mobileControlsViewport_);
     for (auto* control : {static_cast<juce::Component*>(&reportLatencyBtn_),
                           static_cast<juce::Component*>(&accurateExportBtn_),
                           static_cast<juce::Component*>(&oversampleExportBtn_),
                           static_cast<juce::Component*>(&reloadBtn_),
                           static_cast<juce::Component*>(&aboutBtn_),
-                          static_cast<juce::Component*>(&titleLabel_)})
+                          static_cast<juce::Component*>(&titleLabel_),
+                          static_cast<juce::Component*>(&schematicCanvas_),
+                          static_cast<juce::Component*>(&oscilloscope_)})
         control->setVisible(false);
 #endif
 
@@ -245,6 +249,7 @@ void LiveWDFPluginEditor::rebuildDynamicControls() {
                                                          knob->slider());
 
 #if JUCE_ANDROID
+        knob->setViewportIgnoreDragFlag(true);
         mobileControls_.addAndMakeVisible(*knob);
 #else
         addAndMakeVisible(*knob);
@@ -484,6 +489,7 @@ void LiveWDFPluginEditor::timerCallback() {
         stereoBtn_.setButtonText(on ? "STEREO" : "MONO");
     }
 
+    #if !JUCE_ANDROID
     // 1. Pass live probe voltages to the shared editor canvas
     schematicCanvas_.setNodeVoltages(processor_.getLiveProbeVoltages());
 
@@ -493,6 +499,7 @@ void LiveWDFPluginEditor::timerCallback() {
     // 3. The knobs and switches are APVTS parameters, not edits to the loaded
     //    document. Overlay them on the canvas so the drawing follows the sound.
     syncSchematicLiveState();
+    #endif
 
     // 4. The Reload button follows whether there is a file to reload. A circuit
     //    restored from host state has none, so the button is dead -- and says
@@ -656,29 +663,37 @@ void LiveWDFPluginEditor::resizedMobile() {
     oversamplingCombo_.setBounds(options.removeFromLeft(options.getWidth() * 3 / 5).reduced(3, 2));
     stereoBtn_.setBounds(options.reduced(3, 2));
 
-    const int scopeHeight = juce::jlimit(0, 80, bounds.getHeight() - 210);
-    oscilloscope_.setBounds(bounds.removeFromBottom(scopeHeight));
+    mobileControlsViewport_.setBounds(bounds);
+    const int width = juce::jmax(0, bounds.getWidth() - mobileControlsViewport_.getScrollBarThickness());
+    const int knobColumns = juce::jmax(1, width / 84);
+    const int switchColumns = juce::jmax(1, width / 105);
+    const int knobCount = static_cast<int>(dynamicPotKnobs_.size()) + 3;
+    const int switchCount = static_cast<int>(dynamicSwitchButtons_.size());
+    constexpr int knobHeight = 92;
+    constexpr int switchHeight = 40;
+    const int switchesHeight = ((switchCount + switchColumns - 1) / switchColumns) * switchHeight;
+    const int knobsHeight = ((knobCount + knobColumns - 1) / knobColumns) * knobHeight;
+    mobileControls_.setSize(width, switchesHeight + knobsHeight);
 
-    constexpr int knobWidth = 76;
-    const auto knobCount = static_cast<int>(dynamicPotKnobs_.size()) + 3;
-    const auto switchCount = static_cast<int>(dynamicSwitchButtons_.size());
-    const int switchesHeight = switchCount == 0 ? 0 : 36;
-    const int controlsWidth = juce::jmax(bounds.getWidth(), knobWidth * knobCount, 105 * switchCount);
-    mobileControlsViewport_.setBounds(bounds.removeFromBottom(105 + switchesHeight));
-    mobileControls_.setSize(controlsWidth, 90 + switchesHeight);
+    const auto cell = [width](int index, int columns, int height) {
+        const int column = index % columns;
+        const int left = width * column / columns;
+        const int right = width * (column + 1) / columns;
+        return juce::Rectangle<int>{left, (index / columns) * height, right - left, height};
+    };
+    for (int index = 0; index < switchCount; ++index)
+        dynamicSwitchButtons_[static_cast<size_t>(index)]->setBounds(
+            cell(index, switchColumns, switchHeight).reduced(3, 2));
 
-    auto controls = mobileControls_.getLocalBounds();
-    auto switches = controls.removeFromTop(switchesHeight);
-    for (auto& button : dynamicSwitchButtons_)
-        button->setBounds(switches.removeFromLeft(105).reduced(3, 2));
-    inTrimKnob_.setBounds(controls.removeFromLeft(knobWidth));
+    int knobIndex = 0;
+    const auto placeKnob = [&](VintageKnob& knob) {
+        knob.setBounds(cell(knobIndex++, knobColumns, knobHeight).translated(0, switchesHeight));
+    };
+    placeKnob(inTrimKnob_);
     for (auto& knob : dynamicPotKnobs_)
-        knob->setBounds(controls.removeFromLeft(knobWidth));
-    mixKnob_.setBounds(controls.removeFromLeft(knobWidth));
-    outMasterKnob_.setBounds(controls.removeFromLeft(knobWidth));
-
-    schematicCanvas_.setBounds(bounds.reduced(2));
-    schematicCanvas_.frameAll();
+        placeKnob(*knob);
+    placeKnob(mixKnob_);
+    placeKnob(outMasterKnob_);
 }
 #endif
 
