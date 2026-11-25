@@ -75,6 +75,28 @@ bool uniqueClippedRoot(const std::vector<double>& full, std::vector<double>& bas
 
 }  // namespace
 
+void EngineStep::preparePackedDrive() {
+    packedDrive_ = {};
+    if (networkFactors_.active || hasAdjustedLiveTransfer() || hasLinearDrivePlan())
+        return;
+    auto& plan = packedDrive_;
+    for (size_t i = 0; i < xeRowsN_.size();) {
+        const auto& row = xeRowsN_[i];
+        if (packTransferPanel(row.node, xeRowOffsets_, xeCols_, xeVals_, plan.panels, plan.values)) {
+            i += transferPanelWidth;
+        } else {
+            plan.remaining.push_back(row);
+            ++i;
+        }
+    }
+    if (plan.panels.empty()) {
+        plan = {};
+        return;
+    }
+    plan.transfer = linearRebuilds();
+    plan.controls = liveControlRevision();
+}
+
 void EngineStep::prepareCircuitPlan() {
     circuitPlanRevision_ = linearRebuilds();
     circuitPlanCooldown_ = 0;

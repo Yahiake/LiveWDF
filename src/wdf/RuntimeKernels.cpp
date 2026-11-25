@@ -13,25 +13,30 @@
 namespace wdf::detail {
 namespace {
 
-void applyRootPanels(const RootPanel* panels, std::size_t count, const double* values,
-                     const int* columns, const double* currents, double* nodes) {
+template <bool Subtract>
+void applyTransferPanels(const TransferPanel* panels, std::size_t count, const double* values,
+                         const int* columns, const double* input, double* nodes) noexcept {
     for (std::size_t i = 0; i < count; ++i) {
         const auto& panel = panels[i];
-        double sums[rootPanelWidth]{};
+        double sums[transferPanelWidth]{};
         const double* coeff = values + panel.valueStart;
         for (int j = 0; j < panel.colCount; ++j) {
-            const double current = currents[columns[panel.colStart + j]];
-            for (int q = 0; q < rootPanelWidth; ++q)
-                sums[q] += coeff[q] * current;
-            coeff += rootPanelWidth;
+            const double value = input[columns[panel.colStart + j]];
+            for (int q = 0; q < transferPanelWidth; ++q)
+                sums[q] += coeff[q] * value;
+            coeff += transferPanelWidth;
         }
-        for (int q = 0; q < rootPanelWidth; ++q)
-            nodes[panel.node + q] -= sums[q];
+        for (int q = 0; q < transferPanelWidth; ++q) {
+            if constexpr (Subtract)
+                nodes[panel.node + q] -= sums[q];
+            else
+                nodes[panel.node + q] = sums[q];
+        }
     }
 }
 
 constexpr RuntimeKernels baselineKernels{
-    dense::solveData, dense::factorLUData, dense::solveLUData, applyRootPanels
+    dense::solveData, dense::factorLUData, dense::solveLUData, applyTransferPanels<true>
 };
 
 #if defined(LIVEWDF_HAS_AVX2_KERNELS)
@@ -71,6 +76,12 @@ bool supportsAvx2Fma() noexcept {
 #endif
 
 }  // namespace
+
+void assignTransferPanels(const TransferPanel* panels, std::size_t count, const double* values,
+                          const int* columns, const double* input, double* nodes) noexcept {
+    // Use the same baseline target and per-node accumulation order as the sparse drive.
+    applyTransferPanels<false>(panels, count, values, columns, input, nodes);
+}
 
 const RuntimeKernels& runtimeKernels() noexcept {
 #if defined(LIVEWDF_HAS_AVX2_KERNELS)

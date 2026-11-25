@@ -770,8 +770,8 @@ protected:
         int start;
         int end;
     };
-    static constexpr int rootPanelWidth = detail::rootPanelWidth;
-    std::vector<detail::RootPanel> rootPanels_;
+    static constexpr int transferPanelWidth = detail::transferPanelWidth;
+    std::vector<detail::TransferPanel> rootPanels_;
     std::vector<double> rootPanelValues_;
     std::vector<SparseRow1> xrRows1_;
     std::vector<SparseRow2> xrRows2_;
@@ -780,6 +780,25 @@ protected:
     std::vector<SparseRow1> xeRows1_;
     std::vector<SparseRow2> xeRows2_;
     std::vector<SparseRowN> xeRowsN_;
+
+    bool packTransferPanel(int node, const std::vector<int>& offsets,
+                           const std::vector<int>& columns, const std::vector<double>& values,
+                           std::vector<detail::TransferPanel>& panels, std::vector<double>& packed) const {
+        const int start = offsets[node], end = offsets[node + 1], degree = end - start;
+        if (degree < 4 || node + transferPanelWidth > N_)
+            return false;
+        for (int row = node + 1; row < node + transferPanelWidth; ++row) {
+            const int first = offsets[row];
+            if (offsets[row + 1] - first != degree ||
+                !std::equal(columns.begin() + start, columns.begin() + end, columns.begin() + first))
+                return false;
+        }
+        panels.push_back({node, start, degree, packed.size()});
+        for (int j = 0; j < degree; ++j)
+            for (int row = node; row < node + transferPanelWidth; ++row)
+                packed.push_back(values[offsets[row] + j]);
+        return true;
+    }
 
     struct IsrcRow {
         int node;
@@ -821,25 +840,9 @@ protected:
                 const int start = xrRowOffsets_[static_cast<size_t>(n)];
                 const int end = xrRowOffsets_[static_cast<size_t>(n + 1)];
                 const int deg = end - start;
-                // Adjacent nodes often depend on exactly the same root currents.
-                // Store each coefficient column contiguously across those nodes
-                // so the audio loop can accumulate independent voltages in SIMD.
-                if (deg >= 4 && n + rootPanelWidth <= N_) {
-                    bool shared = true;
-                    for (int q = 1; q < rootPanelWidth && shared; ++q) {
-                        const int first = xrRowOffsets_[n + q];
-                        shared = xrRowOffsets_[n + q + 1] - first == deg &&
-                                 std::equal(xrCols_.begin() + start, xrCols_.begin() + end,
-                                            xrCols_.begin() + first);
-                    }
-                    if (shared) {
-                        rootPanels_.push_back({n, start, deg, rootPanelValues_.size()});
-                        for (int j = 0; j < deg; ++j)
-                            for (int q = 0; q < rootPanelWidth; ++q)
-                                rootPanelValues_.push_back(xrVals_[xrRowOffsets_[n + q] + j]);
-                        n += rootPanelWidth - 1;
-                        continue;
-                    }
+                if (packTransferPanel(n, xrRowOffsets_, xrCols_, xrVals_, rootPanels_, rootPanelValues_)) {
+                    n += transferPanelWidth - 1;
+                    continue;
                 }
                 if (deg == 1) {
                     xrRows1_.push_back({n, xrCols_[static_cast<size_t>(start)], xrVals_[static_cast<size_t>(start)]});

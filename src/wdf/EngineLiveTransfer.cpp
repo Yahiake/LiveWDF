@@ -84,6 +84,7 @@ bool Engine::LiveTransferSetup::prepareCompiledPreviewPair(LiveTransferSetup& pe
         sameValues(circuit_.varRes, peer.circuit_.varRes, &VarRes::position)) {
         peer.prepared_->reset();
         peer.prepared_->copyBipolarPreviewFrom(*prepared_);
+        peer.prepared_->preparePackedDrive();
         peer.compiledPreview_ = true;
         return true;
     }
@@ -93,6 +94,7 @@ bool Engine::LiveTransferSetup::prepareCompiledPreviewPair(LiveTransferSetup& pe
 
 void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
                                     double requestedPeak, bool allowPad) {
+    preparePackedDrive();
     if (prepareAffineNodePreview(inputSource, outputNode))
         return;
     if (allowOutputOnly && prepareBipolarPreview(inputSource, outputNode, requestedPeak, allowPad))
@@ -144,6 +146,11 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
         if (setup.compiledPreview_) {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
+            std::swap(packedDrive_, preparedEngine.packedDrive_);
+            if (!packedDrive_.panels.empty()) {
+                packedDrive_.transfer = linearRebuilds();
+                packedDrive_.controls = liveControlRevision();
+            }
             swapAffineNodePreview(preparedEngine);
             adoptBipolarPreview(preparedEngine);
             swapLoadedJunctionPreview(preparedEngine);

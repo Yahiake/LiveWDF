@@ -1,9 +1,76 @@
 #include <catch2.hpp>
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
+#include "format/PortImpedance.h"
 #include <cmath>
 
 #include "wdf/Engine.h"
+
+TEST_CASE("Packed Preview drive follows the sparse drive through a factory EQ knob turn",
+          "[engine][circuit-plan][packed-drive]") {
+    struct Engine : wdf::Engine {
+        using wdf::Engine::Engine;
+        void disablePackedDrive() { packedDrive_ = {}; }
+        void useNodeTransfer() { affineNodes_ = {}; }
+    };
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const size_t input = source - circuit.src.begin();
+    Engine preview(circuit, 48000.);
+    const int output = preview.nodeIndex(document.outputNet());
+    preview.prepareLiveControls();
+    preview.prepareCircuitPlan();
+    preview.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
+    preview.useLoadedJunctionPreview(true);
+    preview.useCircuitPlan(true);
+    preview.useNodeTransfer();
+    REQUIRE(preview.hasPackedDrivePlan());
+    REQUIRE_FALSE(preview.hasLinearDrivePlan());
+    Engine reference = preview;
+    reference.disablePackedDrive();
+    auto sources = preview.dcValues();
+
+    wdf::Engine::LiveTransferSetup stale(circuit);
+    REQUIRE(preview.captureLiveTransferSetup(stale, true));
+    stale.build(input, false);
+    stale.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
+    for (int sample = 0; sample < 256; ++sample) {
+        CAPTURE(sample);
+        if (sample >= 128 && sample % 8 == 0) {
+            const std::vector<std::pair<int, double>> knob{{0, .35 + .25 * std::abs(std::sin(.05 * sample))}};
+            REQUIRE(preview.setLiveControls(knob, {}));
+            REQUIRE(reference.setLiveControls(knob, {}));
+            REQUIRE_FALSE(preview.hasPackedDrivePlan());
+            REQUIRE_FALSE(preview.canInstallLiveTransferSetup(stale));
+        }
+        sources[input] = document.previewPeakVolts() * .4 * std::sin(.13 * sample);
+        REQUIRE(preview.step(sources, 60, wdf::Engine::kFastLiveTolerance) ==
+                reference.step(sources, 60, wdf::Engine::kFastLiveTolerance));
+        REQUIRE_FALSE(preview.lastStateRejected());
+    }
+
+    wdf::Engine::LiveTransferSetup settled(circuit);
+    REQUIRE(preview.captureLiveTransferSetup(settled, false));
+    settled.build(input, false);
+    settled.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
+    const auto waves = preview.capacitorStates();
+    REQUIRE(preview.installLiveTransferSetup(settled));
+    REQUIRE(preview.capacitorStates() == waves);
+    REQUIRE(preview.hasPackedDrivePlan());
+    preview.useNodeTransfer();
+    reference = preview;
+    reference.disablePackedDrive();
+    for (int sample = 0; sample < 128; ++sample) {
+        sources[input] = document.previewPeakVolts() * .4 * std::sin(.17 * sample);
+        REQUIRE(preview.step(sources, 60, wdf::Engine::kFastLiveTolerance) ==
+                reference.step(sources, 60, wdf::Engine::kFastLiveTolerance));
+        REQUIRE_FALSE(preview.lastStateRejected());
+    }
+}
 
 TEST_CASE("Compiled RLC drive preserves reactive history, sources and transfer edits", "[engine][circuit-plan]") {
     wdf::Circuit c;

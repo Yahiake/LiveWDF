@@ -177,6 +177,10 @@ public:
     bool hasLinearDrivePlan() const noexcept {
         return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
     }
+    bool hasPackedDrivePlan() const noexcept {
+        return packedDrive_.transfer == linearRebuilds() &&
+               packedDrive_.controls == liveControlRevision() && !hasAdjustedLiveTransfer();
+    }
     bool hasAffineRootPlan() const noexcept {
         return circuitPlanPrepared() && !hasAdjustedLiveTransfer() && !affineRoot_.rows.empty();
     }
@@ -339,6 +343,14 @@ protected:
     bool factorCircuitTangent(const std::vector<double>& jacobian) noexcept;
     bool tryCompiledRoot(double tolerance) noexcept;
     bool applyCompiledDrive(const double* sources, size_t count) noexcept;
+    struct PackedDrive {
+        long long transfer = -1, controls = -1;
+        std::vector<detail::TransferPanel> panels;
+        std::vector<double> values;
+        std::vector<SparseRowN> remaining;
+    };
+    PackedDrive packedDrive_;
+    void preparePackedDrive();
     std::vector<double> driveCoefficients_, driveInputs_, rootFactors_, circuitResidualColumns_;
     std::vector<int> rootPivots_;
     long long circuitPlanRevision_ = -1, circuitPlanAttempts_ = 0, circuitPlanHits_ = 0;
