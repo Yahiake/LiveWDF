@@ -12,9 +12,7 @@
 //
 // `Engine` is the single type a caller uses. The levels below it are an
 // implementation detail of this file's organization, not a second API: they are
-// public bases so every method above stays reachable on an `Engine`, and every
-// level owns no state of its own but reaches the one that does through the
-// protected members in `EngineCore`.
+// public bases so their methods stay reachable on an `Engine`.
 //
 // The per-sample math, and why each piece is where it is, is documented at the
 // top of `EngineCore.h`; the derivations are in `docs/PERFORMANCE.md`.

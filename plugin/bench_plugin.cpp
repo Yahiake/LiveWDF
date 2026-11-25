@@ -283,7 +283,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     DeadlineMisses missed;
     std::vector<double> wall, cpu;
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
-    for (int start = 0; start + blockSize <= frames; start += blockSize) {
+    for (int start = 0; start <= frames - blockSize; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
         const auto cost = measureBlock(processor, buffer, midi);

@@ -37,11 +37,6 @@ double dot(const double* row, const double* data, int n) {
     return value;
 }
 
-struct Tabulation {
-    int bjt = -1;
-    bool forward = false;
-};
-
 } // namespace
 
 bool EngineStep::hasLoadedJunctionPreview() const noexcept {
@@ -93,7 +88,6 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
                                          const std::vector<bool>& bufferTransistors,
                                          bool omitReverse, bool& negativeReverse, std::span<const std::uint8_t> retained) {
     Plan p;
-    std::vector<Tabulation> recipe;
     p.impedance = Z_;
     p.constant.assign(K_, 0.0);
     std::vector<bool> used(nD_, false);
@@ -131,13 +125,11 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
                 }
             }
             p.injection.push_back({r, j, .001});
-            recipe.emplace_back();
         } else if (d.kind == RootKind::ControlledRes && circuit_.ctrlRes[ci].photo) {
             p.laws.emplace_back();
             p.laws.back().sense = {r, -1, 1.0};
             p.laws.back().photo = ci;
             p.injection.push_back({r, j, .001}); // q in mA, i in A
-            recipe.emplace_back();
         } else if (d.kind == RootKind::Bjt) {
             const auto& b = bjts_[ci];
             if (b.hasLowCurrentCorrections() || b.Ikf != 0.0)
@@ -182,7 +174,6 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
                 // Emitter current is diagnostic. The CE and BE ports already
                 // return it to the emitter in the network's active columns.
                 p.injection.push_back({r + 2, j + junction, -ic - ib});
-                recipe.push_back({ci, forward});
             }
         } else if (d.kind == RootKind::OpAmp) {
             const auto& amp = opAmps_[ci];
@@ -205,7 +196,6 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
             law.inversePole = 1.0 / (1.0 + a);
             p.linear.push_back({r, r, g * amp.outputVoltageWeight()});
             p.injection.push_back({r, j, -g});
-            recipe.emplace_back();
         } else if (d.kind == RootKind::Jfet) {
             const auto e = comp_.jfet[ci].model.evaluate(vv_[r + 1], vv_[r]);
             if (!e.valid) return false;
@@ -214,8 +204,7 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
             p.laws.back().sense = {r, -1, 1.0};
             p.laws.back().fet = static_cast<int>(p.fets.size());
             p.injection.push_back({r, j, .001});
-            recipe.emplace_back();
-            p.fets.push_back({ci, r, e.did_ds, e.did_gs, c, 0.0});
+            p.fets.push_back({ci, r, e.did_ds, e.did_gs, c});
             p.linear.push_back({r, r, e.did_ds});
             p.linear.push_back({r, r + 1, e.did_gs});
             p.constant[r] = c;
@@ -313,8 +302,8 @@ bool EngineStep::buildLoadedJunctionPlan(const std::vector<bool>& linearAmps,
                     i -= reverse;
                 }
             } else {
-                const auto& b = bjts_[recipe[j].bjt];
-                const double vt = recipe[j].forward ? b.nfVt : b.nrVt;
+                const auto& b = bjts_[law.bjt];
+                const double vt = law.forward ? b.nfVt : b.nrVt;
                 i = b.Is * std::expm1(std::min(kBJtMaxExpArg, v / vt));
             }
             i *= 1000.0;

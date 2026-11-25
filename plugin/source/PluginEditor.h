@@ -97,8 +97,7 @@ private:
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
 
-    // Dynamic controls include external source/load knobs on circuits that expose them.
-    // Circuit controls have one knob per pot/rheostat group and one button
+    // Dynamic circuit controls: one knob per pot/rheostat group and one button
     // per SPDT group. Both are grouped by label, so a ganged pair takes one
     // place in the strip rather than two. The pot ceiling is the processor's,
     // since it owns the `pot_*` parameters; asking for more than it has is a
@@ -109,7 +108,7 @@ private:
     // cannot hold every pot the strip wraps onto another row rather than
     // squeezing them (an amp with a graphical equalizer has twelve groups).
     static constexpr int kMinDynamicKnobWidth = 78;
-    std::vector<std::unique_ptr<VintageKnob>> dynamicKnobs_;
+    std::vector<std::unique_ptr<VintageKnob>> dynamicPotKnobs_;
     std::vector<std::unique_ptr<juce::TextButton>> dynamicSwitchButtons_;
     std::vector<juce::String> dynamicSwitchNames_;
 
@@ -131,15 +130,11 @@ private:
     std::unique_ptr<juce::ParameterAttachment> compiledPreviewAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
-    std::vector<std::unique_ptr<SliderAttachment>> dynamicKnobAttachments_;
+    std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
-    juce::Component::SafePointer<editor::PresetLibraryPanel> factoryPanel_;
-    bool showPreviewPresets_ = false;
     void refreshSolveQuality();
-    void refreshFactoryVisibility();
-    bool loadFactoryPreset(const juce::File& file);
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 

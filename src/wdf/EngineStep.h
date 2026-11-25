@@ -2,16 +2,8 @@
 
 #include "wdf/LoadedJunctionPlan.h"
 
-// Level 4 of the engine: one sample.
-//
-// `reset()` seeds the reactive states from the DC operating point, and `step()`
-// advances exactly one sample. `step()` is written once against both root solvers:
-// it builds the waves and the node voltages, hands the root currents to whichever
-// solve is active (`EngineSolve::solveRootsNewton` or the exact
-// `solveRootGroups`), then reconstructs the nodes and stores the new states.
-// Neither path is special-cased anywhere else.
-//
-// Allocation-free: every buffer it touches is sized in `EngineCore`.
+// Reset seeds the reactive states from the DC operating point. Step advances
+// one sample using the prepared root solver and its fallback.
 
 #include "wdf/EngineCompile.h"
 
@@ -168,9 +160,7 @@ public:
     static constexpr double kDefaultTolerance = 1e-9;
     static constexpr double kFastLiveTolerance = 1e-7;
 
-    /// Compile at the current operating point outside the audio callback.
-    // Prepare off the audio thread. The optional preview changes only the nonlinear
-    // root. Capacitor, inductor and amplifier histories still advance normally.
+    /// Prepare the nonlinear root preview at the current operating point off the audio thread.
     bool prepareLoadedJunctionPreview(size_t inputSource = size_t(-1), bool screenBenefit = true);
     void useLoadedJunctionPreview(bool enabled) noexcept {
         if (loadedJunctionEnabled_ != enabled) loadedJunction_.seed = true;

@@ -81,7 +81,7 @@ git submodule update --init modules/JUCE
 ```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF
 
-cmake --build build/core --config Release
+cmake --build build/core --config Release --target livewdf livewdf_tests
 
 ctest --test-dir build/core -C Release --output-on-failure
 ```
@@ -91,24 +91,12 @@ ctest --test-dir build/core -C Release --output-on-failure
 ```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF -DCMAKE_BUILD_TYPE=Release
 
-cmake --build build/core
+cmake --build build/core --target livewdf livewdf_tests
 
 ctest --test-dir build/core --output-on-failure
 ```
 
 The first build may take several minutes. Some tests use ngspice as an external reference simulator. They are skipped automatically when ngspice is not installed.
-
-### LiveWDF VST3 in Carla
-
-Carla 2.5.10 can report fresh LiveWDF VST3 knobs at zero. The knobs initialize correctly with [Carla's 2.6 development backend](https://github.com/falkTX/Carla/tree/97a9e0740baf6df2df942495c02532a624c44682).
-
-Run [the Linux smoke test](tests/smoke/carla_vst3.py) with Carla's dummy audio driver.
-
-```bash
-PYTHONPATH=/path/to/Carla/source/frontend:/path/to/Carla/source \
-    python3 tests/smoke/carla_vst3.py \
-    /path/to/libcarla_standalone2.so /path/to/LiveWDF.vst3
-```
 
 ## Contributing
 

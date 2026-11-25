@@ -570,16 +570,19 @@ void Engine::qualifyBipolarPreviewRange(size_t source, int output, double peak, 
     Engine fast(circuit_, fs_, gridCurrent_);
     fast.prepareCircuitPlan();
     fast.useCircuitPlan(true);
-    fast.useMixedAffineReduction(true);
     constexpr int block = 64;
     const int timedStart = 6*w, timedEnd = 9*w;
+    const auto stepFast = [&](int i) {
+        sources[source] = plan.biasInput + stimulus.input[i];
+        fast.step(sources, kDefaultMaxIterations, kFastLiveTolerance);
+    };
+    for (int i = 0; i < timedStart; ++i)
+        stepFast(i);
     Values physicalTimes;
     for (int begin = timedStart; begin + block <= timedEnd; begin += block) {
         const auto start = Clock::now();
-        for (int i = begin; i < begin + block; ++i) {
-            sources[source] = plan.biasInput + stimulus.input[i];
-            fast.step(sources, kDefaultMaxIterations, kFastLiveTolerance);
-        }
+        for (int i = begin; i < begin + block; ++i)
+            stepFast(i);
         physicalTimes.push_back(std::chrono::duration<double>(Clock::now() - start).count());
     }
     std::sort(physicalTimes.begin(), physicalTimes.end());

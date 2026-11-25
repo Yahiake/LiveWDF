@@ -79,8 +79,6 @@ public:
     int mosfetCount() const { return nMosfet_; }
     int bjtCount() const { return nBjt_; }
     int opAmpCount() const { return nOpAmp_; }
-    const OpAmpModel& opAmpModel(size_t i) const { return opAmps_.at(i); }
-    double opAmpPole(size_t i) const { return opAmpVp_.at(i); }
     /// How many JFET groups have needed the independent bracketed fallback.
     long long jfetFallbackCount() const { return jfetFallbacks_; }
     /// How many MOSFET groups have needed the independent bracketed fallback.
@@ -207,7 +205,6 @@ public:
     // re-derived on a pot move; these are read-only views for oracles and tools.
     // ------------------------------------------------------------------ //
     const std::vector<std::array<int, 2>>& rootPorts() const { return net_.rp; }
-    const std::vector<double>& rootCurrents() const { return ii_; }
     const std::vector<double>& rootImpedance() const { return Z_; }
     /// The element-to-node transfer, **column-compacted**: `nLive_ <= P_` columns,
     /// row-major, column `t` belonging to element port `liveElementPorts()[t]`.

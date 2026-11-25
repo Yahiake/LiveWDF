@@ -26,7 +26,8 @@ const char* pedalEffect(std::string_view name) {
         {"Drive & Fuzz", {"Colorsound Power Boost 18V", "MXR Micro Amp",
                           "Boss BD-2 Blues Driver", "Boss SD-1 Super OverDrive", "DOD 250 Overdrive Preamp Gray",
                           "Ibanez TS_808", "Klon Centaur", "Marshall Bluesbreaker Mk I",
-                          "Nobels ODR-1 Natural Overdrive", "Boss DS-1A Distortion", "Boss HM-2 Heavy Metal",
+                          "Nobels ODR-1 Natural Overdrive", "Boss DS-1A Distortion",
+                          "Boss DS-2 Turbo Distortion", "Boss HM-2 Heavy Metal",
                           "Boss MT-2 Metal Zone", "Marshall Guv'nor", "Pro Co RAT LM308",
                           "EHX Big Muff Pi Ram's Head Violet", "Fuzz Face", "Maestro FZ-1 Fuzz-Tone 1962",
                           "Mosrite Fuzzrite Silicon", "Roger Mayer Octavia Transistor",
@@ -123,20 +124,14 @@ juce::Result FactorySchematics::ensureInstalled() {
     return ensureInstalledAt(folder());
 }
 
-std::vector<FactorySchematics::Preset> FactorySchematics::list(const juce::File& root, bool showPreviewPresets) {
+std::vector<FactorySchematics::Preset> FactorySchematics::list(const juce::File& root) {
     std::vector<Preset> files;
     if (!root.isDirectory())
         return files;
 
     juce::StringArray hiddenPaths;
-    bool showSection = false;
-    for (const auto& line : juce::StringArray::fromLines(root.getChildFile(".factory-hidden").loadFileAsString())) {
-        const auto entry = line.trim();
-        if (entry.startsWithChar('['))
-            showSection = showPreviewPresets && entry == "[compiled-preview-48k-1x]";
-        else if (!showSection && entry.isNotEmpty() && !entry.startsWithChar('#'))
-            hiddenPaths.add(entry);
-    }
+    hiddenPaths.addLines(root.getChildFile(".factory-hidden").loadFileAsString());
+    hiddenPaths.trim();
 
     for (const auto& entry :
          juce::RangedDirectoryIterator(root, true, "*.livewdf", juce::File::findFiles)) {

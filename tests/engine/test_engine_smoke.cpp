@@ -111,6 +111,8 @@ TEST_CASE("Rejected-state recovery matches a fresh DC solve across live changes"
     public:
         using Engine::Engine;
         bool prepared() const { return hasRecoveryState(); }
+        const auto& rootCurrents() const { return ii_; }
+        double opAmpPole() const { return opAmpVp_.front(); }
         void stall(bool discard) {
             consecutiveStateRejects_ = 8;
             if (discard) recovery_.valid = false;
@@ -142,7 +144,7 @@ TEST_CASE("Rejected-state recovery matches a fresh DC solve across live changes"
             REQUIRE(live.capacitorStates() == reference.capacitorStates());
             REQUIRE(live.inductorStates() == reference.inductorStates());
             REQUIRE(live.rootCurrents() == reference.rootCurrents());
-            REQUIRE(live.opAmpPole(0) == reference.opAmpPole(0));
+            REQUIRE(live.opAmpPole() == reference.opAmpPole());
         }
     };
     recover(true);

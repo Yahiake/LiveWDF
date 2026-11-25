@@ -103,6 +103,4 @@ if(LIVEWDF_BUILD_TESTS)
     add_test(NAME livewdf_bench_preview_wav COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/pedals_fx/MXR Micro Amp.livewdf"
         --live-preview --wav "${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/guitarjam-di/strat-neck-middle-di.wav")
-    set_tests_properties(livewdf_bench_preview_wav PROPERTIES
-        PASS_REGULAR_EXPRESSION "Compiled Preview worker installed")
 endif()

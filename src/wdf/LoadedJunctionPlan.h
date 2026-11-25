@@ -37,7 +37,7 @@ struct LoadedJunctionPlan {
     };
     struct FetStamp {
         int device, port;
-        double conductance, transconductance, offset, load;
+        double conductance, transconductance, offset;
     };
     struct Entry {
         int row, col;

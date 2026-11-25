@@ -148,4 +148,3 @@ target_link_libraries(livewdf_bench_parts PRIVATE livewdf_test_support)
 
 add_executable(livewdf_bench_semiconductors bench/bench_semiconductors.cpp)
 target_link_libraries(livewdf_bench_semiconductors PRIVATE livewdf_test_support)
-

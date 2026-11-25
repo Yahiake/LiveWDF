@@ -44,10 +44,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // this a cheap no-op after the first binary has done it.
     if (const auto factory = FactorySchematics::ensureInstalled(); factory.failed())
         juce::Logger::writeToLog("Factory schematics: " + factory.getErrorMessage());
-    showPreviewPresets_ = processor_.canBrowsePreviewPresets();
-    presetStepper_.setFactoryFolder(FactorySchematics::folder(), showPreviewPresets_);
+    presetStepper_.setFactoryFolder(FactorySchematics::folder());
     presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
-    presetStepper_.onPresetChosen = [this](const juce::File& file) { loadFactoryPreset(file); };
+    presetStepper_.onPresetChosen = [this](const juce::File& file) { loadCircuitFile(file); };
 
     // 2. Factory and Load File Buttons
     factoryBtn_.onClick = [this] { showFactoryBrowser(); };
@@ -271,9 +270,10 @@ void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool
         return limits.positionForOhms(value);
     };
     slider.updateText();
-    addAndMakeVisible(*knob);
-    dynamicKnobs_.push_back(std::move(knob));
-    dynamicKnobAttachments_.push_back(std::move(attachment));
+    knob->setViewportIgnoreDragFlag(inTrimKnob_.getViewportIgnoreDragFlag());
+    inTrimKnob_.getParentComponent()->addAndMakeVisible(*knob);
+    dynamicPotKnobs_.push_back(std::move(knob));
+    dynamicPotAttachments_.push_back(std::move(attachment));
 }
 
 void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc) {
@@ -287,8 +287,8 @@ void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc
     }
     // Attachments first: they hold a reference to the knob's slider, so the
     // slider must outlive the attachment, not the other way round.
-    dynamicKnobAttachments_.clear();
-    dynamicKnobs_.clear();
+    dynamicPotAttachments_.clear();
+    dynamicPotKnobs_.clear();
     dynamicSwitchButtons_.clear();
     dynamicSwitchNames_.clear();
 
@@ -309,8 +309,8 @@ void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc
                                                          knob->slider());
 
         addAndMakeVisible(*knob);
-        dynamicKnobs_.push_back(std::move(knob));
-        dynamicKnobAttachments_.push_back(std::move(attach));
+        dynamicPotKnobs_.push_back(std::move(knob));
+        dynamicPotAttachments_.push_back(std::move(attach));
     }
 
     addImpedanceKnob(doc, false);
@@ -407,33 +407,7 @@ void LiveWDFPluginEditor::refreshCircuitView(const juce::String& suffix) {
     presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
 }
 
-void LiveWDFPluginEditor::refreshFactoryVisibility() {
-    const bool visible = processor_.canBrowsePreviewPresets();
-    if (visible == showPreviewPresets_)
-        return;
-    showPreviewPresets_ = visible;
-    const auto folder = FactorySchematics::folder();
-    presetStepper_.setFactoryFolder(folder, visible);
-    if (factoryPanel_ != nullptr) {
-        const auto view = factoryPanel_->view();
-        factoryPanel_->setFactoryFolder(folder, visible);
-        factoryPanel_->setView(view);
-    }
-}
-
-bool LiveWDFPluginEditor::loadFactoryPreset(const juce::File& file) {
-    // Automation can change the mode between a UI refresh and a click.
-    if (showPreviewPresets_ != processor_.canBrowsePreviewPresets()) {
-        refreshFactoryVisibility();
-        const auto presets = FactorySchematics::list(FactorySchematics::folder(), showPreviewPresets_);
-        if (std::none_of(presets.begin(), presets.end(), [&](const auto& preset) { return preset.file == file; }))
-            return false;
-    }
-    return loadCircuitFile(file);
-}
-
 void LiveWDFPluginEditor::showFactoryBrowser() {
-    refreshFactoryVisibility();
     if (factoryBrowser_ != nullptr)
         return;
 
@@ -445,7 +419,7 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
     using Browser = editor::PresetLibraryPanel;
     auto browser = std::make_unique<Browser>(Browser::Mode::Factory);
     browser->setSize(500, juce::jmax(320, juce::jmin(480, getHeight() - 100)));
-    browser->setFactoryFolder(FactorySchematics::folder(), showPreviewPresets_);
+    browser->setFactoryFolder(FactorySchematics::folder());
     browser->setCurrentFile(processor_.getCurrentCircuitFile());
     browser->setView(factoryView_);
 
@@ -454,14 +428,13 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
                                                            factoryBtn_.getBounds(), this);
     callout.setDismissalMouseClicksAreAlwaysConsumed(true);
     factoryBrowser_ = &callout;
-    factoryPanel_ = panel;
     panel->onDismiss = [popup = factoryBrowser_] {
         if (popup != nullptr)
             popup->dismiss();
     };
     panel->onPresetChosen = [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this),
                              popup = factoryBrowser_, panel](const juce::File& file) {
-        if (safe != nullptr && panel != nullptr && safe->loadFactoryPreset(file)) {
+        if (safe != nullptr && panel != nullptr && safe->loadCircuitFile(file)) {
             safe->factoryView_ = panel->view();
             safe->presetStepper_.setBrowseOrder(panel->visibleFactoryOrder());
         }
@@ -525,7 +498,6 @@ void LiveWDFPluginEditor::timerCallback() {
         restoredDocumentRevision_ = revision;
         refreshCircuitView();
     }
-    refreshFactoryVisibility();
     // Follow the host's rate. The editor can open before prepareToPlay and a
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
@@ -640,7 +612,7 @@ void LiveWDFPluginEditor::resized() {
     oscilloscope_.setBounds(bottomScope.reduced(4));
 
     constexpr int fixedKnobWidth = 92;
-    const int count = static_cast<int>(dynamicKnobs_.size());
+    const int count = static_cast<int>(dynamicPotKnobs_.size());
     const int centreWidth = bounds.getWidth() - 24 - 3 * fixedKnobWidth;
     const int maxPerRow = std::max(1, centreWidth / kMinDynamicKnobWidth);
     const int rows = std::max(1, (count + maxPerRow - 1) / maxPerRow);
@@ -657,7 +629,7 @@ void LiveWDFPluginEditor::resized() {
     outMasterKnob_.setBounds(knobStrip.removeFromRight(fixedKnobWidth));
     mixKnob_.setBounds(knobStrip.removeFromRight(fixedKnobWidth));
 
-    if (!dynamicKnobs_.empty()) {
+    if (!dynamicPotKnobs_.empty()) {
         const int available = knobStrip.getWidth();
         const int perRow = (count + rows - 1) / rows;
         const int rowHeight = knobStrip.getHeight() / rows;
@@ -669,7 +641,7 @@ void LiveWDFPluginEditor::resized() {
             if (rows > 1)
                 slot.reduce(0, 1);
             for (int k = 0; k < inRow; ++k)
-                dynamicKnobs_[static_cast<size_t>(next + k)]->setBounds(
+                dynamicPotKnobs_[static_cast<size_t>(next + k)]->setBounds(
                     slot.removeFromLeft(potWidth).reduced(2, 0));
             next += inRow;
         }

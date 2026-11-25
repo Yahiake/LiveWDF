@@ -132,7 +132,6 @@ public:
     std::map<std::string, double> getLiveProbeVoltages() const;
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
 
-    bool canBrowsePreviewPresets() const;
     bool compiledPreviewRequested() const;
 
     /// The rate the host handed to `prepareToPlay`. This is the rate the
