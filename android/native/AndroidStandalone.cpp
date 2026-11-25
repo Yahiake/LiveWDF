@@ -42,8 +42,11 @@ public:
             processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
 
         editor.reset(processor.createEditorIfNeeded());
-        if (editor != nullptr)
-            addAndMakeVisible(*editor);
+        if (editor != nullptr) {
+            editorViewport.setViewedComponent(editor.get(), false);
+            editorViewport.setScrollBarsShown(true, false);
+            addAndMakeVisible(editorViewport);
+        }
 
         status.setText("Audio stopped. Connect headphones before monitoring.", juce::dontSendNotification);
         status.setColour(juce::Label::textColourId, juce::Colour(0xffb8c6d6));
@@ -62,9 +65,11 @@ public:
         usbBlockSize.setSelectedId(128, juce::dontSendNotification);
         usbBlockSize.setTitle("USB audio buffer");
         addAndMakeVisible(usbBlockSize);
-        usbDiagnostics.setColour(juce::Label::textColourId, juce::Colour(0xffb8c6d6));
-        usbDiagnostics.setFont(juce::FontOptions(13.0f));
-        addAndMakeVisible(usbDiagnostics);
+        for (auto* label : {&usbDiagnostics, &captureDiagnostics}) {
+            label->setColour(juce::Label::textColourId, juce::Colour(0xffb8c6d6));
+            label->setFont(juce::FontOptions(13.0f));
+            addAndMakeVisible(*label);
+        }
         testUsbOutput.onClick = [this] { testToneRequested.store(true, std::memory_order_relaxed); };
         addChildComponent(testUsbOutput);
         startTimerHz(4);
@@ -93,12 +98,19 @@ public:
         auto diagnosticsRow = area.removeFromTop(37).reduced(5, 2);
         usbBlockSize.setBounds(diagnosticsRow.removeFromLeft(132));
         usbDiagnostics.setBounds(diagnosticsRow.reduced(4, 0));
+        captureDiagnostics.setBounds(area.removeFromTop(22).reduced(7, 0));
 #else
         auto statusRow = area.removeFromTop(24);
 #endif
         status.setBounds(statusRow.reduced(7, 0));
-        if (editor != nullptr)
-            editor->setBounds(area);
+        if (editor != nullptr) {
+            constexpr int minimumEditorHeight = 440;
+            editorViewport.setBounds(area);
+            const int scrollbarWidth = area.getHeight() < minimumEditorHeight
+                ? editorViewport.getScrollBarThickness() : 0;
+            editor->setSize(juce::jmax(0, area.getWidth() - scrollbarWidth),
+                            juce::jmax(minimumEditorHeight, area.getHeight()));
+        }
     }
 
     void paint(juce::Graphics& graphics) override { graphics.fillAll(juce::Colour(0xff161d27)); }
@@ -140,7 +152,7 @@ public:
         const auto blockFrames = usbBlockSize.getSelectedId();
         inputChannels = format.inputChannels;
         outputChannels = format.outputChannels;
-        testToneSampleRate = format.sampleRate;
+        usbSampleRate = format.sampleRate;
         testTonePosition = format.sampleRate / 4;
         const int channels = std::min(2u, outputChannels);
         if (channels == 0) {
@@ -162,7 +174,9 @@ public:
         processor.setRateAndBufferSizeDetails(format.sampleRate, blockFrames);
         processor.prepareToPlay(format.sampleRate, blockFrames);
         longestDspMicros.store(0, std::memory_order_relaxed);
+        lateDspBlocks.store(0, std::memory_order_relaxed);
         usbDiagnostics.setText({}, juce::dontSendNotification);
+        captureDiagnostics.setText({}, juce::dontSendNotification);
         usbPrepared = true;
         if (!directUsb.start(blockFrames, directUsbCallback, this)) {
             const auto message = usbFailure();
@@ -246,10 +260,14 @@ private:
     void refreshUsbDiagnostics() {
         const auto counters = directUsb.statistics();
         const auto peak = longestDspMicros.load(std::memory_order_relaxed);
-        const auto text = "Recoveries " + juce::String(counters.captureRecoveries)
-            + " · USB errors " + juce::String(counters.packetErrors)
-            + " · DSP peak " + juce::String(peak / 1000.0, 2) + " ms";
-        usbDiagnostics.setText(text, juce::dontSendNotification);
+        const auto timing = "USB errors " + juce::String(counters.packetErrors)
+            + " · DSP " + juce::String(peak / 1000.0, 2) + " ms"
+            + " · Late " + juce::String(lateDspBlocks.load(std::memory_order_relaxed));
+        usbDiagnostics.setText(timing, juce::dontSendNotification);
+        const auto capture = "Recoveries " + juce::String(counters.captureRecoveries)
+            + " · Input missing " + juce::String(counters.inputUnderruns)
+            + " · Input dropped " + juce::String(counters.inputOverruns);
+        captureDiagnostics.setText(capture, juce::dontSendNotification);
     }
 
     void closeDirectUsb() {
@@ -293,6 +311,8 @@ private:
             std::chrono::steady_clock::now() - began).count());
         if (elapsed > app.longestDspMicros.load(std::memory_order_relaxed))
             app.longestDspMicros.store(elapsed, std::memory_order_relaxed);
+        if (std::uint64_t{elapsed} * app.usbSampleRate > std::uint64_t{frames} * 1000000)
+            app.lateDspBlocks.fetch_add(1, std::memory_order_relaxed);
         for (unsigned channel = 0; channel < channels; ++channel) {
             const auto* source = buffer.getReadPointer(static_cast<int>(channel));
             for (unsigned frame = 0; frame < frames; ++frame)
@@ -306,12 +326,12 @@ private:
         if (testToneRequested.exchange(false, std::memory_order_relaxed))
             testTonePosition = 0;
 
-        const auto length = testToneSampleRate / 4;
+        const auto length = usbSampleRate / 4;
         if (testTonePosition >= length)
             return;
-        const auto fadeLength = testToneSampleRate / 200;
+        const auto fadeLength = usbSampleRate / 200;
         constexpr auto amplitude = 0.03162278f;
-        const auto radiansPerSample = juce::MathConstants<double>::twoPi * 440.0 / testToneSampleRate;
+        const auto radiansPerSample = juce::MathConstants<double>::twoPi * 440.0 / usbSampleRate;
         for (unsigned frame = 0; frame < frames && testTonePosition < length; ++frame, ++testTonePosition) {
             const auto edge = std::min(testTonePosition, length - 1 - testTonePosition);
             const auto envelope = static_cast<float>(std::min(edge, fadeLength)) / static_cast<float>(fadeLength);
@@ -328,12 +348,14 @@ private:
     juce::MidiBuffer usbMidi;
     unsigned inputChannels = 0;
     unsigned outputChannels = 0;
-    unsigned testToneSampleRate = 48000;
+    unsigned usbSampleRate = 48000;
     unsigned testTonePosition = 48000 / 4;
     std::atomic<bool> testToneRequested{false};
     std::atomic<unsigned> longestDspMicros{0};
+    std::atomic<unsigned> lateDspBlocks{0};
     juce::ComboBox usbBlockSize;
     juce::Label usbDiagnostics;
+    juce::Label captureDiagnostics;
     juce::TextButton testUsbOutput{"Test output"};
     bool usbPrepared = false;
 #else
@@ -344,6 +366,7 @@ private:
     juce::AudioProcessorPlayer player;
     juce::AudioDeviceManager deviceManager;
     std::unique_ptr<juce::AudioProcessorEditor> editor;
+    juce::Viewport editorViewport;
     juce::TextButton androidAudio{"Android audio"};
     juce::TextButton usbAudio{"USB direct"};
     juce::TextButton stop{"Stop audio"};
