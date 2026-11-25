@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -15,10 +17,12 @@ import android.hardware.usb.UsbManager;
 import android.media.AudioManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Base64;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 
 public final class LiveWdfActivity extends Activity {
     private static final String USB_PERMISSION = "com.yahia.livewdf.USB_PERMISSION";
@@ -163,13 +167,33 @@ public final class LiveWdfActivity extends Activity {
             return;
         }
 
-        String error = nativeStartUsb(connection.getFileDescriptor(), connection.getRawDescriptors());
+        byte[] descriptors = connection.getRawDescriptors();
+        String error = nativeStartUsb(connection.getFileDescriptor(), descriptors);
         if (error != null) {
             closeConnection();
             nativeUsbStatus(error);
+            showUsbFailure(device, error, descriptors);
         } else {
             activeDevice = device;
         }
+    }
+
+    private void showUsbFailure(UsbDevice device, String error, byte[] descriptors) {
+        String name = deviceLabel(device);
+        String usbId = String.format(Locale.ROOT, "%04x:%04x", device.getVendorId(), device.getProductId());
+        AlertDialog.Builder dialog = new AlertDialog.Builder(this)
+            .setTitle(name)
+            .setMessage(error + "\n\nUSB ID " + usbId)
+            .setPositiveButton(android.R.string.ok, null);
+        ClipboardManager clipboard = getSystemService(ClipboardManager.class);
+        if (clipboard != null && descriptors != null) {
+            dialog.setNeutralButton("Copy USB details", (unused, which) -> {
+                String details = name + " (" + usbId + ")\n" + error + "\nUSB descriptors (Base64): "
+                    + Base64.encodeToString(descriptors, Base64.NO_WRAP);
+                clipboard.setPrimaryClip(ClipData.newPlainText("LiveWDF USB details", details));
+            });
+        }
+        dialog.show();
     }
 
     private void closeConnection() {
@@ -191,7 +215,7 @@ public final class LiveWdfActivity extends Activity {
 
     private static String deviceLabel(UsbDevice device) {
         String name = device.getProductName();
-        return name != null ? name : String.format(java.util.Locale.ROOT, "USB audio %04x:%04x",
+        return name != null ? name : String.format(Locale.ROOT, "USB audio %04x:%04x",
                                                      device.getVendorId(), device.getProductId());
     }
 
