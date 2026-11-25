@@ -98,6 +98,23 @@ ctest --test-dir build/core --output-on-failure
 
 The first build may take several minutes. Some tests use ngspice as an external reference simulator. They are skipped automatically when ngspice is not installed.
 
+### Android Standalone
+
+The Android app is the preset player. It includes the factory circuits and can import `.livewdf` files through the Android file picker. For live guitar, connect headphones to your audio interface before choosing **Android audio** or **USB direct** in the app.
+
+On a Linux build host, install JDK 17 or newer and the Linux JUCE development dependencies (ALSA, FreeType, Fontconfig, X11 and its extensions) for the host helper. Use Android Studio's SDK Manager or `sdkmanager` to install `platforms;android-35`, `build-tools;35.0.0`, `cmake;3.31.6`, `ndk;28.2.13676358`, and `platform-tools`. Set `ANDROID_HOME` to the SDK directory and initialize the JUCE submodule.
+
+```sh
+git submodule update --init modules/JUCE
+cd android
+bash ./gradlew :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+The debug APK is signed with your local Android debug key and uses optimized native code. Android requires the same key to install an update over an existing APK. `bash ./gradlew :app:assembleRelease` builds the unsigned release APK. The default ABI is `arm64-v8a`. Use `-PlivewdfAbis=x86_64` for an x86-64 emulator build.
+
+The build fetches a pinned revision of the [Android USB audio driver](https://github.com/jopdorp/android-usb-audio). Use `-PlivewdfUsbDriverDir=/absolute/path/to/android-usb-audio` to build against a local checkout, or `-PlivewdfDirectUsb=false` to build with standard Android audio only. LiveWDF processes the first two capture and playback channels at 48 kHz in direct mode. Choose **USB 128 samples** (default) or **USB 64 samples** before opening USB audio. The status row shows capture recoveries, USB errors, and the slowest DSP block in the session. Playback-only interfaces show **Test output**, which plays a brief low-level tone through the interface. Android audio uses JUCE's standard device support. The USB interface and phone determine achievable latency.
+
 ## Contributing
 
 LiveWDF is still taking shape, and there's plenty of room to get involved.

@@ -156,13 +156,34 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(mixKnob_);
     mixAttach_ = std::make_unique<SliderAttachment>(processor_.getAPVTS(), "mix", mixKnob_.slider());
 
+#if JUCE_ANDROID
+    mobileControlsViewport_.setViewedComponent(&mobileControls_, false);
+    mobileControlsViewport_.setScrollBarsShown(false, true);
+    mobileControlsViewport_.setScrollBarThickness(14);
+    mobileControls_.addAndMakeVisible(inTrimKnob_);
+    mobileControls_.addAndMakeVisible(mixKnob_);
+    mobileControls_.addAndMakeVisible(outMasterKnob_);
+    addAndMakeVisible(mobileControlsViewport_);
+    for (auto* control : {static_cast<juce::Component*>(&reportLatencyBtn_),
+                          static_cast<juce::Component*>(&accurateExportBtn_),
+                          static_cast<juce::Component*>(&oversampleExportBtn_),
+                          static_cast<juce::Component*>(&reloadBtn_),
+                          static_cast<juce::Component*>(&aboutBtn_),
+                          static_cast<juce::Component*>(&titleLabel_)})
+        control->setVisible(false);
+#endif
+
     // 8. Rebuild dynamic circuit potentiometers
     rebuildDynamicControls();
 
     // 9. Window configuration (spacious, wide layout)
+#if JUCE_ANDROID
+    setSize(380, 550);
+#else
     setSize(1080, 750);
     setResizable(true, true);
     setResizeLimits(1000, 620, 1800, 1300);
+#endif
 
     // 10. Start UI update timer at 30 Hz
     startTimerHz(30);
@@ -223,7 +244,11 @@ void LiveWDFPluginEditor::rebuildDynamicControls() {
         auto attach = std::make_unique<SliderAttachment>(processor_.getAPVTS(), paramId,
                                                          knob->slider());
 
+#if JUCE_ANDROID
+        mobileControls_.addAndMakeVisible(*knob);
+#else
         addAndMakeVisible(*knob);
+#endif
         dynamicPotKnobs_.push_back(std::move(knob));
         dynamicPotAttachments_.push_back(std::move(attach));
     }
@@ -258,7 +283,11 @@ void LiveWDFPluginEditor::rebuildDynamicControls() {
             syncSchematicLiveState();
         };
 
+#if JUCE_ANDROID
+        mobileControls_.addAndMakeVisible(*button);
+#else
         addAndMakeVisible(*button);
+#endif
         dynamicSwitchButtons_.push_back(std::move(button));
         updateSwitchButton(groupIndex, *dynamicSwitchButtons_.back());
     }
@@ -281,16 +310,57 @@ void LiveWDFPluginEditor::syncSchematicLiveState() {
 }
 
 void LiveWDFPluginEditor::openCircuitFileChooser() {
+#if JUCE_ANDROID
+    // The system picker filters by MIME type. Some providers do not know
+    // the .livewdf extension, so allow them to return the document as-is.
+    const auto pattern = "*";
+#else
+    const auto pattern = "*.livewdf;*.json";
+#endif
     fileChooser_ = std::make_unique<juce::FileChooser>(
         "Select .livewdf Circuit File",
         juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),
-        "*.livewdf;*.json");
+        pattern);
 
     const int chooserFlags = juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles;
     fileChooser_->launchAsync(chooserFlags, [this](const juce::FileChooser& fc) {
+#if JUCE_ANDROID
+        const auto url = fc.getURLResult();
+        if (url.isEmpty())
+            return;
+        if (url.isLocalFile()) {
+            loadCircuitFile(url.getLocalFile());
+            return;
+        }
+
+        // Android's system picker can return content:// documents supplied by
+        // another app. Import a bounded copy so the player can still reopen it.
+        const auto document = juce::AndroidDocument::fromDocument(url);
+        auto input = document.createInputStream();
+        juce::MemoryOutputStream data;
+        constexpr int maxBytes = 8 * 1024 * 1024;
+        if (input == nullptr || data.writeFromInputStream(*input, maxBytes + 1) > maxBytes) {
+            presetStepper_.setName("Could not import this circuit file");
+            return;
+        }
+        const auto folder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+            .getChildFile("Imported circuits");
+        auto name = juce::File::createLegalFileName(document.getInfo().getName());
+        if (name.isEmpty())
+            name = "Imported.livewdf";
+        const auto file = folder.getNonexistentChildFile(folder.getChildFile(name).getFileNameWithoutExtension(),
+                                                         name.endsWithIgnoreCase(".json") ? ".json" : ".livewdf");
+        if (folder.createDirectory().failed() || !file.replaceWithData(data.getData(), data.getDataSize())) {
+            presetStepper_.setName("Could not save the imported circuit");
+            return;
+        }
+        if (!loadCircuitFile(file))
+            file.deleteFile();
+#else
         const auto result = fc.getResult();
         if (result.existsAsFile())
             loadCircuitFile(result);
+#endif
     });
 }
 
@@ -326,7 +396,11 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
 
     using Browser = editor::PresetLibraryPanel;
     auto browser = std::make_unique<Browser>(Browser::Mode::Factory);
+#if JUCE_ANDROID
+    browser->setSize(juce::jmin(500, getWidth() - 32), juce::jlimit(160, 460, getHeight() - 58));
+#else
     browser->setSize(500, juce::jmax(320, juce::jmin(480, getHeight() - 100)));
+#endif
     browser->setFactoryFolder(FactorySchematics::folder());
     browser->setCurrentFile(processor_.getCurrentCircuitFile());
     browser->setView(factoryView_);
@@ -349,10 +423,12 @@ void LiveWDFPluginEditor::showFactoryBrowser() {
         if (popup != nullptr)
             popup->dismiss();
     };
+#if !JUCE_ANDROID
     juce::MessageManager::callAsync([panel] {
         if (panel != nullptr)
             panel->focusSearch();
     });
+#endif
 }
 
 // -----------------------------------------------------------------------------
@@ -441,6 +517,7 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
     g.setColour(juce::Colour(0xFF0F1216));
     g.fillAll();
 
+#if !JUCE_ANDROID
     // Toolbar background
     auto bounds = getLocalBounds();
     g.setColour(juce::Colour(0xFF12151A));
@@ -479,9 +556,13 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
         g.setFont(editor::Fonts::bold(20.0f));
         g.drawText("DROP .LIVEWDF CIRCUIT FILE TO LOAD", getLocalBounds(), juce::Justification::centred);
     }
+#endif
 }
 
 void LiveWDFPluginEditor::resized() {
+#if JUCE_ANDROID
+    resizedMobile();
+#else
     auto bounds = getLocalBounds();
 
     // 1. Top Bar (height 52px)
@@ -560,6 +641,45 @@ void LiveWDFPluginEditor::resized() {
     // bounds are real, and again on every resize -- this is a read-only view,
     // so there is no user pan/zoom to preserve.
     schematicCanvas_.frameAll();
+#endif
 }
+
+#if JUCE_ANDROID
+void LiveWDFPluginEditor::resizedMobile() {
+    auto bounds = getLocalBounds().reduced(4);
+    presetStepper_.setBounds(bounds.removeFromTop(32));
+    auto actions = bounds.removeFromTop(39);
+    factoryBtn_.setBounds(actions.removeFromLeft(actions.getWidth() / 2).reduced(3, 2));
+    loadFileBtn_.setBounds(actions.reduced(3, 2));
+    auto options = bounds.removeFromTop(38);
+    solveQualityCombo_.setBounds(options.removeFromLeft(options.getWidth() * 3 / 8).reduced(3, 2));
+    oversamplingCombo_.setBounds(options.removeFromLeft(options.getWidth() * 3 / 5).reduced(3, 2));
+    stereoBtn_.setBounds(options.reduced(3, 2));
+
+    const int scopeHeight = juce::jlimit(0, 80, bounds.getHeight() - 210);
+    oscilloscope_.setBounds(bounds.removeFromBottom(scopeHeight));
+
+    constexpr int knobWidth = 76;
+    const auto knobCount = static_cast<int>(dynamicPotKnobs_.size()) + 3;
+    const auto switchCount = static_cast<int>(dynamicSwitchButtons_.size());
+    const int switchesHeight = switchCount == 0 ? 0 : 36;
+    const int controlsWidth = juce::jmax(bounds.getWidth(), knobWidth * knobCount, 105 * switchCount);
+    mobileControlsViewport_.setBounds(bounds.removeFromBottom(105 + switchesHeight));
+    mobileControls_.setSize(controlsWidth, 90 + switchesHeight);
+
+    auto controls = mobileControls_.getLocalBounds();
+    auto switches = controls.removeFromTop(switchesHeight);
+    for (auto& button : dynamicSwitchButtons_)
+        button->setBounds(switches.removeFromLeft(105).reduced(3, 2));
+    inTrimKnob_.setBounds(controls.removeFromLeft(knobWidth));
+    for (auto& knob : dynamicPotKnobs_)
+        knob->setBounds(controls.removeFromLeft(knobWidth));
+    mixKnob_.setBounds(controls.removeFromLeft(knobWidth));
+    outMasterKnob_.setBounds(controls.removeFromLeft(knobWidth));
+
+    schematicCanvas_.setBounds(bounds.reduced(2));
+    schematicCanvas_.frameAll();
+}
+#endif
 
 } // namespace livewdf
