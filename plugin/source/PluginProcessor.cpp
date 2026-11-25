@@ -14,19 +14,6 @@ namespace livewdf {
 
 namespace {
 
-// An explicit input alignment supersedes the trial amplitude on older drawings.
-double previewPeakVolts(const wdf::LiveWDFDocument& doc) {
-    if (const auto* input = doc.terminal("in")) {
-        const auto reference = input->values.find("referenceMillivoltsRms");
-        if (reference != input->values.end() && std::isfinite(reference->second) && reference->second > 0.)
-            return 2. * doc.inputVoltsPerFullScale();
-        const auto it = input->values.find("fullScaleVolts");
-        if (it != input->values.end() && std::isfinite(it->second) && it->second > 1.2)
-            return it->second;
-    }
-    return 2. * doc.inputVoltsPerFullScale();
-}
-
 // The low-frequency group delay is the first moment of the oversampling
 // round trip. Measure after decimation so the phase of the decimator is included.
 float halfBandLatency(wdf::OversamplingFactor factor) {
@@ -323,7 +310,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
             !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer() && (!previewPrepared_ ||
                 previewLinearRevision_ != leftEngine_->linearRebuilds() ||
                 previewControlRevision_ != leftEngine_->liveControlRevision())) {
-            const double peak = previewPeakVolts(currentDoc_);
+            const double peak = currentDoc_.previewPeakVolts();
             for (auto* engine : {leftEngine_.get(), rightEngine_.get()})
                 engine->prepareCompiledPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_,
                                                outputOnlyPreviewAllowed_, peak, currentDoc_.allowPreviewInputPad);
@@ -393,7 +380,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer(bool audioActive) {
     const auto input = static_cast<size_t>(inSourceIndex_);
     const auto output = outNodeIndex_;
     const bool allowOutputOnly = outputOnlyPreviewAllowed_, allowPad = currentDoc_.allowPreviewInputPad;
-    const auto peak = previewPeakVolts(currentDoc_);
+    const auto peak = currentDoc_.previewPeakVolts();
     auto job = std::move(*capture_.work);
     capture_.work.reset();
     captureState_.store(CaptureState::idle, std::memory_order_release);

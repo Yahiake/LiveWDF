@@ -534,6 +534,18 @@ struct LiveWDFDocument {
         return input ? inputVoltsPerFullScale(*input) : 1.;
     }
 
+    double previewPeakVolts() const {
+        if (const auto* input = terminal("in")) {
+            const auto reference = input->values.find("referenceMillivoltsRms");
+            if (reference != input->values.end() && std::isfinite(reference->second) && reference->second > 0.)
+                return 2. * (reference->second / kReferenceMillivolts);
+            const auto scale = input->values.find("fullScaleVolts");
+            if (scale != input->values.end() && std::isfinite(scale->second) && scale->second > 1.2)
+                return scale->second;
+        }
+        return 2.;
+    }
+
     /// The voltage the circuit produces at the output when the input is at full
     /// scale -- the number the user writes on the Output terminal.
     ///

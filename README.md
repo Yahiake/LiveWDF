@@ -81,7 +81,7 @@ git submodule update --init modules/JUCE
 ```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF
 
-cmake --build build/core --config Release --target livewdf livewdf_tests
+cmake --build build/core --config Release
 
 ctest --test-dir build/core -C Release --output-on-failure
 ```
@@ -91,12 +91,12 @@ ctest --test-dir build/core -C Release --output-on-failure
 ```bash
 cmake -S . -B build/core -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF -DLIVEWDF_BUILD_RENDER=OFF -DCMAKE_BUILD_TYPE=Release
 
-cmake --build build/core --target livewdf livewdf_tests
+cmake --build build/core
 
 ctest --test-dir build/core --output-on-failure
 ```
 
-The first build may take several minutes. Some tests use ngspice as an external reference simulator. They are skipped automatically when ngspice is not installed.
+The first build may take several minutes. The [circuit regression suite](tests/regression/README.md) requires Python 3.8 or newer and compares saved waveforms, control motion, and ngspice responses. Tests that run ngspice directly are skipped when it is unavailable.
 
 ## Contributing
 

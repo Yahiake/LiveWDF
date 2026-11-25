@@ -113,6 +113,30 @@ target_include_directories(livewdf_tests SYSTEM PRIVATE
 add_test(NAME livewdf_tests COMMAND livewdf_tests
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
+if(NOT CMAKE_CROSSCOMPILING)
+    find_package(Python3 3.8 COMPONENTS Interpreter REQUIRED)
+    add_executable(livewdf_circuit_render regression/render_circuit.cpp)
+    target_link_libraries(livewdf_circuit_render PRIVATE livewdf_test_support)
+    set(circuit_regression_args
+        --renderer "$<TARGET_FILE:livewdf_circuit_render>"
+        --baseline "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/circuit_regressions")
+    foreach(suite IN ITEMS smoke controls)
+        add_test(NAME livewdf_circuit_${suite}
+            COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/check_circuit_regressions.py"
+                ${circuit_regression_args} --suite "${suite}"
+                --report "${CMAKE_CURRENT_BINARY_DIR}/circuit-${suite}.json")
+        set_tests_properties(livewdf_circuit_${suite} PROPERTIES LABELS "circuits;regression" TIMEOUT 600)
+    endforeach()
+    add_test(NAME livewdf_circuit_ngspice_references
+        COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/check_ngspice_references.py"
+            ${circuit_regression_args} --report "${CMAKE_CURRENT_BINARY_DIR}/circuit-ngspice.json")
+    set_tests_properties(livewdf_circuit_ngspice_references PROPERTIES LABELS "circuits;regression;oracle" TIMEOUT 600)
+    add_test(NAME livewdf_circuit_checker_contracts
+        COMMAND "${Python3_EXECUTABLE}" -B -m unittest discover
+            -s "${CMAKE_CURRENT_SOURCE_DIR}/regression" -p test_circuit_checker.py)
+    set_tests_properties(livewdf_circuit_checker_contracts PROPERTIES LABELS "circuits;regression" TIMEOUT 30)
+endif()
+
 # ------------------------------------------------------------------------------
 # Manual instruments
 #
