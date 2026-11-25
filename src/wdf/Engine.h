@@ -12,15 +12,14 @@
 //
 // `Engine` is the single type a caller uses. The levels below it are an
 // implementation detail of this file's organization, not a second API: they are
-// public bases so every method above stays reachable on an `Engine`, and every
-// level owns no state of its own but reaches the one that does through the
-// protected members in `EngineCore`.
+// public bases so their methods stay reachable on an `Engine`.
 //
 // The per-sample math, and why each piece is where it is, is documented at the
 // top of `EngineCore.h`; the derivations are in `docs/PERFORMANCE.md`.
 
 #include "wdf/EngineStep.h"
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <span>
@@ -28,6 +27,7 @@
 namespace wdf {
 
 class Engine : public EngineStep {
+    static constexpr size_t planLimit = 5;
 public:
     /// Compile `circuit` and prepare to run at `fs` Hz. Throws if the network is
     /// singular. Runs the transfer build, sizes every buffer, and seeds the
@@ -42,6 +42,35 @@ public:
         allocateBuffers();
         reset();
     }
+
+    void reset() {
+        if (bipolarPreview_) resetBipolarPreviewHistory();
+        EngineStep::reset();
+    }
+
+    const std::vector<double>& step(const std::vector<double>& sources,
+                                    int maxIter = kDefaultMaxIterations, double tol = kDefaultTolerance) {
+        return step(sources.data(), sources.size(), maxIter, tol);
+    }
+
+    const std::vector<double>& step(const double* sources, size_t count,
+                                    int maxIter = kDefaultMaxIterations, double tol = kDefaultTolerance) {
+        if (bipolarPreview_) releaseBipolarPreview();
+        return EngineStep::step(sources, count, maxIter, tol);
+    }
+
+    // A single-output approximation for static BJT/diode networks. Preparation
+    // allocates and qualifies the fixed schematic away from the audio thread.
+    bool prepareBipolarPreview(size_t inputSource, int outputNode, double requestedPeak = 1.2, bool allowPad = false);
+    /// Off-thread preparation and playback screen against the current Fast solve.
+    bool prepareAffineNodePreview(size_t inputSource, int outputNode);
+    bool stepBipolarPreview(double inputVolts, double& outputVolts) noexcept;
+    bool bipolarPreviewActive() const noexcept;
+    /// A completed input attenuation can make a tripped plan usable before silence.
+    void retryBipolarPreviewAfterAttenuation() noexcept;
+    void releaseBipolarPreview() noexcept;
+    // The caller has validated the worker's topology and controls for this engine.
+    void adoptBipolarPreview(Engine& prepared) noexcept;
 
     /// Prepare at most five affine slope patterns for a coupled root. Call
     /// outside the audio callback. A separate engine measures the patterns,
@@ -75,32 +104,56 @@ public:
     bool installMixedAffineSetup(MixedAffineSetup& setup);
     void useMixedAffineReduction(bool enabled) noexcept { mixedAffineEnabled_ = enabled; }
 
+    long long mixedAffineRevision() const noexcept { return mixedAffineRevision_; }
     long long mixedAffineAttempts() const { return mixedAffineAttempts_; }
     long long mixedAffineAccepted() const { return mixedAffineAccepted_; }
 
     class LiveTransferSetup {
     public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
+        /// Create the other channel's snapshot from this same base circuit.
+        LiveTransferSetup makePeer();
         void build(size_t inputSource, bool prepareAffine);
+        void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                    double requestedPeak = 1.2, bool allowPad = false);
+        /// Prepare both channels. True means they share a qualification and own separate playback state.
+        bool prepareCompiledPreviewPair(LiveTransferSetup& peer, size_t inputSource, int outputNode,
+                                        bool allowOutputOnly, double requestedPeak, bool allowPad);
+        /// Compare the prepared channels on the worker and drop unprofitable plans.
+        bool screenCircuitPlan(LiveTransferSetup& peer, size_t inputSource, int outputNode);
 
     private:
         friend class Engine;
         const Engine* owner_ = nullptr;
         Circuit circuit_;
         double rate_ = 0.0;
-        bool gridCurrent_ = true;
-        long long linearRevision_ = 0, controlRevision_ = 0;
+        bool gridCurrent_ = true, planOnly_ = false, compiledPreview_ = false;
+        std::array<unsigned, planLimit> affineMasks_{};
+        size_t maskCount_ = 0;
+        long long linearRevision_ = 0, controlRevision_ = 0, affineRevision_ = 0;
         std::unique_ptr<Engine> prepared_;
+        struct BaseCircuitIdentity {};
+        std::shared_ptr<const BaseCircuitIdentity> baseCircuit_;
     };
 
     /// Copy live numeric settings into a setup created from this engine's
     /// original circuit. Build on a worker; installation keeps live DSP state.
-    bool captureLiveTransferSetup(LiveTransferSetup& setup) const noexcept;
+    /// planOnly snapshots an unadjusted transfer and installs just its solver plan.
+    bool captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly = false) const noexcept;
+    void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
+                                double requestedPeak = 1.2, bool allowPad = false);
     bool canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept;
     bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 
 private:
+    long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
+    void qualifyBipolarControlMotion(size_t inputSource, int outputNode);
+    void qualifyBipolarPreviewRange(size_t inputSource, int outputNode, double peak, bool allowPad);
+    void resetBipolarPreviewHistory() noexcept;
+    void copyBipolarPreviewFrom(const Engine& source);
+    struct BipolarPreview;
+    std::shared_ptr<BipolarPreview> bipolarPreview_;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);
     std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);

@@ -35,6 +35,7 @@ add_executable(livewdf_tests
     engine/test_engine_smoke.cpp
     engine/test_accounting.cpp
     engine/test_block_solve.cpp
+    engine/test_circuit_plan.cpp
     engine/test_core_contracts.cpp
     engine/test_nan_sentinel.cpp
     engine/test_elements_l_i.cpp
@@ -77,6 +78,7 @@ add_executable(livewdf_tests
     circuit/test_pot_contracts.cpp
 
     compiler/test_compiler.cpp
+    compiler/test_stage_partition.cpp
     runtime/test_runtime_parity.cpp
     runtime/test_runtime_allocation.cpp
 
@@ -111,6 +113,30 @@ target_include_directories(livewdf_tests SYSTEM PRIVATE
 add_test(NAME livewdf_tests COMMAND livewdf_tests
     WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
+if(NOT CMAKE_CROSSCOMPILING)
+    find_package(Python3 3.8 COMPONENTS Interpreter REQUIRED)
+    add_executable(livewdf_circuit_render regression/render_circuit.cpp)
+    target_link_libraries(livewdf_circuit_render PRIVATE livewdf_test_support)
+    set(circuit_regression_args
+        --renderer "$<TARGET_FILE:livewdf_circuit_render>"
+        --baseline "${CMAKE_CURRENT_SOURCE_DIR}/fixtures/circuit_regressions")
+    foreach(suite IN ITEMS smoke controls)
+        add_test(NAME livewdf_circuit_${suite}
+            COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/check_circuit_regressions.py"
+                ${circuit_regression_args} --suite "${suite}"
+                --report "${CMAKE_CURRENT_BINARY_DIR}/circuit-${suite}.json")
+        set_tests_properties(livewdf_circuit_${suite} PROPERTIES LABELS "circuits;regression" TIMEOUT 600)
+    endforeach()
+    add_test(NAME livewdf_circuit_ngspice_references
+        COMMAND "${Python3_EXECUTABLE}" -B "${PROJECT_SOURCE_DIR}/tools/check_ngspice_references.py"
+            ${circuit_regression_args} --report "${CMAKE_CURRENT_BINARY_DIR}/circuit-ngspice.json")
+    set_tests_properties(livewdf_circuit_ngspice_references PROPERTIES LABELS "circuits;regression;oracle" TIMEOUT 600)
+    add_test(NAME livewdf_circuit_checker_contracts
+        COMMAND "${Python3_EXECUTABLE}" -B -m unittest discover
+            -s "${CMAKE_CURRENT_SOURCE_DIR}/regression" -p test_circuit_checker.py)
+    set_tests_properties(livewdf_circuit_checker_contracts PROPERTIES LABELS "circuits;regression" TIMEOUT 30)
+endif()
+
 # ------------------------------------------------------------------------------
 # Manual instruments
 #
@@ -120,6 +146,9 @@ add_test(NAME livewdf_tests COMMAND livewdf_tests
 
 add_executable(livewdf_bench_circuits bench/bench_circuits.cpp)
 target_link_libraries(livewdf_bench_circuits PRIVATE livewdf_test_support)
+
+add_executable(livewdf_bench_circuit_plan bench/bench_circuit_plan.cpp)
+target_link_libraries(livewdf_bench_circuit_plan PRIVATE livewdf)
 
 add_executable(livewdf_bench bench/bench_stage.cpp)
 target_link_libraries(livewdf_bench PRIVATE livewdf_test_support)
@@ -144,3 +173,36 @@ target_link_libraries(livewdf_bench_parts PRIVATE livewdf_test_support)
 
 add_executable(livewdf_bench_semiconductors bench/bench_semiconductors.cpp)
 target_link_libraries(livewdf_bench_semiconductors PRIVATE livewdf_test_support)
+
+# Compile the generated C++ and compare its stateful output through clipping.
+if(NOT CMAKE_CROSSCOMPILING)
+    add_executable(livewdf_generate_fixtures codegen/generate_fixtures.cpp)
+    target_link_libraries(livewdf_generate_fixtures PRIVATE livewdf livewdf_options)
+    set(generated_steps generated_rlc.h generated_diode.h generated_external.h generated_amp.h)
+    add_custom_command(OUTPUT ${generated_steps}
+        COMMAND livewdf_generate_fixtures ${generated_steps}
+        DEPENDS livewdf_generate_fixtures VERBATIM)
+    add_executable(livewdf_test_generated codegen/test_generated.cpp ${generated_steps})
+    target_include_directories(livewdf_test_generated PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(livewdf_test_generated PRIVATE livewdf livewdf_options)
+    add_test(NAME livewdf_test_generated COMMAND livewdf_test_generated)
+endif()
+
+# Exercise both delay orientations through the same public exporter as a user.
+if(NOT CMAKE_CROSSCOMPILING)
+    set(delayed_fixture "${PROJECT_SOURCE_DIR}/schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf")
+    foreach(form IN ITEMS delayed delayed-reverse)
+        add_custom_command(OUTPUT "generated_${form}.h"
+            COMMAND ${CMAKE_COMMAND}
+                "-DCODEGEN=$<TARGET_FILE:livewdf_codegen>" "-DCIRCUIT=${delayed_fixture}"
+                "-DFORM=--${form}" "-DHEADER=${CMAKE_CURRENT_BINARY_DIR}/generated_${form}.h"
+                -P "${CMAKE_CURRENT_SOURCE_DIR}/codegen/emit_delayed_fixture.cmake"
+            DEPENDS livewdf_codegen "${delayed_fixture}" codegen/emit_delayed_fixture.cmake
+            VERBATIM)
+    endforeach()
+    add_executable(livewdf_test_delayed_codegen codegen/test_delayed.cpp
+        generated_delayed.h generated_delayed-reverse.h)
+    target_include_directories(livewdf_test_delayed_codegen PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+    target_link_libraries(livewdf_test_delayed_codegen PRIVATE livewdf_test_support)
+    add_test(NAME livewdf_test_delayed_codegen COMMAND livewdf_test_delayed_codegen "${delayed_fixture}")
+endif()

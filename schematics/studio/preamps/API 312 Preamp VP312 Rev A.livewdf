@@ -4,9 +4,15 @@
   "components": [
     {
       "id": "IN1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "R101"
+      },
       "type": "in",
-      "values": {},
+      "values": {
+        "externalMinOhms": 20,
+        "externalMaxOhms": 600,
+        "referenceMillivoltsRms": 7.75
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -389,10 +395,14 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "R102"
+      },
       "type": "out",
       "values": {
-        "fullScaleVolts": 32.0
+        "externalMinOhms": 600,
+        "externalMaxOhms": 100000,
+        "fullScaleVolts": 2.2432424
       },
       "visual": {
         "flipped": false,

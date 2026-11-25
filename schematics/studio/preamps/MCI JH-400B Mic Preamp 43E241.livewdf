@@ -7,7 +7,7 @@
       "properties": {},
       "type": "in",
       "values": {
-        "fullScaleVolts": 0.01
+        "referenceMillivoltsRms": 7.74
       },
       "visual": {
         "flipped": false,
@@ -450,7 +450,7 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.65,
+        "pos": 0.55,
         "totalR": 10000
       },
       "visual": {
@@ -591,7 +591,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 64.0
+        "fullScaleVolts": 4.3715401
       },
       "visual": {
         "flipped": false,

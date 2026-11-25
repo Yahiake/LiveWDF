@@ -128,8 +128,9 @@ public:
         unsigned char* LIVEWDF_RESTRICT triodeDomainPin,
         const Compiled& comp,
         const RootDevice* LIVEWDF_RESTRICT rootDevices,
-        int K) noexcept
+        int K, const double* loaded = nullptr) noexcept
     {
+        if (comp.tri.empty()) return false;
         bool changed = false;
         for (int p = 0; p < view.count; ++p) {
             const int b = (*view.order)[static_cast<size_t>(p)];
@@ -140,8 +141,8 @@ public:
                     continue;
                 const int o = dev.portBase;
                 const TriodeModel& m = comp.tri[dev.compIndex].model;
-                double voPk = foldPort(view, o, view.count, zData, vOcData, iiData, K);
-                double voGik = foldPort(view, o + 2, view.count, zData, vOcData, iiData, K);
+                double voPk = loaded ? loaded[2 * dev.compIndex] : foldPort(view, o, view.count, zData, vOcData, iiData, K);
+                double voGik = loaded ? loaded[2 * dev.compIndex + 1] : foldPort(view, o + 2, view.count, zData, vOcData, iiData, K);
                 voPk += zData[static_cast<size_t>(o) * K + o] * iiData[o];
                 voGik += zData[static_cast<size_t>(o + 2) * K + o] * iiData[o];
                 if (dev.numActiveRows == 2) {

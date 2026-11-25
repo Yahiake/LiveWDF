@@ -118,3 +118,20 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
     juce::juce_gui_basics
     juce::juce_gui_extra
 )
+
+if(LIVEWDF_BUILD_TESTS)
+    add_test(NAME livewdf_preview_pad COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
+        --check-preview-pad)
+    add_test(NAME livewdf_external_impedance_defaults COMMAND LiveWDF_PluginBench
+        --check-external-impedance-defaults)
+    add_test(NAME livewdf_live_preview_capture COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/pedals_fx/Boss HM-2 Heavy Metal.livewdf"
+        --check-live-preview-capture)
+    add_test(NAME livewdf_live_preview_pot_motion COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"
+        --check-live-preview-pot-motion)
+    add_test(NAME livewdf_bench_preview_wav COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/pedals_fx/MXR Micro Amp.livewdf"
+        --live-preview --wav "${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/guitarjam-di/strat-neck-middle-di.wav")
+endif()

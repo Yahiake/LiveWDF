@@ -531,3 +531,46 @@ TEST_CASE("A sheet with no probe has no probe traces", "[session][probe]") {
     REQUIRE(session.compile(canonicalTubeStage(), 48000.0));
     CHECK(session.probeTraces().empty());
 }
+
+TEST_CASE("Output calibration measures the saved input alignment and respects signal headroom", "[editor][calibration]") {
+    wdf::LiveWDFDocument doc;
+    wdf::SchematicComponent in;
+    in.id = "IN1"; in.type = "in"; in.pins = {{"sig", "in"}};
+    in.values = {{"referenceMillivoltsRms", 2. * wdf::LiveWDFDocument::kReferenceMillivolts}};
+    wdf::SchematicComponent out;
+    out.id = "OUT1"; out.type = "out"; out.pins = {{"sig", "out"}};
+    out.values = {{"fullScaleVolts", 9.}};
+    wdf::SchematicComponent series;
+    series.id = "R1"; series.type = "res"; series.pins = {{"a", "in"}, {"b", "out"}};
+    series.values = {{"value", 1000.}};
+    auto load = series;
+    load.id = "R2"; load.pins = {{"a", "out"}, {"b", "0"}};
+    doc.components = {in, out, series, load};
+    std::atomic_bool cancel{false};
+    using Session = livewdf::editor::CircuitSession;
+    SECTION("an AC divider at 2 V full scale returns 1 V per full scale") {
+        const auto result = Session::measureOutputReference(doc, cancel);
+        REQUIRE(result.error.empty());
+        CHECK(result.voltsPerFullScale == Approx(1.));
+        CHECK(doc.outputFullScaleVolts() == 9.);
+    }
+    SECTION("a biased divider reserves 1 dB for the actual peak") {
+        wdf::SchematicComponent rail;
+        rail.id = "Vcc"; rail.type = "src"; rail.pins = {{"pos", "rail"}, {"neg", "0"}};
+        rail.values = {{"dc", 2.}};
+        doc.components.back().pins["b"] = "rail";
+        doc.components.push_back(rail);
+        const auto result = Session::measureOutputReference(doc, cancel);
+        REQUIRE(result.error.empty());
+        CHECK(result.voltsPerFullScale == Approx((1. + std::pow(10., -9./20.)) * std::pow(10., 1./20.)));
+    }
+    SECTION("a muted output has no reference to infer") {
+        doc.components[2].pins["a"] = "0";
+        CHECK_FALSE(Session::measureOutputReference(doc, cancel).error.empty());
+    }
+    SECTION("cancellation leaves the sheet untouched") {
+        cancel = true;
+        CHECK_FALSE(Session::measureOutputReference(doc, cancel).error.empty());
+        CHECK(doc.outputFullScaleVolts() == 9.);
+    }
+}

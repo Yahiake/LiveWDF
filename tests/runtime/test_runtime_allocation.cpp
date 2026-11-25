@@ -15,6 +15,7 @@
 #include "compiler/Compiler.h"
 #include "runtime/Runtime.h"
 #include "support/CircuitCases.h"
+#include "wdf/Engine.h"
 
 // Phase 1 audio-thread budget: step() and setParameters() must not allocate
 // once the runtime is warm.
@@ -193,6 +194,53 @@ TEST_CASE("runtime: a parameter batch does not allocate", "[runtime][allocation]
         allocations = scope.count();
     }
     REQUIRE(allocations == 0);
+}
+
+TEST_CASE("loaded Preview updates affine currents during automation without allocating",
+          "[engine][allocation][loaded-junction]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 0.0);
+    circuit.addPot("in", "drive", "0", 10000.0, .5, wdf::PotTaper::Linear, "LEVEL");
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(5.0, 5.0);
+    std::string previous = "drive";
+    for (int index = 0; index < 3; ++index) {
+        const auto output = "stage" + std::to_string(index);
+        circuit.addOpAmp(output, output, previous, "0", "0", model);
+        circuit.addRes(output, "0", 100000.0);
+        previous = output;
+    }
+    circuit.addRes(previous, "out", 2200.0);
+    circuit.addDiode("out", "0", wdf::DiodeModel(2e-12, 1.1, 4.0));
+    circuit.addDiode("0", "out", wdf::DiodeModel(2e-12, 1.1, 4.0));
+    wdf::Engine preview(circuit, 48000.0);
+    preview.prepareLiveControls();
+    REQUIRE(preview.prepareLoadedJunctionPreview(0, false));
+    preview.useLoadedJunctionPreview(true);
+    std::vector<std::pair<int, double>> pots{{0, .5}}, resistors;
+    REQUIRE(preview.setLiveControls(pots, resistors));
+    for (int n = 0; n < 64; ++n) {
+        const double input = .08 * std::sin(.05 * n);
+        preview.step(&input, 1);
+    }
+    long long allocations = 0;
+    bool controlsAccepted = true;
+    const auto hits = preview.loadedJunctionHits();
+    {
+        AllocationScope scope;
+        for (int n = 0; n < 512; ++n) {
+            if (n % 32 == 0) {
+                pots[0].second = .3 + .4 * (n % 64 != 0);
+                controlsAccepted &= preview.setLiveControls(pots, resistors);
+            }
+            const double input = .08 * std::sin(.05 * n);
+            preview.step(&input, 1);
+        }
+        allocations = scope.count();
+    }
+    REQUIRE(controlsAccepted);
+    REQUIRE(allocations == 0);
+    REQUIRE(preview.loadedJunctionHits() - hits > 400);
 }
 
 TEST_CASE("runtime: BBD can clock faster than the host without allocation",

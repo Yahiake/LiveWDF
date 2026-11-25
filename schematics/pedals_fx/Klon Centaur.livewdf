@@ -6,7 +6,9 @@
       "id": "IN1",
       "properties": {},
       "type": "in",
-      "values": {},
+      "values": {
+        "referenceMillivoltsRms": 77.5
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -62,7 +64,10 @@
         "model": "TL072"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 7.5,
+        "vRailMin": 1.5
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -77,9 +82,9 @@
       "values": {},
       "visual": {
         "flipped": false,
-        "rotation": 180,
+        "rotation": 0,
         "x": 25,
-        "y": 12
+        "y": 25
       }
     },
     {
@@ -158,7 +163,10 @@
         "model": "TL072"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 7.5,
+        "vRailMin": 1.5
+      },
       "visual": {
         "flipped": true,
         "rotation": 180,
@@ -175,9 +183,9 @@
       },
       "visual": {
         "flipped": false,
-        "rotation": 0,
-        "x": 55,
-        "y": 15
+        "rotation": 270,
+        "x": 54,
+        "y": 22
       }
     },
     {
@@ -431,9 +439,9 @@
       "values": {},
       "visual": {
         "flipped": false,
-        "rotation": 90,
-        "x": 52,
-        "y": 22
+        "rotation": 180,
+        "x": 55,
+        "y": 13
       }
     },
     {
@@ -543,7 +551,7 @@
       "properties": {},
       "type": "res",
       "values": {
-        "value": 1000
+        "value": 15000
       },
       "visual": {
         "flipped": false,
@@ -600,7 +608,10 @@
         "model": "TL072"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 14.7,
+        "vRailMin": -7.1
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -627,7 +638,7 @@
       "properties": {},
       "type": "rail",
       "values": {
-        "dc": -8.6
+        "dc": 16.2
       },
       "visual": {
         "flipped": false,
@@ -669,7 +680,7 @@
       "properties": {},
       "type": "rail",
       "values": {
-        "dc": 16.2
+        "dc": -8.6
       },
       "visual": {
         "flipped": false,
@@ -772,7 +783,10 @@
         "model": "TL072"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 14.7,
+        "vRailMin": -7.1
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -785,7 +799,7 @@
       "properties": {},
       "type": "rail",
       "values": {
-        "dc": -8.6
+        "dc": 16.2
       },
       "visual": {
         "flipped": false,
@@ -799,7 +813,7 @@
       "properties": {},
       "type": "rail",
       "values": {
-        "dc": 16.2
+        "dc": -8.6
       },
       "visual": {
         "flipped": false,
@@ -885,7 +899,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 12
+        "fullScaleVolts": 3.9494942
       },
       "visual": {
         "flipped": false,
@@ -907,15 +921,123 @@
         "x": 18,
         "y": 27
       }
+    },
+    {
+      "id": "VDC2",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 9
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 25,
+        "y": 14
+      }
+    },
+    {
+      "id": "C16",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 32,
+        "y": 1
+      }
+    },
+    {
+      "id": "R23",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 4
+      }
+    },
+    {
+      "id": "GND6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 35,
+        "y": 9
+      }
+    },
+    {
+      "id": "R24",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 560
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 45,
+        "y": 1
+      }
+    },
+    {
+      "id": "R25",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 68000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 115,
+        "y": 1
+      }
+    },
+    {
+      "id": "R26",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 138,
+        "y": 30
+      }
+    },
+    {
+      "id": "GND7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 138,
+        "y": 35
+      }
     }
   ],
-  "description": "",
+  "description": "Engaged audio path of the Centaur S 698 traced by Martin Chittum (April 15, 2009 corrected drawing). The fixed clean feed uses the 15 kΩ summing resistor on this unit. The buffered bypass leg remains connected to the output through 68 kΩ. The charge pump is represented by fixed supply voltages. TL072 output swing is approximated as 1.5 V inside each supply.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
     "outputNode": "out"
   },
-  "name": "Untitled Circuit",
+  "name": "Klon Centaur",
   "version": 3,
   "wires": [
     {
@@ -2157,18 +2279,6 @@
     {
       "points": [
         {
-          "x": 102,
-          "y": 16
-        },
-        {
-          "x": 102,
-          "y": 18
-        }
-      ]
-    },
-    {
-      "points": [
-        {
           "x": 117,
           "y": 16
         },
@@ -2295,6 +2405,110 @@
         {
           "x": 138,
           "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 10
+        },
+        {
+          "x": 29,
+          "y": 1
+        },
+        {
+          "x": 30,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 34,
+          "y": 1
+        },
+        {
+          "x": 43,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 1
+        },
+        {
+          "x": 35,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 35,
+          "y": 6
+        },
+        {
+          "x": 35,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 47,
+          "y": 1
+        },
+        {
+          "x": 113,
+          "y": 1
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 117,
+          "y": 1
+        },
+        {
+          "x": 138,
+          "y": 1
+        },
+        {
+          "x": 138,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 138,
+          "y": 24
+        },
+        {
+          "x": 138,
+          "y": 28
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 138,
+          "y": 32
+        },
+        {
+          "x": 138,
+          "y": 33
         }
       ]
     }

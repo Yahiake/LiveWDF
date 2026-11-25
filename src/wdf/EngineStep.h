@@ -1,25 +1,24 @@
 #pragma once
 
-// Level 4 of the engine: one sample.
-//
-// `reset()` seeds the reactive states from the DC operating point, and `step()`
-// advances exactly one sample. `step()` is written once against both root solvers:
-// it builds the waves and the node voltages, hands the root currents to whichever
-// solve is active (`EngineSolve::solveRootsNewton` or the exact
-// `solveRootGroups`), then reconstructs the nodes and stores the new states.
-// Neither path is special-cased anywhere else.
-//
-// Allocation-free: every buffer it touches is sized in `EngineCore`.
+#include "wdf/LoadedJunctionPlan.h"
+
+// Reset seeds the reactive states from the DC operating point. Step advances
+// one sample using the prepared root solver and its fallback.
 
 #include "wdf/EngineCompile.h"
+
+#include <optional>
 
 namespace wdf {
 
 class EngineStep : public EngineCompile {
 public:
+    bool hasCompiledOptical() const noexcept { return sharedLamps_; }
+    void useCompiledOptical(bool enabled) noexcept { compiledOptical_ = enabled && sharedLamps_; }
+
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
-        resetControlledDevices();
+        resetPreviewState();
         std::vector<double> node, rootV;
         const bool haveDc =
             solveDc(node, rootV) && node.size() >= static_cast<size_t>(N_) &&
@@ -153,19 +152,38 @@ public:
                 indState_[static_cast<size_t>(grp.indIndices[r])] = a;
             }
         }
-        // A reset starts a new solve history: the runtime gate's evidence from
-        // the old history would describe a different operating point.
-        runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
-        blockFallbackCooldown_ = 0;
-        jointLastIters_ = 0;
-        jointLastTrials_ = 0;
-        runtimeBlockUsed_ = false;
-        runtimeBlockCount_ = 0;
-        runtimePartition_ = nullptr;
+        saveRecoveryState(haveDc && K_ > 0);
+        resetSolverHistory();
     }
 
     static constexpr int kDefaultMaxIterations = 60;
     static constexpr double kDefaultTolerance = 1e-9;
+    static constexpr double kFastLiveTolerance = 1e-7;
+
+    /// Prepare the nonlinear root preview at the current operating point off the audio thread.
+    bool prepareLoadedJunctionPreview(size_t inputSource = size_t(-1), bool screenBenefit = true);
+    void useLoadedJunctionPreview(bool enabled) noexcept {
+        if (loadedJunctionEnabled_ != enabled) loadedJunction_.seed = true;
+        loadedJunctionEnabled_ = enabled;
+    }
+    long long affineNodePreviewHits() const noexcept { return affineNodeHits_; }
+    bool hasLoadedJunctionPreview() const noexcept;
+    long long loadedJunctionAttempts() const noexcept { return loadedJunctionAttempts_; }
+    long long loadedJunctionHits() const noexcept { return loadedJunctionHits_; }
+
+    void prepareCircuitPlan();
+    void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
+    bool hasLinearDrivePlan() const noexcept {
+        return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
+    }
+    bool hasAffineRootPlan() const noexcept {
+        return circuitPlanPrepared() && !hasAdjustedLiveTransfer() && !affineRoot_.rows.empty();
+    }
+    long long affineRootAttempts() const noexcept { return affineRootAttempts_; }
+    long long affineRootHits() const noexcept { return affineRootHits_; }
+    long long circuitPlanAttempts() const noexcept { return circuitPlanAttempts_; }
+    long long circuitPlanHits() const noexcept { return circuitPlanHits_; }
 
     /// Advance one sample. Returns the node voltages (indexed like `nodeNames()`).
     const std::vector<double>& step(const std::vector<double>& sourceValues,
@@ -182,6 +200,150 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    void resetPreviewState() {
+        resetAffineMotion();
+        loadedJunction_.seed = true;
+        loadedJunction_.cooldown = loadedJunction_.misses = 0;
+        circuitPlanCooldown_ = 0;
+        affineRootCooldown_ = 0;
+        affineRootRetry_ = 8;
+        circuitPlanRetry_ = 8;
+        resetControlledDevices();
+    }
+
+    void resetSolverHistory() {
+        // A reset starts a new solve history: the runtime gate's evidence from
+        // the old history would describe a different operating point.
+        runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
+        blockFallbackCooldown_ = 0;
+        jointLastIters_ = 0;
+        jointLastTrials_ = 0;
+        runtimeBlockUsed_ = false;
+        runtimeBlockCount_ = 0;
+        runtimePartition_ = nullptr;
+    }
+
+    // For a fixed netlist and sample rate these DC states depend only on
+    // element conductances and the static amplifier law. Devices whose DC
+    // laws depend on live control, tube domain or supply state use reset().
+    struct RecoveryState {
+        bool valid = false, hasRoot = false;
+        std::vector<double> conductance, caps, inductors, volts, currents, poles;
+        std::vector<unsigned char> softRails;
+    } recovery_;
+
+    bool staticRecoveryEligible() const noexcept {
+        return K_ > 0 && nTri_ == 0 && nCtrl_ == 0 && !powerSagEnabled_ &&
+               bucketBrigades_.empty() && rmsDetectors_.empty();
+    }
+
+    bool hasRecoveryState() const noexcept {
+        return recovery_.valid && staticRecoveryEligible() && recovery_.conductance == net_.eG &&
+               std::ranges::equal(recovery_.softRails, opAmps_, {}, {}, &OpAmpModel::softRails);
+    }
+
+    void saveRecoveryState(bool hasRoot) {
+        if (!staticRecoveryEligible())
+            return;
+        recovery_.conductance = net_.eG;
+        recovery_.softRails.resize(opAmps_.size());
+        for (size_t i = 0; i < opAmps_.size(); ++i)
+            recovery_.softRails[i] = opAmps_[i].softRails;
+        recovery_.caps = capState_;
+        recovery_.inductors = indState_;
+        recovery_.volts = vv_;
+        recovery_.currents = ii_;
+        recovery_.poles = opAmpVp_;
+        recovery_.hasRoot = hasRoot;
+        recovery_.valid = true;
+    }
+
+    void recoverOperatingPoint() {
+        if (!loadedJunctionEnabled_ || !hasRecoveryState()) {
+            reset();
+            return;
+        }
+        resetPreviewState();
+        capState_ = recovery_.caps;
+        indState_ = recovery_.inductors;
+        // With only a network-bias seed, reset() preserves the live root history.
+        if (recovery_.hasRoot) {
+            ii_ = recovery_.currents;
+            opAmpVp_ = recovery_.poles;
+            vv_ = vvPrev_ = vvPrev2_ = recovery_.volts;
+        }
+        resetSolverHistory();
+    }
+
+    struct AffineRootPlan {
+        struct CurrentRow {
+            int port, pole;
+            double conductance, differential, poleGain;
+        };
+        std::vector<CurrentRow> rows;
+        std::vector<double> inverse, impedance, drive, current;
+    };
+    struct AffineRootScratch {
+        explicit AffineRootScratch(int n) :
+            full(n*n), baseTranspose(n*n), comparison(n*n), factors(n*n), column(n), pivots(n) {}
+        std::vector<double> full, baseTranspose, comparison, factors, column;
+        std::vector<int> pivots;
+    };
+    struct AffineMotion {
+        explicit AffineMotion(int n) : scratch(n) {}
+        AffineRootPlan root;
+        AffineRootScratch scratch;
+        long long revision = -1;
+        bool certified = false;
+        int cooldown = 0;
+    };
+    struct AffineNodePlan {
+        long long revision = -1;
+        struct Amp { int port, model; double impedanceBound; };
+        std::vector<Amp> amps;
+        std::vector<double> coefficients, inputs, outputs, residualBound;
+        std::optional<AffineMotion> motion;
+    };
+    AffineNodePlan affineNodes_;
+    long long affineNodeHits_ = 0;
+    bool buildAffineNodePreview();
+    void swapAffineNodePreview(EngineStep& prepared) noexcept;
+    bool tryAffineNodes(const double* sources, size_t count, double tolerance) noexcept;
+    const std::vector<double>& finishStep(const double* sourceValues, size_t sourceCount,
+                                          std::chrono::steady_clock::time_point phaseTime);
+    void swapLoadedJunctionPreview(EngineStep& prepared) noexcept;
+    LoadedJunctionPlan loadedJunction_;
+    long long loadedJunctionAttempts_ = 0, loadedJunctionHits_ = 0;
+    bool tryLoadedJunctionRoot() noexcept;
+    bool buildLoadedJunctionPlan(const std::vector<bool>& linearAmps, const std::vector<bool>& buffers,
+                                 bool omitReverse, bool& negativeReverse, std::span<const std::uint8_t> retained = {});
+    bool screenJunctionBenefit(size_t inputSource, std::span<std::uint8_t> crossedCutoffs = {});
+    void screenJunctionDevices(size_t inputSource, std::vector<bool>& linearAmps,
+                               std::vector<bool>& bufferTransistors) const;
+
+    bool factorAffineRoot(AffineRootPlan&, AffineRootScratch&) const noexcept;
+    bool buildAffineRoot(AffineRootPlan& result) const;
+    void prepareAffineMotion();
+    void resetAffineMotion() noexcept;
+    bool tryAffineMotion(double tolerance) noexcept;
+    void prepareAffineRoot();
+    bool opAmpsOnLinearBranch(const std::vector<double>& voltage) const noexcept;
+    bool tryAffineRoot(AffineRootPlan&, double tolerance) noexcept;
+    bool circuitRootContinuous() const noexcept;
+    void acceptCircuitRoot(double error) noexcept;
+    void commitCompiledRoot(double error) noexcept;
+    AffineRootPlan affineRoot_;
+    std::vector<double> certifiedResistance_;
+    long long affineRootAttempts_ = 0, affineRootHits_ = 0;
+    int affineRootCooldown_ = 0, affineRootRetry_ = 8;
+    bool factorCircuitTangent(const std::vector<double>& jacobian) noexcept;
+    bool tryCompiledRoot(double tolerance) noexcept;
+    bool applyCompiledDrive(const double* sources, size_t count) noexcept;
+    std::vector<double> driveCoefficients_, driveInputs_, rootFactors_, circuitResidualColumns_;
+    std::vector<int> rootPivots_;
+    long long circuitPlanRevision_ = -1, circuitPlanAttempts_ = 0, circuitPlanHits_ = 0;
+    int circuitPlanCooldown_ = 0, circuitPlanRetry_ = 8;
+    bool circuitPlanEnabled_ = false;
     void resetControlledDevices() {
         for (const auto& photo : photoresistors_)
             ctrlResValues_[photo.index] = circuit_.ctrlRes[photo.index].initialOhms;
@@ -225,15 +387,19 @@ protected:
         }
     }
 
+    double photoSenseVoltage(const PhotoresistorState& state, const std::vector<double>& nodes,
+                             const double* sources, size_t sourceCount) const {
+        return (state.sensePos >= 0 ? nodes[static_cast<size_t>(state.sensePos)] : 0.0) -
+            (state.senseNeg >= 0 ? nodes[static_cast<size_t>(state.senseNeg)] : 0.0) +
+            state.senseOffset.eval(sources, sourceCount);
+    }
+
     double photoTargetConductance(const PhotoresistorState& state,
                                   const std::vector<double>& nodes,
                                   const double* sources, size_t sourceCount) const {
-        const double sense =
-            (state.sensePos >= 0 ? nodes[static_cast<size_t>(state.sensePos)] : 0.0) -
-            (state.senseNeg >= 0 ? nodes[static_cast<size_t>(state.senseNeg)] : 0.0) +
-            state.senseOffset.eval(sources, sourceCount);
         const auto& ctrl = circuit_.ctrlRes[state.index];
-        return ctrl.photo->targetConductance(sense, ctrl.initialOhms);
+        return ctrl.photo->targetConductance(photoSenseVoltage(state, nodes, sources, sourceCount),
+                                             ctrl.initialOhms);
     }
 
     /// A sample may only commit reactive state after a verified solve.

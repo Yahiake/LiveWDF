@@ -1,7 +1,12 @@
 #include "PluginEditor.h"
 #include "FactorySchematics.h"
 #include "Fonts.h"
+#include "format/PortImpedance.h"
+#include "format/ValueFormat.h"
 #include "gui/AboutDialog.h"
+
+#include <algorithm>
+#include <cmath>
 
 namespace livewdf {
 
@@ -25,7 +30,7 @@ juce::String loadNoteSuffix(const wdf::LiveWDFDocument& doc) {
 } // anonymous
 
 LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
-    : AudioProcessorEditor(&p), processor_(p) {
+    : AudioProcessorEditor(&p), processor_(p), restoredDocumentRevision_(p.getRestoredDocumentRevision()) {
     setLookAndFeel(&lookAndFeel_);
 
     // 1. Title Label
@@ -54,10 +59,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // 3. Reload Button
     reloadBtn_.onClick = [this] {
         if (processor_.reloadCircuit()) {
-            schematicCanvas_.setDocument(processor_.getCurrentDocument());
-            syncSchematicLiveState();
-            rebuildDynamicControls();
-            presetStepper_.setName(currentCircuitDescription() + " · Reloaded");
+            refreshCircuitView(" · Reloaded");
         } else {
             // **A reload that went dead says why**, because the usual reason
             // now is a file the format refuses outright, and the fix is in the
@@ -96,11 +98,22 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
         processor_.getAPVTS(), "export_4x", oversampleExportBtn_);
 
     solveQualityCombo_.addItem("Accurate", 1);
-    solveQualityCombo_.addItem("Fast Live", 2);
-    solveQualityCombo_.setTooltip("Fast Live uses a looser solver tolerance.");
+    solveQualityCombo_.addItem("Fast", 2);
+    solveQualityCombo_.addItem("Preview", 3);
+    solveQualityCombo_.setTooltip("Preview uses compiled circuit approximations when available.");
     addAndMakeVisible(solveQualityCombo_);
-    solveQualityAttach_ = std::make_unique<ComboBoxAttachment>(
-        processor_.getAPVTS(), "solve_quality", solveQualityCombo_);
+    auto& parameters = processor_.getAPVTS();
+    const auto refreshQuality = [this](float) { refreshSolveQuality(); };
+    solveQualityAttach_ = std::make_unique<juce::ParameterAttachment>(
+        *parameters.getParameter("solve_quality"), refreshQuality);
+    compiledPreviewAttach_ = std::make_unique<juce::ParameterAttachment>(
+        *parameters.getParameter("compiled_preview"), refreshQuality);
+    solveQualityCombo_.onChange = [this] {
+        const int choice = solveQualityCombo_.getSelectedId();
+        compiledPreviewAttach_->setValueAsCompleteGesture(choice == 3 ? 1.0f : 0.0f);
+        solveQualityAttach_->setValueAsCompleteGesture(choice == 1 ? 0.0f : 1.0f);
+    };
+    refreshSolveQuality();
 
     accurateExportBtn_.setTooltip("Use Accurate when the host renders offline. "
                                   "Turn off to render with the selected Solve Quality.");
@@ -131,14 +144,28 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     schematicCanvas_.setWantsKeyboardFocus(false);
     schematicCanvas_.setMouseClickGrabsKeyboardFocus(false);
     schematicCanvas_.setMouseCursor(juce::MouseCursor::NormalCursor);
-    schematicCanvas_.setDocument(processor_.getCurrentDocument());
-    syncSchematicLiveState();
     addAndMakeVisible(schematicCanvas_);
 
     // 6. Dual-Trace Oscilloscope
     oscilloscope_.setBuffers(&processor_.getInputScopeBuffer(), &processor_.getOutputScopeBuffer());
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
     addAndMakeVisible(oscilloscope_);
+
+    inputRoute_.addItemList({"Track", "Previous LiveWDF"}, 1);
+    outputRoute_.addItemList({"Next LiveWDF", "Track (level matched)"}, 1);
+    inputRoute_.setTooltip("Track uses the preset's input voltage scale. Previous LiveWDF receives the preceding circuit's output voltage.");
+    outputRoute_.setTooltip("Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
+    addAndMakeVisible(inputRouteLabel_);
+    addAndMakeVisible(inputRoute_);
+    addChildComponent(previewPadBtn_);
+    previewPadAttach_ = std::make_unique<ButtonAttachment>(
+        processor_.getAPVTS(), "preview_pad", previewPadBtn_);
+    addAndMakeVisible(outputRouteLabel_);
+    addAndMakeVisible(outputRoute_);
+    inputRouteAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "chain_input", inputRoute_);
+    outputRouteAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "match_output", outputRoute_);
+    inputRoute_.onChange = [this] { updateScopeScales(); };
+    outputRoute_.onChange = [this] { updateScopeScales(); };
 
     // 7. Input Trim & Output Knobs
     inTrimKnob_.setAccentColor(juce::Colour(0xFF00E5A0)); // Teal
@@ -178,7 +205,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
 #endif
 
     // 8. Rebuild dynamic circuit potentiometers
-    rebuildDynamicControls();
+    refreshCircuitView();
 
     // 9. Window configuration (spacious, wide layout)
 #if JUCE_ANDROID
@@ -195,13 +222,11 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     // The status line says what is playing, so the plugin is never a mystery.
     statusLabel_.setColour(juce::Label::textColourId, juce::Colour(0xFF94A3B8));
     statusLabel_.setFont(editor::Fonts::monoSemiBold(12.0f));
-    presetStepper_.setName(currentCircuitDescription());
     addAndMakeVisible(statusLabel_);
 }
 
-juce::String LiveWDFPluginEditor::currentCircuitDescription() const {
+juce::String LiveWDFPluginEditor::currentCircuitDescription(const wdf::LiveWDFDocument& doc) const {
     const auto file = processor_.getCurrentCircuitFile();
-    const auto& doc = processor_.getCurrentDocument();
 
     juce::String base;
     if (file.existsAsFile())
@@ -225,7 +250,66 @@ LiveWDFPluginEditor::~LiveWDFPluginEditor() {
     stopTimer();
 }
 
-void LiveWDFPluginEditor::rebuildDynamicControls() {
+void LiveWDFPluginEditor::updateScopeScales() {
+    const auto& doc = schematicCanvas_.getDocument();
+    constexpr auto chainVolts = static_cast<float>(wdf::LiveWDFDocument::kChainVoltsPerFullScale);
+    oscilloscope_.setTerminalScales(inputRoute_.getSelectedItemIndex() == 1 ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
+                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
+}
+
+void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool input) {
+    const auto range = wdf::portImpedanceRange(doc, input);
+    if (!range) return;
+
+    const auto* name = input ? "Source impedance" : "Output load";
+    const auto* parameter = input ? "source_impedance" : "load_impedance";
+    auto knob = std::make_unique<VintageKnob>(input ? "SOURCE R" : "OUTPUT LOAD");
+    knob->setAccentColor(juce::Colour(input ? 0xFF00E5A0 : 0xFFFFB800));
+    auto& slider = knob->slider();
+    slider.setName(name);
+    auto attachment = std::make_unique<SliderAttachment>(processor_.getAPVTS(), parameter, slider);
+
+    const auto ohmSymbol = juce::String::charToString(0x03a9);
+    const auto ohms = [ohmSymbol](double value) {
+        return juce::String(editor::formatValue(value, "")) + ohmSymbol;
+    };
+    const juce::String description = input ? "Resistance of the source feeding this input"
+                                           : "Resistance of the device connected to this output";
+    slider.setDoubleClickReturnValue(true, range->defaultPosition);
+    slider.setTooltip(description + ": " + ohms(range->minOhms) + " to " + ohms(range->maxOhms)
+                      + ". Double-click for the preset impedance.");
+    const bool open = !input && range->resistor.empty();
+    slider.textFromValueFunction = [limits = *range, ohms, open](double position) {
+        if (position <= 0.) return open ? juce::String("Open") : ohms(limits.wiredOhms);
+        return ohms(limits.ohmsAt(position));
+    };
+    slider.valueFromTextFunction = [limits = *range, &slider, ohmSymbol, open](const juce::String& text) {
+        if (text.trim().equalsIgnoreCase("As wired") || (open && text.trim().equalsIgnoreCase("Open")))
+            return 0.;
+        bool ok = false;
+        auto number = text.replace(juce::String::charToString(0x2126), "").replace(ohmSymbol, "");
+        const double value = editor::parseValue(number.trim().toStdString(), &ok);
+        if (!ok || !std::isfinite(value) || value < 0.) return slider.getValue();
+        if (!limits.resistor.empty() && value == limits.wiredOhms) return limits.defaultPosition;
+        if (open && value == 0.) return slider.getValue();
+        return limits.positionForOhms(value);
+    };
+    slider.updateText();
+    knob->setViewportIgnoreDragFlag(inTrimKnob_.getViewportIgnoreDragFlag());
+    inTrimKnob_.getParentComponent()->addAndMakeVisible(*knob);
+    dynamicPotKnobs_.push_back(std::move(knob));
+    dynamicPotAttachments_.push_back(std::move(attachment));
+}
+
+void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc) {
+    updateScopeScales();
+    previewPadBtn_.setVisible(doc.previewPadDb > 0.);
+    if (previewPadBtn_.isVisible()) {
+        const auto amount = juce::String(doc.previewPadDb, 1) + " dB";
+        previewPadBtn_.setTooltip("Lower circuit drive by " + amount + " and add " + amount
+            + " back to the wet output. Requires Fast Live with Preview. Accurate export bypasses the pad.");
+        previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
+    }
     // Attachments first: they hold a reference to the knob's slider, so the
     // slider must outlive the attachment, not the other way round.
     dynamicPotAttachments_.clear();
@@ -233,6 +317,7 @@ void LiveWDFPluginEditor::rebuildDynamicControls() {
     dynamicSwitchButtons_.clear();
     dynamicSwitchNames_.clear();
 
+    addImpedanceKnob(doc, true);
     // **One knob per pot group.** The processor grouped pots and rheostats by
     // their label; the group order is the parameter order (`pot_0`, ...), so a
     // ganged pair is one knob and one parameter driving both members.
@@ -257,6 +342,8 @@ void LiveWDFPluginEditor::rebuildDynamicControls() {
         dynamicPotKnobs_.push_back(std::move(knob));
         dynamicPotAttachments_.push_back(std::move(attach));
     }
+
+    addImpedanceKnob(doc, false);
 
     // **One button per switch group.** Clicking any ganged switch throws all of
     // them: the processor owns the state and writes every member's controlled
@@ -382,12 +469,17 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
         return false;
     }
 
-    schematicCanvas_.setDocument(processor_.getCurrentDocument());
-    syncSchematicLiveState();
-    rebuildDynamicControls();
-    presetStepper_.setName(currentCircuitDescription());
-    presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
+    refreshCircuitView();
     return true;
+}
+
+void LiveWDFPluginEditor::refreshCircuitView(const juce::String& suffix) {
+    const auto doc = processor_.getDocumentSnapshot();
+    schematicCanvas_.setDocument(doc);
+    syncSchematicLiveState();
+    rebuildDynamicControls(doc);
+    presetStepper_.setName(currentCircuitDescription(doc) + suffix);
+    presetStepper_.setCurrentFile(processor_.getCurrentCircuitFile());
 }
 
 void LiveWDFPluginEditor::showFactoryBrowser() {
@@ -474,11 +566,24 @@ void LiveWDFPluginEditor::filesDropped(const juce::StringArray& files, int x, in
 // -----------------------------------------------------------------------------
 // Timer Callback (Periodic UI Refresh)
 // -----------------------------------------------------------------------------
+void LiveWDFPluginEditor::refreshSolveQuality() {
+    auto& parameters = processor_.getAPVTS();
+    const bool fast = parameters.getRawParameterValue("solve_quality")->load() > 0.5f;
+    const bool preview = parameters.getRawParameterValue("compiled_preview")->load() > 0.5f;
+    solveQualityCombo_.setSelectedId(fast ? (preview ? 3 : 2) : 1, juce::dontSendNotification);
+}
+
 void LiveWDFPluginEditor::timerCallback() {
+    const auto revision = processor_.getRestoredDocumentRevision();
+    if (revision != restoredDocumentRevision_) {
+        restoredDocumentRevision_ = revision;
+        refreshCircuitView();
+    }
     // Follow the host's rate. The editor can open before prepareToPlay and a
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
     // The parameter can move from automation or host state restore, not only
     // from the button, so the label follows the parameter rather than the click.
@@ -535,12 +640,12 @@ void LiveWDFPluginEditor::paint(juce::Graphics& g) {
     g.drawHorizontalLine(52, 0.0f, static_cast<float>(getWidth()));
 
     // Divider lines around control strip
-    const int knobStripY = getHeight() - 268;
+    const int knobStripY = controlStripBounds_.getY();
     g.setColour(juce::Colour(0xFF14171C));
-    g.fillRect(0, knobStripY, getWidth(), 118);
+    g.fillRect(controlStripBounds_);
     g.setColour(juce::Colour(0xFF262E3B));
     g.drawHorizontalLine(knobStripY, 0.0f, static_cast<float>(getWidth()));
-    g.drawHorizontalLine(knobStripY + 118, 0.0f, static_cast<float>(getWidth()));
+    g.drawHorizontalLine(controlStripBounds_.getBottom(), 0.0f, static_cast<float>(getWidth()));
 
     // Switch strip sits above the knobs, and only exists when the circuit has
     // an SPDT to throw.
@@ -594,25 +699,27 @@ void LiveWDFPluginEditor::resized() {
     auto bottomScope = bounds.removeFromBottom(150);
     oscilloscope_.setBounds(bottomScope.reduced(4));
 
-    // 3. Middle Knob Strip (height 118px)
-    auto knobStrip = bounds.removeFromBottom(118).reduced(12, 4);
+    constexpr int fixedKnobWidth = 92;
+    const int count = static_cast<int>(dynamicPotKnobs_.size());
+    const int centreWidth = bounds.getWidth() - 24 - 3 * fixedKnobWidth;
+    const int maxPerRow = std::max(1, centreWidth / kMinDynamicKnobWidth);
+    const int rows = std::max(1, (count + maxPerRow - 1) / maxPerRow);
+    controlStripBounds_ = bounds.removeFromBottom(140 + (rows - 1) * 76);
+    auto knobStrip = controlStripBounds_.reduced(12, 4);
+    auto routes = knobStrip.removeFromBottom(28).reduced(0, 2);
+    inputRouteLabel_.setBounds(routes.removeFromLeft(76));
+    inputRoute_.setBounds(routes.removeFromLeft(158));
+    outputRoute_.setBounds(routes.removeFromRight(180));
+    outputRouteLabel_.setBounds(routes.removeFromRight(72));
+    previewPadBtn_.setBounds(routes.removeFromLeft(112).reduced(5, 0));
 
-    // Left: Input Trim
-    inTrimKnob_.setBounds(knobStrip.removeFromLeft(92));
+    inTrimKnob_.setBounds(knobStrip.removeFromLeft(fixedKnobWidth));
+    outMasterKnob_.setBounds(knobStrip.removeFromRight(fixedKnobWidth));
+    mixKnob_.setBounds(knobStrip.removeFromRight(fixedKnobWidth));
 
-    // Right: Mix & Output Master
-    outMasterKnob_.setBounds(knobStrip.removeFromRight(92));
-    mixKnob_.setBounds(knobStrip.removeFromRight(92));
-
-    // Center: Dynamic Circuit Potentiometers. One row while every knob keeps a
-    // readable width; once it cannot, the strip wraps onto a second row. An
-    // amp with a graphical equalizer has twelve groups (seven on the body,
-    // five on the EQ), and squeezing them into one row makes them unusable.
     if (!dynamicPotKnobs_.empty()) {
-        const int count = static_cast<int>(dynamicPotKnobs_.size());
         const int available = knobStrip.getWidth();
-        const int perRow = juce::jlimit(1, count, available / kMinDynamicPotKnobWidth);
-        const int rows = (count + perRow - 1) / perRow;
+        const int perRow = (count + rows - 1) / rows;
         const int rowHeight = knobStrip.getHeight() / rows;
         int next = 0;
         for (int row = 0; row < rows && next < count; ++row) {

@@ -6,6 +6,7 @@
 
 #include <math.h>
 
+#include "format/PortImpedance.h"
 #include "spice/Net.h"
 #include "spice/SpiceNet.h"
 #include "wdf/Engine.h"
@@ -47,6 +48,84 @@ TEST_CASE("Photoresistor responds to differential light drive with separate atta
 
     engine.reset();
     CHECK(engine.step(dc)[out] == Approx(1.0 / (1.0 + 10000.0 * dcConductance)));
+}
+
+TEST_CASE("Co-illuminated optical cells preserve independent attack and release across mode changes",
+          "[engine][photores]") {
+    wdf::Circuit c;
+    c.addSrc("signal", "0", 1.0);
+    c.addSrc("lamp", "0", 0.0);
+    c.addRes("signal", "out", 12000.0);
+    wdf::PhotoresistorControl cell;
+    cell.sensePos = "lamp";
+    cell.senseNeg = "0";
+    cell.referenceVolts = 1.2;
+    cell.gamma = 1.65;
+    c.addPhotoresistor("out", "0", 1e7, cell, "fast");
+    cell.attackSeconds = 0.32;
+    cell.releaseSeconds = 2.0;
+    cell.brightOhms = 2700.0;
+    c.addPhotoresistor("out", "0", 1e7, cell, "slow");
+    cell.gamma = 2.75;
+    c.addPhotoresistor("out", "0", 2e6, cell, "different response");
+
+    for (const double rate : {48000.0, 96000.0}) {
+        wdf::Engine exact(c, rate), preview(c, rate);
+        REQUIRE(preview.hasCompiledOptical());
+        auto drive = exact.dcValues();
+        int output = exact.nodeIndex("out");
+        double maxAudioError = 0.0, maxOhmsError = 0.0;
+        for (int i = 0; i < 2048; ++i) {
+            preview.useCompiledOptical((i / 353) % 2 == 0);
+            drive[1] = i < 1200 ? 0.8 + 0.7 * std::sin(i * 0.07) : -0.25;
+            maxAudioError = std::max(maxAudioError, std::abs(exact.step(drive)[output] -
+                                                             preview.step(drive)[output]));
+            for (size_t k = 0; k < c.ctrlRes.size(); ++k)
+                maxOhmsError = std::max(maxOhmsError, std::abs(exact.controlledResistanceValues()[k] -
+                                                               preview.controlledResistanceValues()[k]));
+        }
+        CHECK(maxAudioError < 1e-12);
+        CHECK(maxOhmsError < 1e-8);
+    }
+}
+
+TEST_CASE("The loaded junction solve follows a feedback-driven optical resistance", "[engine][photores]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "out", 4700.0);
+    c.addDiode("out", "0", wdf::DiodeModel{4.35e-9, 1.906, 0.6458}, "clip");
+    wdf::PhotoresistorControl cell;
+    cell.sensePos = "out";
+    cell.senseNeg = "0";
+    cell.referenceVolts = 0.25;
+    cell.gamma = 1.65;
+    cell.brightOhms = 250.0;
+    cell.attackSeconds = 0.001;
+    cell.releaseSeconds = 0.010;
+    c.addPhotoresistor("out", "0", 1e6, cell, "feedback");
+
+    for (double fs : {48000.0, 96000.0}) {
+        wdf::Engine native(c, fs), preview(c, fs);
+        REQUIRE(preview.prepareLoadedJunctionPreview());
+        preview.useLoadedJunctionPreview(true);
+        auto source = native.dcValues();
+        const int out = native.nodeIndex("out");
+        double maxVoltageError = 0.0, maxResistanceError = 0.0, minResistance = 1e6;
+        for (int i = 0; i < 3072; ++i) {
+            source[0] = i < 1536 ? 1.6 * std::sin(i * 0.035) : 0.0;
+            const double reference = native.step(source)[out];
+            const double candidate = preview.step(source)[out];
+            const double actualR = preview.controlledResistanceValues().front();
+            const double expectedR = native.controlledResistanceValues().front();
+            maxVoltageError = std::max(maxVoltageError, std::abs(candidate - reference));
+            maxResistanceError = std::max(maxResistanceError, std::abs(actualR / expectedR - 1.0));
+            minResistance = std::min(minResistance, actualR);
+        }
+        CHECK(preview.loadedJunctionHits() > 3000);
+        CHECK(minResistance < 2000.0);
+        CHECK(maxVoltageError < 1e-4);
+        CHECK(maxResistanceError < 1e-3);
+    }
 }
 
 // Increment 18: Variable Resistors (VarRes rheostats) & Controlled Resistors (audio-rate root elements).
@@ -163,6 +242,32 @@ TEST_CASE("prepared controls match rebuilt transfers without resetting waves", "
     }
     REQUIRE(prepared.linearRebuilds() == initialRebuilds + 1);
     REQUIRE(worst < 1e-7);
+}
+
+TEST_CASE("live emitter resistor reconstructs the same BJT voltages as a rebuild", "[varres][engine][controls][bjt]") {
+    wdf::Circuit c;
+    c.addSrc("supply", "0", 9.0);
+    c.addRes("supply", "base", 1e6);
+    c.addRes("supply", "collector", 4700.0);
+    c.addVarRes("emitter", "0", 2200.0, 0.5, wdf::PotTaper::Linear, "Re");
+    const auto* transistor = wdf::findBjtByName("2N3904");
+    REQUIRE(transistor);
+    c.addBjt("collector", "base", "emitter", transistor->model, "Q1");
+
+    wdf::Engine live(c, 48000.0), rebuilt(c, 48000.0);
+    live.prepareLiveControls();
+    REQUIRE(live.setLiveControls({}, {{0, 0.75}}));
+    REQUIRE(rebuilt.setVarResPosition(0, 0.75));
+    const auto& expected = rebuilt.step(rebuilt.dcValues());
+    const auto& actual = live.step(live.dcValues());
+    REQUIRE_FALSE(live.lastStateRejected());
+    REQUIRE_FALSE(rebuilt.lastStateRejected());
+    for (const auto* name : {"collector", "emitter"}) {
+        const auto n = live.nodeIndex(name);
+        REQUIRE(n >= 0);
+        REQUIRE(expected[n] > 0.1);
+        CHECK(actual[n] == Approx(expected[n]).margin(1e-7));
+    }
 }
 
 TEST_CASE("settled control transfer keeps running state and rejects stale work", "[varres][engine][controls]") {
@@ -340,5 +445,132 @@ TEST_CASE("THAT2180 tracks both control pins without rebuilding the signal path"
         }
         CHECK(engine.stateRejectCount() == 0);
         CHECK(engine.linearRebuilds() == rebuilds);
+    }
+}
+
+TEST_CASE("Port impedance stamps series and shunt fixtures without duplicating an existing termination",
+          "[impedance][engine]") {
+    wdf::LiveWDFDocument doc;
+    wdf::SchematicComponent in, out, series, load;
+    in.id = "IN"; in.type = "in"; in.pins = {{"sig", "signal"}};
+    out.id = "OUT"; out.type = "out"; out.pins = {{"sig", "output"}};
+    in.values = out.values = {{"externalMinOhms", 100}, {"externalMaxOhms", 1000}};
+    series.id = "RS"; series.type = "res"; series.pins = {{"a","signal"}, {"b","output"}};
+    series.values = {{"value", 100}};
+    load.id = "RL"; load.type = "res"; load.pins = {{"a","0"}, {"b","output"}};
+    load.values = {{"value", 1000}};
+    doc.components = {in, out, series, load};
+    auto& source = doc.components[0];
+    auto& output = doc.components[1];
+    SECTION("Named fixture defaults show their marked resistance without stamping a live control") {
+        source.properties["externalResistor"] = "RS";
+        source.values["externalDefaultOhms"] = 300.;
+        doc.components[2].values["value"] = 150.;
+        const auto range = wdf::portImpedanceRange(doc, true);
+        REQUIRE(range);
+        REQUIRE(range->defaultPosition > 0.);
+        CHECK(range->ohmsAt(static_cast<float>(range->defaultPosition)) == 150.);
+        CHECK(range->wiredOhms == 150.);
+        CHECK(wdf::circuitWithPortImpedances(doc).varRes.empty());
+        CHECK_FALSE(range->needsFixture(range->defaultPosition));
+        CHECK(range->needsFixture(range->positionForOhms(200.)));
+        CHECK(range->needsFixture(range->defaultPosition, true));
+        CHECK_FALSE(range->needsFixture(0., true));
+    }
+    SECTION("Existing source and load have their actual values replaced; live changes preserve the transfer") {
+        source.properties["externalResistor"] = "RS";
+        output.properties["externalResistor"] = "RL";
+        auto circuit = doc.toCircuit();
+        CHECK(wdf::applyPortImpedance(circuit, doc, true, 0.).empty());
+        REQUIRE(circuit.varRes.empty());
+        REQUIRE(wdf::applyPortImpedance(circuit, doc, true, 1.) == "RS");
+        REQUIRE(wdf::applyPortImpedance(circuit, doc, false, .001) == "RL");
+        REQUIRE(circuit.res.size() == 2);
+        wdf::Engine engine(circuit, 48000.);
+        const int index = engine.nodeIndex("output");
+        REQUIRE(index >= 0);
+        CHECK(engine.step({1.})[index] == Approx(100. / 1100.));
+        engine.prepareLiveControls();
+        const auto rebuilds = engine.linearRebuilds();
+        REQUIRE(engine.setLiveControls({}, {{engine.varResIndexByName("RS"), .1},
+                                             {engine.varResIndexByName("RL"), 1.}}));
+        CHECK(engine.step({1.})[index] == Approx(1000. / 1100.));
+        CHECK(engine.linearRebuilds() == rebuilds);
+    }
+    SECTION("An added source and added load form the expected series and parallel network") {
+        auto circuit = doc.toCircuit();
+        circuit.addVarRes("output", "0", 1000., 1., wdf::PotTaper::Linear, "$external_source");
+        circuit.addRes("$external_source__drive", "0", 1000.);
+        const auto sourceName = wdf::applyPortImpedance(circuit, doc, true, .001);
+        REQUIRE(sourceName == "$external_source_");
+        CHECK(circuit.src.front().a != "$external_source__drive");
+        REQUIRE_FALSE(wdf::applyPortImpedance(circuit, doc, false, 1.).empty());
+        wdf::Engine engine(circuit, 48000.);
+        const int index = engine.nodeIndex("output");
+        REQUIRE(index >= 0);
+        const double parallel = 1000. / 3.;
+        CHECK(engine.step({1.})[index] == Approx(parallel / (100. + 100. + parallel)));
+    }
+    SECTION("A stale reference, internal shunt on the driven pin, or loaded source branch is rejected") {
+        source.properties["externalResistor"] = "missing";
+        CHECK_FALSE(wdf::portImpedanceRange(doc, true));
+        output.properties["externalResistor"] = "RS";
+        CHECK_FALSE(wdf::portImpedanceRange(doc, false));
+        source.properties["externalResistor"] = "RS";
+        load.id = "Rtap"; load.pins["b"] = "signal";
+        doc.components.push_back(load);
+        CHECK_FALSE(wdf::portImpedanceRange(doc, true));
+    }
+}
+
+TEST_CASE("Settled bipolar preview continues a moving control through a live transient", "[engine][controls][preview]") {
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.);
+    c.addSrc("supply", "0", 9.);
+    c.addRes("in", "base", 330000.);
+    c.addRes("supply", "base", 22000.);
+    c.addRes("base", "0", 4700.);
+    c.addRes("supply", "collector", 3300.);
+    c.addRes("emitter", "0", 820.);
+    c.addBjt("collector", "base", "emitter", wdf::findBjtByName("2N3904")->model, "Q1");
+    c.addCap("collector", "level", 1.e-6);
+    c.addPot("level", "wiper", "0", 10000., .5, wdf::PotTaper::Linear, "Level");
+    c.addInd("wiper", "out", 10.e-3);
+    c.addRes("out", "0", 4700.);
+    wdf::Engine updated(c, 48000.), uninterrupted(c, 48000.), physical(c, 48000.);
+    const int out = updated.nodeIndex("out");
+    for (auto* e : {&updated, &uninterrupted, &physical})
+        e->prepareLiveControls();
+    for (auto* e : {&updated, &uninterrupted})
+        REQUIRE(e->prepareBipolarPreview(0, out));
+
+    wdf::Engine::LiveTransferSetup settled(c);
+    auto sources = physical.dcValues();
+    double atChange = 0.;
+    for (int n = 0; n < 320; ++n) {
+        if (n == 64) {
+            for (auto* e : {&updated, &uninterrupted, &physical})
+                REQUIRE(e->setLiveControls({{0, .65}}, {}));
+            REQUIRE(updated.captureLiveTransferSetup(settled));
+            settled.build(0, false);
+            settled.prepareCompiledPreview(0, out, true, 1.2, false);
+        }
+        if (n == 192) {
+            REQUIRE(updated.bipolarPreviewActive());
+            REQUIRE(updated.installLiveTransferSetup(settled));
+        }
+
+        // The input changes on the first sample processed by the new coefficients.
+        sources[0] = .12 * std::sin(n * .063) + (n >= 192 ? .18 : 0.);
+        double actual, prior;
+        REQUIRE(updated.stepBipolarPreview(sources[0], actual));
+        REQUIRE(uninterrupted.stepBipolarPreview(sources[0], prior));
+        const double reference = physical.step(sources)[out];
+        REQUIRE(actual == Approx(prior).margin(1e-7));
+        REQUIRE(actual == Approx(reference).margin(2e-5));
+        if (n == 191)
+            atChange = actual;
+        if (n == 192)
+            CHECK(std::abs(actual - atChange) > 1e-4);
     }
 }

@@ -6,7 +6,12 @@
       "id": "IN1",
       "properties": {},
       "type": "in",
-      "values": {},
+      "values": {
+        "externalDefaultOhms": 5900,
+        "externalMaxOhms": 150000,
+        "externalMinOhms": 100,
+        "referenceMillivoltsRms": 77.5
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -518,10 +523,14 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "Rload"
+      },
       "type": "out",
       "values": {
-        "fullScaleVolts": 5.0
+        "externalMaxOhms": 1000000,
+        "externalMinOhms": 5000,
+        "fullScaleVolts": 6.178812
       },
       "visual": {
         "flipped": false,

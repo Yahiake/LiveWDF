@@ -21,7 +21,7 @@
       "properties": {},
       "type": "in",
       "values": {
-        "fullScaleVolts": 1.736
+        "referenceMillivoltsRms": 775.0
       },
       "visual": {
         "flipped": false,
@@ -2654,7 +2654,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.736
+        "fullScaleVolts": 11.151587
       },
       "visual": {
         "flipped": false,

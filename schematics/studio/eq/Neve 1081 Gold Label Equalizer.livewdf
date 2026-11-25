@@ -7,7 +7,7 @@
       "properties": {},
       "type": "in",
       "values": {
-        "fullScaleVolts": 1.736
+        "referenceMillivoltsRms": 137.816654
       },
       "visual": {
         "flipped": false,
@@ -6088,7 +6088,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.736
+        "fullScaleVolts": 1.586979
       },
       "visual": {
         "flipped": false,
@@ -6158,6 +6158,7 @@
   },
   "name": "Neve 1081 Gold Label Equalizer",
   "outputNode": "out",
+  "previewPadDb": 12.0,
   "version": 3,
   "wires": [
     {

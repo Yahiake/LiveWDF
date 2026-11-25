@@ -1,4 +1,5 @@
 #include "InspectorPanel.h"
+#include "CircuitSession.h"
 #include "DiagLog.h"
 #include "ElementAccess.h"
 #include "devices/Jfet.h"
@@ -12,6 +13,7 @@
 #include "gui/glow/Glow.h"
 
 #include <algorithm>
+#include <future>
 
 namespace livewdf::editor {
 
@@ -39,6 +41,7 @@ juce::String propertyLabel(const std::string& key) {
     if (key == "preset") return "Preset";
     if (key == wdf::kPolarityProperty) return "Polarity";
     if (key == "taper")  return "Taper";
+    if (key == "externalResistor") return "External resistor ID";
     if (key == "mode")   return "Mode";
     // **Not "Node".** Under the geometry-only format this row does not name a
     // net: the drawing decides which net a source feeds, and this is a label
@@ -48,6 +51,75 @@ juce::String propertyLabel(const std::string& key) {
 }
 
 }  // namespace
+
+struct InspectorPanel::CalibrationJob {
+    std::atomic_bool cancelled{false};
+    std::string sheet;
+    std::future<CircuitSession::OutputCalibration> result;
+};
+
+InspectorPanel::~InspectorPanel() {
+    stopTimer();
+    cancelOutputCalibration();
+}
+
+void InspectorPanel::cancelOutputCalibration() {
+    if (calibration_) calibration_->cancelled = true;
+    calibrationMessage_.clear();
+}
+
+void InspectorPanel::startOutputCalibration() {
+    if (calibration_ || !doc_) return;
+    const auto* output = doc_->terminal("out");
+    if (!output || output->id != id_) return;
+    auto job = std::make_unique<CalibrationJob>();
+    try {
+        job->sheet = doc_->toJson();
+        job->result = std::async(std::launch::async, [doc = *doc_, work = job.get()] {
+            return CircuitSession::measureOutputReference(doc, work->cancelled);
+        });
+        calibration_ = std::move(job);
+        startTimerHz(10);
+    } catch (const std::exception& error) {
+        calibrationMessage_ = error.what();
+    }
+    refreshCalibrationControls();
+}
+
+void InspectorPanel::refreshCalibrationControls() {
+    if (calibrationButton_) {
+        calibrationButton_->setButtonText(calibration_ ? "Measuring..." : "Calibrate output");
+        calibrationButton_->setEnabled(!calibration_);
+    }
+    if (calibrationLabel_) {
+        const auto text = calibrationMessage_.isEmpty() ? juce::String("Output level calibration") : calibrationMessage_;
+        calibrationLabel_->setText(text, juce::dontSendNotification);
+        calibrationLabel_->setTooltip(text);
+    }
+}
+
+void InspectorPanel::timerCallback() {
+    if (!calibration_ || calibration_->result.wait_for(std::chrono::seconds(0)) != std::future_status::ready) return;
+    stopTimer();
+    auto job = std::move(calibration_);
+    CircuitSession::OutputCalibration result;
+    try {
+        result = job->result.get();
+    } catch (const std::exception& error) {
+        result.error = error.what();
+    }
+    if (!job->cancelled && doc_ && doc_->toJson() == job->sheet) {
+        if (result.error.empty()) {
+            commitEdit("fullScaleVolts", juce::String(result.voltsPerFullScale, 15));
+            if (outputReferenceField_)
+                outputReferenceField_->setText(formatValue(doc_->outputFullScaleVolts(), ""), false);
+            calibrationMessage_ = "Measured at -9 dBFS";
+        } else {
+            calibrationMessage_ = result.error;
+        }
+    }
+    refreshCalibrationControls();
+}
 
 InspectorPanel::InspectorPanel() {
     // The rows scroll; the title and Delete button do not. See the member note
@@ -84,6 +156,7 @@ void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id)
     // model change) should not jump away from the row the user is using.
     const bool sameTarget = (doc == doc_ && id == id_);
 
+    if (!sameTarget) cancelOutputCalibration();
     doc_ = doc;
     id_ = id;
     wire_ = {};          // a part target and a wire target are mutually exclusive
@@ -96,6 +169,7 @@ void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id)
 }
 
 void InspectorPanel::setWireTarget(const WireInfo& wire) {
+    cancelOutputCalibration();
     doc_ = nullptr;
     id_.clear();
     wire_ = wire;
@@ -390,14 +464,25 @@ void InspectorPanel::rebuild() {
     // is not offered: the model picker says "12AX7", and a "Value" field beside
     // it holding a zero says nothing at all. The question is asked of the
     // accessor, which is where it is answered for everyone else too.
-    if (comp.values.count(primary) && hasNumericValue(comp))
+    if ((comp.values.count(primary) || comp.type == "in" || comp.type == "out") && hasNumericValue(comp))
         order.push_back(primary);
+
+    if (comp.type == "in") {
+        order.push_back("inputPeakVolts");
+        if (comp.id == doc_->inputId())
+            order.push_back("previewPadDb");
+    }
+
+    if ((comp.type == "in" || comp.type == "out") && comp.values.count("externalMinOhms") &&
+        comp.values.count("externalMaxOhms") && !comp.properties.count("externalResistor"))
+        order.push_back("externalDefaultOhms");
 
     for (const char* k : kPreferred)
         if (comp.values.count(k) && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
     for (const auto& [k, v] : comp.values)
-        if (k != primary && std::find(order.begin(), order.end(), k) == order.end())
+        if (!(comp.type == "in" && k == "fullScaleVolts") && k != "externalDefaultOhms" &&
+            k != primary && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
 
     // **A source is either DC or AC, so only that mode's fields are shown.**
@@ -495,7 +580,17 @@ void InspectorPanel::rebuild() {
         // a pot as its marking. The stored number is raw ("250000"), which is
         // right for the file and wrong for a person; `parseValue` reads the
         // formatted text straight back, so editing and returning changes nothing.
-        const double raw = comp.values.at(key);
+        const auto stored = comp.values.find(key);
+        double raw = stored != comp.values.end() ? stored->second : 1.0;
+        if (key == "inputPeakVolts")
+            raw = wdf::LiveWDFDocument::inputVoltsPerFullScale(comp);
+        else if (key == "previewPadDb") {
+            raw = doc_->previewPadDb;
+            ed->setTooltip("Offer this much input attenuation and matching wet output gain in Preview (0–24 dB). Enter 0 to hide the control.");
+        } else if (key == "externalDefaultOhms" && stored == comp.values.end())
+            raw = 0.;
+        else if (key == "referenceMillivoltsRms" && stored == comp.values.end())
+            raw = wdf::LiveWDFDocument::kReferenceMillivolts;
         const auto taper = comp.properties.find("taper");
         const bool isPotValue = (key == primaryValueKey(comp.type) && taper != comp.properties.end());
 
@@ -519,8 +614,30 @@ void InspectorPanel::rebuild() {
             commitEdit(captured, e->getText());
         };
         ed->onFocusLost = [ed, this, captured] { commitEdit(captured, ed->getText()); };
+        if (comp.type == "out" && key == "fullScaleVolts") {
+            outputReferenceField_ = ed;
+            ed->onTextChange = [this] {
+                cancelOutputCalibration();
+                refreshCalibrationControls();
+            };
+        }
 
         ++row;
+    }
+
+    const auto* playbackOutput = doc_->terminal("out");
+    if (comp.type == "out" && playbackOutput && playbackOutput->id == comp.id) {
+        auto* label = labels.add(new juce::Label());
+        label->setFont(Fonts::semiBold(11.5f));
+        content_.addAndMakeVisible(label);
+        auto* button = new juce::TextButton();
+        button->setTooltip("Match output to a -9 dBFS multitone at the saved controls. You can edit the measured voltage above.");
+        button->onClick = [this] { startOutputCalibration(); };
+        content_.addAndMakeVisible(button);
+        calibrationButton_ = button;
+        calibrationLabel_ = label;
+        refreshCalibrationControls();
+        editors.add(button);
     }
 
     // **The SPDT throw is an intrinsic control, not a generic property field.**
@@ -637,13 +754,13 @@ void InspectorPanel::quickValueEdit(const juce::String& text) {
     // the right name; a type with no such key (a terminal, a model-bearing
     // part's non-numeric read) has nothing to answer.
     const std::string key = primaryValueKey(it->type);
-    if (key.empty() || it->values.count(key) == 0)
+    if (key.empty() || (it->values.count(key) == 0 && it->type != "in" && it->type != "out"))
         return;
 
     commitEdit(key, text);
 }
 
-void InspectorPanel::commitEdit(const std::string& key, const juce::String& text) {
+void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::String& text) {
     if (!doc_ || id_.empty()) return;
     auto it = std::find_if(doc_->components.begin(), doc_->components.end(),
                            [&](const wdf::SchematicComponent& c) { return c.id == id_; });
@@ -651,7 +768,19 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
 
     // Decide value vs property by asking which map already has the key; this
     // keeps the callback free of the ordering bookkeeping in `rebuild`.
-    if (it->values.count(key)) {
+    // Both input fields edit the same alignment, expressed at different digital sine levels.
+    const bool peakInput = it->type == "in" && displayedKey == "inputPeakVolts";
+    const std::string key = peakInput ? "referenceMillivoltsRms" : displayedKey;
+    const bool inputReference = it->type == "in" && key == "referenceMillivoltsRms";
+    const bool outputReference = it->type == "out" && key == "fullScaleVolts";
+    if (key == "previewPadDb" && doc_->terminal("in") == &*it) {
+        bool ok = false;
+        const double db = parseValue(text.toStdString(), &ok);
+        if (!ok || !wdf::LiveWDFDocument::validPreviewPadDb(db) ||
+            text == juce::String(formatValue(doc_->previewPadDb, "")) || db == doc_->previewPadDb)
+            return;
+        doc_->previewPadDb = db;
+    } else if (it->values.count(key) || inputReference || outputReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
 
@@ -679,9 +808,20 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
             // of parsing through the formatter's own reader.
             bool ok = false;
             double value = parseValue(text.toStdString(), &ok);
-            if (!ok)
+            if (peakInput) {
+                if (text == juce::String(formatValue(wdf::LiveWDFDocument::inputVoltsPerFullScale(*it), ""))) return;
+                value *= wdf::LiveWDFDocument::kReferenceMillivolts;
+            }
+            if (!ok || ((inputReference || outputReference)
+                        && (!std::isfinite(value) || value <= 0.)))
                 return;
 
+            if (key == "externalDefaultOhms") {
+                if (value == 0. && !it->values.count(key)) return;
+                const auto lo = it->values.find("externalMinOhms"), hi = it->values.find("externalMaxOhms");
+                if (value != 0. && (lo == it->values.end() || hi == it->values.end() ||
+                                    !(value >= lo->second && value <= hi->second))) return;
+            }
             // A pot position is a normalized fraction, not a resistance. This
             // field is shown in engineering notation, so "1M" reads as one
             // million -- the same text that means one megohm in a resistance
@@ -690,7 +830,16 @@ void InspectorPanel::commitEdit(const std::string& key, const juce::String& text
             if (key == "pos" && (it->type == "pot" || it->type == "varres"))
                 value = std::clamp(value, 0.0, 1.0);
 
-            if (value == it->values[key])
+            const auto stored = it->values.find(key);
+            if (inputReference && !peakInput) {
+                const double original = stored != it->values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
+                if (text == juce::String(formatValue(original, ""))) return;
+            }
+            if (outputReference) {
+                const double original = stored == it->values.end() ? 1. : stored->second;
+                if (value == original || text == juce::String(formatValue(original, ""))) return;
+            }
+            if (stored != it->values.end() && value == stored->second)
                 return;   // nothing changed: nothing to tell the host
             it->values[key] = value;
         }

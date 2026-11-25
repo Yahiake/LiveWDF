@@ -23,7 +23,9 @@
       "id": "IN",
       "type": "in",
       "properties": {},
-      "values": {},
+      "values": {
+        "referenceMillivoltsRms": 97.566719
+      },
       "visual": {
         "x": 6,
         "y": 23,
@@ -710,9 +712,13 @@
     {
       "id": "OUT",
       "type": "out",
-      "properties": {},
+      "properties": {
+        "externalResistor": "RL"
+      },
       "values": {
-        "fullScaleVolts": 8.0
+        "externalMinOhms": 600,
+        "externalMaxOhms": 100000,
+        "fullScaleVolts": 5.2804306
       },
       "visual": {
         "x": 219,

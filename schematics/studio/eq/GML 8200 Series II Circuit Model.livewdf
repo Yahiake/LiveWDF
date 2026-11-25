@@ -7,7 +7,7 @@
       "properties": {},
       "type": "in",
       "values": {
-        "fullScaleVolts": 1.736
+        "referenceMillivoltsRms": 775.0
       },
       "visual": {
         "flipped": false,
@@ -452,10 +452,14 @@
     },
     {
       "id": "OUT1",
-      "properties": {},
+      "properties": {
+        "externalResistor": "R_LOAD"
+      },
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.3
+        "externalMinOhms": 10000,
+        "externalMaxOhms": 100000,
+        "fullScaleVolts": 8.6801714
       },
       "visual": {
         "flipped": false,

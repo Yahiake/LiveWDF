@@ -10,6 +10,7 @@
 #include "SchematicEditor.h"
 #include "UiLookAndFeel.h"
 
+#include <cstdint>
 #include <vector>
 #include <memory>
 
@@ -34,6 +35,7 @@ public:
 
 private:
     LiveWDFPluginProcessor& processor_;
+    std::uint64_t restoredDocumentRevision_;
 
     // Top Toolbar
     juce::Label titleLabel_;
@@ -84,6 +86,13 @@ private:
     DualOscilloscope oscilloscope_;
 
     // Knobs
+    juce::TooltipWindow tooltipWindow_{this};
+    juce::Rectangle<int> controlStripBounds_;
+    juce::Label inputRouteLabel_{{}, "Input from"};
+    juce::Label outputRouteLabel_{{}, "Output to"};
+    juce::ComboBox inputRoute_{"Input from"};
+    juce::ComboBox outputRoute_{"Output to"};
+    juce::ToggleButton previewPadBtn_{"Pad hack"};
     VintageKnob inTrimKnob_ { "TRIM", " dB" };
     VintageKnob outMasterKnob_ { "OUTPUT", " dB" };
     VintageKnob mixKnob_ { "MIX", " %" };
@@ -104,7 +113,7 @@ private:
     // Below this width a knob's label stops being readable, so once a row
     // cannot hold every pot the strip wraps onto another row rather than
     // squeezing them (an amp with a graphical equalizer has twelve groups).
-    static constexpr int kMinDynamicPotKnobWidth = 64;
+    static constexpr int kMinDynamicKnobWidth = 78;
     std::vector<std::unique_ptr<VintageKnob>> dynamicPotKnobs_;
     std::vector<std::unique_ptr<juce::TextButton>> dynamicSwitchButtons_;
     std::vector<juce::String> dynamicSwitchNames_;
@@ -114,23 +123,31 @@ private:
     using ComboBoxAttachment = juce::AudioProcessorValueTreeState::ComboBoxAttachment;
     using ButtonAttachment = juce::AudioProcessorValueTreeState::ButtonAttachment;
 
+    std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
+    std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
+    std::unique_ptr<ButtonAttachment> previewPadAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
     std::unique_ptr<ComboBoxAttachment> oversamplingAttach_;
     std::unique_ptr<ButtonAttachment> reportLatencyAttach_;
     std::unique_ptr<ButtonAttachment> oversampleExportAttach_;
-    std::unique_ptr<ComboBoxAttachment> solveQualityAttach_;
+    std::unique_ptr<juce::ParameterAttachment> solveQualityAttach_;
+    std::unique_ptr<juce::ParameterAttachment> compiledPreviewAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    void refreshSolveQuality();
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
 
-    void rebuildDynamicControls();
+    void rebuildDynamicControls(const wdf::LiveWDFDocument& doc);
+    void addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool input);
+    void refreshCircuitView(const juce::String& suffix = {});
+    void updateScopeScales();
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
     void showFactoryBrowser();
@@ -145,7 +162,7 @@ private:
 
     /// What the plugin is playing: the file's name, the restored document's
     /// name, or "No circuit loaded".
-    juce::String currentCircuitDescription() const;
+    juce::String currentCircuitDescription(const wdf::LiveWDFDocument& doc) const;
 
     editor::UiLookAndFeel lookAndFeel_;
 

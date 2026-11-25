@@ -170,6 +170,7 @@ void printPhases(const char* label, const wdf::Engine::PhaseProfile& p, double m
         {jacName, p.jacobian},
         {luName, p.lu},
         {"linesearch halving trials      ", p.linesearch},
+        {"other      solver work         ", p.otherSolveTime()},
         {"post       nodes + cap states  ", p.post},
     };
 

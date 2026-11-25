@@ -6,7 +6,12 @@
       "id": "IN1",
       "properties": {},
       "type": "in",
-      "values": {},
+      "values": {
+        "externalDefaultOhms": 5900,
+        "externalMaxOhms": 150000,
+        "externalMinOhms": 100,
+        "referenceMillivoltsRms": 77.5
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -177,7 +182,10 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.3
+        "externalDefaultOhms": 1000000,
+        "externalMaxOhms": 1000000,
+        "externalMinOhms": 5000,
+        "fullScaleVolts": 0.45693889
       },
       "visual": {
         "flipped": true,

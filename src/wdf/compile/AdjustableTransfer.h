@@ -118,11 +118,11 @@ public:
         addResponse(nodes);
     }
 
-    void correctLoadedNodes(const double* currents, double* nodes) noexcept {
+    void correctLoadedNodes(const double* currents, const std::vector<int>& nodeCols, double* nodes) noexcept {
         for (size_t i = 0; i < active_.size(); ++i) {
             const double* root = rootCorrection_.data() + i * roots_;
             double sum = 0.0;
-            for (int r = 0; r < roots_; ++r)
+            for (const int r : nodeCols)
                 sum += root[r] * currents[r];
             rhs_[i] = sum;
         }

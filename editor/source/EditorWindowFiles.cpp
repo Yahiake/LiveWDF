@@ -1,4 +1,5 @@
 #include "EditorWindow.h"
+#include "format/PortImpedance.h"
 #include "EditorWindowInternal.h"
 #include "DiagLog.h"
 #include "EditorLayout.h"
@@ -70,7 +71,8 @@ void prepareSavedCircuit(const juce::File& file) {
     if (inputId.empty() || !doc.terminal("out") || !doc.unconnectedPins().empty())
         return;
 
-    const auto circuit = doc.toCircuit();
+    std::array<std::string, 2> fixtures;
+    const auto circuit = wdf::circuitWithPortImpedances(doc, nullptr, &fixtures);
     const auto input = std::find_if(circuit.src.begin(), circuit.src.end(),
                                     [&](const auto& source) { return source.name == inputId; });
     if (input == circuit.src.end())
@@ -80,7 +82,7 @@ void prepareSavedCircuit(const juce::File& file) {
         return;
     if (auto setup = engine.captureMixedAffineSetup(static_cast<size_t>(input - circuit.src.begin()))) {
         const auto cacheFile = file.isAChildOf(FactorySchematics::folder()) ? juce::File{} : file;
-        buildCachedAffineSetup(*setup, nullptr, doc.toJson(), cacheFile, true);
+        buildCachedAffineSetup(*setup, nullptr, wdf::playbackCacheKey(doc, fixtures), cacheFile, true);
     }
 }
 

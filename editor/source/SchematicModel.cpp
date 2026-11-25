@@ -691,6 +691,8 @@ void Schematic::clear() {
     category_ = "Custom";
     author_ = "LiveWDF User";
     description_ = "";
+    allowPreviewInputPad_ = false;
+    previewPadDb_ = 0.;
     inputNode_ = "in";
     outputNode_ = "out";
     groundNode_ = "0";
@@ -731,6 +733,8 @@ void Schematic::fromDocument(const wdf::LiveWDFDocument& doc) {
     category_ = doc.category;
     author_ = doc.author;
     description_ = doc.description;
+    allowPreviewInputPad_ = doc.allowPreviewInputPad;
+    previewPadDb_ = doc.previewPadDb;
     inputNode_ = doc.inputNode;
     outputNode_ = doc.outputNode;
     groundNode_ = doc.groundNode;
@@ -778,6 +782,8 @@ wdf::LiveWDFDocument Schematic::toDocument() const {
     doc.category = category_;
     doc.author = author_;
     doc.description = description_;
+    doc.allowPreviewInputPad = allowPreviewInputPad_;
+    doc.previewPadDb = previewPadDb_;
     doc.inputNode = inputNode_;
     doc.outputNode = outputNode_;
     doc.groundNode = groundNode_;

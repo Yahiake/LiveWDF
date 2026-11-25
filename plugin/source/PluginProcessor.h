@@ -6,6 +6,7 @@
 #include "dsp/HalfBandOversampler.h"
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
+#include "format/PortImpedance.h"
 #include "gui/DualOscilloscope.h"
 
 #include <array>
@@ -63,6 +64,7 @@ public:
     // -------------------------------------------------------------------------
     bool loadCircuitDocument(const wdf::LiveWDFDocument& doc);
     bool loadCircuitFromFile(const juce::File& file);
+    std::uint64_t getRestoredDocumentRevision() const noexcept { return restoredDocumentRevision_.load(); }
 
     /// Why the last load failed, in the user's words. Empty when it did not.
     ///
@@ -87,12 +89,19 @@ public:
 
     /// The file the circuit was loaded from, or an empty file when it came from
     /// host state rather than a file.
-    juce::File getCurrentCircuitFile() const { return currentFile_; }
+    juce::File getCurrentCircuitFile() const {
+        std::lock_guard<std::recursive_mutex> lock(loadMutex_);
+        return currentFile_;
+    }
 
     /// True when there is a file to reload -- what the Reload button's enabled
     /// state follows.
-    bool canReload() const { return currentFile_.existsAsFile(); }
+    bool canReload() const { return getCurrentCircuitFile().existsAsFile(); }
 
+    wdf::LiveWDFDocument getDocumentSnapshot() const {
+        std::lock_guard<std::recursive_mutex> lock(loadMutex_);
+        return currentDoc_;
+    }
     const wdf::LiveWDFDocument& getCurrentDocument() const { return currentDoc_; }
 
     /// The pots and rheostats grouped by their visible name. One entry is one
@@ -123,6 +132,8 @@ public:
     std::map<std::string, double> getLiveProbeVoltages() const;
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
 
+    bool compiledPreviewRequested() const;
+
     /// The rate the host handed to `prepareToPlay`. This is the rate the
     /// engine is compiled at (times the oversampling factor), which is the one
     /// the editor's scope must use for its timebase.
@@ -136,6 +147,10 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
 private:
+    friend bool waitForBenchmarkPlan(LiveWDFPluginProcessor&, juce::AudioBuffer<float>&,
+                                     juce::MidiBuffer&, bool preview);
+    friend bool checkLivePreviewCapture(const juce::File& file);
+    friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)
@@ -161,7 +176,7 @@ private:
 
     // Engine instances (stereo pair)
     // Serialises loads from the timer, a bounce, prepareToPlay and the host state; recursive so a caller can hold it across its load.
-    std::recursive_mutex loadMutex_;
+    mutable std::recursive_mutex loadMutex_;
     mutable std::mutex engineMutex_;
     std::unique_ptr<wdf::Engine> leftEngine_;
     std::unique_ptr<wdf::Engine> rightEngine_;
@@ -181,17 +196,36 @@ private:
     std::optional<AffineKey> observedAffineKey_, requestedAffineKey_;
     std::optional<AffineResult> readyAffine_;
     std::future<AffineResult> affineJob_;
+    using TransferRevision = std::array<long long, 5>; // transfer, controls, channel affine plans, preview request
     struct SettledTransfer {
+        SettledTransfer(unsigned long long currentGeneration, const wdf::Circuit& circuit)
+            : generation(currentGeneration), left(circuit), right(left.makePeer()) {}
         unsigned long long generation = 0;
         wdf::Engine::LiveTransferSetup left, right;
         bool affine = false;
         long long installedRevision = 0;
         bool stereo = false;
+        bool compilePreview = false;
     };
     std::future<SettledTransfer> settledTransferJob_;
     std::atomic<SettledTransfer*> pendingSettledTransfer_{nullptr}, retiredSettledTransfer_{nullptr};
     bool settledTransferPublished_ = false;
-    long long observedControlRevision_ = -1, preparedControlRevision_ = -1;
+    bool initialTransferPending_ = false;
+    bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
+    long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
+    bool outputOnlyPreviewAllowed_ = false;
+    // The timer can service an idle engine directly. During playback the
+    // callback publishes the revision and handles pending captures itself.
+    static constexpr long long noAudioSinceTick = -2, adjustedAudioTransfer = -1;
+    std::atomic<long long> audioTransferRevision_{noAudioSinceTick};
+    enum class CaptureState { idle, requested, needsStorage, done };
+    std::atomic<CaptureState> captureState_{CaptureState::idle};
+    struct TransferCapture {
+        std::optional<SettledTransfer> work;
+        std::optional<TransferRevision> revision;
+        bool fastLive = false, wantPreview = false;
+    } capture_;
+    std::optional<TransferRevision> observedTransferRevision_, preparedTransferRevision_;
     wdf::Circuit settledControlCircuit_;
 
     /// Guards the control-side copies: the pot/switch groups, the switch
@@ -230,6 +264,10 @@ private:
     ///
     /// 1 when the document has not said, which scales nothing.
     double outputFullScaleVolts_ = 1.0;
+    std::atomic<double> inputVoltsPerFullScale_{1.0};
+    double previewPadScale_ = 1.;
+    double previewPadOutputBias_ = 0.;
+    juce::SmoothedValue<double> previewPadGain_{1.};
 
     std::vector<double> baseSourceValues_;
 
@@ -252,10 +290,22 @@ private:
     struct PotControl {
         const std::atomic<float>* knob = nullptr;
         juce::SmoothedValue<double> position;
+        const wdf::PortImpedanceRange* impedance = nullptr;
+        double targetPosition() const;
     };
     struct PotTarget { int group; int index; bool varRes; };
     struct SwitchTarget { size_t group; int resA; int resB; };
-    std::array<PotControl, kMaxPotKnobs> potControls_;
+    static constexpr size_t numPorts = 2;
+    static constexpr std::array<const char*, numPorts> portParameterIds{"source_impedance", "load_impedance"};
+    struct PortControl {
+        std::optional<wdf::PortImpedanceRange> range;
+        const std::atomic<float>* parameter = nullptr;
+        bool enabled = false;
+    };
+    std::array<PortControl, numPorts> ports_;
+    std::optional<std::array<float, numPorts>> rejectedPortRequest_;
+    std::atomic<std::uint64_t> restoredDocumentRevision_{0};
+    std::array<PotControl, kMaxPotKnobs + numPorts> potControls_;
     int potControlCount_ = 0;
     int samplesUntilPotUpdate_ = 0;
     bool potsMoving_ = false;
@@ -303,16 +353,19 @@ private:
     int effectiveOversamplingChoice() const;
     void syncPotParametersFromDocument(const wdf::LiveWDFDocument& doc);
     void timerCallback() override;
-    void prepareFastLiveAffine();
-    void prepareSettledLiveTransfer();
+    void prepareFastLiveAffine(long long audioRevision);
+    void prepareSettledLiveTransfer(bool audioActive = false);
+    void captureSettledTransferIfRequested() noexcept;
     void applySettledLiveTransfer(bool stereo) noexcept;
-    void readLivePotTargets();
+    void readLivePotTargets(int rampSamples);
     void advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
+                            const std::array<double, numPorts>& portPositions,
+                            std::array<std::string, numPorts>& fixtureNames,
                             std::unique_ptr<wdf::Engine>& left,
                             std::unique_ptr<wdf::Engine>& right,
-                            int& inSrcIdx, int& outIdx,
+                            int& inSrcIdx, int& outIdx, double& outputBias,
                             std::vector<double>& baseSources,
                             std::vector<AcSource>& acSourcesOut,
                             wdf::Circuit& settledControlCircuit);

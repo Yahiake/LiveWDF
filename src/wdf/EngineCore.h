@@ -29,6 +29,8 @@
 // Everything the audio loop touches is allocated before the first sample.
 // `EngineStep::step()` performs no allocation.
 
+#include "wdf/solver/SharedNewtonColumns.h"
+#include "wdf/solver/TriodeDomainTransfer.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -77,6 +79,8 @@ public:
     int mosfetCount() const { return nMosfet_; }
     int bjtCount() const { return nBjt_; }
     int opAmpCount() const { return nOpAmp_; }
+    const OpAmpModel& opAmpModel(size_t i) const { return opAmps_.at(i); }
+    double opAmpPole(size_t i) const { return opAmpVp_.at(i); }
     /// How many JFET groups have needed the independent bracketed fallback.
     long long jfetFallbackCount() const { return jfetFallbacks_; }
     /// How many MOSFET groups have needed the independent bracketed fallback.
@@ -203,6 +207,7 @@ public:
     // re-derived on a pot move; these are read-only views for oracles and tools.
     // ------------------------------------------------------------------ //
     const std::vector<std::array<int, 2>>& rootPorts() const { return net_.rp; }
+    const std::vector<double>& rootCurrents() const { return ii_; }
     const std::vector<double>& rootImpedance() const { return Z_; }
     /// The element-to-node transfer, **column-compacted**: `nLive_ <= P_` columns,
     /// row-major, column `t` belonging to element port `liveElementPorts()[t]`.
@@ -543,10 +548,24 @@ protected:
         photoresistors_.reserve(comp_.photoSensePorts.size());
         for (const auto& [index, port] : comp_.photoSensePorts) {
             const auto& photo = *circuit_.ctrlRes[index].photo;
+            const size_t cell = photoresistors_.size();
+            size_t lamp = cell;
+            for (size_t j = 0; j < cell; ++j) {
+                const auto& [otherIndex, otherPort] = comp_.photoSensePorts[j];
+                const auto& other = *circuit_.ctrlRes[otherIndex].photo;
+                if (port.a == otherPort.a && port.b == otherPort.b && port.off == otherPort.off &&
+                    photo.referenceVolts == other.referenceVolts && photo.gamma == other.gamma) {
+                    lamp = j;
+                    sharedLamps_ = true;
+                    break;
+                }
+            }
+            const double dark = 1.0 / circuit_.ctrlRes[index].initialOhms;
             photoresistors_.push_back({
                 index, port.a, port.b, makeAffine(port.off),
                 -std::expm1(-T_ / photo.attackSeconds),
                 -std::expm1(-T_ / photo.releaseSeconds),
+                lamp, dark, 1.0 / photo.brightOhms - dark,
             });
         }
         vcas_.reserve(comp_.vcaSensePorts.size());
@@ -1079,6 +1098,8 @@ protected:
                 zrRow[j] = zRow[rc[j]];
             }
         }
+        sharedNewtonColumns_.refresh(Zred_, K_, nRed_);
+        triodeDomainTransfer_.refresh(Z_, K_);
     }
 
     // ------------------------------------------------------------------ //
@@ -1096,8 +1117,11 @@ protected:
         int sensePos, senseNeg;
         AffineOffset senseOffset;
         double attack, release;
+        size_t lamp;
+        double dark, span, illumination = 0.0;
     };
     std::vector<PhotoresistorState> photoresistors_;
+    bool sharedLamps_ = false, compiledOptical_ = false;
     struct VcaState {
         size_t index;
         int control, reference;
@@ -1177,6 +1201,9 @@ protected:
     int nRed_ = 0;
     std::vector<int> redCol_, redRow_;
     std::vector<double> Zred_;
+    solver::SharedNewtonColumns sharedNewtonColumns_;
+    solver::TriodeDomainTransfer triodeDomainTransfer_;
+    bool loadedJunctionEnabled_ = false;
     std::vector<RootDevice> rootDevices_;
     std::vector<NewtonBlock> newtonBlocks_;
     /// Experimental runtime partition, selected per sample when enabled. It has

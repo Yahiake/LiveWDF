@@ -11,6 +11,8 @@
 #include "wdf/DenseTopology.h"
 #include "wdf/solver/RootResidual.h"
 #include "wdf/solver/RootJacobian.h"
+#include "wdf/solver/SharedNewtonColumns.h"
+#include "wdf/solver/TriodeDomainTransfer.h"
 #include "wdf/solver/RootClosedForms.h"
 
 #if defined(_MSC_VER)
@@ -32,6 +34,8 @@ struct NewtonContext {
     const std::vector<double>& vOc;
     const std::vector<double>& Z;
     const std::vector<double>& Zred;
+    SharedNewtonColumns* sharedColumns;
+    const TriodeDomainTransfer* triodeTransfer;
     const std::vector<double>& vvPrev;
     const std::vector<double>& vvPrev2;
     const std::vector<double>& predUp;
@@ -82,6 +86,7 @@ struct NewtonContext {
     bool& keptBest;
     bool& lastConverged;
     double& lastResidual;
+    bool skipIdenticalRetry = false;
 };
 
 class RootNewton {
@@ -124,6 +129,9 @@ public:
     static inline void residualInto(const NewtonContext& ctx, const std::vector<double>& v,
                                     const std::vector<double>& vOc, const std::vector<double>& Z,
                                     const std::vector<double>& i, std::vector<double>& F) noexcept {
+        if (ctx.sharedColumns && ctx.sharedColumns->residual(
+                v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data()))
+            return;
         if (!ctx.Zred.empty()) {
             RootResidual::residualIntoFast(
                 v.data(), vOc.data(), ctx.Zred.data(), i.data(), F.data(),
@@ -186,9 +194,24 @@ public:
         return std::min(boundary * 1.01, rejected * .95);
     }
 
+    static double predict(double last, double older, double down, double up) noexcept {
+        return last + std::clamp(last - older, -down, up);
+    }
+
+    static bool predictionChangesSeed(const NewtonContext& ctx) noexcept {
+        for (int r = 0; r < ctx.K; ++r) {
+            const double seed = predict(ctx.vvPrev[r], ctx.vvPrev2[r], ctx.predDown[r], ctx.predUp[r]);
+            if (std::memcmp(&seed, &ctx.vvPrev[r], sizeof(seed)) != 0)
+                return true;
+        }
+        return false;
+    }
+
     /// One pass of `solveRootsNewton`, with or without the extrapolated seed.
-    static inline void solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
-                                           bool usePrediction, bool useCurrentSeed = false) noexcept {
+    static inline bool solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
+                                           bool usePrediction, bool useCurrentSeed = false,
+                                           bool allowExtraBacktracking = true) noexcept {
+        bool usedExtraBacktracking = false;
         const long long jointIt0 = ctx.newtonIters;
         const long long jointTr0 = ctx.lineTrials;
         using clk = std::chrono::steady_clock;
@@ -211,8 +234,7 @@ public:
                 std::memcpy(vCur, vPrev, static_cast<size_t>(ctx.K) * sizeof(double));
             } else {
                 for (int r = 0; r < ctx.K; ++r) {
-                    const double d = std::clamp(vPrev[r] - vPrev2[r], -pDown[r], pUp[r]);
-                    vCur[r] = vPrev[r] + d;
+                    vCur[r] = predict(vPrev[r], vPrev2[r], pDown[r], pUp[r]);
                 }
             }
         }
@@ -253,24 +275,37 @@ public:
             }
 
             tPhase = tick();
-            if (!ctx.Zred.empty()) {
-                RootJacobian::reducedAssembleFast(
-                    ctx.Zred.data(), ctx.J.data(), ctx.F.data(), ctx.nRed, ctx.K,
-                    ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
-            } else {
-                RootJacobian::reducedAssemble(
-                    ctx.Z.data(), ctx.J.data(), ctx.F.data(), ctx.redCol.data(), ctx.nRed, ctx.K,
-                    ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
-            }
+            const bool compact = ctx.sharedColumns && ctx.sharedColumns->available();
+            const auto assembleFull = [&] {
+                if (!ctx.Zred.empty()) {
+                    RootJacobian::reducedAssembleFast(
+                        ctx.Zred.data(), ctx.J.data(), ctx.F.data(), ctx.nRed, ctx.K,
+                        ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
+                } else {
+                    RootJacobian::reducedAssemble(
+                        ctx.Z.data(), ctx.J.data(), ctx.F.data(), ctx.redCol.data(), ctx.nRed, ctx.K,
+                        ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
+                }
+            };
+            if (compact)
+                ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
+                                            ctx.redCol.data(), ctx.rootDevices);
+            else
+                assembleFull();
             if (ctx.prof)
                 tock(ctx.prof->jacobian);
 
             tPhase = tick();
-            const bool solved = !ctx.Zred.empty()
-                ? RootJacobian::reducedFinishFast(
-                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
-                : RootJacobian::reducedFinish(
-                      ctx.Mr.data(), ctx.rN.data(), ctx.nRed, ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+            bool solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
+            if (!solved) {
+                if (compact)
+                    assembleFull();
+                solved = !ctx.Zred.empty()
+                    ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                          ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
+                    : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                          ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+            }
             if (ctx.prof)
                 tock(ctx.prof->lu);
             if (!solved)
@@ -297,7 +332,11 @@ public:
             tPhase = tick();
             bool stepHasJ = false;
             double ftNorm = 0.0;
-            for (int h = 0; h < 4; ++h) {
+            // Near a hard op-amp rail the fourth trial can still worsen the
+            // full residual. A few more backtracks avoid a discarded sample.
+            const int maxTrials = allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4;
+            int h = 0;
+            for (; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
                 for (int r = 0; r < ctx.K; ++r)
                     ctx.vt[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)] + stepSize * ctx.dv[static_cast<size_t>(r)];
@@ -313,10 +352,11 @@ public:
                 }
                 residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
                 ftNorm = maxAbs(ctx.ft, ctx.K);
-                if (ftNorm <= base || h == 3)
+                if (ftNorm <= base || h + 1 == maxTrials)
                     break;
                 stepSize = clampAwareStep(ctx, stepSize);
             }
+            usedExtraBacktracking |= h >= 4;
             if (ctx.prof)
                 tock(ctx.prof->linesearch);
 
@@ -375,6 +415,16 @@ public:
         ctx.lastConverged = reached || ((kept_best ? ctx.bestFn : finalFn) < tol);
         ctx.jointLastIters = ctx.newtonIters - jointIt0;
         ctx.jointLastTrials = ctx.lineTrials - jointTr0;
+        return usedExtraBacktracking;
+    }
+
+    static bool pinDomains(NewtonContext& ctx, const BlockView& view) noexcept {
+        const bool folded = ctx.triodeTransfer && ctx.triodeTransfer->fold(
+            view, ctx.vOc.data(), ctx.ii.data(), ctx.dv.data());
+        return RootClosedForms::pinTriodeDomains(
+            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+            const_cast<unsigned char*>(ctx.triodeDomainPin.data()), ctx.comp,
+            ctx.rootDevices.data(), ctx.K, folded ? ctx.dv.data() : nullptr);
     }
 
     /// The callers pin from the previous sample's currents before solving, so
@@ -384,10 +434,7 @@ public:
     static inline void resolveTriodeDomains(NewtonContext& ctx, int maxIter, double tol,
                                             const BlockView& view) noexcept {
         for (int pass = 0; pass < view.count &&
-                           RootClosedForms::pinTriodeDomains(
-                               view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                               const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-                               ctx.comp, ctx.rootDevices.data(), ctx.K);
+                           pinDomains(ctx, view);
              ++pass)
             solveRootsNewtonPass(ctx, maxIter, tol, false, true);
     }
@@ -396,14 +443,12 @@ public:
     static inline void solveRootsNewton(NewtonContext& ctx, int maxIter, double tol,
                                         const BlockView& view, std::vector<double>& vvPrev,
                                         std::vector<double>& vvPrev2) noexcept {
-        RootClosedForms::pinTriodeDomains(
-            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
-        solveRootsNewtonPass(ctx, maxIter, tol, true, false);
-        if (!ctx.lastConverged) {
-            solveRootsNewtonPass(ctx, maxIter, tol, false, false);
-        }
+        pinDomains(ctx, view);
+        const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
+        // A failed deeply damped search can stall near a switching boundary.
+        // With the usual four trials, the retry takes a different path even from the same voltage.
+        if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || predictionChangesSeed(ctx)))
+            solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
@@ -413,13 +458,10 @@ public:
     static inline void solveRootsNewtonSeeded(NewtonContext& ctx, int maxIter, double tol,
                                               const BlockView& view, std::vector<double>& vvPrev,
                                               std::vector<double>& vvPrev2) noexcept {
-        RootClosedForms::pinTriodeDomains(
-            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-            const_cast<unsigned char*>(ctx.triodeDomainPin.data()),
-            ctx.comp, ctx.rootDevices.data(), ctx.K);
-        solveRootsNewtonPass(ctx, maxIter, tol, false, true);
+        pinDomains(ctx, view);
+        const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, false, true);
         if (!ctx.lastConverged)
-            solveRootsNewtonPass(ctx, maxIter, tol, false, false);
+            solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;

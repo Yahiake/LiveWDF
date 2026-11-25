@@ -26,7 +26,9 @@
 #include <catch2.hpp>
 
 #include "format/LiveWDFFile.h"
+#include "format/PortImpedance.h"
 
+#include <limits>
 #include <string>
 
 namespace {
@@ -133,6 +135,20 @@ TEST_CASE("A nonsense output voltage is not obeyed") {
     CHECK(terminalDocument(-5.0).outputFullScaleVolts() == 1.0);
 }
 
+TEST_CASE("Calibrated mic drive is explicit and survives reopening", "[format][terminals]") {
+    auto doc = terminalDocument();
+    auto& input = doc.components.front().values;
+    input["fullScaleVolts"] = .01;
+    REQUIRE(doc.inputVoltsPerFullScale() == 1.);
+    input["referenceMillivoltsRms"] = -.1;
+    REQUIRE(doc.inputVoltsPerFullScale() == 1.);
+    input["referenceMillivoltsRms"] = 7.74;
+    wdf::LiveWDFDocument back;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(doc.toJson(), back, error));
+    CHECK(back.inputVoltsPerFullScale() == Approx(.08694727161927697));
+}
+
 TEST_CASE("The Input and Output terminals survive a save and reopen") {
     // The file format is what carries them between the editor and the plugin,
     // so a terminal that does not survive the round trip is a terminal the
@@ -153,4 +169,65 @@ TEST_CASE("The Input and Output terminals survive a save and reopen") {
     CHECK(back.inputNet() == "in");
     CHECK(back.outputNet() == "out");
     CHECK(back.outputFullScaleVolts() == 240.0);
+}
+
+TEST_CASE("A document permits Preview input padding only when explicitly saved") {
+    auto document = terminalDocument();
+    const auto existing = document.toJson();
+    document.allowPreviewInputPad = true;
+    wdf::LiveWDFDocument loaded;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(document.toJson(), loaded, error));
+    CHECK(loaded.allowPreviewInputPad);
+    REQUIRE(wdf::LiveWDFDocument::fromJson(existing, loaded, error));
+    CHECK_FALSE(loaded.allowPreviewInputPad);
+}
+
+TEST_CASE("Manual Preview pad is optional, bounded and independent of automatic padding", "[format][terminals]") {
+    auto doc = terminalDocument();
+    CHECK(doc.toJson().find("previewPadDb") == std::string::npos);
+    wdf::LiveWDFDocument loaded;
+    std::string error;
+    for (const double db : {12.5, 24.}) {
+        doc.previewPadDb = db;
+        REQUIRE(wdf::LiveWDFDocument::fromJson(doc.toJson(), loaded, error));
+        CHECK(loaded.previewPadDb == db);
+        CHECK_FALSE(loaded.allowPreviewInputPad);
+    }
+    for (const std::string value : {"0", "-1", "25", "\"12\""}) {
+        REQUIRE(wdf::LiveWDFDocument::fromJson("{\"version\":3,\"previewPadDb\":" + value + "}", loaded, error));
+        CHECK(loaded.previewPadDb == 0.);
+    }
+    doc.previewPadDb = std::numeric_limits<double>::infinity();
+    const auto withoutPad = doc.toJson();
+    CHECK(withoutPad.find("previewPadDb") == std::string::npos);
+    loaded.previewPadDb = 12.;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(withoutPad, loaded, error));
+    CHECK(loaded.previewPadDb == 0.);
+}
+
+TEST_CASE("External impedance ranges are optional per terminal and round-trip in ohms", "[format][terminals]") {
+    auto doc = terminalDocument();
+    CHECK_FALSE(wdf::portImpedanceRange(doc, true));
+    CHECK_FALSE(wdf::portImpedanceRange(doc, false));
+    auto& values = doc.components.front().values;
+    values["externalMinOhms"] = 100.;
+    values["externalMaxOhms"] = 100000.;
+    wdf::LiveWDFDocument saved;
+    std::string error;
+    REQUIRE(wdf::LiveWDFDocument::fromJson(doc.toJson(), saved, error));
+    const auto range = wdf::portImpedanceRange(saved, true);
+    REQUIRE(range);
+    CHECK_FALSE(wdf::portImpedanceRange(saved, false));
+    CHECK(range->ohmsAt(1.) == Approx(100000.));
+    for (double ohms : {100., 1000., 10000., 100000.})
+        CHECK(range->ohmsAt(range->positionForOhms(ohms)) == Approx(ohms));
+    values["externalDefaultOhms"] = 5900.;
+    const auto preset = wdf::portImpedanceRange(doc, true);
+    REQUIRE(preset);
+    CHECK(preset->ohmsAt(static_cast<float>(preset->defaultPosition)) == 5900.);
+    values["externalDefaultOhms"] = 200000.;
+    CHECK(wdf::portImpedanceRange(doc, true)->defaultPosition == 0.);
+    values["externalMaxOhms"] = 50.;
+    CHECK_FALSE(wdf::portImpedanceRange(doc, true));
 }

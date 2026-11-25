@@ -15,9 +15,10 @@
 
 namespace livewdf::editor {
 
-class InspectorPanel : public juce::Component {
+class InspectorPanel : public juce::Component, private juce::Timer {
 public:
     InspectorPanel();
+    ~InspectorPanel() override;
 
     /// Point the inspector at `id` inside `doc` ("" clears it). The document is
     /// held by pointer because the inspector edits in place -- it is a view onto
@@ -76,6 +77,16 @@ public:
 
 private:
     void rebuild();
+    void startOutputCalibration();
+    void cancelOutputCalibration();
+    void refreshCalibrationControls();
+    void timerCallback() override;
+    struct CalibrationJob;
+    std::unique_ptr<CalibrationJob> calibration_;
+    juce::String calibrationMessage_;
+    juce::Component::SafePointer<juce::TextButton> calibrationButton_;
+    juce::Component::SafePointer<juce::Label> calibrationLabel_;
+    juce::Component::SafePointer<juce::TextEditor> outputReferenceField_;
 
     /// Write `text` into the targeted component under `key`. Decides value vs
     /// property by which map already holds the key, so the callers stay free of

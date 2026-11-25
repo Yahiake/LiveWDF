@@ -32,7 +32,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // consecutive rejected samples, not on normal switch changes.
     if (consecutiveStateRejects_ >= 8) {
         consecutiveStateRejects_ = 0;
-        reset();
+        recoverOperatingPoint();
         newtonIters_ = 0;
         deviceEvals_ = 0;
         lineTrials_ = 0;
@@ -58,17 +58,18 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     }
     std::memcpy(nodeSafe_.data(), node_.data(), static_cast<size_t>(N_) * sizeof(double));
 
-    // Phase timing scratch. `tick` only touches the clock when profiling
-    // is on, so the audio path pays one well-predicted branch per phase
-    // and nothing else.
     using clk = std::chrono::steady_clock;
-    const auto tick = [&] {
-        return profileOn_ ? clk::now() : clk::time_point{};
-    };
-    clk::time_point tPhase = tick();
+    clk::time_point tPhase{};
+    if (profileOn_) {
+        tPhase = clk::now();
+        ++prof_.samples;
+    }
     const auto tock = [&](double& acc) {
-        if (profileOn_)
-            acc += std::chrono::duration<double>(clk::now() - tPhase).count();
+        if (profileOn_) {
+            const auto now = clk::now();
+            acc += std::chrono::duration<double>(now - tPhase).count();
+            tPhase = now;
+        }
     };
 
     // Only a port a source reaches has an offset that moves. The rest keep
@@ -123,51 +124,59 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             isCur_[rms.outputCurrentIndex] = rms.detector.outputCurrent();
     }
 
-    // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
-    const double* LIVEWDF_RESTRICT capData = capState_.data();
-    const double* LIVEWDF_RESTRICT indData = indState_.data();
-    double* LIVEWDF_RESTRICT wData = w_.data();
-    for (int t = 0; t < nLive_; ++t) {
-        const auto& lc = liveColInfo_[static_cast<size_t>(t)];
-        double b = 0.0;
-        if (lc.capIdx >= 0)
-            b = capData[lc.capIdx];
-        else if (lc.indIdx >= 0)
-            b = -indData[lc.indIdx];
-        wData[t] = b - eoffData[lc.portIdx];
+    if (loadedJunctionEnabled_ && affineNodes_.revision == linearRebuilds() &&
+        tryAffineNodes(sourceValues, sourceCount, tol)) {
+        tock(prof_.solve);
+        return finishStep(sourceValues, sourceCount, tPhase);
     }
-    tock(prof_.offsets);
-    tPhase = tick();
-
-    // u = Xe * w via partitioned sparse rows. Degree 0 rows stay 0 from memset.
-    // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
+    const bool adjustedTransfer = hasAdjustedLiveTransfer();
+    const bool compiled = circuitPlanEnabled_ && circuitPlanRevision_ == linearRebuilds() && !adjustedTransfer;
     double* LIVEWDF_RESTRICT uData = u_.data();
-    std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
-    if (networkFactors_.active) {
-        networkFactors_.apply(wData, uData);
+    if (compiled && !driveCoefficients_.empty() && applyCompiledDrive(sourceValues, sourceCount)) {
+        tock(prof_.offsets);
     } else {
-        for (const auto& e : xeRows1_) {
-            uData[e.node] = e.val * wData[e.col];
+        // Direct assembly of live columns into w_, completely bypassing intermediate b_ vector.
+        const double* LIVEWDF_RESTRICT capData = capState_.data();
+        const double* LIVEWDF_RESTRICT indData = indState_.data();
+        double* LIVEWDF_RESTRICT wData = w_.data();
+        for (int t = 0; t < nLive_; ++t) {
+            const auto& lc = liveColInfo_[static_cast<size_t>(t)];
+            double b = 0.0;
+            if (lc.capIdx >= 0)
+                b = capData[lc.capIdx];
+            else if (lc.indIdx >= 0)
+                b = -indData[lc.indIdx];
+            wData[t] = b - eoffData[lc.portIdx];
         }
-        for (const auto& e : xeRows2_) {
-            uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
-        }
-        if (!xeRowsN_.empty()) {
-            const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
-            const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-            for (const auto& e : xeRowsN_) {
-                double s = 0.0;
-                for (int idx = e.start; idx < e.end; ++idx)
-                    s += xeVals[idx] * wData[xeCols[idx]];
-                uData[e.node] = s;
+        tock(prof_.offsets);
+
+        // u = Xe * w via partitioned sparse rows. Degree 0 rows stay 0 from memset.
+        // Degree 1 and 2 rows avoid inner-loop setup and branch checks.
+        std::memset(uData, 0, (static_cast<size_t>(N_) + 1) * sizeof(double));
+        if (networkFactors_.active) {
+            networkFactors_.apply(wData, uData);
+        } else {
+            for (const auto& e : xeRows1_) {
+                uData[e.node] = e.val * wData[e.col];
+            }
+            for (const auto& e : xeRows2_) {
+                uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
+            }
+            if (!xeRowsN_.empty()) {
+                const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
+                const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
+                for (const auto& e : xeRowsN_) {
+                    double s = 0.0;
+                    for (int idx = e.start; idx < e.end; ++idx)
+                        s += xeVals[idx] * wData[xeCols[idx]];
+                    uData[e.node] = s;
+                }
             }
         }
     }
-
     for (const auto& e : isrcRows_)
         uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
-    const bool adjustedTransfer = hasAdjustedLiveTransfer();
     if (adjustedTransfer)
         adjustableTransfer_.correctOpenCircuit(eoffData, uData);
 
@@ -179,7 +188,13 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     tock(prof_.network);
 
     const long long fallbacksBefore = blockFallbacks_;
-    if (K_ > 0) {
+    const bool loadedRoot = loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
+    const bool movingAffine = !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
+                              affineNodes_.revision == linearRebuilds() && tryAffineMotion(tol);
+    const bool compiledRoot = movingAffine || (!loadedRoot && compiled && maxIter >= 4 &&
+                              (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
+                              !explicitRootsActive_ && tryCompiledRoot(tol));
+    if (K_ > 0 && !loadedRoot && !compiledRoot) {
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
         // is driving the solve, and it never replaces the static partition
@@ -213,11 +228,9 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             solveRootBlocksRuntime(maxIter, tol);
         else if (blockRoots() && blockFallbackCooldown_ == 0)
             solveRootBlocks(maxIter, tol);
-        else if (K_ >= 3)
-            solveRootsNewton(maxIter, tol);
         else
             solveRootsNewton(maxIter, tol);
-    } else {
+    } else if (K_ == 0) {
         lastConverged_ = true;
         lastResidual_ = 0.0;
         keptBest_ = false;
@@ -241,7 +254,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // to be written straight into the capacitor/inductor state, so the next
     // sample started from it and never recovered. Reject it, restore the
     // last accepted state, and let the next sample solve again from there.
-    tPhase = tick();
     double* LIVEWDF_RESTRICT nodeData = node_.data();
     std::memcpy(nodeData, uData, static_cast<size_t>(N_) * sizeof(double));
     if (K_ > 0) {
@@ -268,8 +280,19 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         }
     }
     if (adjustedTransfer && K_ > 0)
-        adjustableTransfer_.correctLoadedNodes(ii_.data(), nodeData);
+        adjustableTransfer_.correctLoadedNodes(ii_.data(), rootLayout_.nodeCol, nodeData);
 
+    return finishStep(sourceValues, sourceCount, tPhase);
+}
+
+const std::vector<double>& EngineStep::finishStep(const double* sourceValues, size_t sourceCount,
+                                                   std::chrono::steady_clock::time_point phaseTime) {
+    const auto tock = [&](double& phase) {
+        if (profileOn_)
+            phase += std::chrono::duration<double>(std::chrono::steady_clock::now() - phaseTime).count();
+    };
+    const double* nodeData = node_.data();
+    const double* eoffData = eoff_.data();
     bool stateOk = stateAcceptable();
     if (stateOk) {
         double maxVolts = 0.0;
@@ -312,6 +335,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         lastStateRejected_ = true;
         ++stateRejections_;
         ++consecutiveStateRejects_;
+        tock(prof_.post);
         return node_;
     }
 
@@ -354,8 +378,19 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
 
     // Optical response is slower than one sample. Read the accepted
     // electrical state, then update the LDRs for the next root solve.
-    for (const auto& photo : photoresistors_) {
-        const double target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
+    for (auto& photo : photoresistors_) {
+        double target;
+        if (compiledOptical_) {
+            // Cells illuminated by the same lamp still have independent time constants.
+            auto& lamp = photoresistors_[photo.lamp];
+            if (&lamp == &photo) {
+                const auto& control = *circuit_.ctrlRes[photo.index].photo;
+                lamp.illumination = control.illumination(photoSenseVoltage(photo, node_, sourceValues, sourceCount));
+            }
+            target = photo.dark + photo.span * lamp.illumination;
+        } else {
+            target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
+        }
         double& ohms = ctrlResValues_[photo.index];
         const double conductance = 1.0 / ohms;
         const double mix = target > conductance ? photo.attack : photo.release;
@@ -410,8 +445,6 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         indStateData[u.indIdx] = 2.0 * vPort + indStateData[u.indIdx];
     }
     tock(prof_.post);
-    if (profileOn_)
-        ++prof_.samples;
     consecutiveStateRejects_ = 0;
     return node_;
 }

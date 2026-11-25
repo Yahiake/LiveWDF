@@ -194,6 +194,11 @@ struct LiveWDFDocument {
     std::string category = "Custom";
     std::string author = "LiveWDF User";
     std::string description = "";
+    // Permit Preview to test a compensated input pad over a verified clean range.
+    bool allowPreviewInputPad = false;
+    // Optional user-selectable Preview attenuation with reciprocal wet output gain, in dB.
+    double previewPadDb = 0.;
+    static constexpr bool validPreviewPadDb(double db) noexcept { return db >= 0. && db <= 24.; }
 
     // Standard I/O Nodes
     //
@@ -509,6 +514,38 @@ struct LiveWDFDocument {
         return {};
     }
 
+    // RMS millivolts of a −18 dBFS sine when a full-scale sample drives one volt.
+    static constexpr double kReferenceMillivolts = 89.01946956877224;
+
+    // Between inserts a −18 dBFS sine carries +4 dBu (1228.29 mV RMS).
+    static constexpr double kChainVoltsPerFullScale = 1228.292224157363 / kReferenceMillivolts;
+
+    /// Peak volts applied to the input by a full-scale digital sample at unity trim.
+    /// Older files sometimes annotate the input with the output-only fullScaleVolts key.
+    static double inputVoltsPerFullScale(const SchematicComponent& input) {
+        const auto it = input.values.find("referenceMillivoltsRms");
+        if (it != input.values.end() && std::isfinite(it->second) && it->second > 0.)
+            return it->second / kReferenceMillivolts;
+        return 1.;
+    }
+
+    double inputVoltsPerFullScale() const {
+        const auto* input = terminal("in");
+        return input ? inputVoltsPerFullScale(*input) : 1.;
+    }
+
+    double previewPeakVolts() const {
+        if (const auto* input = terminal("in")) {
+            const auto reference = input->values.find("referenceMillivoltsRms");
+            if (reference != input->values.end() && std::isfinite(reference->second) && reference->second > 0.)
+                return 2. * (reference->second / kReferenceMillivolts);
+            const auto scale = input->values.find("fullScaleVolts");
+            if (scale != input->values.end() && std::isfinite(scale->second) && scale->second > 1.2)
+                return scale->second;
+        }
+        return 2.;
+    }
+
     /// The voltage the circuit produces at the output when the input is at full
     /// scale -- the number the user writes on the Output terminal.
     ///
@@ -527,7 +564,7 @@ struct LiveWDFDocument {
         const auto it = out->values.find("fullScaleVolts");
         if (it == out->values.end())
             return 1.0;
-        return it->second > 0.0 ? it->second : 1.0;
+        return std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
     }
 
     /// One source's AC settings: how big the swing is, and how fast it moves.

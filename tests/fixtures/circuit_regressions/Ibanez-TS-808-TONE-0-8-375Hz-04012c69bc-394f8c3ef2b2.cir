@@ -1,0 +1,45 @@
+* LiveWDF netlist exported by SpiceExport (core)
+.title LiveWDF
+* Engine integrates with trapezoidal at 48000 Hz
+.options method=gear maxord=2 reltol=1e-4 abstol=1e-9 vntol=1e-5 chgtol=1e-12 trtol=7
+R_R1 n12 n15 10000
+R_R2 n1 n3 51000
+R_R3 n3 n5 4700
+R_VR1 n2 n1 250000
+R_R4 n7 n2 1000
+R_R5 n7 n14 1000
+R_POT1_1 n8 n6 1999.9999999999995
+R_POT1_2 n6 n7 8000
+R_R6 0 n4 220
+R_R7 n9 n8 1000
+R_POT2_1 n11 out 50000
+R_POT2_2 out 0 50000
+C_C1 n12 in 9.9999999999999995e-07
+C_C2 n2 n3 5.0999999999999998e-11
+C_C3 n5 0 4.7000000000000004e-08
+C_C4 n7 0 2.1999999999999998e-07
+C_C5 n4 n6 2.1999999999999998e-07
+C_C6 n11 n9 9.9999999999999995e-07
+V_IN1 in 0 DC 0 AC 1
+V_VDC1 n15 0 DC 4.5
+V_VDC2 n14 0 DC 4.5
+V_VDC3 n13 0 DC 9
+V_VDC4 n10 0 DC 9
+B_U1 x_U1_out 0 V = {min(max(100000*V(n12,n3),-12),12)}
+R_U1_ro x_U1_out n2 75
+B_U2 x_U2_out 0 V = {min(max(100000*V(n7,n8),-12),12)}
+R_U2_ro x_U2_out n9 75
+.model Dmod_D2 D(Is=4.3519999999999999e-09 N=1.9050000000000002 RS=0.56000000000000005)
+D_D2 n3 n2 Dmod_D2
+Rp_D2 n3 n2 1000000
+.model Dmod_D1 D(Is=4.3519999999999999e-09 N=1.9050000000000002 RS=0.56000000000000005)
+D_D1 n2 n3 Dmod_D1
+Rp_D1 n2 n3 1000000
+
+.control
+set numdgt=17
+ac lin 1 375 375
+wrdata ac.txt v(out)
+quit
+.endc
+.end

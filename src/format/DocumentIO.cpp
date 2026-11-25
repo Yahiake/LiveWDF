@@ -23,6 +23,10 @@ std::string LiveWDFDocument::toJson() const {
         root["category"] = category;
         root["author"] = author;
         root["description"] = description;
+        if (allowPreviewInputPad)
+            root["allowPreviewInputPad"] = true;
+        if (previewPadDb > 0. && validPreviewPadDb(previewPadDb))
+            root["previewPadDb"] = previewPadDb;
 
         json::Value io(json::Type::Object);
         io["inputNode"] = inputNode;
@@ -133,6 +137,9 @@ bool LiveWDFDocument::fromJson(const std::string& jsonStr, LiveWDFDocument& doc,
         doc.category = root["category"].asString("Custom");
         doc.author = root["author"].asString("");
         doc.description = root["description"].asString("");
+        doc.allowPreviewInputPad = root["allowPreviewInputPad"].asBool(false);
+        const double padDb = root["previewPadDb"].asDouble();
+        doc.previewPadDb = validPreviewPadDb(padDb) ? padDb : 0.;
 
         // ==========================================================================
         // **A version-3 document is a drawing, and a file that *names*

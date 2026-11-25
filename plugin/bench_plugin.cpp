@@ -9,6 +9,7 @@
 
 #include "format/AcSource.h"
 #include "format/Document.h"
+#include "format/PortImpedance.h"
 #include "compiler/Compiler.h"
 #include "runtime/Runtime.h"
 
@@ -17,6 +18,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <barrier>
 #include <bit>
 #include <cctype>
 #include <chrono>
@@ -28,7 +30,9 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
@@ -37,6 +41,7 @@ struct ThreadUsage {
     double cpuNs = 0.0;
     long long allocs = 0;
     long long faults = 0;
+    long long preemptions = 0;
 };
 
 #ifdef __GLIBC__
@@ -62,18 +67,91 @@ static ThreadUsage threadUsage() {
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts);
     rusage ru{};
     getrusage(RUSAGE_THREAD, &ru);
-    return {ts.tv_sec * 1e9 + static_cast<double>(ts.tv_nsec), tAllocs, ru.ru_minflt + ru.ru_majflt};
+    return {ts.tv_sec * 1e9 + static_cast<double>(ts.tv_nsec), tAllocs, ru.ru_minflt + ru.ru_majflt, ru.ru_nivcsw};
 }
 #else
 static ThreadUsage threadUsage() { return {}; }
 #endif
 
+namespace livewdf {
+
+// Pump the same capture, worker and callback installation used when playing.
+bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<float>& block,
+                          juce::MidiBuffer& midi, bool preview) {
+    const char* mode = preview ? "Compiled Preview" : "Fast Live";
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
+    while (std::chrono::steady_clock::now() < deadline) {
+        processor.timerCallback();
+        if (processor.pendingSettledTransfer_.load(std::memory_order_acquire)) {
+            block.clear();
+            processor.processBlock(block, midi);
+        }
+        const bool installed = preview ? processor.previewPrepared_ :
+            processor.leftEngine_->circuitPlanPrepared() && processor.rightEngine_->circuitPlanPrepared();
+        if (installed) {
+            std::printf("  %s worker installed\n", mode);
+            return true;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    std::fprintf(stderr, "%s worker did not install within 30 s\n", mode);
+    return false;
+}
+
+}  // namespace livewdf
+
 namespace {
+
+enum class BenchMode { Accurate, FastLive, CompiledPreview };
+
+const char* selectMode(livewdf::LiveWDFPluginProcessor& processor, BenchMode mode) {
+    auto& params = processor.getAPVTS();
+    params.getParameter("solve_quality")->setValueNotifyingHost(mode == BenchMode::Accurate ? 0.f : 1.f);
+    params.getParameter("compiled_preview")->setValueNotifyingHost(mode == BenchMode::CompiledPreview ? 1.f : 0.f);
+    if (mode == BenchMode::CompiledPreview) return "Compiled Preview";
+    return mode == BenchMode::FastLive ? "Fast Live" : "Accurate";
+}
+
+struct CallbackCost {
+    double wallNs, cpuNs;
+    long long allocs, faults, preemptions;
+};
+
+CallbackCost measureBlock(livewdf::LiveWDFPluginProcessor& processor,
+                          juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi) {
+    const auto u0 = threadUsage();
+    const auto w0 = std::chrono::steady_clock::now();
+    processor.processBlock(buffer, midi);
+    const auto w1 = std::chrono::steady_clock::now();
+    const auto u1 = threadUsage();
+    return {std::chrono::duration<double, std::nano>(w1 - w0).count(),
+            u1.cpuNs - u0.cpuNs, u1.allocs - u0.allocs, u1.faults - u0.faults,
+            u1.preemptions - u0.preemptions};
+}
+
+struct DeadlineMisses {
+    int wall = 0, cpu = 0, wallOnlyPreempted = 0;
+
+    void count(const CallbackCost& cost, double budgetNs) {
+        wall += cost.wallNs > budgetNs;
+        cpu += cost.cpuNs > budgetNs;
+        wallOnlyPreempted += cost.wallNs > budgetNs && cost.cpuNs <= budgetNs && cost.preemptions > 0;
+    }
+
+    void print(size_t blocks) const {
+        std::printf("  missed wall %d/%zu", wall, blocks);
+#ifdef __GLIBC__
+        std::printf(", CPU %d/%zu, wall-only with involuntary switch %d", cpu, blocks, wallOnlyPreempted);
+#endif
+        std::printf("\n");
+    }
+};
 
 constexpr double kSampleRate = 48000.0;
 constexpr double kPi = 3.14159265358979323846;
 
 struct Result {
+    DeadlineMisses missed;
     double usPerBlock = 0.0;
     double nsPerInputSample = 0.0;
     double realtimePercent = 0.0;
@@ -92,7 +170,7 @@ double setOversampling(livewdf::LiveWDFPluginProcessor& processor, int choice) {
 }
 
 Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& file,
-               int blockSize, int oversamplingChoice, int blocks) {
+               int blockSize, int oversamplingChoice, int blocks, BenchMode mode) {
     setOversampling(processor, oversamplingChoice);
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
@@ -110,6 +188,9 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
         input.setSample(0, i, v);
         input.setSample(1, i, v);
     }
+    if (mode != BenchMode::Accurate &&
+        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        return {};
     buffer.makeCopyOf(input);
     processor.processBlock(buffer, midi);
 
@@ -120,13 +201,17 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
         processor.processBlock(buffer, midi);
     }
 
-    const auto start = std::chrono::steady_clock::now();
+    Result r;
+    const double budgetNs = blockSize / kSampleRate * 1e9;
+    double elapsedNs = 0.0;
     double checksum = 0.0;
     bool finite = true;
     double peak = 0.0;
     for (int b = 0; b < blocks; ++b) {
         buffer.makeCopyOf(input);
-        processor.processBlock(buffer, midi);
+        const auto cost = measureBlock(processor, buffer, midi);
+        elapsedNs += cost.wallNs;
+        r.missed.count(cost, budgetNs);
         checksum += buffer.getSample(0, blockSize / 2);
         for (int ch = 0; ch < buffer.getNumChannels(); ++ch)
             for (int i = 0; i < blockSize; ++i) {
@@ -135,12 +220,9 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
                 peak = std::max(peak, static_cast<double>(std::abs(x)));
             }
     }
-    const auto end = std::chrono::steady_clock::now();
-
-    const double seconds = std::chrono::duration<double>(end - start).count();
+    const double seconds = elapsedNs * 1e-9;
     const double audioSeconds = static_cast<double>(blocks) * blockSize / kSampleRate;
 
-    Result r;
     r.usPerBlock = seconds / blocks * 1.0e6;
     r.nsPerInputSample = seconds / (static_cast<double>(blocks) * blockSize) * 1.0e9;
     r.realtimePercent = 100.0 * seconds / audioSeconds;
@@ -165,12 +247,17 @@ bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurr
 
 // Plays a WAV through processBlock() one callback at a time and reports the
 // spread of callback cost against the block's real-time budget (--wav).
-int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent) {
+int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent, BenchMode mode) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
     if (reader == nullptr) {
         std::printf("cannot read %s\n", wav.getFullPathName().toRawUTF8());
+        return 1;
+    }
+    if (blockSize <= 0 || reader->lengthInSamples < blockSize ||
+        reader->lengthInSamples > std::numeric_limits<int>::max()) {
+        std::fprintf(stderr, "WAV length and block size must allow at least one complete callback\n");
         return 1;
     }
     const double fs = reader->sampleRate;
@@ -181,6 +268,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
+    std::printf("quality=%s\n", selectMode(processor, mode));
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -188,23 +276,24 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     }
     juce::AudioBuffer<float> buffer(2, blockSize);
     juce::MidiBuffer midi;
+    if (mode != BenchMode::Accurate &&
+        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        return 1;
     const double budgetNs = blockSize / fs * 1.0e9;
+    DeadlineMisses missed;
     std::vector<double> wall, cpu;
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
-    for (int start = 0; start + blockSize <= frames; start += blockSize) {
+    for (int start = 0; start <= frames - blockSize; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
-        const ThreadUsage u0 = threadUsage();
-        const auto w0 = std::chrono::steady_clock::now();
-        processor.processBlock(buffer, midi);
-        const auto w1 = std::chrono::steady_clock::now();
-        const ThreadUsage u1 = threadUsage();
-        wall.push_back(100.0 * std::chrono::duration<double, std::nano>(w1 - w0).count() / budgetNs);
-        cpu.push_back(100.0 * (u1.cpuNs - u0.cpuNs) / budgetNs);
-        allocs += u1.allocs - u0.allocs;
-        allocBlocks += u1.allocs != u0.allocs;
-        faults += u1.faults - u0.faults;
-        faultBlocks += u1.faults != u0.faults;
+        const auto cost = measureBlock(processor, buffer, midi);
+        missed.count(cost, budgetNs);
+        wall.push_back(100.0 * cost.wallNs / budgetNs);
+        cpu.push_back(100.0 * cost.cpuNs / budgetNs);
+        allocs += cost.allocs;
+        allocBlocks += cost.allocs != 0;
+        faults += cost.faults;
+        faultBlocks += cost.faults != 0;
     }
     const auto spread = [](std::vector<double>& v) {
         std::sort(v.begin(), v.end());
@@ -220,7 +309,69 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
                 allocs, allocBlocks, faults, faultBlocks);
 #endif
     std::printf("\n");
+    missed.print(wall.size());
     return 0;
+}
+
+// Calibration uses mono native float32 streams at 48 kHz. Keep the host's
+// bypass as the digital reference, including the final short callback.
+int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
+                      bool fastLive) {
+    constexpr int blockSize = 128;
+    std::ifstream source(inPath, std::ios::binary);
+    std::ofstream dest(outPath, std::ios::binary);
+    if (!source || !dest)
+        return 1;
+
+    livewdf::LiveWDFPluginProcessor processor;
+    auto set = [&](const char* id, float value) {
+        auto* p = processor.getAPVTS().getParameter(id);
+        if (!p) throw std::runtime_error(id);
+        p->setValueNotifyingHost(p->convertTo0to1(value));
+    };
+    processor.setNonRealtime(!fastLive);
+    set("export_4x", 0);
+    set("accurate_export", 1);
+    set("oversampling", 0);
+    set("solve_quality", fastLive ? 1.f : 0.f);
+    processor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
+    processor.prepareToPlay(kSampleRate, blockSize);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return 1;
+    }
+    set("input_trim", 0);
+    set("output_master", 0);
+    set("mix", 100);
+    set("match_output", 1);
+    set("chain_input", 0);
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> wet(2, blockSize), bypass(2, blockSize);
+    float in[blockSize];
+    const auto started = std::chrono::steady_clock::now();
+    std::int64_t framesRendered = 0;
+    while (source.read(reinterpret_cast<char*>(in), sizeof in) || source.gcount() > 0) {
+        if (source.gcount() % sizeof(float) != 0) return 1;
+        const auto frames = static_cast<int>(source.gcount() / sizeof(float));
+        wet.setSize(2, frames, false, false, true);
+        for (int c = 0; c < 2; ++c) wet.copyFrom(c, 0, in, frames);
+        bypass.makeCopyOf(wet, true);
+        processor.processBlockBypassed(bypass, midi);
+        if (!std::equal(in, in + frames, bypass.getReadPointer(0))) {
+            std::fprintf(stderr, "1x host bypass differs from source\n");
+            return 1;
+        }
+        if (fastLive) {
+            // Let the same control-thread timer and worker prepare plans as during playback.
+            juce::Timer::callPendingTimersSynchronously();
+            std::this_thread::sleep_until(started + std::chrono::duration<double>(framesRendered / kSampleRate));
+        }
+        processor.processBlock(wet, midi);
+        framesRendered += frames;
+        dest.write(reinterpret_cast<const char*>(wet.getReadPointer(0)), frames * sizeof(float));
+    }
+    dest.close();
+    return source.eof() && !source.bad() && dest ? 0 : 1;
 }
 
 // ==============================================================================
@@ -249,6 +400,7 @@ struct Reference {
     int inIdx = -1;
     int outIdx = -1;
     std::vector<double> base;
+    double inputScale = 1.0;
     double fullScale = 1.0;
     std::string inputName;
 };
@@ -262,7 +414,7 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
                     Reference& ref, std::string& why) {
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         why = e.what();
         return false;
@@ -296,6 +448,7 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
     ref.base.resize(c.src.size());
     for (size_t i = 0; i < c.src.size(); ++i)
         ref.base[i] = c.src[i].dc;
+    ref.inputScale = doc.inputVoltsPerFullScale();
     ref.fullScale = doc.outputFullScaleVolts();
 
     try {
@@ -479,7 +632,7 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
                 if (ac.ac != 0.0 && ac.freq != 0.0)
                     sv[source] = wdf::sourceValueAt(ref.base[source], ac.ac, ac.freq, kSampleRate, n);
             }
-            sv[static_cast<size_t>(ref.inIdx)] = static_cast<double>(blockIn[static_cast<size_t>(i)]);
+            sv[static_cast<size_t>(ref.inIdx)] = ref.inputScale * blockIn[static_cast<size_t>(i)];
 
             const auto& nodes = ref.engine->step(sv);
             if (!ref.engine->lastConverged())
@@ -519,7 +672,186 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     return st;
 }
 
+// A 2:1 resistive divider has a known wet voltage for every incoming sample.
+// Check both conversion directions at a partial mix so wrong dry units are audible.
+bool checkPhysicalRouting() {
+    wdf::LiveWDFDocument doc;
+    constexpr double inputRef = .25, matchedRef = 2.;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", inputRef * doc.kReferenceMillivolts}}, {}, {}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {}},
+        {"R2", "res", {{"a", "out"}, {"b", "0"}}, {{"value", 1000.}}, {}, {}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", matchedRef}}, {}, {}},
+    };
+    livewdf::LiveWDFPluginProcessor processor;
+    auto set = [&](const char* id, float value) {
+        auto* parameter = processor.getAPVTS().getParameter(id);
+        parameter->setValueNotifyingHost(parameter->convertTo0to1(value));
+    };
+    set("solve_quality", 0);
+    set("mix", 50);
+    constexpr int frames = 16;
+    processor.prepareToPlay(kSampleRate, frames);
+    if (!processor.loadCircuitDocument(doc))
+        return false;
+    juce::AudioBuffer<float> audio(2, frames);
+    juce::MidiBuffer midi;
+    for (bool receive : {false, true}) {
+        set("chain_input", receive);
+        set("match_output", receive);
+        constexpr float sample = .125f;
+        for (int ch = 0; ch < audio.getNumChannels(); ++ch)
+            std::fill_n(audio.getWritePointer(ch), frames, sample);
+        processor.processBlock(audio, midi);
+        const double inputVolts = sample * (receive ? doc.kChainVoltsPerFullScale : inputRef);
+        const double dry = inputVolts / (receive ? inputRef : doc.kChainVoltsPerFullScale);
+        const double wet = .5 * inputVolts / (receive ? matchedRef : doc.kChainVoltsPerFullScale);
+        if (!(std::abs(audio.getSample(0, frames - 1) - .5 * (dry + wet)) < 1e-6))
+            return false;
+    }
+    return true;
+}
+
+// A divider biased by a second source exposes the physical drive at its scope while
+// its wet output should stay constant through the entire matched pad transition.
+bool checkPreviewPad(const juce::File& factoryPreset) {
+    wdf::LiveWDFDocument doc;
+    doc.previewPadDb = 12.;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", doc.kReferenceMillivolts}}, {}, {}},
+        {"REF", "src", {{"pos", "ref"}, {"neg", "0"}}, {{"dc", .5}}, {}, {}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {}},
+        {"R2", "res", {{"a", "out"}, {"b", "ref"}}, {{"value", 1000.}}, {}, {}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", 2.}}, {}, {}},
+        {"P", "scope", {{"probe", "out"}}, {}, {}, {}},
+    };
+    constexpr int frames = 128;
+    livewdf::LiveWDFPluginProcessor processor;
+    processor.prepareToPlay(kSampleRate, frames);
+    if (!processor.loadCircuitDocument(doc)) return false;
+    auto& state = processor.getAPVTS();
+    const auto set = [&](const char* id, float value) {
+        auto* param = state.getParameter(id);
+        param->setValueNotifyingHost(param->convertTo0to1(value));
+    };
+    set("compiled_preview", 1);
+    set("stereo", 1);
+    set("mix", 50);
+    set("export_4x", 0);
+    juce::AudioBuffer<float> block(2, frames);
+    juce::MidiBuffer midi;
+    const auto render = [&]() {
+        for (int ch = 0; ch < 2; ++ch)
+            std::fill_n(block.getWritePointer(ch), frames, .25f * (ch + 1));
+        processor.processBlock(block, midi);
+        for (int ch = 0; ch < 2; ++ch) {
+            const double input = .25 * (ch + 1);
+            const double expected = .5 * input + .5 * (.25 + .5 * input) / 2.;
+            for (int i = 0; i < frames; ++i)
+                if (std::abs(block.getSample(ch, i) - expected) > 1.e-6) return false;
+        }
+        return true;
+    };
+    const auto probe = [&] { return processor.getLiveProbeVoltages().at("out"); };
+    if (!render() || std::abs(probe() - .375) > 1.e-6) return false;
+    set("preview_pad", 1);
+    const double padded = .25 + .125 * std::pow(10., -.6);
+    if (!render() || !(probe() < .375 && probe() > padded)) return false;
+    for (int i = 0; i < 6; ++i) if (!render()) return false;
+    if (std::abs(probe() - padded) > 1.e-6) return false;
+    processor.setNonRealtime(true);
+    if (!render() || std::abs(probe() - .375) > 1.e-6) return false;
+    set("accurate_export", 0);
+    if (!render() || std::abs(probe() - padded) > 1.e-6) return false;
+    doc.previewPadDb = 0.;
+    auto* pad = state.getParameter("preview_pad");
+    if (!processor.loadCircuitDocument(doc) || pad->getValue() != 0.f ||
+        !render() || std::abs(probe() - .375) > 1.e-6) return false;
+
+    // Restore the player's choice on an actual wired factory document, including
+    // when an older session is recalled into an instance that previously used a pad.
+    if (!processor.loadCircuitFromFile(factoryPreset)) return false;
+    set("preview_pad", 1);
+    juce::MemoryBlock saved;
+    processor.getStateInformation(saved);
+    if (!processor.loadCircuitDocument(doc) || pad->getValue() != 0.f) return false;
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    if (pad->getValue() != 1.f || processor.getDocumentSnapshot().previewPadDb <= 0.) return false;
+    auto xml = juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize()));
+    auto old = juce::ValueTree::fromXml(*xml);
+    old.removeChild(old.getChildWithProperty("id", "preview_pad"), nullptr);
+    juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    return pad->getValue() == 0.f;
+}
+
+bool checkExternalImpedanceDefaults() {
+    wdf::LiveWDFDocument doc;
+    doc.components = {
+        {"IN1", "in", {{"sig", "in"}}, {{"referenceMillivoltsRms", doc.kReferenceMillivolts},
+            {"externalMinOhms", 100.}, {"externalMaxOhms", 100000.}, {"externalDefaultOhms", 5900.}}, {}, {0, 0}},
+        {"R1", "res", {{"a", "in"}, {"b", "out"}}, {{"value", 1000.}}, {}, {6, 2}},
+        {"R2", "res", {{"a", "out"}, {"b", "0"}}, {{"value", 1000.}}, {}, {6, 8}},
+        {"OUT1", "out", {{"sig", "out"}}, {{"fullScaleVolts", 1.}, {"externalMinOhms", 100.},
+            {"externalMaxOhms", 100000.}, {"externalDefaultOhms", 1500.}}, {}, {14, 4}},
+        {"GND", "gnd", {{"sig", "0"}}, {}, {}, {6, 14}},
+    };
+    doc.wires = {{"", {{2, 0}, {6, 0}}}, {"", {{6, 4}, {6, 6}}},
+                 {"", {{6, 4}, {12, 4}}}, {"", {{6, 10}, {6, 12}}}};
+    livewdf::LiveWDFPluginProcessor processor;
+    processor.prepareToPlay(kSampleRate, 16);
+    auto& parameters = processor.getAPVTS();
+    const auto output = [&] {
+        juce::AudioBuffer<float> block(2, 16);
+        juce::MidiBuffer midi;
+        for (int ch = 0; ch < 2; ++ch) std::fill_n(block.getWritePointer(ch), 16, .125f);
+        processor.processBlock(block, midi);
+        return block.getSample(0, 15) / .125;
+    };
+    if (!processor.loadCircuitDocument(doc)) return false;
+    // The native 1k shunt in parallel with 1.5k gives 600 ohms.
+    const auto checkGain = [&](const char* stage, double expected) {
+        const double measured = output();
+        if (std::abs(measured - expected) <= 1.e-6) return true;
+        std::fprintf(stderr, "%s gain %.8f, expected %.8f\n", stage, measured, expected);
+        return false;
+    };
+    if (!checkGain("Factory external impedances", 600. / (5900. + 1000. + 600.))) return false;
+    parameters.getParameter("source_impedance")->setValueNotifyingHost(0.f);
+    parameters.getParameter("load_impedance")->setValueNotifyingHost(.6f);
+    juce::MemoryBlock saved;
+    processor.getStateInformation(saved);
+    if (!processor.loadCircuitDocument(doc)) return false;
+    processor.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    const double position = parameters.getRawParameterValue("load_impedance")->load();
+    const double load = wdf::portImpedanceRange(doc, false)->ohmsAt(position);
+    const double parallel = 1000. * load / (1000. + load);
+    if (*parameters.getRawParameterValue("source_impedance") != 0.f || std::abs(position - .6) > 1.e-6 ||
+        !checkGain("Restored impedances", parallel / (1000. + parallel))) return false;
+    // A named resistor is already present in the drawing and stays at its marked value.
+    doc.components.front().properties["externalResistor"] = "R1";
+    doc.components[3].properties["externalResistor"] = "R2";
+    if (!processor.loadCircuitDocument(doc) || !checkGain("Original named resistors", .5)) return false;
+    const auto source = *wdf::portImpedanceRange(doc, true);
+    auto* knob = parameters.getParameter("source_impedance");
+    if (!source.atDefault(knob->getValue())) return false;
+    parameters.getParameter("export_4x")->setValueNotifyingHost(0.f);
+    processor.setNonRealtime(true);
+    for (const double position : {.6, source.defaultPosition, .2, 0.}) {
+        knob->setValueNotifyingHost(static_cast<float>(position));
+        for (int i = 0; i < 64; ++i) output();
+        const double resistance = position > 0. ? source.ohmsAt(knob->getValue()) : source.wiredOhms;
+        if (!checkGain("Automated named resistor", 1000. / (resistance + 1000.))) return false;
+    }
+    return true;
+}
+
+
 int runAudit(const juce::File& file) {
+    if (!checkPhysicalRouting()) {
+        std::fprintf(stderr, "Physical voltage routing failed at 50%% wet/dry\n");
+        return 1;
+    }
     const AuditCase cases[] = {
         { "sine 440 Hz, peak 0.001", 440.0, 0.001f },
         { "sine 440 Hz, peak 0.02", 440.0, 0.02f },
@@ -764,7 +1096,7 @@ int runSpice(const juce::File& file, const std::string& outDir) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -958,7 +1290,7 @@ int runProbe(const juce::File& file, const std::string& outCsv, double fs, doubl
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1034,7 +1366,13 @@ int runProbe(const juce::File& file, const std::string& outCsv, double fs, doubl
 int runPluginProbe(const juce::File& file, const std::string& outCsv, double drive = 0.001, double freq = 1000.0) {
     std::vector<float> pluginOut;
     AuditInfo info;
-    const AuditCase tc{ "probe", freq, static_cast<float>(drive) };
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    if (!doc.loadFromFile(file.getFullPathName().toStdString(), doc, error)) {
+        std::printf("plugin probe: %s\n", error.c_str());
+        return 1;
+    }
+    const AuditCase tc{ "probe", freq, static_cast<float>(drive / doc.inputVoltsPerFullScale()) };
     const AuditStats st = runOne(file, 64, tc, pluginOut, &info);
     if (!st.error.empty()) {
         std::printf("plugin probe: %s\n", st.error.c_str());
@@ -1073,7 +1411,7 @@ int runB1Diag(const juce::File& file) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1213,7 +1551,7 @@ int runValidation(const juce::File& file) {
         return 1;
     }
     const auto& doc = processor.getCurrentDocument();
-    wdf::Circuit c = doc.toCircuit();
+    wdf::Circuit c = wdf::circuitWithPortImpedances(doc);
     auto engine = std::make_unique<wdf::Engine>(c, kSampleRate);
     std::vector<double> dc, root;
     bool dcOk = engine->solveDc(dc, root);
@@ -1393,7 +1731,7 @@ int runWiring(const juce::File& file) {
 
     wdf::Circuit c;
     try {
-        c = doc.toCircuit();
+        c = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1655,7 +1993,7 @@ int runRuntimeCheck(const juce::File& file) {
     const auto& doc = processor.getCurrentDocument();
     wdf::Circuit circuit;
     try {
-        circuit = doc.toCircuit();
+        circuit = wdf::circuitWithPortImpedances(doc);
     } catch (const std::exception& e) {
         std::printf("toCircuit failed: %s\n", e.what());
         return 1;
@@ -1856,17 +2194,167 @@ int runRuntimeCheck(const juce::File& file) {
 
 }  // namespace
 
+namespace livewdf {
+
+bool checkLivePreviewCapture(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    const auto set = [&](const char* id, float value) {
+        processor.getAPVTS().getParameter(id)->setValueNotifyingHost(value);
+    };
+    set("solve_quality", 0.f);
+    set("compiled_preview", 0.f);
+    processor.setPlayConfigDetails(2, 2, 48000, 128);
+    processor.prepareToPlay(48000, 128);
+    if (!processor.loadCircuitFromFile(file))
+        return false;
+    set("solve_quality", 1.f);
+    set("compiled_preview", 1.f);
+
+    // A running Preview job owns the preparation slot. Polling the separate
+    // affine solver here would take the mutex and could make the audio block dry.
+    {
+        std::promise<LiveWDFPluginProcessor::SettledTransfer> busy;
+        processor.settledTransferJob_ = busy.get_future();
+        processor.timerCallback();
+        processor.settledTransferJob_ = {};
+        if (processor.observedAffineKey_) return false;
+    }
+    // An active stream captures settings at the next audio block. Even if the
+    // mutex happens to be free at this instant, the timer must leave it alone.
+    processor.audioTransferRevision_.store(processor.leftEngine_->linearRebuilds());
+    processor.timerCallback();
+    if (processor.captureState_.load() != LiveWDFPluginProcessor::CaptureState::requested)
+        return false;
+
+    // Reproduce a saturated callback that owns the engine for every timer tick.
+    // The worker may take any number of blocks to finish its numerical screen.
+    std::barrier blockBoundary(2);
+    bool stop = false, installed = false;
+    std::thread audio([&] {
+        juce::AudioBuffer<float> block(2, 128);
+        juce::MidiBuffer midi;
+        for (;;) {
+            {
+                const std::lock_guard hold(processor.engineMutex_);
+                blockBoundary.arrive_and_wait();
+                blockBoundary.arrive_and_wait();
+            }
+            if (stop) break;
+            block.clear();
+            processor.processBlock(block, midi);
+            installed = processor.previewPrepared_;
+            blockBoundary.arrive_and_wait();
+        }
+    });
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+    for (;;) {
+        blockBoundary.arrive_and_wait();
+        stop = installed || std::chrono::steady_clock::now() >= deadline;
+        if (!stop) processor.timerCallback();
+        blockBoundary.arrive_and_wait();
+        if (stop) break;
+        blockBoundary.arrive_and_wait();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    audio.join();
+    std::printf("Compiled Preview under continuous engine contention: %s\n", installed ? "PASS" : "FAIL");
+    return installed;
+}
+
+// Exercise the audio-rate control path while the background compiler is idle.
+bool checkLivePreviewPotMotion(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    auto& parameters = processor.getAPVTS();
+    parameters.getParameter("solve_quality")->setValueNotifyingHost(0.f);
+    processor.setPlayConfigDetails(2, 2, 48000, 128);
+    processor.prepareToPlay(48000, 128);
+    if (!processor.loadCircuitFromFile(file)) return false;
+
+    const auto switches = processor.getSwitchGroups();
+    const auto pots = processor.getPotGroups();
+    const auto band = std::find_if(switches.begin(), switches.end(),
+        [](const auto& control) { return control.name == "Upper Presence 1.5 kHz"; });
+    const auto gain = std::find_if(pots.begin(), pots.end(),
+        [](const auto& control) { return control.name == "Upper Presence Gain"; });
+    if (band == switches.end() || gain == pots.end()) {
+        std::fprintf(stderr, "Missing the presence EQ controls in the regression fixture.\n");
+        return false;
+    }
+    processor.setSwitchGroupB(static_cast<int>(band - switches.begin()), true);
+    auto* knob = parameters.getParameter("pot_" + juce::String(static_cast<int>(gain - pots.begin())));
+    parameters.getParameter("solve_quality")->setValueNotifyingHost(1.f);
+    parameters.getParameter("compiled_preview")->setValueNotifyingHost(1.f);
+    juce::AudioBuffer<float> block(2, 128);
+    juce::MidiBuffer midi;
+    const auto render = [&] {
+        for (int i = 0; i < block.getNumSamples(); ++i) {
+            const float sample = .15f * std::sin(i * juce::MathConstants<float>::twoPi / 32);
+            block.setSample(0, i, sample);
+            block.setSample(1, i, sample);
+        }
+        processor.processBlock(block, midi);
+    };
+    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+    while (!processor.leftEngine_->bipolarPreviewActive()) {
+        if (std::chrono::steady_clock::now() >= deadline) {
+            std::fprintf(stderr, "Compiled Preview did not become active.\n");
+            return false;
+        }
+        processor.timerCallback();
+        render();
+        std::this_thread::sleep_for(std::chrono::milliseconds(2));
+    }
+    for (int i = 0; i < 64; ++i) render();
+    for (const float target : {.55f, .45f, .50f}) {
+        const juce::AudioBuffer<float> before(block);
+        knob->setValueNotifyingHost(target);
+        render();
+        if (!processor.leftEngine_->bipolarPreviewActive()) {
+            std::fprintf(stderr, "Compiled Preview fell back while moving gain to %.2f.\n", target);
+            return false;
+        }
+        float peakChange = 0.f;
+        for (int i = 0; i < block.getNumSamples(); ++i) {
+            const float sample = block.getSample(0, i);
+            if (!std::isfinite(sample)) return false;
+            peakChange = std::max(peakChange, std::abs(sample - before.getSample(0, i)));
+        }
+        if (peakChange <= 1e-4f) {
+            std::fprintf(stderr, "Gain %.2f had no measurable effect during the first block.\n", target);
+            return false;
+        }
+    }
+    return true;
+}
+
+} // namespace livewdf
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
+    if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
+        return checkExternalImpedanceDefaults() ? 0 : 1;
     const char* circuitPath = argc > 1 ? argv[1] : "";
     const juce::File file(circuitPath);
     if (!file.existsAsFile()) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--grid-current on|off] [--fast-live]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
+    }
+
+    if (argc == 3 && std::string(argv[2]) == "--check-preview-pad")
+        return checkPreviewPad(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-live-preview-pot-motion")
+        return livewdf::checkLivePreviewPotMotion(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")
+        return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
+
+    if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
+        const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
+        if (argc != 5 && !fastLive) return 1;
+        return renderCalibration(file, argv[3], argv[4], fastLive);
     }
 
     bool validate = false;
@@ -1875,7 +2363,7 @@ int main(int argc, char** argv) {
     bool wiring = false;
     bool sweep = false;
     bool runtimeCheck = false;
-    float solveQuality = 0.0f;
+    std::optional<BenchMode> mode;
     std::string spiceDir;
     std::string probeCsv;
     std::string pluginProbeCsv;
@@ -1899,8 +2387,12 @@ int main(int argc, char** argv) {
             sweep = true;
         else if (arg == "--runtime-check")
             runtimeCheck = true;
-        else if (arg == "--fast-live" || arg == "--live-preview")
-            solveQuality = 1.0f;
+        else if (arg == "--accurate")
+            mode = BenchMode::Accurate;
+        else if (arg == "--fast-live")
+            mode = BenchMode::FastLive;
+        else if (arg == "--live-preview")
+            mode = BenchMode::CompiledPreview;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)
@@ -1953,16 +2445,16 @@ int main(int argc, char** argv) {
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
     if (!wavPath.empty())
-        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent);
+        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent, mode.value_or(BenchMode::FastLive));
 
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
-    auto* quality = processor.getAPVTS().getParameter("solve_quality");
-    quality->setValueNotifyingHost(quality->convertTo0to1(solveQuality));
+    const auto benchmarkMode = mode.value_or(BenchMode::Accurate);
+    const char* quality = selectMode(processor, benchmarkMode);
 
     std::printf("LiveWDF plugin benchmark  fs=%.0f Hz  quality=%s  circuit=%s\n",
-                kSampleRate, quality->getCurrentValueAsText().toRawUTF8(), file.getFileName().toRawUTF8());
+                kSampleRate, quality, file.getFileName().toRawUTF8());
     std::printf("  block   OS   us/block   ns/in-sample   %% of one 48k core   groups(p/s)\n");
     std::printf("  --------------------------------------------------------------------------\n");
 
@@ -1972,12 +2464,13 @@ int main(int argc, char** argv) {
     for (int choice : choices) {
         for (int blockSize : blockSizes) {
             const int blocks = std::max(128, 400000 / blockSize);
-            const Result r = measure(processor, file, blockSize, choice, blocks);
-            if (r.usPerBlock <= 0.0) continue;
+            const Result r = measure(processor, file, blockSize, choice, blocks, benchmarkMode);
+            if (r.usPerBlock <= 0.0) return 1;
             std::printf("  %5d   %dx   %8.2f   %12.1f   %15.2f%%   %d/%d   peak=%.6g %s\n",
                         blockSize, 1 << choice, r.usPerBlock, r.nsPerInputSample,
                         r.realtimePercent, r.potGroups, r.switchGroups, r.peak,
                         r.finite ? "finite" : "NON-FINITE");
+            r.missed.print(static_cast<size_t>(blocks));
         }
     }
 
