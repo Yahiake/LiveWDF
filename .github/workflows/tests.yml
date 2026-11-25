@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ccache xvfb libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
+          sudo apt-get install -y ccache xvfb qemu-user libasound2-dev libjack-jackd2-dev libfreetype-dev libfontconfig1-dev libx11-dev libxcomposite-dev libxcursor-dev libxext-dev libxinerama-dev libxrandr-dev libxrender-dev libxi-dev
 
       # ccache checks every hit against the compiler and preprocessed source, so an old cache only costs misses.
       - uses: actions/cache/restore@v6
@@ -52,6 +52,13 @@ jobs:
 
       - name: Unit tests
         run: ctest --test-dir build --output-on-failure
+
+      - name: Test CPU dispatch under QEMU
+        run: |
+          LIVEWDF_TEST_EXPECT_AVX2=0 qemu-x86_64 -cpu SandyBridge build/tests/livewdf_tests '[cpu-kernels]'
+          LIVEWDF_TEST_EXPECT_AVX2=1 qemu-x86_64 -cpu Haswell build/tests/livewdf_tests '[cpu-kernels]'
+          LIVEWDF_TEST_EXPECT_AVX2=0 qemu-x86_64 -cpu Haswell,-fma build/tests/livewdf_tests '[cpu-kernels]'
+          LIVEWDF_TEST_EXPECT_AVX2=0 qemu-x86_64 -cpu Haswell,-xsave build/tests/livewdf_tests '[cpu-kernels]'
 
       - name: End-to-end tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
