@@ -976,6 +976,7 @@ TEST_CASE("ngspice oracle: every factory schematic exports and matches in DC and
     double worstTranRel = 0.0;
 
     for (size_t i = 0; i < docs.size(); ++i) {
+        CAPTURE(docs[i].string());
         wdf::LiveWDFDocument doc;
         std::string error;
         REQUIRE(wdf::LiveWDFDocument::loadFromFile(docs[i].string(), doc, error));

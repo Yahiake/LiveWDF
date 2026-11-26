@@ -1183,9 +1183,10 @@ TEST_CASE("Loaded junction port capacity is bounded consistently",
 
 TEST_CASE("Tube Preview follows the Soldano normal gain changes without rejected samples",
           "[engine][circuit-plan][triode-preview]") {
-    wdf::LiveWDFDocument document;
+    wdf::LiveWDFDocument full, document;
     std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive.livewdf", error));
+    REQUIRE(full.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive.livewdf", error));
+    REQUIRE(full.makePreampDocument(document, error));
     const auto circuit = wdf::circuitWithPortImpedances(document);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     REQUIRE(source != circuit.src.end());
