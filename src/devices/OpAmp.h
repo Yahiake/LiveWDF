@@ -208,6 +208,8 @@ struct OpAmpModel {
     double vRailPos = 12.0;
     /// Maximum negative output swing below zero (V).
     double vRailNeg = 12.0;
+    /// Symmetric supply the swing above is specified on (V).
+    double supplyVolts = 15.0;
     /// Output impedance (ohm). 50-200 ohm for a voltage-feedback op-amp.
     double outputImpedance = 75.0;
     /// Output stage capacitance (F). Carried for model fidelity and future
@@ -327,6 +329,7 @@ struct OpAmpModel {
                 m.slewRate = 2.3;
                 // Correct the measured loaded swing for the model's estimated Ro.
                 m.vRailPos = m.vRailNeg = 17.36 * (1.0 + m.outputImpedance / 600.0);
+                m.supplyVolts = 24.0;
                 break;
             case OpAmpType::Api2520:
                 // API's 2520 data sheet gives >110 dB, 50 MHz and a 40 kHz
@@ -448,6 +451,7 @@ struct OpAmpModel {
                 m.slewRate = 1.0;
                 m.outputImpedance = 0.3;
                 m.setVMax(3.6);
+                m.supplyVolts = 4.5;
                 break;
             case OpAmpType::DiscreteClassAB:
                 // Closed-loop power-stage equivalents use their own feedback
