@@ -7,6 +7,7 @@
 #include "devices/Pentode.h"
 #include "spice/MatchedPentodes.h"
 #include "wdf/Engine.h"
+#include "wdf/solver/PentodePlatePair.h"
 
 // Property guards for the Reefman pentode constitutive evaluator.
 // The solver trusts these analytic derivatives; this test checks them against
@@ -163,5 +164,30 @@ TEST_CASE("matched pentode branches preserve the plate and both sets of probe vo
     SECTION("different model cards") {
         circuit.pent.back().model.reefman.kp += 0.01;
         REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
+}
+
+TEST_CASE("coupled DerkD plates recover both voltages across cutoff", "[pentodecontracts]") {
+    constexpr double z11 = 3100., z22 = 2800.;
+    const auto& left = wdf::k6L6GCPair;
+    const auto& right = wdf::kEL34Pair;
+    const double trial1[] = {-5., -24., 430.}, trial2[] = {210., -32., 450.};
+    wdf::solver::DerkDPlate law1, law2;
+    REQUIRE(law1.at(left, trial1, left.eval(trial1[1], trial1[2], trial1[0]).is));
+    REQUIRE(law2.at(right, trial2, right.eval(trial2[1], trial2[2], trial2[0]).is));
+    for (double mutual : {-1300., 800.}) {
+        for (double plate1 : {-80., 0., 15., 400.}) {
+            for (double plate2 : {-50., 3., 180., 700.}) {
+                CAPTURE(mutual, plate1, plate2);
+                const double i1 = left.eval(trial1[1], trial1[2], plate1).ip;
+                const double i2 = right.eval(trial2[1], trial2[2], plate2).ip;
+                double v1, v2;
+                REQUIRE(wdf::solver::solvePentodePlatePair(law1, law2,
+                    plate1 + z11 * i1 + mutual * i2, plate2 + mutual * i1 + z22 * i2,
+                    z11, z22, mutual, v1, v2));
+                REQUIRE(std::abs(v1 - plate1) < 1e-7);
+                REQUIRE(std::abs(v2 - plate2) < 1e-7);
+            }
+        }
     }
 }
