@@ -358,6 +358,10 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         out.mutual.push_back(std::move(cm));
     }
 
+    for (const auto& [alias, node] : c.nodeAliases) {
+        out.info.emplace(alias, out.info.at(node));
+        out.index.emplace(alias, slotIndex(node));
+    }
     return out;
 }
 

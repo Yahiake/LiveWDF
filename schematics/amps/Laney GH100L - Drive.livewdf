@@ -1,0 +1,3768 @@
+{
+  "author": "LiveWDF",
+  "category": "Amp",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {
+        "referenceMillivoltsRms": 77.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": -3,
+        "y": 20
+      }
+    },
+    {
+      "id": "GND1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 35
+      }
+    },
+    {
+      "id": "R1",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 28
+      }
+    },
+    {
+      "id": "Rin",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 68000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 12,
+        "y": 20
+      }
+    },
+    {
+      "id": "GND2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 40
+      }
+    },
+    {
+      "id": "V1a",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 20
+      }
+    },
+    {
+      "id": "B+ V1a",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 235
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 2
+      }
+    },
+    {
+      "id": "R5",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 9
+      }
+    },
+    {
+      "id": "R2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 31
+      }
+    },
+    {
+      "id": "C2",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 6.8e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 29,
+        "y": 31
+      }
+    },
+    {
+      "id": "C4",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 14,
+        "y": 34
+      }
+    },
+    {
+      "id": "C5",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 34,
+        "y": 14
+      }
+    },
+    {
+      "id": "C6",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 43,
+        "y": 14
+      }
+    },
+    {
+      "id": "GND3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 45,
+        "y": 34
+      }
+    },
+    {
+      "id": "R14",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 45,
+        "y": 27
+      }
+    },
+    {
+      "id": "R16",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 52,
+        "y": 14
+      }
+    },
+    {
+      "id": "GND4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 61,
+        "y": 32
+      }
+    },
+    {
+      "id": "VR1",
+      "properties": {
+        "label": "Drive",
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.19,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 61,
+        "y": 20
+      }
+    },
+    {
+      "id": "R stop V1b",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 68000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 72,
+        "y": 20
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 40
+      }
+    },
+    {
+      "id": "V1b",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 20
+      }
+    },
+    {
+      "id": "B+ V1b",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 250
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 2
+      }
+    },
+    {
+      "id": "R6",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 9
+      }
+    },
+    {
+      "id": "R3",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 31
+      }
+    },
+    {
+      "id": "C3",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 6.8e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 31
+      }
+    },
+    {
+      "id": "C7",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 92,
+        "y": 14
+      }
+    },
+    {
+      "id": "GND6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 100,
+        "y": 32
+      }
+    },
+    {
+      "id": "R4",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 100,
+        "y": 25
+      }
+    },
+    {
+      "id": "VR2",
+      "properties": {
+        "label": "Gain",
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.19,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 20
+      }
+    },
+    {
+      "id": "GND7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 38
+      }
+    },
+    {
+      "id": "R26",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 31
+      }
+    },
+    {
+      "id": "R stop V2a",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 68000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 120,
+        "y": 20
+      }
+    },
+    {
+      "id": "GND8",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 40
+      }
+    },
+    {
+      "id": "V2a",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 20
+      }
+    },
+    {
+      "id": "B+ V2a",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 250
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 2
+      }
+    },
+    {
+      "id": "R11",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 9
+      }
+    },
+    {
+      "id": "R13",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 31
+      }
+    },
+    {
+      "id": "C10",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 140,
+        "y": 14
+      }
+    },
+    {
+      "id": "C9",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 153,
+        "y": 65
+      }
+    },
+    {
+      "id": "R12",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 153,
+        "y": 72
+      }
+    },
+    {
+      "id": "GND9",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 145,
+        "y": 89
+      }
+    },
+    {
+      "id": "R10",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 145,
+        "y": 82
+      }
+    },
+    {
+      "id": "GND10",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 135,
+        "y": 94
+      }
+    },
+    {
+      "id": "V2b",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 135,
+        "y": 74
+      }
+    },
+    {
+      "id": "B+ V2b",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 260
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 135,
+        "y": 56
+      }
+    },
+    {
+      "id": "R18",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 135,
+        "y": 63
+      }
+    },
+    {
+      "id": "R15",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 820
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 135,
+        "y": 85
+      }
+    },
+    {
+      "id": "V3a",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 113,
+        "y": 74
+      }
+    },
+    {
+      "id": "B+ V3a",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 260
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 113,
+        "y": 61
+      }
+    },
+    {
+      "id": "GND11",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 113,
+        "y": 94
+      }
+    },
+    {
+      "id": "R21",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 113,
+        "y": 86
+      }
+    },
+    {
+      "id": "GND12",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 73,
+        "y": 102
+      }
+    },
+    {
+      "id": "R37",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 33000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 98,
+        "y": 78
+      }
+    },
+    {
+      "id": "C17",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 91,
+        "y": 66
+      }
+    },
+    {
+      "id": "C20",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-07
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 88,
+        "y": 78
+      }
+    },
+    {
+      "id": "C22",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 88,
+        "y": 87
+      }
+    },
+    {
+      "id": "VR4",
+      "properties": {
+        "label": "Treble",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 220000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 74,
+        "y": 69
+      }
+    },
+    {
+      "id": "VR6",
+      "properties": {
+        "label": "Bass",
+        "taper": "Log"
+      },
+      "type": "varres",
+      "values": {
+        "maxR": 1000000.0,
+        "pos": 0.52
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 73,
+        "y": 83
+      }
+    },
+    {
+      "id": "VR5",
+      "properties": {
+        "label": "Middle",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.55,
+        "totalR": 22000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 73,
+        "y": 94
+      }
+    },
+    {
+      "id": "GND13",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 59,
+        "y": 86
+      }
+    },
+    {
+      "id": "VR3",
+      "properties": {
+        "label": "Master",
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 59,
+        "y": 74
+      }
+    },
+    {
+      "id": "GND14",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 49,
+        "y": 90
+      }
+    },
+    {
+      "id": "R29",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 49,
+        "y": 83
+      }
+    },
+    {
+      "id": "C1 FX",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 90,
+        "x": 40,
+        "y": 74
+      }
+    },
+    {
+      "id": "GND15",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 30,
+        "y": 90
+      }
+    },
+    {
+      "id": "R2 FX",
+      "properties": {
+        "preampTap": "a"
+      },
+      "type": "res",
+      "values": {
+        "preampFullScaleVolts": 43.078269,
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 30,
+        "y": 83
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 329.12538
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 117,
+        "y": 151
+      }
+    },
+    {
+      "id": "Power PI input",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": -1,
+        "y": 139
+      }
+    },
+    {
+      "id": "Power PI A",
+      "properties": {
+        "model": "12AX7",
+        "powerAmp": "1"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 37,
+        "y": 139
+      }
+    },
+    {
+      "id": "Power PI B",
+      "properties": {
+        "model": "12AX7",
+        "powerAmp": "1"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 180,
+        "x": 37,
+        "y": 172
+      }
+    },
+    {
+      "id": "B+ phase inverter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 310
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 30,
+        "y": 123
+      }
+    },
+    {
+      "id": "Power PI plate A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 82000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 37,
+        "y": 128
+      }
+    },
+    {
+      "id": "Power PI plate B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 37,
+        "y": 183
+      }
+    },
+    {
+      "id": "Power PI return A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 145
+      }
+    },
+    {
+      "id": "Power PI return B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 166
+      }
+    },
+    {
+      "id": "Power PI cathode",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 470
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 36,
+        "y": 152
+      }
+    },
+    {
+      "id": "Power PI tail",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 28,
+        "y": 156
+      }
+    },
+    {
+      "id": "Power PI reference",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 21,
+        "y": 172
+      }
+    },
+    {
+      "id": "Power PI stability",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 43,
+        "y": 155
+      }
+    },
+    {
+      "id": "Power coupling A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 48,
+        "y": 134
+      }
+    },
+    {
+      "id": "Power coupling B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 48,
+        "y": 178
+      }
+    },
+    {
+      "id": "Power grid bias",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -39
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 155
+      }
+    },
+    {
+      "id": "Power grid leak A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 51,
+        "y": 141
+      }
+    },
+    {
+      "id": "Power grid leak B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 51,
+        "y": 170
+      }
+    },
+    {
+      "id": "Power V1",
+      "properties": {
+        "model": "EL34",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 70,
+        "y": 134
+      }
+    },
+    {
+      "id": "Power grid stop 1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 5600
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 62,
+        "y": 135
+      }
+    },
+    {
+      "id": "Power screen stop 1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 142
+      }
+    },
+    {
+      "id": "PGND0",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 70,
+        "y": 143
+      }
+    },
+    {
+      "id": "Power V3",
+      "properties": {
+        "model": "EL34",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 134
+      }
+    },
+    {
+      "id": "Power grid stop 3",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 5600
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 81,
+        "y": 135
+      }
+    },
+    {
+      "id": "Power screen stop 3",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 142
+      }
+    },
+    {
+      "id": "PGND1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 143
+      }
+    },
+    {
+      "id": "Power V2",
+      "properties": {
+        "model": "EL34",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 180,
+        "x": 70,
+        "y": 177
+      }
+    },
+    {
+      "id": "Power grid stop 2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 5600
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 62,
+        "y": 176
+      }
+    },
+    {
+      "id": "Power screen stop 2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 169
+      }
+    },
+    {
+      "id": "PGND2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 70,
+        "y": 170
+      }
+    },
+    {
+      "id": "Power V4",
+      "properties": {
+        "model": "EL34",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 180,
+        "x": 89,
+        "y": 177
+      }
+    },
+    {
+      "id": "Power grid stop 4",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 5600
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 81,
+        "y": 176
+      }
+    },
+    {
+      "id": "Power screen stop 4",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 169
+      }
+    },
+    {
+      "id": "PGND3",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 170
+      }
+    },
+    {
+      "id": "Power output transformer",
+      "properties": {
+        "model": "Real — Auto",
+        "powerAmp": "1"
+      },
+      "type": "transformer_ct",
+      "values": {
+        "turnsPrimary": 20.91650066,
+        "turnsSecondary": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 99,
+        "y": 154
+      }
+    },
+    {
+      "id": "PGND4",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 102,
+        "y": 163
+      }
+    },
+    {
+      "id": "Speaker load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 109,
+        "y": 163
+      }
+    },
+    {
+      "id": "PGND5",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 109,
+        "y": 170
+      }
+    },
+    {
+      "id": "B+ output plates",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 460
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 98,
+        "y": 120
+      }
+    },
+    {
+      "id": "Power supply choke",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 3
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 76,
+        "y": 123
+      }
+    },
+    {
+      "id": "Power screen supply drop",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 28
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 77,
+        "y": 149
+      }
+    },
+    {
+      "id": "Power screen reservoir",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 81,
+        "y": 162
+      }
+    },
+    {
+      "id": "PGND6",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 81,
+        "y": 169
+      }
+    },
+    {
+      "id": "Power feedback",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 78,
+        "y": 189
+      }
+    },
+    {
+      "id": "Power resonance switch",
+      "properties": {
+        "label": "Resonance",
+        "powerAmp": "1",
+        "select": "1"
+      },
+      "type": "switch_res",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 86,
+        "y": 198
+      }
+    },
+    {
+      "id": "Power resonance feedback",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 76,
+        "y": 198
+      }
+    },
+    {
+      "id": "PGND7",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 91,
+        "y": 202
+      }
+    },
+    {
+      "id": "Power feedback shunt",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 193
+      }
+    },
+    {
+      "id": "PGND8",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": 200
+      }
+    },
+    {
+      "id": "Power presence capacitor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 64,
+        "y": 201
+      }
+    },
+    {
+      "id": "Power Presence",
+      "properties": {
+        "label": "Presence",
+        "powerAmp": "1",
+        "taper": "Linear"
+      },
+      "type": "varres",
+      "values": {
+        "maxR": 22000,
+        "pos": 0.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 57,
+        "y": 205
+      }
+    },
+    {
+      "id": "PGND9",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 57,
+        "y": 212
+      }
+    }
+  ],
+  "description": "High input with Drive engaged, both gain controls, cold clipper and three-band EQ. Fixed supply rails and bypassed effects loop. Includes the Laney GH100L 2188 four-EL34 output stage, Presence and Resonance circuits at the 4 Ω feedback tap. Transformer winding parameters are estimated.",
+  "io": {
+    "groundNode": "0",
+    "inputNode": "in",
+    "outputNode": "out"
+  },
+  "layout": {
+    "pots": [
+      "Gain",
+      "Drive",
+      "Treble",
+      "Middle",
+      "Bass",
+      "Master",
+      "Presence"
+    ],
+    "switches": [
+      "Resonance"
+    ]
+  },
+  "name": "Laney GH100L - Drive",
+  "version": 3,
+  "wires": [
+    {
+      "points": [
+        {
+          "x": 3,
+          "y": 30
+        },
+        {
+          "x": 3,
+          "y": 33
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 145,
+          "y": 84
+        },
+        {
+          "x": 145,
+          "y": 87
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 45,
+          "y": 29
+        },
+        {
+          "x": 45,
+          "y": 32
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 85
+        },
+        {
+          "x": 30,
+          "y": 88
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 33
+        },
+        {
+          "x": 110,
+          "y": 36
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 49,
+          "y": 85
+        },
+        {
+          "x": 49,
+          "y": 88
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 100,
+          "y": 27
+        },
+        {
+          "x": 100,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 113,
+          "y": 88
+        },
+        {
+          "x": 113,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 96
+        },
+        {
+          "x": 73,
+          "y": 100
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 41,
+          "y": 14
+        },
+        {
+          "x": 36,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 22,
+          "y": 7
+        },
+        {
+          "x": 22,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 82,
+          "y": 7
+        },
+        {
+          "x": 82,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 7
+        },
+        {
+          "x": 130,
+          "y": 2
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 135,
+          "y": 61
+        },
+        {
+          "x": 135,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 19,
+          "y": 20
+        },
+        {
+          "x": 14,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 79,
+          "y": 20
+        },
+        {
+          "x": 74,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 127,
+          "y": 20
+        },
+        {
+          "x": 122,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 20
+        },
+        {
+          "x": 113,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 33
+        },
+        {
+          "x": 130,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 135,
+          "y": 87
+        },
+        {
+          "x": 135,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 20
+        },
+        {
+          "x": 64,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 29
+        },
+        {
+          "x": 130,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 135,
+          "y": 83
+        },
+        {
+          "x": 135,
+          "y": 77
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 92
+        },
+        {
+          "x": 73,
+          "y": 85
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 29
+        },
+        {
+          "x": 110,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 61,
+          "y": 22
+        },
+        {
+          "x": 61,
+          "y": 30
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 59,
+          "y": 76
+        },
+        {
+          "x": 59,
+          "y": 84
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 113,
+          "y": 61
+        },
+        {
+          "x": 113,
+          "y": 71
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 61,
+          "y": 18
+        },
+        {
+          "x": 61,
+          "y": 14
+        },
+        {
+          "x": 54,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 22,
+          "y": 33
+        },
+        {
+          "x": 22,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 33
+        },
+        {
+          "x": 29,
+          "y": 34
+        },
+        {
+          "x": 22,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 82,
+          "y": 33
+        },
+        {
+          "x": 82,
+          "y": 38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 33
+        },
+        {
+          "x": 89,
+          "y": 34
+        },
+        {
+          "x": 82,
+          "y": 34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 82,
+          "y": 29
+        },
+        {
+          "x": 82,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 29
+        },
+        {
+          "x": 89,
+          "y": 28
+        },
+        {
+          "x": 82,
+          "y": 28
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 82,
+          "y": 11
+        },
+        {
+          "x": 82,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 14
+        },
+        {
+          "x": 82,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 11
+        },
+        {
+          "x": 130,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 138,
+          "y": 14
+        },
+        {
+          "x": 130,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 59,
+          "y": 72
+        },
+        {
+          "x": 59,
+          "y": 69
+        },
+        {
+          "x": 71,
+          "y": 69
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 78
+        },
+        {
+          "x": 96,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 90,
+          "y": 87
+        },
+        {
+          "x": 91,
+          "y": 87
+        },
+        {
+          "x": 91,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 74,
+          "y": 67
+        },
+        {
+          "x": 74,
+          "y": 66
+        },
+        {
+          "x": 89,
+          "y": 66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 50,
+          "y": 14
+        },
+        {
+          "x": 45,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 45,
+          "y": 25
+        },
+        {
+          "x": 45,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 3,
+          "y": 26
+        },
+        {
+          "x": 3,
+          "y": 20
+        },
+        {
+          "x": -1,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 10,
+          "y": 20
+        },
+        {
+          "x": 3,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 49,
+          "y": 81
+        },
+        {
+          "x": 49,
+          "y": 74
+        },
+        {
+          "x": 56,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 42,
+          "y": 74
+        },
+        {
+          "x": 49,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 81
+        },
+        {
+          "x": 73,
+          "y": 78
+        },
+        {
+          "x": 86,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 74,
+          "y": 71
+        },
+        {
+          "x": 74,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 94
+        },
+        {
+          "x": 69,
+          "y": 94
+        },
+        {
+          "x": 69,
+          "y": 87
+        },
+        {
+          "x": 86,
+          "y": 87
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 100,
+          "y": 23
+        },
+        {
+          "x": 100,
+          "y": 14
+        },
+        {
+          "x": 94,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 18
+        },
+        {
+          "x": 110,
+          "y": 17
+        },
+        {
+          "x": 100,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 81
+        },
+        {
+          "x": 30,
+          "y": 74
+        },
+        {
+          "x": 38,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 74
+        },
+        {
+          "x": 30,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 151,
+          "y": 72
+        },
+        {
+          "x": 150,
+          "y": 72
+        },
+        {
+          "x": 150,
+          "y": 65
+        },
+        {
+          "x": 151,
+          "y": 65
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 145,
+          "y": 80
+        },
+        {
+          "x": 145,
+          "y": 72
+        },
+        {
+          "x": 150,
+          "y": 72
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 138,
+          "y": 74
+        },
+        {
+          "x": 145,
+          "y": 74
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 22,
+          "y": 29
+        },
+        {
+          "x": 22,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 29
+        },
+        {
+          "x": 29,
+          "y": 28
+        },
+        {
+          "x": 22,
+          "y": 28
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 14,
+          "y": 36
+        },
+        {
+          "x": 14,
+          "y": 37
+        },
+        {
+          "x": 19,
+          "y": 37
+        },
+        {
+          "x": 19,
+          "y": 29
+        },
+        {
+          "x": 22,
+          "y": 29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 135,
+          "y": 65
+        },
+        {
+          "x": 135,
+          "y": 71
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 116,
+          "y": 74
+        },
+        {
+          "x": 131,
+          "y": 74
+        },
+        {
+          "x": 131,
+          "y": 71
+        },
+        {
+          "x": 135,
+          "y": 71
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 113,
+          "y": 84
+        },
+        {
+          "x": 113,
+          "y": 77
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 100,
+          "y": 78
+        },
+        {
+          "x": 113,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 93,
+          "y": 66
+        },
+        {
+          "x": 100,
+          "y": 66
+        },
+        {
+          "x": 100,
+          "y": 78
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 22,
+          "y": 11
+        },
+        {
+          "x": 22,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 32,
+          "y": 14
+        },
+        {
+          "x": 22,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 14,
+          "y": 32
+        },
+        {
+          "x": 14,
+          "y": 22
+        },
+        {
+          "x": 18,
+          "y": 22
+        },
+        {
+          "x": 18,
+          "y": 17
+        },
+        {
+          "x": 22,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 155,
+          "y": 65
+        },
+        {
+          "x": 156,
+          "y": 65
+        },
+        {
+          "x": 156,
+          "y": 14
+        },
+        {
+          "x": 142,
+          "y": 14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 155,
+          "y": 72
+        },
+        {
+          "x": 156,
+          "y": 72
+        },
+        {
+          "x": 156,
+          "y": 65
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 74
+        },
+        {
+          "x": -16,
+          "y": 74
+        },
+        {
+          "x": -16,
+          "y": 139
+        },
+        {
+          "x": -10,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": -10,
+          "y": 139
+        },
+        {
+          "x": -3,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 1,
+          "y": 139
+        },
+        {
+          "x": 1,
+          "y": 143
+        },
+        {
+          "x": 28,
+          "y": 143
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 28,
+          "y": 143
+        },
+        {
+          "x": 28,
+          "y": 139
+        },
+        {
+          "x": 34,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 34,
+          "y": 172
+        },
+        {
+          "x": 34,
+          "y": 168
+        },
+        {
+          "x": 28,
+          "y": 168
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 34,
+          "y": 172
+        },
+        {
+          "x": 23,
+          "y": 172
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 136
+        },
+        {
+          "x": 37,
+          "y": 130
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 134
+        },
+        {
+          "x": 46,
+          "y": 134
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 43,
+          "y": 134
+        },
+        {
+          "x": 43,
+          "y": 153
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 175
+        },
+        {
+          "x": 37,
+          "y": 181
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 178
+        },
+        {
+          "x": 46,
+          "y": 178
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 43,
+          "y": 178
+        },
+        {
+          "x": 43,
+          "y": 157
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 50,
+          "y": 134
+        },
+        {
+          "x": 51,
+          "y": 134
+        },
+        {
+          "x": 51,
+          "y": 139
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 51,
+          "y": 135
+        },
+        {
+          "x": 60,
+          "y": 135
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 60,
+          "y": 135
+        },
+        {
+          "x": 60,
+          "y": 138
+        },
+        {
+          "x": 79,
+          "y": 138
+        },
+        {
+          "x": 79,
+          "y": 135
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 50,
+          "y": 178
+        },
+        {
+          "x": 51,
+          "y": 178
+        },
+        {
+          "x": 51,
+          "y": 172
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 51,
+          "y": 176
+        },
+        {
+          "x": 60,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 60,
+          "y": 176
+        },
+        {
+          "x": 60,
+          "y": 173
+        },
+        {
+          "x": 79,
+          "y": 173
+        },
+        {
+          "x": 79,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 131
+        },
+        {
+          "x": 89,
+          "y": 131
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 131
+        },
+        {
+          "x": 96,
+          "y": 131
+        },
+        {
+          "x": 96,
+          "y": 151
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 180
+        },
+        {
+          "x": 89,
+          "y": 180
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 180
+        },
+        {
+          "x": 96,
+          "y": 180
+        },
+        {
+          "x": 96,
+          "y": 157
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 151
+        },
+        {
+          "x": 115,
+          "y": 151
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 109,
+          "y": 151
+        },
+        {
+          "x": 109,
+          "y": 161
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 109,
+          "y": 161
+        },
+        {
+          "x": 107,
+          "y": 161
+        },
+        {
+          "x": 107,
+          "y": 189
+        },
+        {
+          "x": 80,
+          "y": 189
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 85,
+          "y": 189
+        },
+        {
+          "x": 85,
+          "y": 196
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 76,
+          "y": 144
+        },
+        {
+          "x": 75,
+          "y": 144
+        },
+        {
+          "x": 75,
+          "y": 149
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 76,
+          "y": 144
+        },
+        {
+          "x": 95,
+          "y": 144
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 144
+        },
+        {
+          "x": 81,
+          "y": 160
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 160
+        },
+        {
+          "x": 76,
+          "y": 160
+        },
+        {
+          "x": 76,
+          "y": 167
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 95,
+          "y": 144
+        },
+        {
+          "x": 95,
+          "y": 167
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 96,
+          "y": 154
+        },
+        {
+          "x": 94,
+          "y": 154
+        },
+        {
+          "x": 94,
+          "y": 150
+        },
+        {
+          "x": 98,
+          "y": 150
+        },
+        {
+          "x": 98,
+          "y": 120
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 98,
+          "y": 123
+        },
+        {
+          "x": 78,
+          "y": 123
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 123
+        },
+        {
+          "x": 30,
+          "y": 126
+        },
+        {
+          "x": 37,
+          "y": 126
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 126
+        },
+        {
+          "x": 40,
+          "y": 126
+        },
+        {
+          "x": 40,
+          "y": 185
+        },
+        {
+          "x": 37,
+          "y": 185
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 155
+        },
+        {
+          "x": 52,
+          "y": 143
+        },
+        {
+          "x": 51,
+          "y": 143
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 155
+        },
+        {
+          "x": 52,
+          "y": 168
+        },
+        {
+          "x": 51,
+          "y": 168
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 37,
+          "y": 142
+        },
+        {
+          "x": 38,
+          "y": 142
+        },
+        {
+          "x": 38,
+          "y": 152
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 38,
+          "y": 152
+        },
+        {
+          "x": 38,
+          "y": 169
+        },
+        {
+          "x": 37,
+          "y": 169
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 28,
+          "y": 147
+        },
+        {
+          "x": 28,
+          "y": 152
+        },
+        {
+          "x": 34,
+          "y": 152
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 152
+        },
+        {
+          "x": 30,
+          "y": 156
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 30,
+          "y": 156
+        },
+        {
+          "x": 30,
+          "y": 164
+        },
+        {
+          "x": 28,
+          "y": 164
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 156
+        },
+        {
+          "x": 19,
+          "y": 156
+        },
+        {
+          "x": 19,
+          "y": 172
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 19,
+          "y": 172
+        },
+        {
+          "x": 19,
+          "y": 191
+        },
+        {
+          "x": 52,
+          "y": 191
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 191
+        },
+        {
+          "x": 52,
+          "y": 189
+        },
+        {
+          "x": 76,
+          "y": 189
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 66,
+          "y": 189
+        },
+        {
+          "x": 66,
+          "y": 201
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 66,
+          "y": 198
+        },
+        {
+          "x": 74,
+          "y": 198
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 137
+        },
+        {
+          "x": 70,
+          "y": 141
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 174
+        },
+        {
+          "x": 72,
+          "y": 174
+        },
+        {
+          "x": 72,
+          "y": 168
+        },
+        {
+          "x": 70,
+          "y": 168
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 137
+        },
+        {
+          "x": 89,
+          "y": 141
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 174
+        },
+        {
+          "x": 91,
+          "y": 174
+        },
+        {
+          "x": 91,
+          "y": 168
+        },
+        {
+          "x": 89,
+          "y": 168
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 157
+        },
+        {
+          "x": 102,
+          "y": 161
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 57,
+          "y": 207
+        },
+        {
+          "x": 57,
+          "y": 210
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 87,
+          "y": 196
+        },
+        {
+          "x": 91,
+          "y": 196
+        },
+        {
+          "x": 91,
+          "y": 200
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 52,
+          "y": 195
+        },
+        {
+          "x": 52,
+          "y": 198
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 81,
+          "y": 164
+        },
+        {
+          "x": 81,
+          "y": 167
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 109,
+          "y": 165
+        },
+        {
+          "x": 109,
+          "y": 168
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 74,
+          "y": 123
+        },
+        {
+          "x": 74,
+          "y": 150
+        },
+        {
+          "x": 79,
+          "y": 150
+        },
+        {
+          "x": 79,
+          "y": 149
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 135
+        },
+        {
+          "x": 64,
+          "y": 135
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 67,
+          "y": 176
+        },
+        {
+          "x": 64,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 86,
+          "y": 135
+        },
+        {
+          "x": 83,
+          "y": 135
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 86,
+          "y": 176
+        },
+        {
+          "x": 83,
+          "y": 176
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 62,
+          "y": 201
+        },
+        {
+          "x": 62,
+          "y": 203
+        },
+        {
+          "x": 57,
+          "y": 203
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 86,
+          "y": 200
+        },
+        {
+          "x": 78,
+          "y": 200
+        },
+        {
+          "x": 78,
+          "y": 198
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 134
+        },
+        {
+          "x": 76,
+          "y": 134
+        },
+        {
+          "x": 76,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 73,
+          "y": 177
+        },
+        {
+          "x": 76,
+          "y": 177
+        },
+        {
+          "x": 76,
+          "y": 171
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 134
+        },
+        {
+          "x": 95,
+          "y": 134
+        },
+        {
+          "x": 95,
+          "y": 140
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 92,
+          "y": 177
+        },
+        {
+          "x": 95,
+          "y": 177
+        },
+        {
+          "x": 95,
+          "y": 171
+        }
+      ]
+    }
+  ]
+}

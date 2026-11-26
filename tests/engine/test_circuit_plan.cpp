@@ -1,9 +1,99 @@
 #include <catch2.hpp>
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
+#include "format/PortImpedance.h"
 #include <cmath>
 
 #include "wdf/Engine.h"
+
+TEST_CASE("Packed Preview drive follows the sparse drive through factory knob turns",
+          "[engine][circuit-plan][packed-drive]") {
+    struct Engine : wdf::Engine {
+        using wdf::Engine::Engine;
+        void disablePackedDrive() { packedDrive_ = {}; }
+        void useNodeTransfer() { affineNodes_ = {}; }
+        bool hasScatteredShortPanel() const {
+            return std::ranges::any_of(packedDrive_.panels, [&](const auto& panel) {
+                const auto* nodes = packedDrive_.nodes.data() + panel.rowStart;
+                return panel.width == wdf::detail::smallDrivePanelWidth &&
+                       nodes[panel.width - 1] != nodes[0] + panel.width - 1;
+            });
+        }
+    };
+    const bool scattered = GENERATE(false, true);
+    const auto file = scattered ? "schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf"
+                                : "schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf";
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile(file, error));
+    if (scattered) {
+        wdf::LiveWDFDocument preamp;
+        REQUIRE(document.makePreampDocument(preamp, error));
+        document = std::move(preamp);
+    }
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const size_t input = source - circuit.src.begin();
+    Engine preview(circuit, 48000.);
+    const int output = preview.nodeIndex(document.outputNet());
+    preview.prepareLiveControls();
+    preview.prepareCircuitPlan();
+    preview.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
+    preview.useLoadedJunctionPreview(true);
+    preview.useCircuitPlan(true);
+    preview.useNodeTransfer();
+    REQUIRE(preview.hasPackedDrivePlan());
+    if (scattered)
+        REQUIRE(preview.hasScatteredShortPanel());
+    REQUIRE_FALSE(preview.hasLinearDrivePlan());
+    Engine reference = preview;
+    reference.disablePackedDrive();
+    auto sources = preview.dcValues();
+
+    wdf::Engine::LiveTransferSetup stale(circuit);
+    for (int sample = 0; sample < 256; ++sample) {
+        CAPTURE(sample);
+        if (sample >= 128 && sample % 8 == 0) {
+            const std::vector<std::pair<int, double>> knob{{0, .35 + .25 * std::abs(std::sin(.05 * sample))}};
+            REQUIRE(preview.setLiveControls(knob, {}));
+            REQUIRE(reference.setLiveControls(knob, {}));
+            REQUIRE(preview.hasAdjustedLiveTransfer());
+            REQUIRE(preview.hasPackedDrivePlan());
+            if (sample == 128) {
+                REQUIRE(preview.captureLiveTransferSetup(stale, false));
+                stale.build(input, false);
+                REQUIRE(preview.canInstallLiveTransferSetup(stale));
+            } else {
+                REQUIRE_FALSE(preview.canInstallLiveTransferSetup(stale));
+            }
+        }
+        sources[input] = document.previewPeakVolts() * .4 * std::sin(.13 * sample);
+        REQUIRE(preview.step(sources, 60, wdf::Engine::kFastLiveTolerance) ==
+                reference.step(sources, 60, wdf::Engine::kFastLiveTolerance));
+        REQUIRE_FALSE(preview.lastStateRejected());
+    }
+
+    wdf::Engine::LiveTransferSetup settled(circuit);
+    REQUIRE(preview.captureLiveTransferSetup(settled, false));
+    settled.build(input, false);
+    settled.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
+    const auto waves = preview.capacitorStates();
+    REQUIRE(preview.installLiveTransferSetup(settled));
+    REQUIRE(preview.capacitorStates() == waves);
+    REQUIRE(preview.hasPackedDrivePlan());
+    preview.useNodeTransfer();
+    reference = preview;
+    reference.disablePackedDrive();
+    for (int sample = 0; sample < 128; ++sample) {
+        sources[input] = document.previewPeakVolts() * .4 * std::sin(.17 * sample);
+        REQUIRE(preview.step(sources, 60, wdf::Engine::kFastLiveTolerance) ==
+                reference.step(sources, 60, wdf::Engine::kFastLiveTolerance));
+        REQUIRE_FALSE(preview.lastStateRejected());
+    }
+    REQUIRE(preview.setPotPosition(0, .8));
+    REQUIRE_FALSE(preview.hasPackedDrivePlan());
+}
 
 TEST_CASE("Compiled RLC drive preserves reactive history, sources and transfer edits", "[engine][circuit-plan]") {
     wdf::Circuit c;
@@ -268,6 +358,47 @@ TEST_CASE("Loaded junction preview declines a transistor with extra transport te
     wdf::Engine preview(c, 48000.0);
     REQUIRE_FALSE(preview.prepareLoadedJunctionPreview());
     REQUIRE_FALSE(preview.hasLoadedJunctionPreview());
+}
+
+TEST_CASE("Loaded junction Preview follows a transistor-only fuzz through a depth sweep",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(doc.loadFromFile("schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf", error));
+    const auto circuit = doc.toCircuit();
+    const auto source = std::ranges::find(circuit.src, doc.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const size_t input = source - circuit.src.begin();
+    wdf::Engine reference(circuit, 48000.), preview(circuit, 48000.);
+    const int output = reference.nodeIndex(doc.outputNet());
+    REQUIRE(output >= 0);
+    REQUIRE(circuit.diode.empty());
+    REQUIRE(preview.prepareLoadedJunctionPreview(input, false));
+    preview.useLoadedJunctionPreview(true);
+    reference.prepareLiveControls();
+    preview.prepareLiveControls();
+    const int depth = reference.potIndexByName("P1");
+    REQUIRE(depth >= 0);
+
+    auto drive = reference.dcValues();
+    double signalEnergy = 0., errorEnergy = 0.;
+    for (int i = 0; i < 1024; ++i) {
+        if (i % 8 == 0) {
+            const std::vector<std::pair<int, double>> knob{{depth, .2 + .55 * i / 1024.}};
+            REQUIRE(reference.setLiveControls(knob, {}));
+            REQUIRE(preview.setLiveControls(knob, {}));
+        }
+        drive[input] = .55 * (.7 * std::sin(.13 * i) + .3 * std::sin(.63 * i));
+        const double expected = reference.step(drive)[output];
+        const double actual = preview.step(drive, 60, wdf::Engine::kFastLiveTolerance)[output];
+        REQUIRE_FALSE(preview.lastStateRejected());
+        signalEnergy += expected * expected;
+        errorEnergy += (actual - expected) * (actual - expected);
+    }
+    CHECK(preview.loadedJunctionHits() > 1000);
+    CHECK(errorEnergy < 1e-5 * signalEnergy);
+    for (size_t i = 0; i < circuit.cap.size(); ++i)
+        CHECK(preview.getCapacitorState(i) == Approx(reference.getCapacitorState(i)).margin(.0005));
 }
 
 namespace {
@@ -1048,4 +1179,50 @@ TEST_CASE("Loaded junction port capacity is bounded consistently",
     wdf::Engine declined(oversized, 48000.0);
     REQUIRE(declined.rootCount() > wdf::LoadedJunctionPlan::maxPorts);
     CHECK_FALSE(declined.prepareLoadedJunctionPreview(0, false));
+}
+
+TEST_CASE("Tube Preview follows the Soldano normal gain changes without rejected samples",
+          "[engine][circuit-plan][triode-preview]") {
+    wdf::LiveWDFDocument full, document;
+    std::string error;
+    REQUIRE(full.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive.livewdf", error));
+    REQUIRE(full.makePreampDocument(document, error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = static_cast<size_t>(source - circuit.src.begin());
+    const auto controls = wdf::potControlGroups(document);
+    const auto normal = std::ranges::find(controls, "Normal Gain", &wdf::LiveControlGroup::name);
+    REQUIRE(normal != controls.end());
+    REQUIRE(normal->members.size() == 1);
+
+    wdf::Engine preview(circuit, 48000.), accurate(circuit, 48000.);
+    preview.useTriodePreview(true);
+    preview.prepareLiveControls();
+    accurate.prepareLiveControls();
+    const int knob = preview.potIndexByName(normal->members.front().id);
+    const int output = preview.nodeIndex(document.outputNet());
+    REQUIRE(knob >= 0);
+    REQUIRE(output >= 0);
+    auto sources = preview.dcValues();
+    double signalEnergy = 0., errorEnergy = 0., peakError = 0.;
+    for (int sample = 0; sample < 8192; ++sample) {
+        if (sample == 512 || sample == 1792 || sample == 2560) {
+            const double position = sample == 1792 ? .05 : 1.;
+            REQUIRE(preview.setLiveControls({{knob, position}}, {}));
+            REQUIRE(accurate.setLiveControls({{knob, position}}, {}));
+        }
+        const double signal = .75 * std::sin(.055 * sample) + .17 * std::sin(.13 * sample);
+        sources[input] = sample < 4096 ? document.inputVoltsPerFullScale() * signal : 0.;
+        const double expected = accurate.step(sources)[output];
+        const double actual = preview.step(sources)[output];
+        const double delta = actual - expected;
+        signalEnergy += expected * expected;
+        errorEnergy += delta * delta;
+        peakError = std::max(peakError, std::abs(delta));
+    }
+    CHECK(preview.triodePreviewHits() > 8000);
+    CHECK(preview.stateRejectCount() == 0);
+    CHECK(errorEnergy < 1.e-6 * signalEnergy);
+    CHECK(peakError / document.outputFullScaleVolts() < .001);
 }

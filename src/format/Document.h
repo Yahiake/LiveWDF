@@ -567,6 +567,9 @@ struct LiveWDFDocument {
         return std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
     }
 
+    const SchematicComponent* preampTap() const;
+    bool makePreampDocument(LiveWDFDocument& preamp, std::string& error) const;
+
     /// One source's AC settings: how big the swing is, and how fast it moves.
     struct SourceAc {
         double ac = 0.0;

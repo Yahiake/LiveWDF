@@ -47,12 +47,6 @@ std::string spiceUnique(const std::string& base, std::set<std::string>& used) {
     return name;
 }
 
-/// Terminal-map lookup: return the engine-facing node name for a device
-/// terminal. Ground is "0".
-inline std::string nodeOrGround(const std::string& n) {
-    return n.empty() ? std::string("0") : n;
-}
-
 }  // namespace
 
 SpiceExportResult spiceExport(const Circuit& c,
@@ -62,8 +56,20 @@ SpiceExportResult spiceExport(const Circuit& c,
     std::ostringstream f;
     std::set<std::string> used;
     std::set<std::string> usedNodes;
-    for (const auto& node : c.allNodes())
+    const auto circuitNodes = c.allNodes();
+    for (const auto& node : circuitNodes)
         usedNodes.insert(spiceKey(node));
+    std::map<std::string, std::string> internalNodes;
+    for (const auto& node : circuitNodes) {
+        if (node.find('$') != std::string::npos &&
+            std::any_of(node.begin(), node.end(), [](unsigned char c) { return std::isspace(c); }))
+            internalNodes.try_emplace(node, spiceUnique("lwdf_" + spiceSafe(node), usedNodes));
+    }
+    const auto nodeOrGround = [&](const std::string& name) -> std::string {
+        if (const auto it = internalNodes.find(name); it != internalNodes.end())
+            return it->second;
+        return name.empty() ? "0" : name;
+    };
 
     f << "* LiveWDF netlist exported by SpiceExport (core)\n";
     f << ".title LiveWDF\n";
@@ -72,7 +78,11 @@ SpiceExportResult spiceExport(const Circuit& c,
         f << "* " << spiceSafe(bbd.name)
           << " bucket-brigade clock and charge state omitted; output kept at nominal DC bias\n";
     f << ".options method=gear maxord=2 reltol=1e-4 abstol=1e-9 "
-         "vntol=1e-5 chgtol=1e-12 trtol=7\n";
+         "vntol=1e-5 chgtol=1e-12 trtol=7";
+    // DC reference for the internal nodes of transformer-loaded tube stages.
+    if (!c.pent.empty() && !c.mutual.empty())
+        f << " rshunt=1e12";
+    f << "\n";
     if (durationSeconds > 0.0) {
         const double tstep = 1.0 / fs;
         f << ".tran " << std::setprecision(6) << tstep << " "
@@ -115,17 +125,33 @@ SpiceExportResult spiceExport(const Circuit& c,
     for (size_t i = 0; i < c.mutual.size(); ++i) {
         const auto& m = c.mutual[i];
         if (m.indNames.size() < 2) continue;
-        const std::string kn = spiceUnique("K_" + spiceSafe(m.name.empty() ? "k" : m.name), used);
-        f << kn;
-        for (const auto& n : m.indNames) {
-            auto it = indElementNames.find(n);
-            f << " " << (it != indElementNames.end() ? it->second : spiceSafe(n));
+        const std::string base = "K_" + spiceSafe(m.name.empty() ? "k" : m.name);
+        auto winding = [&](const std::string& name) {
+            const auto it = indElementNames.find(name);
+            return it == indElementNames.end() ? spiceSafe(name) : it->second;
+        };
+        if (m.L.empty()) {
+            f << spiceUnique(base, used);
+            for (const auto& name : m.indNames)
+                f << " " << winding(name);
+            f << " " << spiceNum(m.k) << "\n";
+            continue;
         }
-        if (m.L.empty())
-            f << " " << spiceNum(m.k);
-        else
-            f << " " << spiceNum(1.0);  // explicit matrix: k=1, entries in L
-        f << "\n";
+        const size_t windings = m.indNames.size();
+        if (m.L.size() != windings || std::any_of(m.L.begin(), m.L.end(),
+                [windings](const auto& row) { return row.size() != windings; })) {
+            r.diagnostics = "Invalid inductance matrix for " + m.name;
+            return r;
+        }
+        for (size_t left = 0; left < windings; ++left) {
+            for (size_t right = left + 1; right < windings; ++right) {
+                const double coupling = m.L[left][right] / std::sqrt(m.L[left][left] * m.L[right][right]);
+                if (coupling == 0.0)
+                    continue;
+                f << spiceUnique(base, used) << " " << winding(m.indNames[left]) << " "
+                  << winding(m.indNames[right]) << " " << spiceNum(coupling) << "\n";
+            }
+        }
     }
 
     // ---- Controlled resistors ----

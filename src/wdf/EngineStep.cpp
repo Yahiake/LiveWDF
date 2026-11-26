@@ -2,6 +2,63 @@
 
 namespace wdf {
 
+bool EngineStep::tryTriodePreview() noexcept {
+    // Fold the other stages into each triode's load line, using the current
+    // transfer matrix even while a control is moving. Reuse the exact local
+    // plate and grid laws and keep the trial separate from the accepted state.
+    constexpr int sweeps = 8;
+    constexpr double maxCorrectionVolts = 0.3;
+    std::copy(ii_.begin(), ii_.end(), iv_.begin());
+    const auto visit = [&](const RootDevice& device, double& plate, double& grid) {
+        const int port = device.portBase;
+        const double* zp = Z_.data() + static_cast<size_t>(port) * K_;
+        const double* zg = zp + 2 * K_;
+        double openPlate = vOc_[port], openGrid = vOc_[port + 2];
+        for (int other = 0; other < K_; other += 3) {
+            if (other == port) continue;
+            openPlate -= zp[other] * iv_[other] + zp[other + 2] * iv_[other + 2];
+            openGrid -= zg[other] * iv_[other] + zg[other + 2] * iv_[other + 2];
+        }
+        return solver::RootClosedForms::solveTriode(comp_.tri[device.compIndex].model,
+            openPlate, openGrid, Z_.data(), port, K_, plate, grid);
+    };
+    for (int sweep = 0; sweep < sweeps; ++sweep)
+        for (const auto& device : rootDevices_)
+            visit(device, iv_[device.portBase], iv_[device.portBase + 2]);
+
+    double maxCorrection = 0.;
+    for (const auto& device : rootDevices_) {
+        const int port = device.portBase;
+        double plate = 0., grid = 0.;
+        const auto domain = visit(device, plate, grid);
+        const double dp = plate - iv_[port], dg = grid - iv_[port + 2];
+        for (const int row : {port, port + 2}) {
+            const double* z = Z_.data() + static_cast<size_t>(row) * K_;
+            const double correction = std::abs(z[port] * dp + z[port + 2] * dg);
+            if (!(correction <= maxCorrectionVolts)) return false;
+            maxCorrection = std::max(maxCorrection, correction);
+        }
+        vt_[port] = static_cast<double>(domain);
+    }
+
+    for (int row = 0; row < K_; ++row) {
+        double voltage = vOc_[row];
+        const double* z = Z_.data() + static_cast<size_t>(row) * K_;
+        for (int col = 0; col < K_; col += 3)
+            voltage -= z[col] * iv_[col] + z[col + 2] * iv_[col + 2];
+        vv_[row] = voltage;
+    }
+    for (const auto& device : rootDevices_)
+        triodeDomainPin_[device.portBase] = static_cast<unsigned char>(vt_[device.portBase]);
+    ii_.swap(iv_);
+    vvPrev2_ = vvPrev_;
+    vvPrev_ = vv_;
+    lastConverged_ = true;
+    lastResidual_ = maxCorrection;
+    ++triodePreviewHits_;
+    return true;
+}
+
 const std::vector<double>& EngineStep::step(const double* sourceValues, std::size_t sourceCount,
                                             int maxIter, double tol) {
     // The runtime pass pays a small fixed cost. On cheap low-frequency
@@ -162,10 +219,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             for (const auto& e : xeRows2_) {
                 uData[e.node] = e.val0 * wData[e.col0] + e.val1 * wData[e.col1];
             }
-            if (!xeRowsN_.empty()) {
+            const bool packed = loadedJunctionEnabled_ && hasPackedDrivePlan();
+            if (packed)
+                detail::assignDrivePanels(packedDrive_.panels.data(), packedDrive_.panels.size(),
+                    packedDrive_.nodes.data(), packedDrive_.values.data(), xeCols_.data(), wData, uData);
+            const auto& remaining = packed ? packedDrive_.remaining : xeRowsN_;
+            if (!remaining.empty()) {
                 const int* LIVEWDF_RESTRICT xeCols = xeCols_.data();
                 const double* LIVEWDF_RESTRICT xeVals = xeVals_.data();
-                for (const auto& e : xeRowsN_) {
+                for (const auto& e : remaining) {
                     double s = 0.0;
                     for (int idx = e.start; idx < e.end; ++idx)
                         s += xeVals[idx] * wData[xeCols[idx]];
@@ -177,6 +239,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     for (const auto& e : isrcRows_)
         uData[e.node] -= e.val * isCur_[static_cast<size_t>(e.src)];
 
+    // Live knob changes correct the same base Xe transfer after evaluating it.
     if (adjustedTransfer)
         adjustableTransfer_.correctOpenCircuit(eoffData, uData);
 
@@ -194,7 +257,17 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     const bool compiledRoot = movingAffine || (!loadedRoot && compiled && maxIter >= 4 &&
                               (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol));
-    if (K_ > 0 && !loadedRoot && !compiledRoot) {
+    bool triodePreview = false;
+    if (!loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
+        nTri_ > 2 && static_cast<size_t>(nTri_) == rootDevices_.size()) {
+        if (triodePreviewCooldown_ == 0) {
+            triodePreview = tryTriodePreview();
+            if (!triodePreview) triodePreviewCooldown_ = 16;
+        } else {
+            --triodePreviewCooldown_;
+        }
+    }
+    if (K_ > 0 && !loadedRoot && !compiledRoot && !triodePreview) {
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
         // is driving the solve, and it never replaces the static partition
@@ -259,7 +332,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     if (K_ > 0) {
         const double* LIVEWDF_RESTRICT iiData = ii_.data();
         if (!rootPanels_.empty())
-            detail::runtimeKernels().applyRootPanels(rootPanels_.data(), rootPanels_.size(),
+            detail::runtimeKernels().subtractTransferPanels(rootPanels_.data(), rootPanels_.size(),
                 rootPanelValues_.data(), xrCols_.data(), iiData, nodeData);
         for (const auto& e : xrRows1_) {
             nodeData[e.node] -= e.val * iiData[e.col];

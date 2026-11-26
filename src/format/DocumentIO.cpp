@@ -360,6 +360,67 @@ bool LiveWDFDocument::fromJson(const std::string& jsonStr, LiveWDFDocument& doc,
         return true;
 }
 
+namespace {
+bool isPowerAmpPart(const SchematicComponent& part) {
+    const auto mode = part.properties.find("powerAmp");
+    return mode != part.properties.end() && mode->second == "1";
+}
+} // namespace
+
+const SchematicComponent* LiveWDFDocument::preampTap() const {
+    if (terminal("out") == nullptr)
+        return nullptr;
+    for (const auto& part : components) {
+        const auto tap = part.properties.find("preampTap");
+        if (tap == part.properties.end() || isPowerAmpPart(part))
+            continue;
+        const auto pin = part.pins.find(tap->second);
+        if (pin != part.pins.end() && !pin->second.empty() && pin->second != groundNode)
+            return &part;
+    }
+    return nullptr;
+}
+
+bool LiveWDFDocument::makePreampDocument(LiveWDFDocument& preamp, std::string& error) const {
+    const auto* tap = preampTap();
+    if (tap == nullptr) {
+        error = "The circuit has no preamp output";
+        return false;
+    }
+    const auto* spec = livewdf::editor::findPart(tap->type);
+    if (spec == nullptr) {
+        error = "The preamp output part is unavailable";
+        return false;
+    }
+    const auto& pins = spec->pins;
+    const auto pin = std::find(pins.begin(), pins.end(), tap->properties.at("preampTap"));
+    if (pin == pins.end()) {
+        error = "The preamp output pin is unavailable";
+        return false;
+    }
+    const auto position = livewdf::editor::pinAt(*tap, static_cast<int>(pin - pins.begin()));
+    auto drawing = *this;
+    auto& out = drawing.components[terminal("out") - components.data()];
+    const auto output = livewdf::editor::pinAt(out, 0);
+    out.visual.x += static_cast<float>(position.x - output.x);
+    out.visual.y += static_cast<float>(position.y - output.y);
+    out.values.clear();
+    out.properties.clear();
+    const auto level = tap->values.find("preampFullScaleVolts");
+    if (level != tap->values.end())
+        out.values["fullScaleVolts"] = level->second;
+    for (auto& part : drawing.components) {
+        part.properties.erase("preampOnly");
+        if (part.type != "rail")
+            continue;
+        const auto dc = part.values.find("preampDc");
+        if (dc != part.values.end())
+            part.values["dc"] = dc->second;
+    }
+    std::erase_if(drawing.components, isPowerAmpPart);
+    return fromJson(drawing.toJson(), preamp, error);
+}
+
 bool LiveWDFDocument::saveToFile(const std::string& filepath) const {
     std::ofstream f(filepath);
         if (!f.is_open()) return false;

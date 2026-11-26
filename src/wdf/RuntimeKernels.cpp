@@ -2,6 +2,8 @@
 #include "wdf/DenseSolve.h"
 #include "wdf/DenseSolveKernels.h"
 
+#include <algorithm>
+
 #if defined(LIVEWDF_HAS_AVX2_KERNELS)
 #if defined(_MSC_VER)
 #include <intrin.h>
@@ -13,25 +15,43 @@
 namespace wdf::detail {
 namespace {
 
-void applyRootPanels(const RootPanel* panels, std::size_t count, const double* values,
-                     const int* columns, const double* currents, double* nodes) {
-    for (std::size_t i = 0; i < count; ++i) {
-        const auto& panel = panels[i];
-        double sums[rootPanelWidth]{};
-        const double* coeff = values + panel.valueStart;
-        for (int j = 0; j < panel.colCount; ++j) {
-            const double current = currents[columns[panel.colStart + j]];
-            for (int q = 0; q < rootPanelWidth; ++q)
-                sums[q] += coeff[q] * current;
-            coeff += rootPanelWidth;
-        }
-        for (int q = 0; q < rootPanelWidth; ++q)
-            nodes[panel.node + q] -= sums[q];
+template <int Width>
+void accumulatePanel(const double* values, const int* columns, int count,
+                     const double* input, double (&sums)[Width]) noexcept {
+    for (int j = 0; j < count; ++j) {
+        const double value = input[columns[j]];
+        for (int lane = 0; lane < Width; ++lane)
+            sums[lane] += values[lane] * value;
+        values += Width;
     }
 }
 
+void subtractTransferPanels(const TransferPanel* panels, std::size_t count, const double* values,
+                            const int* columns, const double* input, double* nodes) noexcept {
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto& panel = panels[i];
+        double sums[transferPanelWidth]{};
+        accumulatePanel(values + panel.valueStart, columns + panel.colStart, panel.colCount, input, sums);
+        for (int lane = 0; lane < transferPanelWidth; ++lane)
+            nodes[panel.node + lane] -= sums[lane];
+    }
+}
+
+template <int Width>
+void assignDrivePanel(const DrivePanel& panel, const int* rows, const double* values,
+                      const int* columns, const double* input, double* nodes) noexcept {
+    double sums[Width]{};
+    accumulatePanel(values + panel.valueStart, columns + panel.colStart, panel.colCount, input, sums);
+    rows += panel.rowStart;
+    if (rows[Width - 1] == rows[0] + Width - 1)
+        std::copy_n(sums, Width, nodes + rows[0]);
+    else
+        for (int lane = 0; lane < Width; ++lane)
+            nodes[rows[lane]] = sums[lane];
+}
+
 constexpr RuntimeKernels baselineKernels{
-    dense::solveData, dense::factorLUData, dense::solveLUData, applyRootPanels
+    dense::solveData, dense::factorLUData, dense::solveLUData, subtractTransferPanels
 };
 
 #if defined(LIVEWDF_HAS_AVX2_KERNELS)
@@ -71,6 +91,18 @@ bool supportsAvx2Fma() noexcept {
 #endif
 
 }  // namespace
+
+void assignDrivePanels(const DrivePanel* panels, std::size_t count, const int* rows,
+                       const double* values, const int* columns, const double* input, double* nodes) noexcept {
+    // Use the same baseline target and per-node accumulation order as the sparse drive.
+    for (std::size_t i = 0; i < count; ++i) {
+        const auto& panel = panels[i];
+        if (panel.width == transferPanelWidth)
+            assignDrivePanel<transferPanelWidth>(panel, rows, values, columns, input, nodes);
+        else
+            assignDrivePanel<smallDrivePanelWidth>(panel, rows, values, columns, input, nodes);
+    }
+}
 
 const RuntimeKernels& runtimeKernels() noexcept {
 #if defined(LIVEWDF_HAS_AVX2_KERNELS)

@@ -173,9 +173,14 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
+    long long triodePreviewHits() const noexcept { return triodePreviewHits_; }
     bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
     bool hasLinearDrivePlan() const noexcept {
         return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
+    }
+    bool hasPackedDrivePlan() const noexcept {
+        return packedDrive_.revision == linearRebuilds();
     }
     bool hasAffineRootPlan() const noexcept {
         return circuitPlanPrepared() && !hasAdjustedLiveTransfer() && !affineRoot_.rows.empty();
@@ -216,6 +221,7 @@ protected:
         // the old history would describe a different operating point.
         runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
         blockFallbackCooldown_ = 0;
+        triodePreviewCooldown_ = 0;
         jointLastIters_ = 0;
         jointLastTrials_ = 0;
         runtimeBlockUsed_ = false;
@@ -306,6 +312,11 @@ protected:
     };
     AffineNodePlan affineNodes_;
     long long affineNodeHits_ = 0;
+    bool tryTriodePreview() noexcept;
+    bool triodePreviewEnabled_ = false;
+    int triodePreviewCooldown_ = 0;
+    long long triodePreviewHits_ = 0;
+
     bool buildAffineNodePreview();
     void swapAffineNodePreview(EngineStep& prepared) noexcept;
     bool tryAffineNodes(const double* sources, size_t count, double tolerance) noexcept;
@@ -339,6 +350,15 @@ protected:
     bool factorCircuitTangent(const std::vector<double>& jacobian) noexcept;
     bool tryCompiledRoot(double tolerance) noexcept;
     bool applyCompiledDrive(const double* sources, size_t count) noexcept;
+    struct PackedDrive {
+        long long revision = -1;
+        std::vector<detail::DrivePanel> panels;
+        std::vector<int> nodes;
+        std::vector<double> values;
+        std::vector<SparseRowN> remaining;
+    };
+    PackedDrive packedDrive_;
+    void preparePackedDrive();
     std::vector<double> driveCoefficients_, driveInputs_, rootFactors_, circuitResidualColumns_;
     std::vector<int> rootPivots_;
     long long circuitPlanRevision_ = -1, circuitPlanAttempts_ = 0, circuitPlanHits_ = 0;

@@ -11,6 +11,7 @@
 #include "UiLookAndFeel.h"
 
 #include <cstdint>
+#include <functional>
 #include <vector>
 #include <memory>
 
@@ -39,8 +40,21 @@ private:
 
     // Top Toolbar
     juce::Label titleLabel_;
-    juce::TextButton factoryBtn_ { "FACTORY" };
+    juce::TextButton factoryBtn_;
+    juce::ToggleButton powerAmpBtn_{"Power Amp"};
+    juce::Label factoryHint_{{}, "Browse"};
     juce::TextButton loadFileBtn_ { "Load .livewdf..." };
+    juce::TextButton effectsBtn_ { "Effects" };
+    juce::Label circuitLabel_{{}, "Circuit"};
+    juce::Label cabinetLabel_{{}, "Cabinet"};
+    juce::Label reverbLabel_{{}, "Reverb"};
+    class ImpulseSelector : public juce::ComboBox {
+    public:
+        using juce::ComboBox::ComboBox;
+        std::function<void()> onOpen;
+        void showPopup() override { if (isEnabled() && onOpen) onOpen(); }
+    };
+    ImpulseSelector cabinetSelector_{"Cabinet"}, reverbSelector_{"Reverb"};
 
     /// Re-read the file the circuit came from.
     ///
@@ -58,7 +72,7 @@ private:
 
     juce::ComboBox oversamplingCombo_;
     juce::ToggleButton reportLatencyBtn_{"Report latency"};
-    juce::ToggleButton oversampleExportBtn_ { "4× export" };
+    juce::ToggleButton oversampleExportBtn_ { juce::String::fromUTF8("4× export") };
     juce::ComboBox solveQualityCombo_;
     juce::ToggleButton accurateExportBtn_ { "Accurate export" };
 
@@ -126,6 +140,7 @@ private:
     std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
     std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
     std::unique_ptr<ButtonAttachment> previewPadAttach_;
+    std::unique_ptr<ButtonAttachment> powerAmpAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;
@@ -140,6 +155,10 @@ private:
 
     std::unique_ptr<juce::FileChooser> fileChooser_;
     juce::Component::SafePointer<juce::CallOutBox> factoryBrowser_;
+    juce::Component::SafePointer<juce::CallOutBox> factoryIrCredits_;
+    class OutputEffectsPanel;
+    std::unique_ptr<OutputEffectsPanel> effectsPanel_;
+    std::unique_ptr<juce::CallOutBox> effectsBrowser_;
     void refreshSolveQuality();
     editor::PresetLibraryPanel::View factoryView_;
     bool isDraggingFile_ = false;
@@ -151,6 +170,14 @@ private:
     void updateSwitchButton(int index, juce::TextButton& button);
     void openCircuitFileChooser();
     void showFactoryBrowser();
+    void layoutSourceSelectors(juce::Rectangle<int> bounds);
+    void refreshOutputSelectors();
+    bool outputEnabled(bool reverb) const;
+    void setOutputEnabled(bool reverb, bool enabled);
+    void showOutputImpulseMenu(bool reverb);
+    void showFactoryIrCredits(bool reverb);
+    void showOutputEffects();
+    void openOutputImpulseChooser(bool reverb);
 
     /// Load a file and update every part of the editor that depends on it.
     /// Returns false and puts the reason in the status line when the document

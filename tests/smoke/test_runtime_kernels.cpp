@@ -53,21 +53,21 @@ TEST_CASE("Dispatched dense solvers preserve pivoting and solve results", "[cpu-
 
 TEST_CASE("Dispatched panel update subtracts the root current contribution", "[cpu-kernels]") {
     using namespace wdf::detail;
-    const RootPanel panel{1, 0, 2, 0};
-    double values[2 * rootPanelWidth];
-    double nodes[rootPanelWidth + 2];
+    const TransferPanel panel{1, 0, 2, 0};
+    double values[2 * transferPanelWidth];
+    double nodes[transferPanelWidth + 2];
     const int columns[]{1, 0};
     const double currents[]{2.0, -0.5};
-    for (int i = 0; i < rootPanelWidth; ++i) {
+    for (int i = 0; i < transferPanelWidth; ++i) {
         values[i] = i + 1.0;
-        values[i + rootPanelWidth] = i * 0.5;
+        values[i + transferPanelWidth] = i * 0.5;
     }
-    std::fill_n(nodes, rootPanelWidth + 2, 5.0);
+    std::fill_n(nodes, transferPanelWidth + 2, 5.0);
 
-    runtimeKernels().applyRootPanels(&panel, 1, values, columns, currents, nodes);
+    runtimeKernels().subtractTransferPanels(&panel, 1, values, columns, currents, nodes);
 
     CHECK(nodes[0] == 5.0);
-    for (int i = 0; i < rootPanelWidth; ++i)
+    for (int i = 0; i < transferPanelWidth; ++i)
         CHECK(nodes[i + 1] == Approx(5.0 - (-0.5 * (i + 1.0) + i)));
-    CHECK(nodes[rootPanelWidth + 1] == 5.0);
+    CHECK(nodes[transferPanelWidth + 1] == 5.0);
 }

@@ -503,6 +503,8 @@ struct Circuit {
     std::vector<BucketBrigade> bucketBrigades;
     std::vector<RmsDetector> rmsDetectors;
     std::vector<Dbx200Bias> dbx200Biases;
+    // Names of equivalent voltages eliminated by an exact reduction.
+    std::vector<std::pair<std::string, std::string>> nodeAliases;
 
     void addRes(const std::string& a, const std::string& b, double v,
                 const std::string& name = {}) {
@@ -942,14 +944,8 @@ struct Circuit {
         addIsrc(vcc, vee, 0.321e-3, 0.0, {}, oName + "$quiescent");
     }
 
-    std::vector<std::string> allNodes() const {
-        std::vector<std::string> out;
-        auto push = [&out](const std::string& n) {
-            if (n.empty())
-                return;
-            if (std::find(out.begin(), out.end(), n) == out.end())
-                out.push_back(n);
-        };
+    template<class Visitor>
+    void visitStampedNodes(Visitor&& push) const {
         for (const auto& e : res) {
             push(e.a);
             push(e.b);
@@ -1025,6 +1021,14 @@ struct Circuit {
             push(oa.neg);
             push(oa.pos);
         }
+    }
+
+    std::vector<std::string> allNodes() const {
+        std::vector<std::string> out;
+        visitStampedNodes([&out](const std::string& n) {
+            if (!n.empty() && std::find(out.begin(), out.end(), n) == out.end())
+                out.push_back(n);
+        });
         return out;
     }
 };

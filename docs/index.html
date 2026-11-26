@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="LiveWDF circuit architecture, sound demos, and performance measurements for all factory presets.">
+  <title>LiveWDF Documentation</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="catalog.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">∿</span> LiveWDF</a>
+      <nav aria-label="Main navigation">
+        <a href="#presets">Factory presets</a>
+        <a href="#demos">Sound demos</a>
+        <a href="#architecture">Architecture</a>
+        <a href="branding.html">Branding</a>
+        <a class="repo-link" href="https://github.com/Yahiake/LiveWDF">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content" class="shell">
+    <section class="hero" aria-labelledby="page-title">
+      <div class="hero-copy">
+        <p class="section-label">LiveWDF documentation</p>
+        <h1 id="page-title">Real-time circuit simulation</h1>
+        <p class="lead">Draw a circuit, load a factory preset, and hear it through the same simulation engine.</p>
+        <div class="actions">
+          <a class="button primary" href="#presets">Browse presets</a>
+          <a class="button secondary" href="#demos">Listen to demos</a>
+        </div>
+      </div>
+      <figure class="editor-preview">
+        <img src="assets/fuzz-face-editor.webp" width="1200" height="760"
+             alt="LiveWDF Circuit Editor displaying the Fuzz Face schematic above cyan input and amber output traces.">
+        <figcaption>Fuzz Face in the Circuit Editor</figcaption>
+      </figure>
+    </section>
+
+    <section id="presets" class="section" aria-labelledby="preset-heading">
+      <div class="section-top">
+        <div>
+          <h2 id="preset-heading">Factory presets</h2>
+          <p>Explore the amps, pedals, and studio circuits. Click a column heading to change the sort order.</p>
+        </div>
+        <a class="text-link" href="#benchmark">Benchmark method</a>
+      </div>
+
+      <div class="catalog-panel">
+        <div class="filters" aria-label="Preset filters">
+          <label class="search-label">Search presets
+            <input type="search" id="preset-search" placeholder="Try Metal Zone or compressor">
+          </label>
+          <label>Collection
+            <select id="preset-collection"><option value="">All collections</option></select>
+          </label>
+          <label>Type
+            <select id="preset-type"><option value="">All types</option></select>
+          </label>
+          <button id="clear-filters" class="button secondary" type="button">Clear filters</button>
+        </div>
+        <div class="catalog-meta">
+          <span id="preset-count" role="status">Loading presets…</span>
+          <span>Preview CPU per 128-sample block</span>
+        </div>
+        <div class="table-scroll" role="region" aria-label="Factory preset timings" tabindex="0">
+          <table id="preset-table">
+            <caption class="visually-hidden">Factory presets with Preview CPU timings in microseconds</caption>
+            <thead>
+              <tr>
+                <th scope="col"><button type="button" data-sort="name">Preset</button></th>
+                <th scope="col"><button type="button" data-sort="collection">Collection</button></th>
+                <th scope="col"><button type="button" data-sort="type">Type</button></th>
+                <th scope="col" class="timing"><button type="button" data-sort="mean_us">Mean µs</button></th>
+                <th scope="col" class="timing" aria-sort="ascending"><button type="button" data-sort="median_us">Median µs</button></th>
+                <th scope="col" class="timing"><button type="button" data-sort="p99_us">p99 µs</button></th>
+              </tr>
+            </thead>
+            <tbody id="preset-rows"></tbody>
+          </table>
+        </div>
+        <noscript><p class="catalog-meta">Enable JavaScript to sort and filter presets.</p></noscript>
+        <p class="catalog-extra"><a href="https://github.com/Yahiake/LiveWDF/blob/main/docs/factory-presets.md">GitHub Markdown catalog</a></p>
+      </div>
+    </section>
+
+    <section id="demos" class="section" aria-labelledby="demo-heading">
+      <div class="section-top">
+        <div>
+          <h2 id="demo-heading">Sound demos</h2>
+          <p>Each clip plays the source first, then the modeled circuit after a short pause.</p>
+        </div>
+        <a class="text-link" href="https://github.com/Yahiake/LiveWDF/tree/review-media/livewdf-pedals">More recordings</a>
+      </div>
+      <div class="demos">
+        <article class="demo">
+          <p class="section-label">Overdrive</p>
+          <h3>Boss SD-1</h3>
+          <p>Listen for the midrange and the softened pick attack.</p>
+          <audio controls preload="none" aria-label="Boss SD-1 dry and processed comparison" src="assets/sd-1.mp3"></audio>
+        </article>
+        <article class="demo">
+          <p class="section-label">Chorus</p>
+          <h3>Boss CE-2</h3>
+          <p>Sustained chords reveal the movement of the modulated delay.</p>
+          <audio controls preload="none" aria-label="Boss CE-2 dry and processed comparison" src="assets/ce-2.mp3"></audio>
+        </article>
+        <article class="demo">
+          <p class="section-label">Analog delay</p>
+          <h3>Boss DM-2</h3>
+          <p>Listen to the filtered repeats and the echo tail.</p>
+          <audio controls preload="none" aria-label="Boss DM-2 dry and processed comparison" src="assets/dm-2.mp3"></audio>
+        </article>
+        <article class="demo">
+          <p class="section-label">Studio compressor</p>
+          <h3>SSL 4000 G Bus Compressor</h3>
+          <p>A synthetic drum phrase lets you hear how the compressor handles the jump in level.</p>
+          <audio controls preload="none" aria-label="SSL 4000 G dry and processed comparison" src="assets/ssl-bus-compressor.mp3"></audio>
+        </article>
+      </div>
+      <p class="fine-print">The guitar DI is from Guitar-TECHS by Hegel Emmanuel Pedroza Villalobos, Termeh Taheri, Wallace Abreu, Ryan Corey, and Iran R. Roman (CC BY 4.0). The excerpts were edited, filtered, and faded. LiveWDF rendered the processed halves. The SSL demo uses synthetic drums. <a href="https://zenodo.org/records/14963133">Guitar-TECHS</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> · <a href="https://github.com/Yahiake/LiveWDF/blob/58654cf985b0480d5352573cfc17fe910b6bbf1c/README.md">Pedal recording settings</a> · <a href="https://github.com/Yahiake/LiveWDF/blob/58654cf985b0480d5352573cfc17fe910b6bbf1c/studio/auditions/ssl-4000-g-bus-compressor.json">SSL recording settings</a></p>
+    </section>
+
+    <section id="architecture" class="section" aria-labelledby="architecture-heading">
+      <div class="section-top">
+        <div>
+          <h2 id="architecture-heading">Architecture</h2>
+          <p>The Circuit Editor, Standalone player, and VST3 share a C++ Wave Digital Filter engine.</p>
+        </div>
+      </div>
+      <div class="architecture-grid">
+        <article>
+          <h3>Draw or load a circuit</h3>
+          <p>A <code>.livewdf</code> file stores the drawn components, wires, controls, and probes. LiveWDF derives connectivity when it opens the file.</p>
+          <a href="https://github.com/Yahiake/LiveWDF/blob/main/src/format/DocumentCircuit.cpp">Schematic conversion</a>
+        </article>
+        <article>
+          <h3>Prepare the network</h3>
+          <p>The engine builds the linear transfer at the effective sample rate, finds the DC operating point, and initializes capacitor and inductor histories.</p>
+          <a href="https://github.com/Yahiake/LiveWDF/blob/main/src/wdf/Engine.h">Engine setup</a>
+        </article>
+        <article>
+          <h3>Process each sample</h3>
+          <p>The engine assembles the linear drive, solves the nonlinear devices, and updates the node voltages and state. The player handles calibration, oversampling, and wet/dry mix.</p>
+          <a href="https://github.com/Yahiake/LiveWDF/blob/main/src/wdf/EngineStep.cpp">Sample processing</a>
+        </article>
+      </div>
+      <dl class="modes">
+        <div><dt>Accurate</dt><dd>The standard solver uses tighter convergence tolerances.</dd></div>
+        <div><dt>Fast Live</dt><dd>Prepared circuit paths reduce the work done on each sample.</dd></div>
+        <div><dt>Preview</dt><dd>Additional circuit-specific paths can reuse a packed linear transfer or a qualified nonlinear approximation. The engine falls back when a path is ineligible.</dd></div>
+      </dl>
+    </section>
+
+    <section id="benchmark" class="section benchmark" aria-labelledby="benchmark-heading">
+      <h2 id="benchmark-heading">Benchmark method</h2>
+      <p>Release build at <a href="https://github.com/Yahiake/LiveWDF/commit/2f71c20e2ce2c802906cf4b9b8bdfcd889007cc1"><code>2f71c20</code></a> for the original 91 presets and on the factory amp collection branch for the 20 additions. Both runs used Linux and one logical CPU on an Intel Core Ultra 7 155H. Preview ran at the factory control positions in mono, 1×, at 48 kHz and 128 samples per block.</p>
+      <p>The <a href="https://github.com/Yahiake/LiveWDF/blob/2f71c20e2ce2c802906cf4b9b8bdfcd889007cc1/tests/regression/render_circuit.cpp">circuit renderer</a> processed three takes of the same Guitar-TECHS Sire T7 DI excerpt, starting at 6 seconds and normalized to −6 dBFS before preset input calibration. Each take discarded 1,024 silent warm-up samples and the first 32 audio blocks, then measured 512 blocks. Statistics pool 1,536 blocks per preset.</p>
+      <p>Median is the middle block CPU time. p99 is the CPU time at or below which 99% of measured blocks finished. The block budget at these settings is 2.67 ms. Amber p99 values exceed that budget. These figures measure renderer CPU time.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">∿</span> LiveWDF</a>
+      <div><a href="branding.html">Branding</a><a href="https://github.com/Yahiake/LiveWDF/blob/main/LICENSE">AGPL-3.0</a></div>
+    </div>
+  </footer>
+</body>
+</html>

@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "devices/Pentode.h"
+#include "spice/MatchedPentodes.h"
+#include "wdf/Engine.h"
 
 // Property guards for the Reefman pentode constitutive evaluator.
 // The solver trusts these analytic derivatives; this test checks them against
@@ -103,4 +105,63 @@ TEST_CASE("pentode matched-pair count scales all currents and derivatives", "[pe
     REQUIRE(doubled.ig == Approx(2.0 * single.ig));
     REQUIRE(doubled.dip_dvgk == Approx(2.0 * single.dip_dvgk));
     REQUIRE(doubled.dig_dvgk == Approx(2.0 * single.dig_dvgk));
+}
+
+TEST_CASE("matched pentode branches preserve the plate and both sets of probe voltages", "[pentodecontracts]") {
+    wdf::Circuit circuit;
+    circuit.addSrc("drive", "0", -29.0);
+    circuit.addSrc("supply", "0", 450.0);
+    circuit.addSrc("rail1", "0", 430.0);
+    circuit.addSrc("rail2", "0", 430.0);
+    circuit.addRes("supply", "plate", 900.0);
+    circuit.addRes("drive", "grid1", 1500.0);
+    circuit.addRes("drive", "grid2", 1500.0);
+    circuit.addRes("rail1", "screen1", 100.0);
+    circuit.addRes("rail2", "screen2", 100.0);
+    circuit.addPentode("plate", "screen1", "grid1", "0", wdf::k6L6GC);
+    circuit.addPentode("plate", "screen2", "grid2", "0", wdf::k6L6GC);
+
+    SECTION("identical local feeds") {
+        auto reduced = circuit;
+        REQUIRE(wdf::collapseMatchedPentodes(reduced) == 1);
+        REQUIRE(reduced.src.size() == circuit.src.size());
+        wdf::Engine original(circuit, 48000.0), paired(reduced, 48000.0);
+        std::vector<std::pair<int, int>> probes;
+        for (const std::string name : {"plate", "grid1", "grid2", "screen1", "screen2"}) {
+            const int a = original.nodeIndex(name), b = paired.nodeIndex(name);
+            REQUIRE(a >= 0);
+            REQUIRE(b >= 0);
+            probes.emplace_back(a, b);
+        }
+        auto sources = std::vector<double>{-29.0, 450.0, 430.0, 430.0};
+        double error = 0.0;
+        for (int n = 0; n < 512; ++n) {
+            sources[0] = -29.0 + 24.0 * std::sin(0.0625 * n);
+            const auto& full = original.step(sources);
+            const auto& merged = paired.step(sources);
+            for (const auto& [a, b] : probes)
+                error = std::max(error, std::abs(full[a] - merged[b]));
+        }
+        REQUIRE(error < 1e-6);
+    }
+    SECTION("different rail set points") {
+        circuit.src.back().dc -= 1.0;
+        REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
+    SECTION("independently driven screens") {
+        const size_t driven[] = {0, 3};
+        REQUIRE(wdf::collapseMatchedPentodes(circuit, driven) == 0);
+    }
+    SECTION("extra screen load") {
+        circuit.addCap("screen2", "0", 10e-9);
+        REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
+    SECTION("live switch contact in a feed") {
+        circuit.res.back().name = "SW1_A";
+        REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
+    SECTION("different model cards") {
+        circuit.pent.back().model.reefman.kp += 0.01;
+        REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
 }
