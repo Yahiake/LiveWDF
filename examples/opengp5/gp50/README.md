@@ -49,3 +49,33 @@ The [live simulator](https://github.com/jopdorp/OpenGP5-Emulator) also accepts
 the generated source folder and runs it with JACK audio. The board build
 produces emulator inputs. Physical audio, cycle timing and recovery need
 testing on the GP-50.
+
+## Desktop catalog
+
+The desktop GP-50 emulator can run the 16 factory circuits from MXR Micro Amp
+through Dunlop Cry Baby. It runs their LiveWDF schematics at 44.1 kHz with the
+saved knob settings, voltage references and port impedances. The list is in
+[catalog.cmake](catalog.cmake). This target runs on the computer.
+
+Use an [OpenGP5-Emulator checkout with native DSP support](https://github.com/jopdorp/OpenGP5-Emulator/pull/3),
+including its OpenGP5 submodule.
+
+```sh
+emulator=/path/to/OpenGP5-Emulator
+cmake -S . -B build -DLIVEWDF_BUILD_EDITOR=OFF -DLIVEWDF_BUILD_PLUGIN=OFF \
+  -DLIVEWDF_OPENGP5_EMULATOR="$emulator" -DCMAKE_BUILD_TYPE=Release
+cmake --build build --target livewdf_gp50_catalog
+catalog="$PWD/build/examples/opengp5/gp50/livewdf-gp50-catalog"
+pw-jack python3 "$emulator/tools/simulate.py" "$catalog" --gp50 --live \
+  --host-dsp "$catalog/livewdf_gp50_catalog.so"
+```
+
+Right and FS2 select the circuit, middle adjusts the output level, and FS1
+toggles bypass. Turn PARA to the **Control** row, press it to edit, then turn
+to choose a pot or rheostat. Left adjusts that part. Switches use their
+factory settings. Each circuit keeps its knob edits and state while the
+emulator is open.
+
+Cab, Delay and Reverb are on the same screen. The emulator’s **Expression**
+slider moves the original Cry Baby treadle pot. An offline script can use
+`0.1 set Model 15` and `0.3 expression 255`.
