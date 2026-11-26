@@ -10304,7 +10304,7 @@
       "wave_sha256": "ccf2b0e66bfce5df655b225f2e28523aee9a014734f6e727636d3b0eaaa80d25",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/accurate": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/accurate": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10332,13 +10332,13 @@
         "peak": 37.735451747554656,
         "max_step": 42.76300367163479
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884.f32.gz",
       "wave_sha256": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/fast": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10366,13 +10366,13 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/preview": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10400,8 +10400,8 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
