@@ -59,6 +59,14 @@ constexpr FactoryImpulse factoryReverbs[] = {
     {"spring-tank", "Long Tank Spring", "spring-tank.flac"},
     {"hall-small", "Small Hall", "hall-small.flac"},
     {"hall-concert", "Concert Hall", "hall-concert.flac"},
+    {"room-genesis-live", "Genesis 6 Live Room", "room-genesis-live.flac"},
+    {"room-maida-vale", "Maida Vale Studio 5", "room-maida-vale.flac"},
+    {"hall-jack-lyons", "Jack Lyons Concert Hall", "hall-jack-lyons.flac"},
+    {"hall-usina-del-arte", "Usina del Arte Symphony Hall", "hall-usina-del-arte.flac"},
+    {"church-st-albans", "St Albans Lady Chapel", "church-st-albans.flac"},
+    {"church-york-minster", "York Minster", "church-york-minster.flac"},
+    {"outdoor-trollers-gill", "Troller's Gill Gorge", "outdoor-trollers-gill.flac"},
+    {"outdoor-koli-forest", "Koli Forest in Winter", "outdoor-koli-forest.flac"},
 };
 
 // Audition suggestions include alternatives where the bank lacks a capture
