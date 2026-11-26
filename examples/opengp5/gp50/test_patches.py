@@ -5,6 +5,21 @@ import wave
 from test_catalog import RATE, render
 
 
+def patch_views(start, suffix):
+    sequence = (
+        (0.00, "shot home"),
+        (0.05, "para turn 1"), (0.10, "shot drive"),
+        (0.15, "para turn 1"), (0.20, "shot tone"),
+        (0.25, "para turn 1"), (0.30, "shot volume"),
+        (0.35, "para turn 1"), (0.40, "shot model"),
+        (0.45, "global click"), (0.50, "shot cab"),
+        (0.60, "para turn 1"), (0.65, "shot effect"),
+        (0.70, "drum click"), (0.75, "shot delay"),
+        (0.85, "para turn 1"), (0.90, "shot reverb"),
+    )
+    return [f"{start + at:.2f} {cmd}" + (f"-{suffix}" if cmd.startswith("shot") else "") for at, cmd in sequence]
+
+
 def main():
     with tempfile.TemporaryDirectory(prefix="livewdf-gp50-patches-") as directory:
         root = Path(directory)
@@ -17,67 +32,56 @@ def main():
             return next((root / run).glob(f"{name}.p*")).read_bytes()
 
         render(root, "patches", [
-            "0 set Model 3",
-            "0 set POT_0 230", "0 set POT_1 740", "0 set POT_2 610",
+            "0 set Model 3", "0 set POT_0 230", "0 set POT_1 740", "0 set POT_2 610",
             "0 set Input 82", "0 set Level 134",
             "0 set Cab 1", "0 set Delay 35", "0 set Reverb 15",
-            "0.10 save click", "1.25 shot home-saved",
-            "1.30 para click", "1.45 shot circuit1-saved",
-            "1.50 para turn 1", "1.55 shot circuit2-saved",
-            "1.60 para turn 1", "1.65 shot model-saved",
-            "1.70 global click", "1.75 shot cab-saved",
-            "1.85 drum click", "1.90 shot ambience-saved",
-            "2.00 fs2 click", "2.05 shot next-patch",
-            "2.15 set Model 3", "2.16 set POT_0 900", "2.16 set POT_1 900", "2.16 set POT_2 900",
-            "2.17 set Input 12", "2.17 set Level 29",
-            "2.25 foot", "2.30 shot home-recalled",
-            "2.40 para click", "2.55 shot circuit1-recalled",
-            "2.60 para turn 1", "2.65 shot circuit2-recalled",
-            "2.70 para turn 1", "2.75 shot model-recalled",
-            "2.80 global click", "2.85 shot cab-recalled",
-            "2.95 drum click", "3.00 shot ambience-recalled",
-            "3.10 left turn 2", "3.15 shot delay-changed",
-            "3.20 middle turn 2", "3.25 shot edit-knob-level",
-            "3.30 set Level 136", "3.35 set Level 138", "3.40 shot edit-direct-level",
-            "3.45 exit click", "3.50 shot exit-knob-level",
-            "3.55 set Level 136", "3.60 set Level 138", "3.65 shot home-direct-level",
-            "3.70 drum click", "3.75 shot delay-after-exit",
-            "3.85 exit click", "3.90 left turn -100", "3.95 shot left-drive",
-            "4.00 set POT_0 10", "4.05 set POT_0 0", "4.10 shot drive-zero",
-            "4.20 right turn 1", "4.25 shot right-tone",
-            "4.30 set POT_1 740", "4.35 set POT_1 750", "4.40 shot tone-750",
-            "4.50 middle turn 2", "4.55 shot home-knob-level",
-            "4.60 set Level 140", "4.65 set Level 142", "4.70 shot level-142",
-            "4.80 para turn 1", "4.85 shot para-next",
-            "4.90 set Model 7", "4.91 set POT_0 915", "4.92 set Level 49",
-            "5.00 save click", "6.20 shot second-saved",
-        ], 6.25, store=store)
+            "0.10 save click",
+            *patch_views(1.25, "saved"),
+            "2.20 fs2 click", "2.25 shot next-patch",
+            "2.35 set Model 3", "2.36 set POT_0 900", "2.36 set POT_1 900", "2.36 set POT_2 900",
+            "2.37 set Input 12", "2.37 set Level 29",
+            "2.45 foot",
+            *patch_views(2.60, "recalled"),
+            "3.55 exit click", "3.60 shot exit",
+            "3.70 para turn 1", "3.75 shot turn-opens-edit",
+            "3.80 para turn 1", "3.85 shot scroll-to-tone",
+            "3.90 para click", "4.05 shot adjust-tone",
+            "4.10 para turn 2", "4.15 shot para-adjusted",
+            "4.20 set POT_1 740", "4.25 set POT_1 760", "4.30 shot tone-760",
+            "4.35 para click", "4.50 para turn -1", "4.55 shot scroll-back-to-drive",
+            "4.60 left turn 2", "4.70 middle turn 2", "4.80 right turn 2",
+            "4.85 shot three-knobs",
+            "4.90 set Input 82", "4.95 set Level 134", "5.00 set POT_0 230",
+            "5.05 set Input 86", "5.10 set Level 138", "5.15 set POT_0 250", "5.20 shot direct-three",
+            "5.25 exit click", "5.30 shot edited-home",
+            "5.40 fs2 click", "5.50 set Model 7", "5.51 set POT_0 915", "5.52 set Level 49",
+            "5.53 set Effect Bypass", "5.55 para turn 1", "5.60 para click", "5.75 save click",
+            "6.90 shot editor-saved", "6.95 para click", "7.10 para click", "7.25 shot browser",
+            "7.30 exit click", "7.35 shot second-saved",
+        ], 7.4, store=store)
 
         assert frame("next-patch") != frame("home-saved"), "B did not load a different patch"
-        assert frame("para-next") == frame("next-patch"), "PARA did not browse patches from home"
-        pages = ("home", "circuit1", "circuit2", "model", "cab", "ambience")
-        for page in pages:
-            assert frame(f"{page}-saved") == frame(f"{page}-recalled"), f"patch lost {page} settings"
-        assert frame("ambience-saved") != frame("delay-changed"), "left knob did not adjust Delay"
-        assert frame("edit-knob-level") == frame("edit-direct-level"), "middle knob did not adjust Level in edit"
-        assert frame("exit-knob-level") == frame("home-direct-level"), "EXIT discarded the unsaved Level"
-        assert frame("edit-knob-level") == frame("delay-after-exit"), "EXIT discarded the unsaved Delay"
-        assert frame("left-drive") == frame("drive-zero"), "left knob did not turn Drive down to zero"
-        assert frame("right-tone") == frame("tone-750"), "right knob did not adjust the TS808 Tone"
-        assert frame("home-knob-level") == frame("level-142"), "middle knob did not adjust Level on home"
+        views = ("home", "drive", "tone", "volume", "model", "cab", "effect", "delay", "reverb")
+        for view in views:
+            assert frame(f"{view}-saved") == frame(f"{view}-recalled"), f"patch lost {view} settings"
+        assert frame("exit") == frame("home-saved"), "EXIT did not restore the home screen"
+        assert frame("turn-opens-edit") == frame("drive-saved"), "turning PARA did not open the edit list"
+        assert frame("scroll-to-tone") == frame("tone-saved"), "PARA browsing changed a parameter"
+        assert frame("adjust-tone") != frame("scroll-to-tone"), "PARA click did not enter adjust mode"
+        assert frame("para-adjusted") == frame("tone-760"), "PARA did not adjust the selected Tone"
+        assert frame("scroll-back-to-drive") != frame("para-adjusted"), "the second press did not resume browsing"
+        assert frame("three-knobs") == frame("direct-three"), "quick knobs lost Input, Level, or Drive in edit mode"
+        assert frame("edited-home") != frame("home-saved"), "EXIT discarded the unsaved edit"
+        assert frame("editor-saved") == frame("browser"), "SAVE left the selected row in adjust mode"
 
         render(root, "restart", [
             "0.10 shot second-restored",
-            "0.20 foot", "0.25 shot home-restarted",
-            "0.35 para click", "0.50 shot circuit1-restarted",
-            "0.55 para turn 1", "0.60 shot circuit2-restarted",
-            "0.65 para turn 1", "0.70 shot model-restarted",
-            "0.75 global click", "0.80 shot cab-restarted",
-            "0.90 drum click", "0.95 shot ambience-restarted",
-        ], 1.1, store=store)
+            "0.20 foot",
+            *patch_views(0.35, "restarted"),
+        ], 1.35, store=store)
         assert frame("second-restored", "restart") == frame("second-saved"), "restart lost the last saved patch"
-        for page in pages:
-            assert frame(f"{page}-restarted", "restart") == frame(f"{page}-saved"), f"restart lost {page} settings"
+        for view in views:
+            assert frame(f"{view}-restarted", "restart") == frame(f"{view}-saved"), f"restart lost {view} settings"
 
 
 if __name__ == "__main__":

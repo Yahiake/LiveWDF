@@ -5,16 +5,15 @@ Footswitch A recalls the previous patch and B recalls the next patch. Each
 patch includes the model, all its settings, Input, Level, bypass, cabinet,
 delay and reverb. The initial patch bank has one patch per model.
 
-The screen labels each knob directly. The middle knob always adjusts patch
-Level. On the home screen the outer knobs adjust the model's most useful controls
-or show a shortcut such as Input or Delay. Turn PARA to browse patches and
-press it to open the edit pages. Turn PARA to move between pages, and use the
-left and right knobs to edit the settings shown above them.
+The left knob adjusts Input, the middle adjusts patch Level, and the right
+adjusts the model's main control. Their labels stay visible while editing.
 
-GLOBAL opens Cabinet and bypass. DRUM opens Delay and Reverb. EXIT returns home
-and keeps edits. SAVE writes the current patch to its slot. An asterisk marks
-unsaved edits, which are discarded when you recall a different patch. **Saved in
-RAM** means storage is unavailable and changes are lost at power-off.
+Turn PARA to open and browse the settings list. Press PARA to adjust the
+highlighted setting, turn to change it, and press again to resume browsing.
+GLOBAL jumps to Cabinet and DRUM jumps to Delay. EXIT returns home and keeps
+edits. SAVE writes the current patch to its slot. An asterisk marks unsaved
+edits, which are discarded when you recall a different patch. **Saved in RAM**
+means storage is unavailable and changes are lost at power-off.
 Level extends to 200%, with up to 6 dB of extra output above 100%.
 
 The DOD 250 Gray model runs the schematic's capacitor recurrence, the
@@ -81,7 +80,7 @@ pw-jack python3 "$emulator/tools/simulate.py" "$catalog" --gp50 --live \
   --host-dsp "$catalog/livewdf_gp50_catalog.so"
 ```
 
-Use PARA's Circuit pages to access each model's pots and rheostats. Circuit
+Use PARA's settings list to access each model's pots and rheostats. Circuit
 switches use their factory settings.
 
 For offline simulations, add `--store /path/to/patches.store` to keep the

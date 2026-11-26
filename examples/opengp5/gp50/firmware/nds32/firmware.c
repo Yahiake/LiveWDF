@@ -13,12 +13,13 @@
 #define PATCH_COUNT 2u
 #endif
 
-enum { PLAY, MODEL, CABINET, AMBIENCE, CIRCUIT };
+enum { PLAY, MODEL, CABINET, BYPASS, DELAY, REVERB, FIRST_POT };
 enum { HEADER = 1, MODEL_NAME = 2, CONTEXT = 4, KNOBS = 8, ALL = 15 };
 static int16_t patches[PATCH_COUNT][GP5_NPARAMS];
 static uint8_t patch_record[GP5_STORE_MAX];
 static uint32_t patch_record_id;
 static unsigned patch, screen, redraw;
+static int adjusting;
 static const char *message;
 static uint32_t message_until;
 #else
@@ -151,6 +152,7 @@ static int save_bank(void)
 static void show_screen(unsigned next)
 {
     screen = next;
+    adjusting = 0;
     message = 0;
     redraw = ALL;
 }
@@ -211,6 +213,7 @@ void fw_param_changed(unsigned id)
     if (id == GP5_P_ON) show_on();
 #ifdef GP50_BOARD
     redraw |= id == GP5_P_MODEL ? ALL : HEADER | KNOBS;
+    if (screen != PLAY) redraw |= MODEL_NAME;
 #endif
 #ifdef LIVEWDF_GP50_CATALOG
     unsigned model = (unsigned)gp5_param(GP5_P_MODEL);
@@ -221,8 +224,8 @@ void fw_param_changed(unsigned id)
     }
     unsigned count = catalog_control_count[model];
 #ifdef GP50_BOARD
-    if (id == GP5_P_MODEL && screen >= CIRCUIT && (screen - CIRCUIT) * 2 >= count)
-        show_screen(count ? CIRCUIT : MODEL);
+    if (id == GP5_P_MODEL && screen >= FIRST_POT && screen - FIRST_POT >= count)
+        show_screen(count ? FIRST_POT : MODEL);
 #endif
     unsigned control = (unsigned)gp5_param(GP5_P_CONTROL);
     if (control >= count) {
@@ -279,37 +282,60 @@ static unsigned wrap(unsigned position, int detents, unsigned count)
 
 static unsigned current_model(void) { return (unsigned)gp5_param(GP5_P_MODEL); }
 
-static unsigned circuit_pages(void)
+static unsigned circuit_controls(void)
 {
 #ifdef LIVEWDF_GP50_CATALOG
-    return (catalog_control_count[current_model()] + 1) / 2;
+    return catalog_control_count[current_model()];
 #else
     return 1;
 #endif
 }
 
-static unsigned edit_page(unsigned index)
+static unsigned view_for_parameter(unsigned index)
 {
-    unsigned tone_pages = circuit_pages();
-    return index < tone_pages ? CIRCUIT + index : MODEL + index - tone_pages;
+    unsigned count = circuit_controls();
+    return index < count ? FIRST_POT + index : MODEL + index - count;
 }
+
+static unsigned parameter_index(void)
+{
+    return screen >= FIRST_POT ? screen - FIRST_POT : circuit_controls() + screen - MODEL;
+}
+
+static unsigned parameter_count(void) { return circuit_controls() + FIRST_POT - MODEL; }
+
+static unsigned edit_param(unsigned view)
+{
+    static const uint8_t params[] = { GP5_P_MODEL, GP5_P_CAB, GP5_P_ON, GP5_P_DELAY, GP5_P_REVERB };
+    if (view < FIRST_POT) return params[view - MODEL];
+#ifdef LIVEWDF_GP50_CATALOG
+    return GP5_P_POT_0 + view - FIRST_POT;
+#else
+    return GP5_P_GAIN;
+#endif
+}
+
+static void turn_param(unsigned id, int detents);
 
 void fw_para_turn(int detents)
 {
-    if (screen == PLAY) {
-        unsigned next = wrap(patch, detents, PATCH_COUNT);
-        if (next != patch) recall_patch(next);
-    } else {
-        unsigned tone_pages = circuit_pages();
-        unsigned index = screen >= CIRCUIT ? screen - CIRCUIT : tone_pages + screen - MODEL;
-        show_screen(edit_page(wrap(index, detents, tone_pages + 3)));
+    if (adjusting) {
+        turn_param(edit_param(screen), detents);
+    } else if (detents) {
+        int index = screen == PLAY ? detents - 1 : (int)parameter_index() + detents;
+        int last = (int)parameter_count() - 1;
+        show_screen(view_for_parameter((unsigned)(index < 0 ? 0 : index > last ? last : index)));
     }
 }
 
 void fw_para_click(void)
 {
-    if (screen == PLAY) show_screen(edit_page(0));
-    else fw_para_turn(1);
+    if (screen == PLAY) show_screen(view_for_parameter(0));
+    else {
+        adjusting = !adjusting;
+        message = 0;
+        redraw |= MODEL_NAME | CONTEXT;
+    }
 }
 
 #ifdef LIVEWDF_GP50_CATALOG
@@ -323,23 +349,16 @@ static int starts_with(const char *name, const char *prefix)
     return 1;
 }
 
-static unsigned named_control(unsigned model, const char *const *names, unsigned exclude)
+static unsigned named_control(unsigned model, const char *const *names)
 {
     for (; *names; ++names)
         for (unsigned i = 0; i < catalog_control_count[model]; ++i)
-            if (i != exclude && starts_with(catalog_controls[model][i].name, *names)) return i;
+            if (starts_with(catalog_controls[model][i].name, *names)) return i;
     return CATALOG_CONTROLS;
 }
 #endif
 
-#define NO_CONTROL GP5_NPARAMS
-
 #ifdef LIVEWDF_GP50_CATALOG
-static unsigned pot_id(unsigned control)
-{
-    return control < catalog_control_count[current_model()] ? GP5_P_POT_0 + control : NO_CONTROL;
-}
-
 static int pot_position(unsigned id)
 {
     int value = gp5_param(id);
@@ -349,42 +368,26 @@ static int pot_position(unsigned id)
 
 static unsigned knob_param(unsigned encoder)
 {
+    if (encoder == GP50_ENCODER_LEFT) return GP5_P_INPUT;
     if (encoder == GP50_ENCODER_MIDDLE) return GP5_P_LEVEL;
-    int left = encoder == GP50_ENCODER_LEFT;
-    switch (screen) {
-    case MODEL: return left ? GP5_P_MODEL : GP5_P_INPUT;
-    case CABINET: return left ? GP5_P_CAB : GP5_P_ON;
-    case AMBIENCE: return left ? GP5_P_DELAY : GP5_P_REVERB;
 #ifdef LIVEWDF_GP50_CATALOG
-    case PLAY: {
-        static const char *const drives[] = {
-            "drive", "gain", "distortion", "lead gain", "lead drive", "pre gain", "preamp volume",
-            "overdrive", "fuzz", "boost", 0
-        };
-        static const char *const tones[] = {
-            "treadle", "tone", "filter", "presence", "treble", "sensitivity", "threshold", "sustain", "depth", "blend", 0
-        };
-        unsigned model = current_model();
-        unsigned drive = named_control(model, drives, CATALOG_CONTROLS);
-        if (left) return drive < CATALOG_CONTROLS ? pot_id(drive) : GP5_P_INPUT;
-        unsigned tone = named_control(model, tones, drive);
-        if (tone == CATALOG_CONTROLS) tone = drive == 0 ? 1 : 0;
-        unsigned id = pot_id(tone);
-        return id == NO_CONTROL ? GP5_P_DELAY : id;
-    }
-    default: return pot_id((screen - CIRCUIT) * 2 + !left);
+    static const char *const quick_controls[] = {
+        "drive", "gain", "distortion", "lead gain", "lead drive", "pre gain", "preamp volume",
+        "overdrive", "fuzz", "boost", "volume", "normal volume", "instrument volume",
+        "treadle", "tone", "treble", 0
+    };
+    unsigned model = current_model();
+    if (!catalog_control_count[model]) return GP5_P_DELAY;
+    unsigned control = named_control(model, quick_controls);
+    return GP5_P_POT_0 + (control == CATALOG_CONTROLS ? 0 : control);
 #else
-    case PLAY: return left ? GP5_P_GAIN : GP5_P_DELAY;
-    default: return left ? GP5_P_GAIN : NO_CONTROL;
+    return GP5_P_GAIN;
 #endif
-    }
 }
 
-void fw_gp50_encoder_turn(unsigned encoder, int detents)
+static void turn_param(unsigned id, int detents)
 {
-    if (encoder > GP50_ENCODER_RIGHT || !detents) return;
-    unsigned id = knob_param(encoder);
-    if (id == NO_CONTROL) return;
+    if (!detents) return;
     int value = gp5_param(id);
     if (id == GP5_P_MODEL) value = (int)wrap((unsigned)value, detents, PATCH_COUNT);
     else if (id == GP5_P_LEVEL || id == GP5_P_INPUT) value += 2 * detents;
@@ -397,6 +400,11 @@ void fw_gp50_encoder_turn(unsigned encoder, int detents)
 #endif
     else value += detents;
     if (gp5_param_set(id, value)) fw_param_changed(id);
+}
+
+void fw_gp50_encoder_turn(unsigned encoder, int detents)
+{
+    if (encoder <= GP50_ENCODER_RIGHT) turn_param(knob_param(encoder), detents);
 }
 
 static void model_name(char *out, unsigned capacity)
@@ -434,69 +442,79 @@ static void screen_text(const gp5_font_t *font, const char *text, int x, int y, 
     gp5_draw_text(strip, GP5_SCREEN_W, STRIP_H, x, y, font, fitted, color);
 }
 
-#ifdef LIVEWDF_GP50_CATALOG
-static const char *pot_label(const char *name)
+static const char *param_label(unsigned id)
 {
-    static const struct { const char *full, *short_label; } labels[] = {
-        { "160 hz gain", "160 Hz" }, { "2.5 khz gain", "2.5 kHz" }, { "40 hz gain", "40 Hz" },
-        { "650 hz gain", "650 Hz" }, { "sub 10 hz gain", "Sub 10" },
-        { "bbd bias", "BBD Bs" }, { "color trim", "Col Trim" }, { "distortion", "Distort" },
-        { "hf frequency", "HF Hz" }, { "lf frequency", "LF Hz" },
-        { "high bell bandwidth", "Hi B Q" }, { "high bell frequency", "Hi B Hz" }, { "high bell gain", "Hi B G" },
-        { "low bell bandwidth", "Lo B Q" }, { "low bell frequency", "Lo B Hz" }, { "low bell gain", "Lo B G" },
-        { "mid bell bandwidth", "Mid B Q" }, { "mid bell frequency", "Mid B Hz" }, { "mid bell gain", "Mid B G" },
-        { "high frequency", "High Hz" }, { "low frequency", "Low Hz" },
-        { "high gain", "Hi Gain" }, { "low gain", "Lo Gain" },
-        { "high mid frequency", "HM Freq" }, { "low mid frequency", "LM Freq" },
-        { "high mid gain", "Hi Mid G" }, { "low mid gain", "LM Gain" },
-        { "high pass frequency", "HP Freq" }, { "low pass frequency", "LP Freq" },
-        { "high shelf", "Hi Shelf" }, { "low shelf", "Lo Shelf" },
-        { "high shelf gain", "Hi Shelf" }, { "low shelf gain", "Lo Shelf" },
-        { "high treble volume", "HiTr Vol" }, { "instrument volume", "Inst Vol" },
-        { "lead drive", "Ld Drive" }, { "lead gain", "Ld Gain" },
-        { "lead master", "Ld Mstr" }, { "lead volume", "Ld Vol" },
-        { "hmf frequency", "HMF Hz" }, { "lmf frequency", "LMF Hz" },
-        { "hmf gain", "HMF G" }, { "lmf gain", "LMF G" },
-        { "master volume", "Mstr Vol" }, { "microphone volume", "Mic Vol" },
-        { "normal volume", "Nrm Vol" }, { "post gain", "Post G" }, { "preamp volume", "Pre Vol" },
-        { "presence", "Pres" }, { "resonance", "Reson" }, { "spectrum", "Spectr" },
-        { "volume 1", "Vol 1" }, { "level", "Ckt Vol" },
-    };
-    for (unsigned i = 0; i < sizeof labels / sizeof labels[0]; ++i) {
-        const char *full = labels[i].full;
-        unsigned length = 0;
-        while (full[length]) ++length;
-        if (starts_with(name, full) && !name[length]) return labels[i].short_label;
+#ifdef LIVEWDF_GP50_CATALOG
+    if (id >= GP5_P_POT_0) {
+        const char *name = catalog_controls[current_model()][id - GP5_P_POT_0].name;
+        return starts_with(name, "level") && !name[5] ? "Volume" : name;
     }
+#endif
+    return gp5_param_table[id].name;
+}
+
+static const char *quick_label(const char *name)
+{
+#ifdef LIVEWDF_GP50_CATALOG
+    static const struct { const char *full, *short_label; } labels[] = {
+        { "sub 10 hz gain", "Sub 10" }, { "high shelf", "Hi Shelf" },
+        { "high pass frequency", "HP Freq" }, { "low shelf gain", "Lo Shelf" },
+        { "lf gain", "LF Gain" }, { "lead drive", "Ld Drive" }, { "lead gain", "Ld Gain" },
+        { "instrument volume", "Inst Vol" }, { "normal volume", "Nrm Vol" },
+        { "preamp volume", "Pre Vol" }, { "distortion", "Distort" }, { "volume 1", "Vol 1" },
+        { "bbd bias", "BBD Bs" },
+    };
+    for (unsigned i = 0; i < sizeof labels / sizeof labels[0]; ++i)
+        if (starts_with(name, labels[i].full)) return labels[i].short_label;
+#endif
     return name;
 }
+
+static void param_value(unsigned id, char *value)
+{
+    if (id == GP5_P_MODEL) {
+        gp5_fmt(value, 16, "%u/%u", current_model() + 1, (unsigned)PATCH_COUNT);
+    }
+#ifdef LIVEWDF_GP50_CATALOG
+    else if (id >= GP5_P_POT_0) {
+        gp5_fmt(value, 16, "%u%%", (unsigned)(pot_position(id) + 5) / 10);
+    }
 #endif
+    else if (gp5_param_table[id].unit == GP5_U_PERCENT) {
+        gp5_fmt(value, 16, "%u%%", (unsigned)gp5_param(id));
+    } else {
+        gp5_param_format(id, gp5_param(id), value);
+    }
+}
 
 static void draw_knob(unsigned encoder)
 {
     unsigned id = knob_param(encoder);
-    if (id == NO_CONTROL) return;
-    const char *label = gp5_param_table[id].name;
     char value[16];
-    if (id == GP5_P_MODEL) {
-        gp5_fmt(value, sizeof value, "%u/%u", (unsigned)current_model() + 1, (unsigned)PATCH_COUNT);
-    }
-#ifdef LIVEWDF_GP50_CATALOG
-    else if (id >= GP5_P_POT_0) {
-        label = pot_label(catalog_controls[current_model()][id - GP5_P_POT_0].name);
-        gp5_fmt(value, sizeof value, "%u%%", (unsigned)(pot_position(id) + 5) / 10);
-    }
-#endif
-    else if (id == GP5_P_DELAY || id == GP5_P_REVERB || id == GP5_P_LEVEL || id == GP5_P_INPUT) {
-        gp5_fmt(value, sizeof value, "%u%%", (unsigned)gp5_param(id));
-    } else {
-        gp5_param_format(id, gp5_param(id), value);
-    }
+    param_value(id, value);
     int x = (int)(encoder * GP5_SCREEN_W / 3) + 1;
-    screen_text(&gp5_font_sans_12, label, x, 0, 50, muted, 1);
-    uint32_t color = id == GP5_P_LEVEL && gp5_param(GP5_P_ON) ? accent : ink;
-    if (!gp5_param(GP5_P_ON) && id != GP5_P_ON && id != GP5_P_MODEL) color = muted;
+    screen_text(&gp5_font_sans_12, quick_label(param_label(id)), x, 0, 50, muted, 1);
+    uint32_t color = !gp5_param(GP5_P_ON) ? muted : id == GP5_P_LEVEL ? accent : ink;
     screen_text(&gp5_font_sans_16, value, x, 11, 50, color, 1);
+}
+
+static void draw_parameter(unsigned index, int y, int selected)
+{
+    unsigned id = edit_param(view_for_parameter(index));
+    const gp5_font_t *font = &gp5_font_sans_12;
+    char value[16];
+    param_value(id, value);
+    uint32_t color = muted;
+    if (selected) {
+        uint16_t fill = gp5_color(panel);
+        for (int row = y; row < y + 16; ++row)
+            for (unsigned x = 4; x < GP5_SCREEN_W - 4; ++x)
+                strip[row * GP5_SCREEN_W + x] = fill;
+        color = adjusting ? accent : amber;
+    }
+    int value_w = gp5_text_width(font, value);
+    screen_text(font, param_label(id), 8, y, 138 - value_w, color, 0);
+    screen_text(font, value, 152 - value_w, y, value_w, color, 0);
 }
 
 int fw_draw(int force)
@@ -514,33 +532,38 @@ int fw_draw(int force)
     for (unsigned i = 0; i < sizeof strip / sizeof strip[0]; ++i) strip[i] = fill;
     char text[32];
     if (band == HEADER) {
-        gp5_fmt(text, sizeof text, "Patch %03u%s", patch + 1, patch_dirty() ? " *" : "");
-        screen_text(&gp5_font_sans_12, text, 8, 8, 104, muted, 0);
-        if (!gp5_param(GP5_P_ON))
-            screen_text(&gp5_font_sans_12, "BYPASS", 108, 8, 45, amber, 0);
+        int bypass = !gp5_param(GP5_P_ON);
+        const char *dirty = patch_dirty() ? "*" : "";
+        if (screen == PLAY) {
+            gp5_fmt(text, sizeof text, "Patch %03u%s", patch + 1, dirty);
+        } else {
+            char name[32];
+            model_name(name, sizeof name);
+            gp5_fmt(text, sizeof text, "%03u%s  %s", patch + 1, dirty, name);
+        }
+        screen_text(&gp5_font_sans_12, text, 8, screen == PLAY ? 8 : 0, bypass ? 100 : 144, muted, 0);
+        if (bypass) screen_text(&gp5_font_sans_12, "BYPASS", 108, screen == PLAY ? 8 : 0, 45, amber, 0);
+        if (screen != PLAY && parameter_index()) draw_parameter(parameter_index() - 1, 16, 0);
     } else if (band == MODEL_NAME) {
         y = 32;
-        model_name(text, sizeof text);
-        const gp5_font_t *font = gp5_text_width(&gp5_font_sans_20, text) <= 144 ?
-                                 &gp5_font_sans_20 : &gp5_font_sans_16;
-        screen_text(font, text, 8, 0, 144, ink, 0);
+        if (screen == PLAY) {
+            model_name(text, sizeof text);
+            const gp5_font_t *font = gp5_text_width(&gp5_font_sans_20, text) <= 144 ?
+                                     &gp5_font_sans_20 : &gp5_font_sans_16;
+            screen_text(font, text, 8, 0, 144, ink, 0);
+        } else {
+            unsigned index = parameter_index();
+            draw_parameter(index, 0, 1);
+            if (index + 1 < parameter_count()) draw_parameter(index + 1, 16, 0);
+        }
     } else if (band == CONTEXT) {
         y = 64;
-        const char *label = message;
-        if (!label) {
-            switch (screen) {
-            case PLAY: label = "Press PARA to edit"; break;
-            case MODEL: label = "Model & input"; break;
-            case CABINET: label = "Cab & bypass"; break;
-            case AMBIENCE: label = "Delay & reverb"; break;
-            default:
-                gp5_fmt(text, sizeof text, "Circuit %u/%u", screen - CIRCUIT + 1, circuit_pages());
-                label = text;
-            }
+        const char *hint = message;
+        if (!hint) {
+            if (screen == PLAY) hint = "Turn PARA to edit";
+            else hint = adjusting ? "Press PARA to finish" : "Press PARA to adjust";
         }
-        screen_text(&gp5_font_sans_12, label, 8, 6, 144, message ? amber : muted, 0);
-        if (screen != PLAY && !message)
-            screen_text(&gp5_font_sans_12, "PARA >", 112, 6, 42, accent, 0);
+        screen_text(&gp5_font_sans_12, hint, 8, 7, 144, message ? amber : muted, 0);
     } else {
         y = 96;
         for (unsigned encoder = 0; encoder <= GP50_ENCODER_RIGHT; ++encoder) draw_knob(encoder);
@@ -560,13 +583,14 @@ void fw_gp50_button(unsigned button, int down)
     case GP50_BUTTON_SAVE:
         for (unsigned i = 0; i < GP5_NPARAMS; ++i)
             patches[patch][i] = (int16_t)gp5_param(i);
+        adjusting = 0;
         message = save_bank() ? "Patch saved" : "Saved in RAM";
         message_until = gp5_ms() + 1100;
-        redraw |= HEADER | CONTEXT;
+        redraw |= HEADER | MODEL_NAME | CONTEXT;
         break;
     case GP50_BUTTON_EXIT: show_screen(PLAY); break;
     case GP50_BUTTON_GLOBAL: show_screen(CABINET); break;
-    case GP50_BUTTON_DRUM: show_screen(AMBIENCE); break;
+    case GP50_BUTTON_DRUM: show_screen(DELAY); break;
     }
 }
 
