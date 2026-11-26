@@ -28,24 +28,23 @@ for track in palm chord sire strat; do
     start=6
     drive=.9
     case $track in
-        palm) start=3;;
-        chord) start=1;;
-        strat) drive=.5;;
+        palm) input=pf300-palm-mutes; start=3;;
+        chord) input=pf300-major-chords; start=1;;
+        sire) input=sire-t7-performance-11;;
+        strat) input=strat; drive=.5;;
     esac
-    "$bench" "$preset" "$scratch/$track.f32" "$start" 3 "$drive" - "lu:$scratch/$track.bin" - 8 "$controls"
+    "$bench" "$preset" "$scratch/$input.f32" "$start" 3 "$drive" - "lu:$scratch/$track.bin" - 8 "$controls"
 done
 python experimental/neural_newton/train_lu_bank.py \
     --train "$scratch/palm.bin" "$scratch/chord.bin" \
     --holdout "$scratch/sire.bin" "$scratch/strat.bin" \
     --output "$scratch/bank.txt"
 for selector in lu lu-nearest lu-constant; do
-    "$bench" "$preset" "$scratch/sire.f32" 6 4 .9 "$selector:$scratch/bank.txt" - - 8 "$controls"
+    "$bench" "$preset" "$scratch/sire-t7-performance-11.f32" 6 4 .9 "$selector:$scratch/bank.txt" - - 8 "$controls"
 done
-"$bench" "$preset" "$scratch/sire.f32" 6 4 .9 - - - 8 "$controls"
+"$bench" "$preset" "$scratch/sire-t7-performance-11.f32" 6 4 .9 - - - 8 "$controls"
 ```
 
-The short track names in these commands refer to the palm mutes, major
-chords, Sire performance, and Strat excerpts in the linked benchmark.
 The holdout script compares the network with the nearest representative,
 the best constant factorization on the training set, and an offline oracle.
 Their relative linearized voltage defect is
