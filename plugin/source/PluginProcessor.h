@@ -60,9 +60,11 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    bool loadOutputImpulse(bool reverb, const juce::File& file) { return outputEffects_.loadImpulse(reverb, file); }
-    bool selectFactoryOutputImpulse(bool reverb, juce::StringRef id) { return outputEffects_.selectFactoryImpulse(reverb, id); }
-    void resetOutputImpulse(bool reverb) { outputEffects_.resetImpulse(reverb); }
+    bool loadOutputImpulse(bool reverb, const juce::File& file);
+    bool selectFactoryOutputImpulse(bool reverb, juce::StringRef id);
+    void resetOutputImpulse(bool reverb);
+    bool selectSuggestedCabinet();
+    bool cabinetFollowsSuggestion() const;
     juce::String outputImpulseName(bool reverb) const { return outputEffects_.impulseName(reverb); }
     juce::String outputImpulseId(bool reverb) const { return outputEffects_.impulseId(reverb); }
     std::span<const FactoryImpulse> factoryOutputImpulses(bool reverb) const noexcept {
@@ -167,6 +169,7 @@ private:
     friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
     OutputEffects outputEffects_;
+    bool cabinetFollowsSuggestion_ = false;
     const std::atomic<float>* cabinetEnabled_ = apvts_.getRawParameterValue("cab_enabled");
     const std::atomic<float>* echoLevel_ = apvts_.getRawParameterValue("echo_mix");
     const std::atomic<float>* reverbLevel_ = apvts_.getRawParameterValue("reverb_mix");

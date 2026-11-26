@@ -665,7 +665,12 @@ void LiveWDFPluginEditor::setOutputEnabled(bool reverb, bool enabled) {
 void LiveWDFPluginEditor::refreshOutputSelectors() {
     for (bool reverb : {false, true}) {
         auto& selector = reverb ? reverbSelector_ : cabinetSelector_;
-        const auto name = outputEnabled(reverb) ? processor_.outputImpulseName(reverb) : juce::String("Off");
+        auto name = juce::String("Off");
+        if (outputEnabled(reverb)) {
+            name = processor_.outputImpulseName(reverb);
+            if (!reverb && processor_.cabinetFollowsSuggestion())
+                name = "Suggested - " + name;
+        }
         if (selector.getText() != name) {
             selector.setText(name, juce::dontSendNotification);
             selector.setTooltip(name);
@@ -679,6 +684,7 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
     const auto entries = processor_.factoryOutputImpulses(reverb);
     const auto current = processor_.outputImpulseId(reverb);
     const auto recommendation = reverb ? juce::String{} : processor_.suggestedCabinetId();
+    const bool following = !reverb && processor_.cabinetFollowsSuggestion();
     const bool enabled = outputEnabled(reverb);
 
     juce::PopupMenu menu;
@@ -686,14 +692,16 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
     menu.addItem(off, "Off", true, !enabled);
     for (const auto& entry : entries) {
         if (recommendation == entry.id)
-            menu.addItem(suggested, "Suggested - " + juce::String(entry.name));
+            menu.addItem(suggested, "Suggested - " + juce::String(entry.name), true, enabled && following);
     }
+    if (following && recommendation.isEmpty())
+        menu.addItem(suggested, "Suggested - No match for this circuit", false, enabled);
     if (current.isEmpty())
         menu.addItem(imported, processor_.outputImpulseName(reverb), true, enabled);
     menu.addSeparator();
     for (size_t i = 0; i < entries.size(); ++i) {
         const auto& entry = entries[i];
-        menu.addItem(firstFactory + static_cast<int>(i), entry.name, true, enabled && current == entry.id);
+        menu.addItem(firstFactory + static_cast<int>(i), entry.name, true, enabled && !following && current == entry.id);
     }
     menu.addSeparator();
     menu.addItem(importWav, "Load WAV...");
@@ -701,7 +709,7 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
 
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&selector)
                            .withParentComponent(this).withMinimumWidth(selector.getWidth()).withMaximumNumColumns(1),
-                       [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this), reverb, entries, recommendation](int choice) {
+                       [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this), reverb, entries](int choice) {
         if (safe == nullptr)
             return;
         (reverb ? safe->reverbSelector_ : safe->cabinetSelector_).hidePopup();
@@ -713,9 +721,10 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
             case credits: safe->showFactoryIrCredits(reverb); return;
             default: break;
         }
-        const auto id = choice == suggested ? recommendation
-                                            : juce::String(entries[static_cast<size_t>(choice - firstFactory)].id);
-        if (safe->processor_.selectFactoryOutputImpulse(reverb, id))
+        const bool loaded = choice == suggested
+            ? safe->processor_.selectSuggestedCabinet()
+            : safe->processor_.selectFactoryOutputImpulse(reverb, entries[static_cast<size_t>(choice - firstFactory)].id);
+        if (loaded)
             safe->setOutputEnabled(reverb, true);
         else
             juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,

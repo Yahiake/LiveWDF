@@ -32,23 +32,23 @@ constexpr auto reverbName = "reverb_ir_name";
 constexpr auto reverbFactory = "reverb_ir_factory";
 
 constexpr FactoryImpulse factoryCabinets[] = {
-    {"synthetic-cab", "Studio Cab (Synthetic)", nullptr},
-    {"jensen-sm57", "Jensen SM57", "jensen-sm57.wav"},
-    {"jensen-e606", "Jensen e606", "jensen-e606.wav"},
-    {"hk-celestion-sm57", "H&K Celestion SM57", "hk-celestion-sm57.wav"},
-    {"hk-celestion-c414", "H&K Celestion C414", "hk-celestion-c414.wav"},
-    {"engl-v30-sm57", "ENGL V30 SM57", "engl-v30-sm57.wav"},
-    {"engl-v30-e606", "ENGL V30 e606", "engl-v30-e606.wav"},
-    {"bg412s-v30-sm57", "BG412S V30 SM57", "bg412s-v30-sm57.wav"},
-    {"bg412s-dv77-sm57", "BG412S DV-77 SM57", "bg412s-dv77-sm57.wav"},
-    {"bg412s-rockdriver-e606", "BG412S Rockdriver e606", "bg412s-rockdriver-e606.wav"},
-    {"bg412s-v30-dv77-sm57", "BG412S V30 + DV-77", "bg412s-v30-dv77-sm57.wav"},
-    {"orange-ppc112-v30-sm57", "Orange 1x12 V30", "orange-ppc112-v30-sm57.wav"},
-    {"orange-ppc212v-neocreamback", "Orange 2x12 Neo Creamback", "orange-ppc212v-neocreamback.wav"},
-    {"mesa-412-os-v30", "Mesa 412 OS V30", "mesa-412-os-v30.wav"},
-    {"celestion-g12-vintage", "Celestion G12 Vintage", "celestion-g12-vintage.wav"},
-    {"eminence-governor", "Eminence Governor", "eminence-governor.wav"},
-    {"ampeg-810", "Ampeg 8x10", "ampeg-810.wav"},
+    {"synthetic-cab", "Studio Cab (Synthetic)", nullptr, 2.9f},
+    {"jensen-sm57", "Jensen SM57", "jensen-sm57.wav", 4.6f},
+    {"jensen-e606", "Jensen e606", "jensen-e606.wav", 6.9f},
+    {"hk-celestion-sm57", "H&K Celestion SM57", "hk-celestion-sm57.wav", 5.9f},
+    {"hk-celestion-c414", "H&K Celestion C414", "hk-celestion-c414.wav", 7.3f},
+    {"engl-v30-sm57", "ENGL V30 SM57", "engl-v30-sm57.wav", 6.7f},
+    {"engl-v30-e606", "ENGL V30 e606", "engl-v30-e606.wav", 9.4f},
+    {"bg412s-v30-sm57", "BG412S V30 SM57", "bg412s-v30-sm57.wav", 5.4f},
+    {"bg412s-dv77-sm57", "BG412S DV-77 SM57", "bg412s-dv77-sm57.wav", 4.7f},
+    {"bg412s-rockdriver-e606", "BG412S Rockdriver e606", "bg412s-rockdriver-e606.wav", 5.9f},
+    {"bg412s-v30-dv77-sm57", "BG412S V30 + DV-77", "bg412s-v30-dv77-sm57.wav", 5.0f},
+    {"orange-ppc112-v30-sm57", "Orange 1x12 V30", "orange-ppc112-v30-sm57.wav", 7.7f},
+    {"orange-ppc212v-neocreamback", "Orange 2x12 Neo Creamback", "orange-ppc212v-neocreamback.wav", 5.5f},
+    {"mesa-412-os-v30", "Mesa 412 OS V30", "mesa-412-os-v30.wav", 5.7f},
+    {"celestion-g12-vintage", "Celestion G12 Vintage", "celestion-g12-vintage.wav", 6.1f},
+    {"eminence-governor", "Eminence Governor", "eminence-governor.wav", 5.4f},
+    {"ampeg-810", "Ampeg 8x10", "ampeg-810.wav", 12.0f},
 };
 
 constexpr FactoryImpulse factoryReverbs[] = {
@@ -270,12 +270,12 @@ struct OutputEffects::Prepared {
           fadeScratch(scratch.getNumChannels(), scratch.getNumSamples()),
           reverb(std::make_unique<PreparedRoom>(spec, room, size, revision)) {
         const auto stereo = Convolution::Stereo::yes;
-        if (cab.samples.getNumSamples() > 0)
-            cabinet.loadImpulseResponse(OutputEffects::atRate(cab, spec.sampleRate), spec.sampleRate,
-                                        stereo, Convolution::Trim::no, Convolution::Normalise::no);
-        else
-            cabinet.loadImpulseResponse(cabinetImpulse(), cabinetRate,
-                                        stereo, Convolution::Trim::no, Convolution::Normalise::no);
+        const bool hasCabinet = cab.samples.getNumSamples() > 0;
+        auto cabinetResponse = hasCabinet ? OutputEffects::atRate(cab, spec.sampleRate) : cabinetImpulse();
+        const auto makeupDb = cab.name.isEmpty() ? factoryCabinets[0].makeupDb : cab.makeupDb;
+        cabinetResponse.applyGain(juce::Decibels::decibelsToGain(makeupDb));
+        cabinet.loadImpulseResponse(std::move(cabinetResponse), hasCabinet ? spec.sampleRate : cabinetRate,
+                                    stereo, Convolution::Trim::no, Convolution::Normalise::no);
         cabinet.prepare({spec.sampleRate, static_cast<juce::uint32>(scratch.getNumSamples()), spec.numChannels});
         cabinetHistory = static_cast<size_t>(cabinet.getCurrentIRSize()) + spec.maximumBlockSize;
     }
@@ -467,6 +467,7 @@ OutputEffects::Impulse OutputEffects::factoryImpulse(bool room, juce::StringRef 
     }
     result.name = entry->name;
     result.factoryId = entry->id;
+    result.makeupDb = entry->makeupDb;
     return result;
 }
 
