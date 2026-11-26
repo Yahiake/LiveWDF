@@ -11,14 +11,15 @@ import wave
 RATE = 44100
 
 
-def render(root, name, events, duration, input_name="input"):
+def render(root, name, events, duration, input_name="input", store=None):
     script = root / f"{name}.txt"
     script.write_text("\n".join(events) + "\n", encoding="utf-8")
     output = root / f"{name}.wav"
-    subprocess.run([sys.executable, *sys.argv[1:3], "--gp50", "--host-dsp", sys.argv[3],
+    storage = ["--store", str(store)] if store is not None else []
+    subprocess.run([sys.executable, *sys.argv[1:3], "--gp50", "--host-dsp", sys.argv[3], *storage,
                     "--script", str(script), "--in", str(root / f"{input_name}.wav"),
                     "--seconds", str(duration), "--out", str(output),
-                    "--shots", str(root / "frames")], check=True)
+                    "--shots", str(root / name)], check=True)
     with wave.open(str(output), "rb") as stream:
         return stream.readframes(stream.getnframes())
 

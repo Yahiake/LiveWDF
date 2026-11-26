@@ -16,9 +16,10 @@ def screens(time, suffix):
 def main():
     with tempfile.TemporaryDirectory(prefix="livewdf-gp50-patches-") as directory:
         root = Path(directory)
+        store = root / "patches.store"
         with wave.open(str(root / "input.wav"), "wb") as stream:
             stream.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
-            stream.writeframes(bytes(12 * RATE))
+            stream.writeframes(bytes(14 * RATE))
         render(root, "patches", [
             "0 set Model 3",
             "0 set POT_0 230", "0 set POT_1 740", "0 set POT_2 610",
@@ -46,10 +47,12 @@ def main():
             "4.50 set POT_1 750", "4.60 shot tone-750",
             "4.70 middle turn 2", "4.80 shot middle-level",
             "4.90 set Level 138", "5.00 shot level-138",
-        ], 5.1)
+            "5.10 fs2 click", "5.30 set Model 7", "5.31 set POT_0 915", "5.32 set Level 49",
+            "5.40 save click", "6.40 shot second-saved",
+        ], 6.5, store=store)
 
-        def frame(name):
-            return next((root / "frames").glob(f"{name}.p*")).read_bytes()
+        def frame(name, run="patches"):
+            return next((root / run).glob(f"{name}.p*")).read_bytes()
 
         assert frame("next-patch") != frame("pot0-saved"), "B did not load a different patch"
         for i in range(3):
@@ -62,6 +65,19 @@ def main():
         assert frame("left-drive") == frame("drive-zero"), "left knob did not turn Drive down to zero"
         assert frame("right-tone") == frame("tone-750"), "right knob did not adjust the TS808 Tone"
         assert frame("middle-level") == frame("level-138"), "middle knob did not adjust Level"
+
+        render(root, "restart", [
+            "0.10 shot second-restored",
+            "0.20 foot",
+            *screens(0.40, "restarted"),
+            "0.75 para turn 4", "0.85 shot input-restarted",
+            "0.90 global click", "1.00 shot output-restarted",
+        ], 1.1, store=store)
+        assert frame("second-restored", "restart") == frame("second-saved"), "restart lost the last saved patch"
+        for i in range(3):
+            assert frame(f"pot{i}-saved") == frame(f"pot{i}-restarted", "restart"), f"restart lost model control {i}"
+        assert frame("input-restarted", "restart") == frame("input-saved"), "restart lost Input trim"
+        assert frame("output-restarted", "restart") == frame("output-saved"), "restart lost output settings"
 
 
 if __name__ == "__main__":

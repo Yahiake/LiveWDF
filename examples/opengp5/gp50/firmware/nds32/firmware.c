@@ -20,6 +20,8 @@ static const int16_t steps[] = { 1, 1, 2, 2 };
 static const uint8_t output_rows[] = { GP5_P_CAB, GP5_P_DELAY, GP5_P_REVERB, GP5_P_ON };
 static const int16_t output_steps[] = { 1, 5, 5, 1 };
 static int16_t patches[PATCH_COUNT][GP5_NPARAMS];
+static uint8_t patch_record[GP5_STORE_MAX];
+static uint32_t patch_record_id;
 static unsigned patch;
 static unsigned edit_id;
 static int32_t edit_start;
@@ -57,6 +59,94 @@ static void show_on(void)
 }
 
 #ifdef GP50_BOARD
+/* One journal record keeps every slot in the same recoverable generation. */
+static uint32_t hash_text(uint32_t hash, const char *text)
+{
+    if (text) while (*text) hash = (hash ^ (uint8_t)*text++) * 16777619u;
+    return hash * 16777619u;
+}
+
+static uint32_t bank_id(void)
+{
+    uint32_t hash = hash_text(2166136261u, "LiveWDF GP50 patches v1");
+    hash = (hash ^ PATCH_COUNT) * 16777619u;
+    for (unsigned i = 0; i < GP5_NPARAMS; ++i) {
+        const gp5_param_desc_t *d = &gp5_param_table[i];
+        hash = (hash ^ (uint16_t)d->min) * 16777619u;
+        hash = (hash ^ (uint16_t)d->max) * 16777619u;
+        hash = hash_text(hash_text(hash, d->name), d->choices);
+    }
+#ifdef LIVEWDF_GP50_CATALOG
+    for (unsigned m = 0; m < CATALOG_MODELS; ++m)
+        for (unsigned i = 0; i < CATALOG_CONTROLS; ++i)
+            hash = hash_text(hash, catalog_controls[m][i].name);
+#endif
+    return hash;
+}
+
+static uint32_t record_crc(unsigned size)
+{
+    uint32_t crc = 0xffffffffu;
+    for (unsigned i = 4; i < size; ++i) {
+        crc ^= patch_record[i];
+        for (unsigned bit = 0; bit < 8; ++bit)
+            crc = (crc >> 1) ^ (0xedb88320u & (0u - (crc & 1u)));
+    }
+    return ~crc;
+}
+
+/* Widths come from the parameter ranges so all 47 slots fit without rounding.
+ * Byte 4 is the last explicitly saved slot. Parameters follow low bit first. */
+static unsigned transfer_bank(int save, unsigned stored_size)
+{
+    uint8_t widths[GP5_NPARAMS];
+    unsigned bank_bits = 0;
+    for (unsigned i = 0; i < GP5_NPARAMS; ++i) {
+        unsigned range = (unsigned)((int)gp5_param_table[i].max - gp5_param_table[i].min);
+        widths[i] = 0;
+        for (; range; range >>= 1) ++widths[i];
+        bank_bits += widths[i];
+    }
+    unsigned size = 5 + (PATCH_COUNT * bank_bits + 7) / 8;
+    if (size > sizeof patch_record) return 0;
+    if (save) {
+        for (unsigned i = 0; i < size; ++i) patch_record[i] = 0;
+        patch_record[4] = (uint8_t)patch;
+    } else {
+        if (stored_size != size || patch_record[4] >= PATCH_COUNT) return 0;
+        uint32_t crc = record_crc(size);
+        for (unsigned i = 0; i < 4; ++i)
+            if (patch_record[i] != (uint8_t)(crc >> (i * 8))) return 0;
+    }
+    unsigned offset = 40;
+    for (unsigned slot = 0; slot < PATCH_COUNT; ++slot)
+        for (unsigned i = 0; i < GP5_NPARAMS; ++i) {
+            const gp5_param_desc_t *d = &gp5_param_table[i];
+            unsigned value = save ? (unsigned)((int)patches[slot][i] - d->min) : 0;
+            for (unsigned bit = 0; bit < widths[i]; ++bit, ++offset) {
+                uint8_t *byte = &patch_record[offset / 8];
+                unsigned mask = 1u << (offset % 8);
+                if (save) *byte |= (uint8_t)(((value >> bit) & 1u) * mask);
+                else if (*byte & mask) value |= 1u << bit;
+            }
+            if (!save) {
+                int parameter = d->min + (int)value;
+                patches[slot][i] = (int16_t)(parameter > d->max ? d->max : parameter);
+            }
+        }
+    if (save) {
+        uint32_t crc = record_crc(size);
+        for (unsigned i = 0; i < 4; ++i) patch_record[i] = (uint8_t)(crc >> (i * 8));
+    }
+    return size;
+}
+
+static int save_bank(void)
+{
+    unsigned size = transfer_bank(1, 0);
+    return size && gp5_store_save(patch_record_id, patch_record, size) == 0;
+}
+
 static void show_page(int output, unsigned cursor)
 {
     page.rows = output ? output_rows : rows;
@@ -107,7 +197,9 @@ void fw_init(void)
             patches[slot][i] = (int16_t)gp5_param(i);
         patches[slot][GP5_P_MODEL] = (int16_t)((model + slot) % PATCH_COUNT);
     }
-    recall_patch(0);
+    patch_record_id = bank_id();
+    unsigned size = gp5_store_load(patch_record_id, patch_record, sizeof patch_record);
+    recall_patch(transfer_bank(0, size) ? patch_record[4] : 0);
 #else
 #ifdef LIVEWDF_GP50_CATALOG
     reset_model_edits();
@@ -284,7 +376,7 @@ void fw_gp50_button(unsigned button, int down)
         for (unsigned i = 0; i < GP5_NPARAMS; ++i)
             patches[patch][i] = (int16_t)gp5_param(i);
         page.adjusting = 0;
-        gp5_ui_page_message(&page, "PATCH SAVED", 900);
+        gp5_ui_page_message(&page, save_bank() ? "PATCH SAVED" : "SAVED IN RAM", 900);
         break;
     case GP50_BUTTON_EXIT:
         if (page.adjusting) {

@@ -9,7 +9,8 @@ The left encoder adjusts Drive or Input, the middle encoder adjusts Level,
 and the right encoder adjusts a second model control or Delay. Turn and press PARA to
 browse and edit the other settings. GLOBAL opens the output controls. DRUM
 is a shortcut to Delay, and EXIT leaves the current edit. SAVE updates the
-active patch in RAM. The GP-50 loses these changes when it powers off.
+active patch. On the pedal, **SAVED IN RAM** means storage is unavailable
+and the changes are lost at power-off.
 Level extends to 200%, with up to 6 dB of extra output above 100%.
 
 The DOD 250 Gray model runs the schematic's capacitor recurrence, the
@@ -79,6 +80,10 @@ pw-jack python3 "$emulator/tools/simulate.py" "$catalog" --gp50 --live \
 Use the same patch and encoder controls on the desktop. The **Control**
 row selects a pot or rheostat for deeper edits. Circuit switches use
 their factory settings.
+
+For offline simulations, add `--store /path/to/patches.store` to keep the
+patch bank and reopen the last saved patch on the next run. Use the same
+catalog and parameter layout when reopening a saved bank.
 
 Cab, Delay and Reverb are on the same screen. The emulator’s **Expression**
 slider moves the original Cry Baby treadle pot. An offline script can use
