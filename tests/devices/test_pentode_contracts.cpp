@@ -156,6 +156,10 @@ TEST_CASE("matched pentode branches preserve the plate and both sets of probe vo
         circuit.addCap("screen2", "0", 10e-9);
         REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
     }
+    SECTION("live switch contact in a feed") {
+        circuit.res.back().name = "SW1_A";
+        REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);
+    }
     SECTION("different model cards") {
         circuit.pent.back().model.reefman.kp += 0.01;
         REQUIRE(wdf::collapseMatchedPentodes(circuit) == 0);

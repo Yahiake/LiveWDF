@@ -22,6 +22,9 @@ std::optional<Feed> fixedFeed(const Circuit& circuit, const std::string& termina
             continue;
         if (!std::isfinite(res.value) || !(res.value / 2.0 > 0.0) || res.a == res.b)
             return {};
+        // Live SPDT contacts are stamped as ordinary resistors by the document.
+        if (res.name.ends_with("_A") || res.name.ends_with("_B"))
+            return {};
         for (const auto& pot : circuit.pots)
             if (res.name == pot.name + "_1" || res.name == pot.name + "_2")
                 return {};
