@@ -123,6 +123,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                 photo.gamma = getVal("gamma", photo.gamma);
                 photo.attackSeconds = getVal("attackSeconds", photo.attackSeconds);
                 photo.releaseSeconds = getVal("releaseSeconds", photo.releaseSeconds);
+                photo.strikeVolts = getVal("strikeVolts", 0.0);
+                photo.extinguishVolts = getVal("extinguishVolts", 0.0);
                 c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
                                    photo, comp.id);
             } else if (comp.type == "ca3080") {
