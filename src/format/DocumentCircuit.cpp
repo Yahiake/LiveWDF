@@ -70,6 +70,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                 return (it != comp.properties.end()) ? it->second : fallback;
             };
 
+            if (getProp("preampOnly") == "1")
+                continue;
             if (comp.type == "res") {
                 c.addRes(getPin("a"), getPin("b"), getVal("value", 1000.0), comp.id);
             } else if (comp.type == "cap") {

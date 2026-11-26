@@ -2,7 +2,7 @@
 
 The Factory browser ships 111 presets in three collections.
 
-- **Amps (25)** covers amplifier preamps and the complete Tweed Champ signal path.
+- **Amps (25)** covers complete dry signal paths for 25 amp and channel selections. Use **Power Amp** beside **Circuit** to audition the calibrated preamp tap.
 - **Pedals (46)** covers drive, fuzz, delay, modulation, EQ, filters, and dynamics.
 - **Studio (40)** covers preamps, EQ, dynamics, and saturation or enhancement.
 
@@ -10,57 +10,57 @@ The Factory browser ships 111 presets in three collections.
 
 ## Mean CPU time
 
-Lower is lighter. All timings are in microseconds of CPU time per 128-sample block.
+Lower is lighter. All timings are in microseconds of CPU time per 128-sample block. Amp rows labeled Preamp measure the path with Power Amp off.
 
 | Preset | Collection | Type | Circuit | Mean µs | Median µs | p99 µs |
 | --- | --- | --- | --- | ---: | ---: | ---: |
 | [MXR Micro Amp][preset-38] | Pedals | Boost | TL061 boost with the original 50 pF feedback capacitor. | 21.2 | 21.0 | 25.0 |
 | [API 312 Preamp VP312 Rev A][preset-89] | Studio | Preamp | VP312 Rev A preamp with an AP2520 model and input and output transformers. | 27.0 | 27.0 | 38.0 |
-| [Orange Rockerverb 50w - Clean Channel (Preamp only)][preset-4] | Amps | Preamp | Clean-channel preamp modeled with two 12AX7 triode sections. | 30.3 | 31.0 | 37.0 |
-| [Ampeg B-15N Portaflex (Preamp)][preset-92] | Amps | Preamp | Rev C Portaflex Channel One Normal jack through the 6SL7 stages and passive Bass/Treble network to the Ext. | 32.5 | 31.0 | 43.0 |
-| [Fender Princeton Reverb AA1164 (Preamp)][preset-96] | Amps | Preamp | Black-panel Princeton Reverb dry high-input path through its two-band stack and the third recovery triode. | 32.7 | 32.0 | 58.0 |
-| [Orange OR120 Graphic MkII (Preamp)][preset-106] | Amps | Preamp | Orange Graphic MkII two-stage preamp from the January 1974 service drawing. | 32.7 | 32.0 | 48.0 |
+| [Orange Rockerverb 50w - Clean Channel][preset-4] | Amps | Preamp | Clean-channel preamp modeled with two 12AX7 triode sections. | 30.3 | 31.0 | 37.0 |
+| [Ampeg B-15N Portaflex][preset-92] | Amps | Preamp | Rev C Portaflex Channel One Normal jack through the 6SL7 stages and passive Bass/Treble network to the Ext. | 32.5 | 31.0 | 43.0 |
+| [Fender Princeton Reverb AA1164][preset-96] | Amps | Preamp | Black-panel Princeton Reverb dry high-input path through its two-band stack and the third recovery triode. | 32.7 | 32.0 | 58.0 |
+| [Orange OR120 Graphic MkII][preset-106] | Amps | Preamp | Orange Graphic MkII two-stage preamp from the January 1974 service drawing. | 32.7 | 32.0 | 48.0 |
 | [Ibanez TS_808][preset-32] | Pedals | Overdrive | Tube Screamer circuit with JRC4558 op-amps and 1N914 clipping diodes. | 36.1 | 36.0 | 46.0 |
-| [Hiwatt DR103 (Preamp)][preset-100] | Amps | Preamp | Four-input DR103 Normal high path with the plate-driven three-band stack, master volume and V3A stage. | 36.9 | 35.0 | 46.0 |
+| [Hiwatt DR103][preset-100] | Amps | Preamp | Four-input DR103 Normal high path with the plate-driven three-band stack, master volume and V3A stage. | 36.9 | 35.0 | 46.0 |
 | [DOD 250 Overdrive Preamp Gray][preset-21] | Pedals | Overdrive | Gray-version LM741 overdrive with frequency-dependent gain and shunt diode clipping. | 40.1 | 39.0 | 56.0 |
-| [ENGL E530 - Lead Hi Gain (Preamp)][preset-93] | Amps | Preamp | Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. | 52.4 | 45.0 | 156.0 |
+| [ENGL E530 - Lead Hi Gain][preset-93] | Amps | Preamp | Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. | 52.4 | 45.0 | 156.0 |
 | [Dan Armstrong Orange Squeezer][preset-22] | Pedals | Compressor | Feedback compressor with a JFET gain cell and germanium envelope detector. | 60.5 | 61.0 | 81.0 |
 | [Marshall Guv'nor][preset-42] | Pedals | Distortion | First-generation distortion with red LED clipping and a normalled effects loop. | 61.3 | 55.0 | 112.0 |
-| [Marshall JCM800 2203 - High Input (Preamp)][preset-104] | Amps | Preamp | High input through the JCM800 2203 cold clipper, cathode follower, passive EQ and master volume. | 65.8 | 51.0 | 180.0 |
+| [Marshall JCM800 2203 - High Input][preset-104] | Amps | Preamp | High input through the JCM800 2203 cold clipper, cathode follower, passive EQ and master volume. | 65.8 | 51.0 | 180.0 |
 | [Maag EQ4-500 Parallel Circuit Model][preset-78] | Studio | EQ | Parallel RC equalizer with four fixed bells and five selectable Air frequencies. | 66.6 | 68.0 | 75.0 |
-| [Vox AC15 No. 3 - EF86 Normal (Preamp)][preset-110] | Amps | Preamp | Normal input 1 from Jennings OA/031 with the EF86, screen decoupling, Brilliance switch and 500 kΩ Volume. | 69.6 | 68.0 | 98.0 |
+| [Vox AC15 No. 3 - EF86 Normal][preset-110] | Amps | Preamp | Normal input 1 from Jennings OA/031 with the EF86, screen decoupling, Brilliance switch and 500 kΩ Volume. | 69.6 | 68.0 | 98.0 |
 | [Boss SD-1 Super OverDrive][preset-18] | Pedals | Overdrive | Asymmetric feedback clipping with one silicon junction against two. | 71.5 | 73.0 | 90.0 |
-| [Orange Rockerverb 50w - Dirty Channel (Preamp only)][preset-5] | Amps | Preamp | Dirty-channel preamp modeled with four 12AX7 triode sections. | 72.4 | 50.0 | 180.0 |
+| [Orange Rockerverb 50w - Dirty Channel][preset-5] | Amps | Preamp | Dirty-channel preamp modeled with four 12AX7 triode sections. | 72.4 | 50.0 | 180.0 |
 | [Trident Series 80B Four-Band EQ S800][preset-87] | Studio | EQ | Four-band active RC EQ with two swept mids, shared shelf stages, and low cut. | 75.6 | 75.0 | 93.0 |
 | [Klon Centaur][preset-33] | Pedals | Overdrive | S 698 circuit with a fixed clean summing feed and retained bypass-buffer loading. | 77.0 | 77.0 | 94.0 |
 | [Marshall Bluesbreaker Mk I][preset-41] | Pedals | Overdrive | Black-box overdrive with a TL072, linked gain stages, and series clipping diodes. | 77.0 | 70.0 | 143.0 |
 | [Pro Co RAT LM308][preset-47] | Pedals | Distortion | LM308 distortion with silicon clipping and an internal 30 pF compensation model. | 79.0 | 81.0 | 92.0 |
-| [Peavey 5150 - Lead (Preamp)][preset-107] | Amps | Preamp | Original 5150 high-input Lead path with the 39k cold clipper, parallel V5 feed, passive EQ and Post control. | 86.0 | 59.0 | 262.0 |
-| [Laney GH100L - Drive (Preamp)][preset-101] | Amps | Preamp | High input with Drive engaged, both gain controls, cold clipper and three-band EQ. | 97.5 | 54.0 | 316.0 |
-| [Mesa Boogie Mark IIC+ - Lead (Preamp)][preset-105] | Amps | Preamp | Vintage Mark IIC+ Lead mode with the early tone stack, cascaded lead stages, and parallel dry path. | 100.9 | 71.0 | 360.0 |
+| [Peavey 5150 - Lead][preset-107] | Amps | Preamp | Original 5150 high-input Lead path with the 39k cold clipper, parallel V5 feed, passive EQ and Post control. | 86.0 | 59.0 | 262.0 |
+| [Laney GH100L - Drive][preset-101] | Amps | Preamp | High input with Drive engaged, both gain controls, cold clipper and three-band EQ. | 97.5 | 54.0 | 316.0 |
+| [Mesa Boogie Mark IIC+ - Lead][preset-105] | Amps | Preamp | Vintage Mark IIC+ Lead mode with the early tone stack, cascaded lead stages, and parallel dry path. | 100.9 | 71.0 | 360.0 |
 | [Dunlop Cry Baby GCB-95][preset-24] | Pedals | Wah | Buffered transistor wah with separate AC treadle feedback and DC bias paths. | 106.0 | 104.0 | 167.0 |
-| [Mesa Boogie Dual Rectifier (Preamp Only)][preset-3] | Amps | Preamp | Dual Rectifier preamp modeled with five 12AX7 triode sections. | 113.1 | 82.0 | 281.0 |
+| [Mesa Boogie Dual Rectifier][preset-3] | Amps | Preamp | Dual Rectifier preamp modeled with five 12AX7 triode sections. | 113.1 | 82.0 | 281.0 |
 | [Origin Effects Cali76 FET Compressor (Circuit Approximation)][preset-46] | Pedals | Compressor | 1176-inspired JFET compressor approximation with independent attack, release, and dry and compressed levels. | 120.3 | 115.0 | 182.0 |
-| [Fender Twin Reverb AB763 (Preamp)][preset-99] | Amps | Preamp | Black-panel Twin Reverb Normal high input with the 120 pF Bright switch engaged and its three-band tone stack. | 133.2 | 135.0 | 159.0 |
-| [Fender Tweed Deluxe 5E3 - Instrument (Preamp)][preset-98] | Amps | Preamp | Input 1 of the Instrument channel on Fender drawing 5E3, with both interactive volume controls, the shared 12AY7 cathode and the 12AX7 gain stage. | 134.3 | 132.0 | 177.0 |
-| [Fender Bassman 5F6-A (Preamp)][preset-94] | Amps | Preamp | Tweed Bassman Normal high jack, 12AY7 input and cathode-follower three-band preamp. | 148.8 | 144.0 | 218.0 |
+| [Fender Twin Reverb AB763][preset-99] | Amps | Preamp | Black-panel Twin Reverb Normal high input with the 120 pF Bright switch engaged and its three-band tone stack. | 133.2 | 135.0 | 159.0 |
+| [Fender Tweed Deluxe 5E3 - Instrument][preset-98] | Amps | Preamp | Input 1 of the Instrument channel on Fender drawing 5E3, with both interactive volume controls, the shared 12AY7 cathode and the 12AX7 gain stage. | 134.3 | 132.0 | 177.0 |
+| [Fender Bassman 5F6-A][preset-94] | Amps | Preamp | Tweed Bassman Normal high jack, 12AY7 input and cathode-follower three-band preamp. | 148.8 | 144.0 | 218.0 |
 | [Mosrite Fuzzrite Silicon][preset-43] | Pedals | Fuzz | Two-stage silicon fuzz with a 22 kΩ load on the Depth blend. | 149.5 | 153.0 | 199.0 |
 | [Fuzz Face][preset-30] | Pedals | Fuzz | Two-transistor fuzz modeled with germanium AC128 devices. | 150.6 | 146.5 | 225.0 |
 | [MCI JH-400B Mic Preamp 43E241][preset-90] | Studio | Preamp | Microphone input to patch output with live input pad, gain, and representative 1:10 transformer. | 158.5 | 151.0 | 229.0 |
-| [Marshall 1959 Super Lead - Jumped (Preamp)][preset-102] | Amps | Preamp | Jumped high-treble and normal channels from the 1981 Marshall Standard Lead drawing. | 160.2 | 138.0 | 272.0 |
+| [Marshall 1959 Super Lead - Jumped][preset-102] | Amps | Preamp | Jumped high-treble and normal channels from the 1981 Marshall Standard Lead drawing. | 160.2 | 138.0 | 272.0 |
 | [Harrison 32-Series 3232 Channel EQ][preset-76] | Studio | EQ | Four-band proportional-Q EQ with separate sweepable high-pass and low-pass filters. | 163.0 | 162.0 | 211.0 |
-| [Roland JC-120 (Preamp)][preset-108] | Amps | Preamp | 1979 Jazz Chorus Channel 1 high input and four 2SK117-GR JFETs, with passive three-band EQ and switchable Bright. | 166.5 | 166.0 | 180.0 |
+| [Roland JC-120][preset-108] | Amps | Preamp | 1979 Jazz Chorus Channel 1 high input and four 2SK117-GR JFETs, with passive three-band EQ and switchable Bright. | 166.5 | 166.0 | 180.0 |
 | [Colorsound Power Boost 18V][preset-20] | Pedals | Boost | Three-transistor 18 V boost with an active Baxandall tone network. | 168.5 | 170.0 | 187.0 |
 | [Nobels ODR-1 Natural Overdrive][preset-45] | Pedals | Overdrive | Rev 5 overdrive with a Spectrum gyrator and feedback and shunt clipping. | 177.2 | 175.0 | 226.0 |
 | [Boss DS-1A Distortion][preset-11] | Pedals | Distortion | 1994 engaged distortion circuit with silicon clipping diodes and op-amp gain. | 182.3 | 178.0 | 272.0 |
 | [Fender Tweed Champ 5F1 - Input 1][preset-97] | Amps | Amplifier | Fender 5F1 high input, two 12AX7 stages and a cathode-biased 6V6 with transformer feedback. | 212.5 | 200.0 | 340.0 |
 | [Boss BF-2 Flanger][preset-7] | Pedals | Flanger | MN3207 flanger with diode limiting, adjustable delay bias, and post-filter resonance. | 221.1 | 222.0 | 288.0 |
 | [SPL Transient Designer 9842 DET Model][preset-63] | Studio | Transient shaper | Differential envelope model with independent Attack and Sustain driving a THAT2180 gain cell. | 221.2 | 218.0 | 295.0 |
-| [Vox AC30 - Top Boost (Preamp)][preset-111] | Amps | Preamp | Brilliant input from Jennings OS/065 with the OS/010 Top Boost add-on. | 221.6 | 216.0 | 395.0 |
+| [Vox AC30 - Top Boost][preset-111] | Amps | Preamp | Brilliant input from Jennings OS/065 with the OS/010 Top Boost add-on. | 221.6 | 216.0 | 395.0 |
 | [Roger Mayer Octavia Transistor][preset-48] | Pedals | Fuzz | Transistor octave fuzz with Darlington stages and opposite half-cycle silicon rectifiers. | 222.0 | 219.0 | 288.0 |
 | [Helios Type 69 Musicland EQ][preset-77] | Studio | EQ | Switched LC mids, independent bass cut, and discrete 2128 makeup. | 241.9 | 154.0 | 683.0 |
 | [EHX Electric Mistress 9V][preset-27] | Pedals | Flanger | SAD1024 flanger model with shaped feedback and a Filter Matrix switch. | 242.6 | 241.0 | 317.0 |
-| [Fender Deluxe Reverb AB763 (Preamp)][preset-95] | Amps | Preamp | Black-panel Deluxe Reverb dry Vibrato channel, high input, 47 pF volume bright cap and reverb mixer recovery triode. | 255.8 | 251.0 | 336.0 |
+| [Fender Deluxe Reverb AB763][preset-95] | Amps | Preamp | Black-panel Deluxe Reverb dry Vibrato channel, high input, 47 pF volume bright cap and reverb mixer recovery triode. | 255.8 | 251.0 | 336.0 |
 | [Sontec MES-432C-9 Circuit Model][preset-84] | Studio | EQ | Three adjustable bridged feedback resonators, two shelves, and a servo-stabilized output. | 263.3 | 263.0 | 313.0 |
 | [Neve 1073 Line Preamp EH10023][preset-91] | Studio | Preamp | Transformer-coupled line path with selectable input attenuation and a discrete BA283AV stage. | 263.9 | 154.0 | 657.0 |
 | [SSL 4000 E 82E242 Black EQ][preset-83] | Studio | EQ | Black EQ core with four two-op-amp filters and switchable low and high bell bands. | 264.5 | 263.0 | 327.0 |
@@ -70,7 +70,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [Sola Sound Tone Bender Professional Mk II][preset-50] | Pedals | Fuzz | Early positive-ground fuzz with three germanium transistor stages. | 294.1 | 292.0 | 451.0 |
 | [Pultec EQP-1A Program Equalizer][preset-81] | Studio | EQ | Passive EQ with interacting bass boost and attenuation, switched resonators, and push-pull tube makeup. | 299.1 | 296.0 | 442.0 |
 | [EHX Big Muff Pi Ram's Head Violet][preset-25] | Pedals | Fuzz | 1973 Violet fuzz with two diode-feedback clipping stages and an asymmetric tone network. | 334.7 | 291.0 | 557.0 |
-| [Soldano SLO-100 - Overdrive (Preamp)][preset-109] | Amps | Preamp | Classic overdrive channel with the parallel clean branch, cold clipper, effects buffer and recovery, and cathode-follower tone stack. | 336.8 | 269.0 | 739.0 |
+| [Soldano SLO-100 - Overdrive][preset-109] | Amps | Preamp | Classic overdrive channel with the parallel clean branch, cold clipper, effects buffer and recovery, and cathode-follower tone stack. | 336.8 | 269.0 | 739.0 |
 | [ZVEX Fuzz Factory][preset-51] | Pedals | Fuzz | Five-control fuzz with an input transistor and two germanium AC128 stages. | 338.4 | 349.0 | 506.0 |
 | [API 550A Proportional-Q Circuit Model][preset-73] | Studio | EQ | Early 15-frequency proportional-Q approximation with Twin-T filters and transformer output. | 340.5 | 335.0 | 417.0 |
 | [UREI-1176LN-Rev-D][preset-66] | Studio | Compressor | Rev D FET compressor with dual-phase feedback detection and a transformer-loaded class-A output. | 343.9 | 338.0 | 476.0 |
@@ -80,7 +80,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [BBE 482i Sonic Maximizer Channel B][preset-71] | Studio | Enhancer | Channel B with a pseudo state-variable filter and a level-dependent high-band stage. | 356.7 | 352.0 | 481.0 |
 | [Maestro FZ-1 Fuzz-Tone 1962][preset-40] | Pedals | Fuzz | Positive-ground 3 V fuzz with three 2N270 germanium transistor models. | 361.8 | 358.5 | 541.0 |
 | [dbx 902 De-Esser][preset-68] | Studio | De-esser | Dual RMS detectors and a Blackmer VCA with broadband or high-band-only reduction. | 366.7 | 353.0 | 531.0 |
-| [EVH 5150 III 100S Stealth - Channel 3 (Preamp only)][preset-1] | Amps | Preamp | Channel 3 preamp modeled with seven 12AX7 triode sections. | 374.2 | 374.0 | 505.0 |
+| [EVH 5150 III 100S Stealth - Channel 3][preset-1] | Amps | Preamp | Channel 3 preamp modeled with seven 12AX7 triode sections. | 374.2 | 374.0 | 505.0 |
 | [Boss CE-2 Chorus][preset-8] | Pedals | Chorus | MN3007 chorus with pre-emphasis, reconstruction filtering, and a TL022 modulation oscillator. | 390.7 | 384.0 | 489.0 |
 | [Empirical Labs FATSO EL7][preset-57] | Studio | Compressor | Single-channel reconstruction with feedback compression, soft clipping, Warmth, and a switchable transformer model. | 392.4 | 381.0 | 539.0 |
 | [Altec-436C][preset-54] | Studio | Compressor | Push-pull 6BC8 variable-mu gain stage with a 6CG7 line output. | 400.4 | 388.5 | 553.0 |
@@ -88,7 +88,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [EHX Small Clone MN3007][preset-28] | Pedals | Chorus | EH-460D chorus with MN3007 delay, switched depth, and the original wet mix. | 403.1 | 393.5 | 544.0 |
 | [EMI-RS124][preset-56] | Studio | Compressor | 6BC8 variable-mu compressor with continuous Recovery and a timing Hold switch. | 405.2 | 403.5 | 489.0 |
 | [Neve 1081 Gold Label Equalizer][preset-80] | Studio | EQ | Four Gold Label EQ stages with switched presence coils and shelf/peak selectors. | 411.9 | 404.0 | 532.0 |
-| [Marshall 2555 Silver Jubilee - Lead (Preamp)][preset-103] | Amps | Preamp | Silver Jubilee Lead path with asymmetric LED and silicon clipping, lead master, normalled effects loop and the ganged bass tone network. | 432.9 | 408.0 | 745.0 |
+| [Marshall 2555 Silver Jubilee - Lead][preset-103] | Amps | Preamp | Silver Jubilee Lead path with asymmetric LED and silicon clipping, lead master, normalled effects loop and the ganged bass tone network. | 432.9 | 408.0 | 745.0 |
 | [Thermionic-Culture-Vulture][preset-72] | Studio | Tube saturator | Valve distortion reconstruction with selectable 6AS6 triode, pentode, and approximate P2 modes. | 441.6 | 427.0 | 584.0 |
 | [API 560 Graphic EQ Gyrator Model][preset-74] | Studio | EQ | Ten octave-spaced active bandpass cells with a shared boost/cut mixer and transformer output. | 450.9 | 446.0 | 612.0 |
 | [Aphex Aural Exciter Type B][preset-70] | Studio | Exciter | Tunable high-pass filter feeds a limiter detector and an OTA harmonic generator. | 451.4 | 446.0 | 575.0 |
@@ -104,7 +104,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [MXR Dyna Comp CA3080][preset-35] | Pedals | Compressor | CA3080 compressor with a discrete full-wave detector and OTA Balance trim. | 489.1 | 479.5 | 1,135.0 |
 | [Manley-Variable-Mu][preset-60] | Studio | Compressor | Transformer-coupled reconstruction with paired 5670 gain stages and 5687 output tubes. | 492.9 | 486.5 | 686.0 |
 | [MXR M108S Ten Band EQ (Rev E Reference)][preset-36] | Pedals | EQ | Ten-band EQ with M108S-style dual outputs and a Rev E audio circuit. | 501.0 | 502.0 | 605.0 |
-| [Marshall Valvestate 8100 - Boost Channel (Preamp)][preset-2] | Amps | Preamp | Boost-channel preamp with op-amp gain, diode clipping, and a low-voltage ECC83 stage. | 537.6 | 495.5 | 890.0 |
+| [Marshall Valvestate 8100 - Boost Channel][preset-2] | Amps | Preamp | Boost-channel preamp with op-amp gain, diode clipping, and a low-voltage ECC83 stage. | 537.6 | 495.5 | 890.0 |
 | [Diamond CPR-1 (Quartz Reference)][preset-23] | Pedals | Compressor | Quartz optical compressor with a VTL5C3 model and the original 900 Hz setting. | 555.2 | 534.0 | 817.0 |
 | [Boss BD-2 Blues Driver][preset-6] | Pedals | Overdrive | Two JFET differential gain stages with ganged Gain and silicon diode clipping. | 579.9 | 563.0 | 880.0 |
 | [Boss PQ-4 Parametric EQ][preset-17] | Pedals | EQ | Parametric EQ with linked tuning pairs for the High and Middle bands. | 587.6 | 586.0 | 762.0 |
@@ -131,55 +131,55 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | Preset | p99 µs |
 | --- | ---: |
 | [MXR Micro Amp][preset-38] | 25.0 |
-| [Orange Rockerverb 50w - Clean Channel (Preamp only)][preset-4] | 37.0 |
+| [Orange Rockerverb 50w - Clean Channel][preset-4] | 37.0 |
 | [API 312 Preamp VP312 Rev A][preset-89] | 38.0 |
-| [Ampeg B-15N Portaflex (Preamp)][preset-92] | 43.0 |
+| [Ampeg B-15N Portaflex][preset-92] | 43.0 |
 | [Ibanez TS_808][preset-32] | 46.0 |
-| [Hiwatt DR103 (Preamp)][preset-100] | 46.0 |
-| [Orange OR120 Graphic MkII (Preamp)][preset-106] | 48.0 |
+| [Hiwatt DR103][preset-100] | 46.0 |
+| [Orange OR120 Graphic MkII][preset-106] | 48.0 |
 | [DOD 250 Overdrive Preamp Gray][preset-21] | 56.0 |
-| [Fender Princeton Reverb AA1164 (Preamp)][preset-96] | 58.0 |
+| [Fender Princeton Reverb AA1164][preset-96] | 58.0 |
 | [Maag EQ4-500 Parallel Circuit Model][preset-78] | 75.0 |
 | [Dan Armstrong Orange Squeezer][preset-22] | 81.0 |
 | [Boss SD-1 Super OverDrive][preset-18] | 90.0 |
 | [Pro Co RAT LM308][preset-47] | 92.0 |
 | [Trident Series 80B Four-Band EQ S800][preset-87] | 93.0 |
 | [Klon Centaur][preset-33] | 94.0 |
-| [Vox AC15 No. 3 - EF86 Normal (Preamp)][preset-110] | 98.0 |
+| [Vox AC15 No. 3 - EF86 Normal][preset-110] | 98.0 |
 | [Marshall Guv'nor][preset-42] | 112.0 |
 | [Marshall Bluesbreaker Mk I][preset-41] | 143.0 |
-| [ENGL E530 - Lead Hi Gain (Preamp)][preset-93] | 156.0 |
-| [Fender Twin Reverb AB763 (Preamp)][preset-99] | 159.0 |
+| [ENGL E530 - Lead Hi Gain][preset-93] | 156.0 |
+| [Fender Twin Reverb AB763][preset-99] | 159.0 |
 | [Dunlop Cry Baby GCB-95][preset-24] | 167.0 |
-| [Fender Tweed Deluxe 5E3 - Instrument (Preamp)][preset-98] | 177.0 |
-| [Orange Rockerverb 50w - Dirty Channel (Preamp only)][preset-5] | 180.0 |
-| [Marshall JCM800 2203 - High Input (Preamp)][preset-104] | 180.0 |
-| [Roland JC-120 (Preamp)][preset-108] | 180.0 |
+| [Fender Tweed Deluxe 5E3 - Instrument][preset-98] | 177.0 |
+| [Orange Rockerverb 50w - Dirty Channel][preset-5] | 180.0 |
+| [Marshall JCM800 2203 - High Input][preset-104] | 180.0 |
+| [Roland JC-120][preset-108] | 180.0 |
 | [Origin Effects Cali76 FET Compressor (Circuit Approximation)][preset-46] | 182.0 |
 | [Colorsound Power Boost 18V][preset-20] | 187.0 |
 | [Mosrite Fuzzrite Silicon][preset-43] | 199.0 |
 | [Harrison 32-Series 3232 Channel EQ][preset-76] | 211.0 |
-| [Fender Bassman 5F6-A (Preamp)][preset-94] | 218.0 |
+| [Fender Bassman 5F6-A][preset-94] | 218.0 |
 | [Fuzz Face][preset-30] | 225.0 |
 | [Nobels ODR-1 Natural Overdrive][preset-45] | 226.0 |
 | [MCI JH-400B Mic Preamp 43E241][preset-90] | 229.0 |
-| [Peavey 5150 - Lead (Preamp)][preset-107] | 262.0 |
+| [Peavey 5150 - Lead][preset-107] | 262.0 |
 | [Boss DS-1A Distortion][preset-11] | 272.0 |
-| [Marshall 1959 Super Lead - Jumped (Preamp)][preset-102] | 272.0 |
-| [Mesa Boogie Dual Rectifier (Preamp Only)][preset-3] | 281.0 |
+| [Marshall 1959 Super Lead - Jumped][preset-102] | 272.0 |
+| [Mesa Boogie Dual Rectifier][preset-3] | 281.0 |
 | [Boss BF-2 Flanger][preset-7] | 288.0 |
 | [Roger Mayer Octavia Transistor][preset-48] | 288.0 |
 | [SPL Transient Designer 9842 DET Model][preset-63] | 295.0 |
 | [Sontec MES-432C-9 Circuit Model][preset-84] | 313.0 |
-| [Laney GH100L - Drive (Preamp)][preset-101] | 316.0 |
+| [Laney GH100L - Drive][preset-101] | 316.0 |
 | [EHX Electric Mistress 9V][preset-27] | 317.0 |
 | [SSL 4000 E 82E242 Black EQ][preset-83] | 327.0 |
-| [Fender Deluxe Reverb AB763 (Preamp)][preset-95] | 336.0 |
+| [Fender Deluxe Reverb AB763][preset-95] | 336.0 |
 | [Fender Tweed Champ 5F1 - Input 1][preset-97] | 340.0 |
-| [Mesa Boogie Mark IIC+ - Lead (Preamp)][preset-105] | 360.0 |
+| [Mesa Boogie Mark IIC+ - Lead][preset-105] | 360.0 |
 | [Boss TR-2 Tremolo][preset-19] | 367.0 |
 | [Boss MT-2 Metal Zone][preset-15] | 371.0 |
-| [Vox AC30 - Top Boost (Preamp)][preset-111] | 395.0 |
+| [Vox AC30 - Top Boost][preset-111] | 395.0 |
 | [API 550A Proportional-Q Circuit Model][preset-73] | 417.0 |
 | [Boss HM-2 Heavy Metal][preset-14] | 424.0 |
 | [Pultec EQP-1A Program Equalizer][preset-81] | 442.0 |
@@ -191,7 +191,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [Boss CE-2 Chorus][preset-8] | 489.0 |
 | [EMI-RS124][preset-56] | 489.0 |
 | [API-2500][preset-53] | 499.0 |
-| [EVH 5150 III 100S Stealth - Channel 3 (Preamp only)][preset-1] | 505.0 |
+| [EVH 5150 III 100S Stealth - Channel 3][preset-1] | 505.0 |
 | [ZVEX Fuzz Factory][preset-51] | 506.0 |
 | [dbx 902 De-Esser][preset-68] | 531.0 |
 | [Neve 1081 Gold Label Equalizer][preset-80] | 532.0 |
@@ -216,14 +216,14 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [Manley-Variable-Mu][preset-60] | 686.0 |
 | [ADR-Compex-F760X-RS][preset-52] | 714.0 |
 | [SSL-4000-G-Bus-Compressor][preset-64] | 716.0 |
-| [Soldano SLO-100 - Overdrive (Preamp)][preset-109] | 739.0 |
-| [Marshall 2555 Silver Jubilee - Lead (Preamp)][preset-103] | 745.0 |
+| [Soldano SLO-100 - Overdrive][preset-109] | 739.0 |
+| [Marshall 2555 Silver Jubilee - Lead][preset-103] | 745.0 |
 | [Boss PQ-4 Parametric EQ][preset-17] | 762.0 |
 | [UREI 545 Parametric Equalizer][preset-88] | 764.0 |
 | [Soundcraft Series 600 Mono Input][preset-85] | 809.0 |
 | [Diamond CPR-1 (Quartz Reference)][preset-23] | 817.0 |
 | [Boss BD-2 Blues Driver][preset-6] | 880.0 |
-| [Marshall Valvestate 8100 - Boost Channel (Preamp)][preset-2] | 890.0 |
+| [Marshall Valvestate 8100 - Boost Channel][preset-2] | 890.0 |
 | [MXR Phase 90 Script][preset-39] | 917.0 |
 | [Musitronics Mu-Tron III][preset-44] | 1,000.0 |
 | [Teletronix-LA-2A][preset-65] | 1,017.0 |
@@ -250,11 +250,11 @@ Three takes used the Guitar-TECHS Sire T7 DI excerpt starting at 6 seconds, norm
 
 Mean is the arithmetic average. Median is the middle block CPU time. p99 is the nearest-rank 99th percentile. The block budget at these settings is 2.67 ms. These figures measure renderer CPU time.
 
-[preset-1]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/EVH%205150%20III%20100S%20Stealth%20-%20Channel%203%20%28Preamp%20only%29.livewdf
-[preset-2]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%20Valvestate%208100%20-%20Boost%20Channel%20%28Preamp%29.livewdf
-[preset-3]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Mesa%20Boogie%20Dual%20Rectifier%20%28Preamp%20Only%29.livewdf
-[preset-4]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20Rockerverb%2050w%20-%20Clean%20Channel%20%28Preamp%20only%29.livewdf
-[preset-5]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20Rockerverb%2050w%20-%20Dirty%20Channel%20%28Preamp%20only%29.livewdf
+[preset-1]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/EVH%205150%20III%20100S%20Stealth%20-%20Channel%203.livewdf
+[preset-2]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%20Valvestate%208100%20-%20Boost%20Channel.livewdf
+[preset-3]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Mesa%20Boogie%20Dual%20Rectifier.livewdf
+[preset-4]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20Rockerverb%2050w%20-%20Clean%20Channel.livewdf
+[preset-5]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20Rockerverb%2050w%20-%20Dirty%20Channel.livewdf
 [preset-6]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/pedals_fx/Boss%20BD-2%20Blues%20Driver.livewdf
 [preset-7]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/pedals_fx/Boss%20BF-2%20Flanger.livewdf
 [preset-8]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/pedals_fx/Boss%20CE-2%20Chorus.livewdf
@@ -341,23 +341,23 @@ Mean is the arithmetic average. Median is the middle block CPU time. p99 is the 
 [preset-89]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/studio/preamps/API%20312%20Preamp%20VP312%20Rev%20A.livewdf
 [preset-90]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/studio/preamps/MCI%20JH-400B%20Mic%20Preamp%2043E241.livewdf
 [preset-91]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/studio/preamps/Neve%201073%20Line%20Preamp%20EH10023.livewdf
-[preset-92]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Ampeg%20B-15N%20Portaflex%20%28Preamp%29.livewdf
-[preset-93]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/ENGL%20E530%20-%20Lead%20Hi%20Gain%20%28Preamp%29.livewdf
-[preset-94]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Bassman%205F6-A%20%28Preamp%29.livewdf
-[preset-95]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Deluxe%20Reverb%20AB763%20%28Preamp%29.livewdf
-[preset-96]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Princeton%20Reverb%20AA1164%20%28Preamp%29.livewdf
+[preset-92]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Ampeg%20B-15N%20Portaflex.livewdf
+[preset-93]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/ENGL%20E530%20-%20Lead%20Hi%20Gain.livewdf
+[preset-94]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Bassman%205F6-A.livewdf
+[preset-95]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Deluxe%20Reverb%20AB763.livewdf
+[preset-96]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Princeton%20Reverb%20AA1164.livewdf
 [preset-97]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Tweed%20Champ%205F1%20-%20Input%201.livewdf
-[preset-98]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Tweed%20Deluxe%205E3%20-%20Instrument%20%28Preamp%29.livewdf
-[preset-99]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Twin%20Reverb%20AB763%20%28Preamp%29.livewdf
-[preset-100]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Hiwatt%20DR103%20%28Preamp%29.livewdf
-[preset-101]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Laney%20GH100L%20-%20Drive%20%28Preamp%29.livewdf
-[preset-102]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%201959%20Super%20Lead%20-%20Jumped%20%28Preamp%29.livewdf
-[preset-103]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%202555%20Silver%20Jubilee%20-%20Lead%20%28Preamp%29.livewdf
-[preset-104]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%20JCM800%202203%20-%20High%20Input%20%28Preamp%29.livewdf
-[preset-105]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Mesa%20Boogie%20Mark%20IIC%2B%20-%20Lead%20%28Preamp%29.livewdf
-[preset-106]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20OR120%20Graphic%20MkII%20%28Preamp%29.livewdf
-[preset-107]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Peavey%205150%20-%20Lead%20%28Preamp%29.livewdf
-[preset-108]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Roland%20JC-120%20%28Preamp%29.livewdf
-[preset-109]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Soldano%20SLO-100%20-%20Overdrive%20%28Preamp%29.livewdf
-[preset-110]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Vox%20AC15%20No.%203%20-%20EF86%20Normal%20%28Preamp%29.livewdf
-[preset-111]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Vox%20AC30%20-%20Top%20Boost%20%28Preamp%29.livewdf
+[preset-98]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Tweed%20Deluxe%205E3%20-%20Instrument.livewdf
+[preset-99]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Fender%20Twin%20Reverb%20AB763.livewdf
+[preset-100]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Hiwatt%20DR103.livewdf
+[preset-101]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Laney%20GH100L%20-%20Drive.livewdf
+[preset-102]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%201959%20Super%20Lead%20-%20Jumped.livewdf
+[preset-103]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%202555%20Silver%20Jubilee%20-%20Lead.livewdf
+[preset-104]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Marshall%20JCM800%202203%20-%20High%20Input.livewdf
+[preset-105]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Mesa%20Boogie%20Mark%20IIC%2B%20-%20Lead.livewdf
+[preset-106]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Orange%20OR120%20Graphic%20MkII.livewdf
+[preset-107]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Peavey%205150%20-%20Lead.livewdf
+[preset-108]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Roland%20JC-120.livewdf
+[preset-109]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Soldano%20SLO-100%20-%20Overdrive.livewdf
+[preset-110]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Vox%20AC15%20No.%203%20-%20EF86%20Normal.livewdf
+[preset-111]: https://github.com/Yahiake/LiveWDF/blob/main/schematics/amps/Vox%20AC30%20-%20Top%20Boost.livewdf

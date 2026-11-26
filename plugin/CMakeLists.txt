@@ -146,10 +146,13 @@ if(LIVEWDF_BUILD_TESTS)
     add_test(NAME livewdf_output_effects_state COMMAND LiveWDF_PluginBench --check-output-effects-state)
     add_test(NAME livewdf_output_effect_controls COMMAND LiveWDF_PluginBench --check-output-effect-controls)
     add_test(NAME livewdf_factory_output_irs COMMAND LiveWDF_PluginBench
-        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf"
         --check-factory-output-irs)
     add_test(NAME livewdf_power_amp COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf"
+        --check-power-amp)
+    add_test(NAME livewdf_solid_state_power_amp COMMAND LiveWDF_PluginBench
+        "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/ENGL E530 - Lead Hi Gain.livewdf"
         --check-power-amp)
     add_test(NAME livewdf_preview_pad COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/studio/eq/Neve 1081 Gold Label Equalizer.livewdf"

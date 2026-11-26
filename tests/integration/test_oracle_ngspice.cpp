@@ -711,11 +711,12 @@ TEST_CASE("ngspice oracle: SPICE export of Valvestate 8100 Boost preamp matches 
           "[spice-export][ngspice][valvestate][dc]") {
     LWDF_REQUIRE_NGSPICE("SPICE export Valvestate DC oracle");
 
-    wdf::LiveWDFDocument doc;
+    wdf::LiveWDFDocument full, doc;
     std::string error;
     REQUIRE(wdf::LiveWDFDocument::loadFromFile(
-        "schematics/amps/Marshall Valvestate 8100 - Boost Channel (Preamp).livewdf",
-        doc, error));
+        "schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf",
+        full, error));
+    REQUIRE(full.makePreampDocument(doc, error));
     REQUIRE(doc.loadWarnings.empty());
     WARN("load warnings: " << error);
 
@@ -788,11 +789,12 @@ TEST_CASE("ngspice transient oracle: Valvestate 8100 Boost preamp, 1 kHz sine",
           "[spice-export][ngspice][valvestate][tran]") {
     LWDF_REQUIRE_NGSPICE("SPICE export Valvestate transient oracle");
 
-    wdf::LiveWDFDocument doc;
+    wdf::LiveWDFDocument full, doc;
     std::string error;
     REQUIRE(wdf::LiveWDFDocument::loadFromFile(
-        "schematics/amps/Marshall Valvestate 8100 - Boost Channel (Preamp).livewdf",
-        doc, error));
+        "schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf",
+        full, error));
+    REQUIRE(full.makePreampDocument(doc, error));
     REQUIRE(doc.loadWarnings.empty());
 
     wdf::Circuit c = doc.toCircuit();

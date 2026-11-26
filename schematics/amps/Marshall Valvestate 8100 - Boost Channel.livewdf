@@ -1359,11 +1359,13 @@
       "id": "POT7",
       "properties": {
         "label": "MASTER VOLUME",
+        "preampTap": "wiper",
         "taper": "Linear"
       },
       "type": "pot",
       "values": {
         "pos": 0.5,
+        "preampFullScaleVolts": 0.60686578,
         "totalR": 10000
       },
       "visual": {
@@ -1390,17 +1392,349 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 0.51783087
+        "fullScaleVolts": 6.5291355
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 243,
+        "x": 344,
+        "y": 53
+      }
+    },
+    {
+      "id": "PA C18",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 249,
         "y": 54
+      }
+    },
+    {
+      "id": "PA R25",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 6800.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 267,
+        "y": 54
+      }
+    },
+    {
+      "id": "PA R26",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 33000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 255,
+        "y": 65
+      }
+    },
+    {
+      "id": "PA C19",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 263,
+        "y": 65
+      }
+    },
+    {
+      "id": "PA Input Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 257,
+        "y": 74
+      }
+    },
+    {
+      "id": "PC0689P Class-AB",
+      "properties": {
+        "model": "Discrete Class-AB",
+        "powerAmp": "1"
+      },
+      "type": "opamp",
+      "values": {
+        "vRailMax": 33.0,
+        "vRailMin": -33.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 282,
+        "y": 53
+      }
+    },
+    {
+      "id": "PA Positive Supply",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 36
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 282,
+        "y": 43
+      }
+    },
+    {
+      "id": "PA Negative Supply",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -36
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 282,
+        "y": 65
+      }
+    },
+    {
+      "id": "PA Emitter Ballast",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 0.33
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 300,
+        "y": 53
+      }
+    },
+    {
+      "id": "PA C60",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 330,
+        "y": 66
+      }
+    },
+    {
+      "id": "PA R119",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 330,
+        "y": 78
+      }
+    },
+    {
+      "id": "PA Zobel Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 330,
+        "y": 90
+      }
+    },
+    {
+      "id": "PA R61",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 33000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 285,
+        "y": 76
+      }
+    },
+    {
+      "id": "PA R59",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 287,
+        "y": 87
+      }
+    },
+    {
+      "id": "PA R62",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 300,
+        "y": 81
+      }
+    },
+    {
+      "id": "PA R60",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 470
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 292,
+        "y": 98
+      }
+    },
+    {
+      "id": "PA C55",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 308,
+        "y": 98
+      }
+    },
+    {
+      "id": "PA C20",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.0001
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 308,
+        "y": 89
+      }
+    },
+    {
+      "id": "PA Speaker Load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 319,
+        "y": 65
+      }
+    },
+    {
+      "id": "PA R120",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 0.33
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 319,
+        "y": 79
+      }
+    },
+    {
+      "id": "PA Speaker Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 319,
+        "y": 91
       }
     }
   ],
-  "description": "Marshall Valvestate 8100 (model 8080/8100 preamp, Iss.1), overdrive channel. Input buffer, op-amp gain stage with GAIN pot, diode clipper, ECC83 on the low HT rail, Marshall-style tone stack, volume and output op-amp (contour left out). Knobs are set as a starting point for a tight, mid-forward Chuck Schuldiner death-metal voicing. Parts values are partly read from a low-resolution scan and partly estimated; power amp not modelled.",
+  "description": "Marshall Valvestate 8100 (model 8080/8100 preamp, Iss.1), overdrive channel. Input buffer, op-amp gain stage with GAIN pot, diode clipper, ECC83 on the low HT rail, Marshall-style tone stack, volume and output op-amp (contour left out). Knobs are set as a starting point for a tight, mid-forward Chuck Schuldiner death-metal voicing. Parts values are partly read from a low-resolution scan and partly estimated. The reduced PC0689P class-AB stage retains the speaker current and voltage feedback network.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -1415,7 +1749,7 @@
       "VOLUME"
     ]
   },
-  "name": "Marshall Valvestate 8100 - OD (Chuck Schuldiner)",
+  "name": "Marshall Valvestate 8100 - Boost Channel",
   "version": 3,
   "wires": [
     {
@@ -3143,6 +3477,398 @@
         {
           "x": 241,
           "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 247,
+          "y": 54
+        },
+        {
+          "x": 241,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 279,
+          "y": 54
+        },
+        {
+          "x": 269,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 298,
+          "y": 53
+        },
+        {
+          "x": 285,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 282,
+          "y": 43
+        },
+        {
+          "x": 282,
+          "y": 50
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 282,
+          "y": 65
+        },
+        {
+          "x": 282,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 330,
+          "y": 76
+        },
+        {
+          "x": 330,
+          "y": 68
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 330,
+          "y": 88
+        },
+        {
+          "x": 330,
+          "y": 80
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 306,
+          "y": 98
+        },
+        {
+          "x": 294,
+          "y": 98
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 319,
+          "y": 89
+        },
+        {
+          "x": 319,
+          "y": 81
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 257,
+          "y": 72
+        },
+        {
+          "x": 257,
+          "y": 67
+        },
+        {
+          "x": 255,
+          "y": 67
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 263,
+          "y": 67
+        },
+        {
+          "x": 257,
+          "y": 67
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 300,
+          "y": 83
+        },
+        {
+          "x": 289,
+          "y": 83
+        },
+        {
+          "x": 289,
+          "y": 87
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 306,
+          "y": 89
+        },
+        {
+          "x": 300,
+          "y": 89
+        },
+        {
+          "x": 300,
+          "y": 83
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 255,
+          "y": 63
+        },
+        {
+          "x": 255,
+          "y": 54
+        },
+        {
+          "x": 251,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 263,
+          "y": 63
+        },
+        {
+          "x": 255,
+          "y": 63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 265,
+          "y": 54
+        },
+        {
+          "x": 255,
+          "y": 54
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 287,
+          "y": 76
+        },
+        {
+          "x": 287,
+          "y": 66
+        },
+        {
+          "x": 278,
+          "y": 66
+        },
+        {
+          "x": 278,
+          "y": 52
+        },
+        {
+          "x": 279,
+          "y": 52
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 285,
+          "y": 87
+        },
+        {
+          "x": 285,
+          "y": 78
+        },
+        {
+          "x": 287,
+          "y": 78
+        },
+        {
+          "x": 287,
+          "y": 76
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 290,
+          "y": 98
+        },
+        {
+          "x": 285,
+          "y": 98
+        },
+        {
+          "x": 285,
+          "y": 87
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 310,
+          "y": 89
+        },
+        {
+          "x": 310,
+          "y": 98
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 319,
+          "y": 77
+        },
+        {
+          "x": 310,
+          "y": 77
+        },
+        {
+          "x": 310,
+          "y": 89
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 319,
+          "y": 67
+        },
+        {
+          "x": 319,
+          "y": 77
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 319,
+          "y": 63
+        },
+        {
+          "x": 302,
+          "y": 63
+        },
+        {
+          "x": 302,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 330,
+          "y": 64
+        },
+        {
+          "x": 330,
+          "y": 63
+        },
+        {
+          "x": 319,
+          "y": 63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 300,
+          "y": 79
+        },
+        {
+          "x": 300,
+          "y": 63
+        },
+        {
+          "x": 302,
+          "y": 63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 283,
+          "y": 76
+        },
+        {
+          "x": 283,
+          "y": 74
+        },
+        {
+          "x": 300,
+          "y": 74
+        },
+        {
+          "x": 300,
+          "y": 76
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 342,
+          "y": 53
+        },
+        {
+          "x": 330,
+          "y": 53
+        },
+        {
+          "x": 330,
+          "y": 63
         }
       ]
     }

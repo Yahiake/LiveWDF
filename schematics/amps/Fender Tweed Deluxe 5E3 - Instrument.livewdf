@@ -1,9 +1,842 @@
 {
-  "version": 3,
-  "name": "Fender Tweed Deluxe 5E3 - Instrument",
   "author": "LiveWDF",
   "category": "Amp",
-  "description": "Fender 5E3 Instrument channel, interactive volumes and tone, 12AX7 cathodyne and cathode-biased 6V6 pair. Fixed supply at Fender \u201957 service voltages and estimated 8.5 k\u03a9:8 \u03a9 transformer. Power Amp off uses the calibrated preamp tap.",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {
+        "referenceMillivoltsRms": 77.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 0,
+        "y": 23
+      }
+    },
+    {
+      "id": "R-In-Instrument",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 5,
+        "y": 30
+      }
+    },
+    {
+      "id": "GND1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 5,
+        "y": 36
+      }
+    },
+    {
+      "id": "R-Grid-Instrument",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 34000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 12,
+        "y": 23
+      }
+    },
+    {
+      "id": "B+",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 250
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 51,
+        "y": 0
+      }
+    },
+    {
+      "id": "V1A",
+      "properties": {
+        "model": "12AY7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 23
+      }
+    },
+    {
+      "id": "R-Instrument-Plate",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 13
+      }
+    },
+    {
+      "id": "V1B",
+      "properties": {
+        "model": "12AY7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 55
+      }
+    },
+    {
+      "id": "R-Microphone-Plate",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 46
+      }
+    },
+    {
+      "id": "R-Grid-Microphone",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 34000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 12,
+        "y": 55
+      }
+    },
+    {
+      "id": "GND2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 6,
+        "y": 60
+      }
+    },
+    {
+      "id": "R-Shared-Cathode",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 820
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 34
+      }
+    },
+    {
+      "id": "C-Shared-Cathode",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 34
+      }
+    },
+    {
+      "id": "GND3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 25,
+        "y": 40
+      }
+    },
+    {
+      "id": "C-Instrument",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 32,
+        "y": 19
+      }
+    },
+    {
+      "id": "Instrument Volume",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.69,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 22
+      }
+    },
+    {
+      "id": "GND4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 31
+      }
+    },
+    {
+      "id": "C-Microphone",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 32,
+        "y": 50
+      }
+    },
+    {
+      "id": "Microphone Volume",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.35,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 53
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 42,
+        "y": 63
+      }
+    },
+    {
+      "id": "C-Brightness",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 5e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 52,
+        "y": 16
+      }
+    },
+    {
+      "id": "Tone",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.63,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 61,
+        "y": 24
+      }
+    },
+    {
+      "id": "C-Tone",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 5e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 61,
+        "y": 34
+      }
+    },
+    {
+      "id": "GND6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 61,
+        "y": 40
+      }
+    },
+    {
+      "id": "V2A",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 24
+      }
+    },
+    {
+      "id": "V2A-RP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 16
+      }
+    },
+    {
+      "id": "V2A-RK",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1500.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 32
+      }
+    },
+    {
+      "id": "V2A-CK",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 82,
+        "y": 32
+      }
+    },
+    {
+      "id": "GND7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 76,
+        "y": 38
+      }
+    },
+    {
+      "id": "C-Cathodyne-Coupling",
+      "properties": {
+        "preampTap": "b"
+      },
+      "type": "cap",
+      "values": {
+        "preampFullScaleVolts": 444.58713,
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 87,
+        "y": 18
+      }
+    },
+    {
+      "id": "R-Cathodyne-Load",
+      "properties": {
+        "preampOnly": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 25
+      }
+    },
+    {
+      "id": "GND8",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 31
+      }
+    },
+    {
+      "id": "Cathodyne",
+      "properties": {
+        "model": "12AX7",
+        "powerAmp": "1"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 18
+      }
+    },
+    {
+      "id": "PI B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 250
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 0
+      }
+    },
+    {
+      "id": "Cathodyne anode",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 56000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 9
+      }
+    },
+    {
+      "id": "Cathodyne bias",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 27
+      }
+    },
+    {
+      "id": "Cathodyne tail",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 56000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 37
+      }
+    },
+    {
+      "id": "Cathodyne grid",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 108,
+        "y": 29
+      }
+    },
+    {
+      "id": "PA-GPI",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 44
+      }
+    },
+    {
+      "id": "Output A",
+      "properties": {
+        "model": "6V6",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 20
+      }
+    },
+    {
+      "id": "Output B",
+      "properties": {
+        "model": "6V6",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 46
+      }
+    },
+    {
+      "id": "Grid stopper A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 152,
+        "y": 21
+      }
+    },
+    {
+      "id": "Grid stopper B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 152,
+        "y": 47
+      }
+    },
+    {
+      "id": "Output coupling A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 137,
+        "y": 14
+      }
+    },
+    {
+      "id": "Output coupling B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 137,
+        "y": 40
+      }
+    },
+    {
+      "id": "Output grid leak A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 144,
+        "y": 27
+      }
+    },
+    {
+      "id": "Output grid leak B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 144,
+        "y": 56
+      }
+    },
+    {
+      "id": "Screen B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 320
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 176,
+        "y": 4
+      }
+    },
+    {
+      "id": "Output B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 370
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 182,
+        "y": 0
+      }
+    },
+    {
+      "id": "Output cathodes",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 250
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 164,
+        "y": 59
+      }
+    },
+    {
+      "id": "Cathode bypass",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 171,
+        "y": 59
+      }
+    },
+    {
+      "id": "PA-GK",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 165,
+        "y": 66
+      }
+    },
+    {
+      "id": "OT1",
+      "properties": {
+        "model": "Real — Auto",
+        "powerAmp": "1"
+      },
+      "type": "transformer_ct",
+      "values": {
+        "turnsPrimary": 32.59601202601324,
+        "turnsSecondary": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 184,
+        "y": 32
+      }
+    },
+    {
+      "id": "Speaker load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 8
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 195,
+        "y": 37
+      }
+    },
+    {
+      "id": "PA-G9",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 195,
+        "y": 44
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 147.09868
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 205,
+        "y": 29
+      }
+    }
+  ],
+  "description": "Fender 5E3 Instrument channel, interactive volumes and tone, 12AX7 cathodyne and cathode-biased 6V6 pair. Fixed supply at Fender ’57 service voltages and estimated 8.5 kΩ:8 Ω transformer. Power Amp off uses the calibrated preamp tap.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -16,841 +849,8 @@
       "Tone"
     ]
   },
-  "components": [
-    {
-      "id": "IN1",
-      "type": "in",
-      "values": {
-        "referenceMillivoltsRms": 77.5
-      },
-      "properties": {},
-      "visual": {
-        "x": 0,
-        "y": 23,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-In-Instrument",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 5,
-        "y": 30,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND1",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 5,
-        "y": 36,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Grid-Instrument",
-      "type": "res",
-      "values": {
-        "value": 34000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 12,
-        "y": 23,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "B+",
-      "type": "rail",
-      "values": {
-        "dc": 250
-      },
-      "properties": {},
-      "visual": {
-        "x": 51,
-        "y": 0,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1A",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AY7"
-      },
-      "visual": {
-        "x": 22,
-        "y": 23,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Instrument-Plate",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 13,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1B",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AY7"
-      },
-      "visual": {
-        "x": 22,
-        "y": 55,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Microphone-Plate",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 46,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Grid-Microphone",
-      "type": "res",
-      "values": {
-        "value": 34000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 12,
-        "y": 55,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND2",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 6,
-        "y": 60,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Shared-Cathode",
-      "type": "res",
-      "values": {
-        "value": 820
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 34,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Shared-Cathode",
-      "type": "cap",
-      "values": {
-        "value": 2.5e-05
-      },
-      "properties": {},
-      "visual": {
-        "x": 28,
-        "y": 34,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND3",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 25,
-        "y": 40,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Instrument",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {},
-      "visual": {
-        "x": 32,
-        "y": 19,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Instrument Volume",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.69
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 42,
-        "y": 22,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND4",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 42,
-        "y": 31,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Microphone",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {},
-      "visual": {
-        "x": 32,
-        "y": 50,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Microphone Volume",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.35
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 42,
-        "y": 53,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND5",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 42,
-        "y": 63,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Brightness",
-      "type": "cap",
-      "values": {
-        "value": 5e-10
-      },
-      "properties": {},
-      "visual": {
-        "x": 52,
-        "y": 16,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Tone",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.63
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 61,
-        "y": 24,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Tone",
-      "type": "cap",
-      "values": {
-        "value": 5e-09
-      },
-      "properties": {},
-      "visual": {
-        "x": 61,
-        "y": 34,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND6",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 61,
-        "y": 40,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7"
-      },
-      "visual": {
-        "x": 76,
-        "y": 24,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A-RP",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 76,
-        "y": 16,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A-RK",
-      "type": "res",
-      "values": {
-        "value": 1500.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 76,
-        "y": 32,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A-CK",
-      "type": "cap",
-      "values": {
-        "value": 2.5e-05
-      },
-      "properties": {},
-      "visual": {
-        "x": 82,
-        "y": 32,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND7",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 76,
-        "y": 38,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Cathodyne-Coupling",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08,
-        "preampFullScaleVolts": 444.58713
-      },
-      "properties": {
-        "preampTap": "b"
-      },
-      "visual": {
-        "x": 87,
-        "y": 18,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Cathodyne-Load",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {
-        "preampOnly": "1"
-      },
-      "visual": {
-        "x": 95,
-        "y": 25,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND8",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 95,
-        "y": 31,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathodyne",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 18,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI B+",
-      "type": "rail",
-      "values": {
-        "dc": 250
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 0,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathodyne anode",
-      "type": "res",
-      "values": {
-        "value": 56000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 9,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathodyne bias",
-      "type": "res",
-      "values": {
-        "value": 1500
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 27,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathodyne tail",
-      "type": "res",
-      "values": {
-        "value": 56000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 37,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathodyne grid",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 108,
-        "y": 29,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PA-GPI",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 118,
-        "y": 44,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output A",
-      "type": "pentode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "6V6",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 162,
-        "y": 20,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output B",
-      "type": "pentode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "6V6",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 162,
-        "y": 46,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Grid stopper A",
-      "type": "res",
-      "values": {
-        "value": 1500
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 152,
-        "y": 21,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Grid stopper B",
-      "type": "res",
-      "values": {
-        "value": 1500
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 152,
-        "y": 47,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output coupling A",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 137,
-        "y": 14,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output coupling B",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 137,
-        "y": 40,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output grid leak A",
-      "type": "res",
-      "values": {
-        "value": 220000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 144,
-        "y": 27,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output grid leak B",
-      "type": "res",
-      "values": {
-        "value": 220000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 144,
-        "y": 56,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Screen B+",
-      "type": "rail",
-      "values": {
-        "dc": 320
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 176,
-        "y": 4,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output B+",
-      "type": "rail",
-      "values": {
-        "dc": 370
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 182,
-        "y": 0,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output cathodes",
-      "type": "res",
-      "values": {
-        "value": 250
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 164,
-        "y": 59,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Cathode bypass",
-      "type": "cap",
-      "values": {
-        "value": 2.5e-05
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 171,
-        "y": 59,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PA-GK",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 165,
-        "y": 66,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "OT1",
-      "type": "transformer_ct",
-      "values": {
-        "turnsPrimary": 32.59601202601324,
-        "turnsSecondary": 1
-      },
-      "properties": {
-        "model": "Real \u2014 Auto",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 184,
-        "y": 32,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Speaker load",
-      "type": "res",
-      "values": {
-        "value": 8
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 195,
-        "y": 37,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PA-G9",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 195,
-        "y": 44,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "OUT1",
-      "type": "out",
-      "values": {
-        "fullScaleVolts": 147.09868
-      },
-      "properties": {},
-      "visual": {
-        "x": 205,
-        "y": 29,
-        "rotation": 0,
-        "flipped": false
-      }
-    }
-  ],
+  "name": "Fender Tweed Deluxe 5E3 - Instrument",
+  "version": 3,
   "wires": [
     {
       "points": [

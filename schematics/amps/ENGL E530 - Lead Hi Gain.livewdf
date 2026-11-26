@@ -846,9 +846,12 @@
     },
     {
       "id": "R send load",
-      "properties": {},
+      "properties": {
+        "preampTap": "a"
+      },
       "type": "res",
       "values": {
+        "preampFullScaleVolts": 1.4839007,
         "value": 47000.0
       },
       "visual": {
@@ -863,17 +866,454 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.4839007
+        "fullScaleVolts": 21.1916
       },
       "visual": {
-        "flipped": true,
+        "flipped": false,
         "rotation": 0,
-        "x": 16,
-        "y": 75
+        "x": 139,
+        "y": 111
+      }
+    },
+    {
+      "id": "PA Return 100n",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 25,
+        "y": 113
+      }
+    },
+    {
+      "id": "PA Return Grid",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 33,
+        "y": 123
+      }
+    },
+    {
+      "id": "PA Line Input",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 42,
+        "y": 113
+      }
+    },
+    {
+      "id": "TL074 Line Buffer",
+      "properties": {
+        "model": "TL072",
+        "powerAmp": "1"
+      },
+      "type": "opamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 58,
+        "y": 112
+      }
+    },
+    {
+      "id": "PA Line Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 49,
+        "y": 122
+      }
+    },
+    {
+      "id": "PA Line Fixed",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 49,
+        "y": 103
+      }
+    },
+    {
+      "id": "PA Line Level",
+      "properties": {
+        "label": "Line Level",
+        "powerAmp": "1",
+        "taper": "Linear"
+      },
+      "type": "varres",
+      "values": {
+        "maxR": 50000.0,
+        "pos": 0.15
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 59,
+        "y": 103
+      }
+    },
+    {
+      "id": "PA GND line input",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 33,
+        "y": 131
+      }
+    },
+    {
+      "id": "PA GND line",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 49,
+        "y": 130
+      }
+    },
+    {
+      "id": "PA Line +12",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 12
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 58,
+        "y": 107
+      }
+    },
+    {
+      "id": "PA Line -12",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -12
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 58,
+        "y": 122
+      }
+    },
+    {
+      "id": "PA Cabinet Select",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 73,
+        "y": 112
+      }
+    },
+    {
+      "id": "PA IC Input",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 82,
+        "y": 112
+      }
+    },
+    {
+      "id": "PA IC Input Load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 123
+      }
+    },
+    {
+      "id": "TBA820M",
+      "properties": {
+        "model": "TBA820M",
+        "powerAmp": "1"
+      },
+      "type": "opamp",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 104,
+        "y": 111
+      }
+    },
+    {
+      "id": "PA IC Internal Feedback",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 5900
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 110,
+        "y": 101
+      }
+    },
+    {
+      "id": "PA IC Gain",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 120
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 119
+      }
+    },
+    {
+      "id": "PA IC Gain Bypass",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.0001
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 127
+      }
+    },
+    {
+      "id": "PA IC Output Coupling",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.001
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 122,
+        "y": 111
+      }
+    },
+    {
+      "id": "PA Zobel",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 115,
+        "y": 120
+      }
+    },
+    {
+      "id": "PA Zobel Cap",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 115,
+        "y": 127
+      }
+    },
+    {
+      "id": "PA Speaker Load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 120
+      }
+    },
+    {
+      "id": "PA IC +4.5",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 4.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 104,
+        "y": 106
+      }
+    },
+    {
+      "id": "PA IC -4.5",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -4.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 104,
+        "y": 121
+      }
+    },
+    {
+      "id": "PA GND input",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 89,
+        "y": 132
+      }
+    },
+    {
+      "id": "PA GND gain",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 95,
+        "y": 135
+      }
+    },
+    {
+      "id": "PA GND Zobel",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 115,
+        "y": 135
+      }
+    },
+    {
+      "id": "PA Speaker Return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 130,
+        "y": 130
       }
     }
   ],
-  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails.",
+  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails. The switchable TBA820M practice amplifier drives a 4 Ω load through the original output coupling capacitor.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -889,7 +1329,7 @@
       "Lead Volume"
     ]
   },
-  "name": "ENGL E530 - Lead Hi Gain (Preamp)",
+  "name": "ENGL E530 - Lead Hi Gain",
   "version": 3,
   "wires": [
     {
@@ -1813,6 +2253,434 @@
         {
           "x": 135,
           "y": 27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 18,
+          "y": 75
+        },
+        {
+          "x": 10,
+          "y": 75
+        },
+        {
+          "x": 10,
+          "y": 113
+        },
+        {
+          "x": 23,
+          "y": 113
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 27,
+          "y": 113
+        },
+        {
+          "x": 33,
+          "y": 113
+        },
+        {
+          "x": 40,
+          "y": 113
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 33,
+          "y": 113
+        },
+        {
+          "x": 33,
+          "y": 121
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 44,
+          "y": 113
+        },
+        {
+          "x": 55,
+          "y": 113
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 51,
+          "y": 103
+        },
+        {
+          "x": 57,
+          "y": 103
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 47,
+          "y": 103
+        },
+        {
+          "x": 45,
+          "y": 103
+        },
+        {
+          "x": 45,
+          "y": 111
+        },
+        {
+          "x": 49,
+          "y": 111
+        },
+        {
+          "x": 55,
+          "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 49,
+          "y": 111
+        },
+        {
+          "x": 49,
+          "y": 120
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 61,
+          "y": 103
+        },
+        {
+          "x": 64,
+          "y": 103
+        },
+        {
+          "x": 64,
+          "y": 112
+        },
+        {
+          "x": 61,
+          "y": 112
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 33,
+          "y": 125
+        },
+        {
+          "x": 33,
+          "y": 129
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 49,
+          "y": 124
+        },
+        {
+          "x": 49,
+          "y": 128
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 58,
+          "y": 107
+        },
+        {
+          "x": 58,
+          "y": 109
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 58,
+          "y": 122
+        },
+        {
+          "x": 58,
+          "y": 115
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 64,
+          "y": 112
+        },
+        {
+          "x": 71,
+          "y": 112
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 75,
+          "y": 112
+        },
+        {
+          "x": 80,
+          "y": 112
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 84,
+          "y": 112
+        },
+        {
+          "x": 89,
+          "y": 112
+        },
+        {
+          "x": 101,
+          "y": 112
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 112
+        },
+        {
+          "x": 89,
+          "y": 121
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 101,
+          "y": 110
+        },
+        {
+          "x": 95,
+          "y": 110
+        },
+        {
+          "x": 95,
+          "y": 101
+        },
+        {
+          "x": 108,
+          "y": 101
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 95,
+          "y": 110
+        },
+        {
+          "x": 95,
+          "y": 117
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 95,
+          "y": 121
+        },
+        {
+          "x": 95,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 112,
+          "y": 101
+        },
+        {
+          "x": 115,
+          "y": 101
+        },
+        {
+          "x": 115,
+          "y": 111
+        },
+        {
+          "x": 107,
+          "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 111
+        },
+        {
+          "x": 120,
+          "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 111
+        },
+        {
+          "x": 115,
+          "y": 118
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 122
+        },
+        {
+          "x": 115,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 106
+        },
+        {
+          "x": 104,
+          "y": 108
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 104,
+          "y": 121
+        },
+        {
+          "x": 104,
+          "y": 114
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 89,
+          "y": 125
+        },
+        {
+          "x": 89,
+          "y": 130
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 95,
+          "y": 129
+        },
+        {
+          "x": 95,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 129
+        },
+        {
+          "x": 115,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 124,
+          "y": 111
+        },
+        {
+          "x": 130,
+          "y": 111
+        },
+        {
+          "x": 130,
+          "y": 118
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 122
+        },
+        {
+          "x": 130,
+          "y": 128
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 130,
+          "y": 111
+        },
+        {
+          "x": 137,
+          "y": 111
         }
       ]
     }

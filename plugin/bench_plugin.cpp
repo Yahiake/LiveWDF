@@ -2219,6 +2219,7 @@ namespace livewdf {
 
 bool checkPowerAmp(const juce::File& file) {
     LiveWDFPluginProcessor processor;
+    processor.getAPVTS().getParameter("solve_quality")->setValueNotifyingHost(0.f);
     processor.setPlayConfigDetails(2, 2, kSampleRate, 128);
     processor.prepareToPlay(kSampleRate, 128);
     if (!processor.loadCircuitFromFile(file)) {
@@ -2229,16 +2230,29 @@ bool checkPowerAmp(const juce::File& file) {
     const auto* tap = doc.preampTap();
     if (tap == nullptr)
         return false;
-    const double fullScale = doc.outputFullScaleVolts();
-    const double preampScale = tap->values.at("preampFullScaleVolts");
-    const auto& circuit = processor.settledControlCircuit_;
+    wdf::LiveWDFDocument preamp;
+    std::string error;
+    if (!doc.makePreampDocument(preamp, error)) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        return false;
+    }
+    const auto activeDevices = [](const wdf::Circuit& circuit) {
+        return std::array{circuit.tri.size(), circuit.pent.size(), circuit.bjt.size(), circuit.opamp.size()};
+    };
+    const auto fullDevices = activeDevices(doc.toCircuit());
+    const auto preampDevices = activeDevices(preamp.toCircuit());
+    if (fullDevices == preampDevices)
+        return false;
+
     const auto checkMode = [&](bool enabled) {
-        const bool topology = enabled ? circuit.pent.size() == 1 && !circuit.ind.empty()
-                                      : circuit.pent.empty() && circuit.ind.empty();
-        if (topology && processor.outNodeIndex_ >= 0 &&
-            processor.getCircuitOutputFullScaleVolts() == (enabled ? fullScale : preampScale))
+        const auto& expected = enabled ? doc : preamp;
+        const auto& circuit = processor.settledControlCircuit_;
+        if (activeDevices(circuit) == (enabled ? fullDevices : preampDevices) &&
+            processor.outNodeIndex_ >= 0 &&
+            processor.leftEngine_->nodeIndex(expected.outputNet()) == processor.outNodeIndex_ &&
+            processor.getCircuitOutputFullScaleVolts() == expected.outputFullScaleVolts())
             return true;
-        std::fprintf(stderr, "Unexpected Champ topology or output scale with Power Amp %s\n",
+        std::fprintf(stderr, "Unexpected topology or output scale with Power Amp %s\n",
                      enabled ? "on" : "off");
         return false;
     };

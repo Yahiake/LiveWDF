@@ -410,6 +410,7 @@ bool LiveWDFDocument::makePreampDocument(LiveWDFDocument& preamp, std::string& e
     if (level != tap->values.end())
         out.values["fullScaleVolts"] = level->second;
     for (auto& part : drawing.components) {
+        part.properties.erase("preampOnly");
         if (part.type != "rail")
             continue;
         const auto dc = part.values.find("preampDc");

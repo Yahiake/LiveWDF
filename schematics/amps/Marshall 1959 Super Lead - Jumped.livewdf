@@ -1,9 +1,1233 @@
 {
-  "version": 3,
-  "name": "Marshall 1959 Super Lead - Jumped",
   "author": "LiveWDF",
   "category": "Amp",
-  "description": "Marshall 1981 Lead Series phase-splitter and 100 W EL34 power circuit. Matched EL34 pairs, fixed rails and bias, 4 \u03a9 output with Presence feedback. Power Amp off keeps the original calibrated preamp.",
+  "components": [
+    {
+      "id": "IN1",
+      "properties": {},
+      "type": "in",
+      "values": {
+        "referenceMillivoltsRms": 77.5
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 0,
+        "y": 25
+      }
+    },
+    {
+      "id": "R1-R2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 34000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 11,
+        "y": 18
+      }
+    },
+    {
+      "id": "R3-R4",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 34000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 11,
+        "y": 32
+      }
+    },
+    {
+      "id": "R-In-1",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 5,
+        "y": 39
+      }
+    },
+    {
+      "id": "R-In-2",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 11,
+        "y": 39
+      }
+    },
+    {
+      "id": "GND1",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 5,
+        "y": 45
+      }
+    },
+    {
+      "id": "B+",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 275
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": -5
+      }
+    },
+    {
+      "id": "R-Drop",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 43,
+        "y": -2
+      }
+    },
+    {
+      "id": "C-Filter",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 34,
+        "y": 4
+      }
+    },
+    {
+      "id": "GND2",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 34,
+        "y": 10
+      }
+    },
+    {
+      "id": "V1A",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 18
+      }
+    },
+    {
+      "id": "V1A-RP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 10
+      }
+    },
+    {
+      "id": "V1A-RK",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 820
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 26
+      }
+    },
+    {
+      "id": "V1A-CK",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 0.00033
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 26
+      }
+    },
+    {
+      "id": "GND3",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 32
+      }
+    },
+    {
+      "id": "V1B",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 45
+      }
+    },
+    {
+      "id": "V1B-RP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 37
+      }
+    },
+    {
+      "id": "V1B-RK",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2700.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 53
+      }
+    },
+    {
+      "id": "V1B-CK",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 6.8e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 53
+      }
+    },
+    {
+      "id": "GND4",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 22,
+        "y": 59
+      }
+    },
+    {
+      "id": "C-Normal",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 31,
+        "y": 18
+      }
+    },
+    {
+      "id": "C-Bright",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 31,
+        "y": 45
+      }
+    },
+    {
+      "id": "Normal Volume",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.53,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 40,
+        "y": 18
+      }
+    },
+    {
+      "id": "GND5",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 40,
+        "y": 27
+      }
+    },
+    {
+      "id": "High Treble Volume",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.63,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 40,
+        "y": 45
+      }
+    },
+    {
+      "id": "GND6",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 40,
+        "y": 54
+      }
+    },
+    {
+      "id": "C-Bright-Bypass",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 5e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 45,
+        "y": 38
+      }
+    },
+    {
+      "id": "R-Mix-Normal",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 53,
+        "y": 18
+      }
+    },
+    {
+      "id": "R-Mix-Bright",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 53,
+        "y": 45
+      }
+    },
+    {
+      "id": "C-Mix-Bright",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 53,
+        "y": 38
+      }
+    },
+    {
+      "id": "V2A",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 28
+      }
+    },
+    {
+      "id": "V2A-RP",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 20
+      }
+    },
+    {
+      "id": "V2A-RK",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 36
+      }
+    },
+    {
+      "id": "GND7",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 42
+      }
+    },
+    {
+      "id": "V2B",
+      "properties": {
+        "model": "12AX7"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 78,
+        "y": 22
+      }
+    },
+    {
+      "id": "R-Cathode-Follower",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 78,
+        "y": 31
+      }
+    },
+    {
+      "id": "GND8",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 78,
+        "y": 37
+      }
+    },
+    {
+      "id": "C-Treble",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 100,
+        "y": 25
+      }
+    },
+    {
+      "id": "R-Slope",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 33000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 90,
+        "y": 33
+      }
+    },
+    {
+      "id": "C-Bass",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 100,
+        "y": 33
+      }
+    },
+    {
+      "id": "C-Middle",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 100,
+        "y": 41
+      }
+    },
+    {
+      "id": "Treble",
+      "properties": {
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.52,
+        "totalR": 250000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 29
+      }
+    },
+    {
+      "id": "Bass",
+      "properties": {
+        "taper": "Log"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.54,
+        "totalR": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 38
+      }
+    },
+    {
+      "id": "Middle",
+      "properties": {
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.58,
+        "totalR": 25000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 110,
+        "y": 47
+      }
+    },
+    {
+      "id": "GND9",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 53
+      }
+    },
+    {
+      "id": "C-PI-Coupling",
+      "properties": {
+        "preampTap": "b"
+      },
+      "type": "cap",
+      "values": {
+        "preampFullScaleVolts": 240.79382,
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 120,
+        "y": 29
+      }
+    },
+    {
+      "id": "R-PI-Load",
+      "properties": {
+        "preampOnly": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 129,
+        "y": 36
+      }
+    },
+    {
+      "id": "GND10",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 129,
+        "y": 43
+      }
+    },
+    {
+      "id": "PI-A",
+      "properties": {
+        "model": "12AX7",
+        "powerAmp": "1"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 150,
+        "y": 29
+      }
+    },
+    {
+      "id": "PI-B",
+      "properties": {
+        "model": "12AX7",
+        "powerAmp": "1"
+      },
+      "type": "triode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 150,
+        "y": 56
+      }
+    },
+    {
+      "id": "PI plate A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 82000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 150,
+        "y": 20
+      }
+    },
+    {
+      "id": "PI plate B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 150,
+        "y": 46
+      }
+    },
+    {
+      "id": "PI B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 320
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 158,
+        "y": 11
+      }
+    },
+    {
+      "id": "PI grid A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 141,
+        "y": 37
+      }
+    },
+    {
+      "id": "PI grid B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 141,
+        "y": 56
+      }
+    },
+    {
+      "id": "PI cathodes",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 470
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 154,
+        "y": 40
+      }
+    },
+    {
+      "id": "PI tail",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 158,
+        "y": 65
+      }
+    },
+    {
+      "id": "PI stability",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 158,
+        "y": 35
+      }
+    },
+    {
+      "id": "PI reference",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 142,
+        "y": 68
+      }
+    },
+    {
+      "id": "Feedback",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 195,
+        "y": 84
+      }
+    },
+    {
+      "id": "Feedback shunt",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 160,
+        "y": 76
+      }
+    },
+    {
+      "id": "Presence capacitor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 151,
+        "y": 73
+      }
+    },
+    {
+      "id": "Presence",
+      "properties": {
+        "powerAmp": "1",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.62,
+        "totalR": 22000.0
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 143,
+        "y": 74
+      }
+    },
+    {
+      "id": "PA-GFB",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 159,
+        "y": 83
+      }
+    },
+    {
+      "id": "Output A",
+      "properties": {
+        "model": "EL34PAIR",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 196,
+        "y": 31
+      }
+    },
+    {
+      "id": "Output B",
+      "properties": {
+        "model": "EL34PAIR",
+        "powerAmp": "1"
+      },
+      "type": "pentode",
+      "values": {
+        "value": 0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 196,
+        "y": 57
+      }
+    },
+    {
+      "id": "Grid stopper A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 2800
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 186,
+        "y": 32
+      }
+    },
+    {
+      "id": "Grid stopper B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 2800
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 186,
+        "y": 58
+      }
+    },
+    {
+      "id": "Output coupling A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 171,
+        "y": 25
+      }
+    },
+    {
+      "id": "Output coupling B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 171,
+        "y": 51
+      }
+    },
+    {
+      "id": "Output grid leak A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 178,
+        "y": 38
+      }
+    },
+    {
+      "id": "Output grid leak B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 178,
+        "y": 67
+      }
+    },
+    {
+      "id": "Grid bias",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": -42
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 183,
+        "y": 78
+      }
+    },
+    {
+      "id": "Screen A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 205,
+        "y": 31
+      }
+    },
+    {
+      "id": "Screen B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 500
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 205,
+        "y": 57
+      }
+    },
+    {
+      "id": "Screen B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 468
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 210,
+        "y": 15
+      }
+    },
+    {
+      "id": "Output B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 470
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 216,
+        "y": 11
+      }
+    },
+    {
+      "id": "PA-GK",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 197,
+        "y": 69
+      }
+    },
+    {
+      "id": "OT1",
+      "properties": {
+        "model": "Real — Auto",
+        "powerAmp": "1"
+      },
+      "type": "transformer_ct",
+      "values": {
+        "turnsPrimary": 20.615528128088304,
+        "turnsSecondary": 1
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 218,
+        "y": 43
+      }
+    },
+    {
+      "id": "Speaker load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 229,
+        "y": 48
+      }
+    },
+    {
+      "id": "PA-G9",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 229,
+        "y": 55
+      }
+    },
+    {
+      "id": "OUT1",
+      "properties": {},
+      "type": "out",
+      "values": {
+        "fullScaleVolts": 514.40636
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 239,
+        "y": 40
+      }
+    }
+  ],
+  "description": "Marshall 1981 Lead Series phase-splitter and 100 W EL34 power circuit. Matched EL34 pairs, fixed rails and bias, 4 Ω output with Presence feedback. Power Amp off keeps the original calibrated preamp.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -19,1232 +1243,8 @@
       "Presence"
     ]
   },
-  "components": [
-    {
-      "id": "IN1",
-      "type": "in",
-      "values": {
-        "referenceMillivoltsRms": 77.5
-      },
-      "properties": {},
-      "visual": {
-        "x": 0,
-        "y": 25,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R1-R2",
-      "type": "res",
-      "values": {
-        "value": 34000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 11,
-        "y": 18,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R3-R4",
-      "type": "res",
-      "values": {
-        "value": 34000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 11,
-        "y": 32,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-In-1",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 5,
-        "y": 39,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-In-2",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 11,
-        "y": 39,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND1",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 5,
-        "y": 45,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "B+",
-      "type": "rail",
-      "values": {
-        "dc": 275
-      },
-      "properties": {},
-      "visual": {
-        "x": 52,
-        "y": -5,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Drop",
-      "type": "res",
-      "values": {
-        "value": 10000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 43,
-        "y": -2,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Filter",
-      "type": "cap",
-      "values": {
-        "value": 5e-05
-      },
-      "properties": {},
-      "visual": {
-        "x": 34,
-        "y": 4,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND2",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 34,
-        "y": 10,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1A",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7"
-      },
-      "visual": {
-        "x": 22,
-        "y": 18,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1A-RP",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 10,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1A-RK",
-      "type": "res",
-      "values": {
-        "value": 820
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 26,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1A-CK",
-      "type": "cap",
-      "values": {
-        "value": 0.00033
-      },
-      "properties": {},
-      "visual": {
-        "x": 28,
-        "y": 26,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND3",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 32,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1B",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7"
-      },
-      "visual": {
-        "x": 22,
-        "y": 45,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1B-RP",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 37,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1B-RK",
-      "type": "res",
-      "values": {
-        "value": 2700.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 53,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V1B-CK",
-      "type": "cap",
-      "values": {
-        "value": 6.8e-07
-      },
-      "properties": {},
-      "visual": {
-        "x": 28,
-        "y": 53,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND4",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 22,
-        "y": 59,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Normal",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {},
-      "visual": {
-        "x": 31,
-        "y": 18,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Bright",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {},
-      "visual": {
-        "x": 31,
-        "y": 45,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Normal Volume",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.53
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 40,
-        "y": 18,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND5",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 40,
-        "y": 27,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "High Treble Volume",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.63
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 40,
-        "y": 45,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND6",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 40,
-        "y": 54,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Bright-Bypass",
-      "type": "cap",
-      "values": {
-        "value": 5e-09
-      },
-      "properties": {},
-      "visual": {
-        "x": 45,
-        "y": 38,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Mix-Normal",
-      "type": "res",
-      "values": {
-        "value": 470000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 53,
-        "y": 18,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Mix-Bright",
-      "type": "res",
-      "values": {
-        "value": 470000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 53,
-        "y": 45,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Mix-Bright",
-      "type": "cap",
-      "values": {
-        "value": 4.7e-10
-      },
-      "properties": {},
-      "visual": {
-        "x": 53,
-        "y": 38,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7"
-      },
-      "visual": {
-        "x": 65,
-        "y": 28,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A-RP",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 65,
-        "y": 20,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2A-RK",
-      "type": "res",
-      "values": {
-        "value": 1000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 65,
-        "y": 36,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND7",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 65,
-        "y": 42,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "V2B",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7"
-      },
-      "visual": {
-        "x": 78,
-        "y": 22,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Cathode-Follower",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 78,
-        "y": 31,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND8",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 78,
-        "y": 37,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Treble",
-      "type": "cap",
-      "values": {
-        "value": 4.7e-10
-      },
-      "properties": {},
-      "visual": {
-        "x": 100,
-        "y": 25,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-Slope",
-      "type": "res",
-      "values": {
-        "value": 33000.0
-      },
-      "properties": {},
-      "visual": {
-        "x": 90,
-        "y": 33,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Bass",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {},
-      "visual": {
-        "x": 100,
-        "y": 33,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-Middle",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {},
-      "visual": {
-        "x": 100,
-        "y": 41,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Treble",
-      "type": "pot",
-      "values": {
-        "totalR": 250000.0,
-        "pos": 0.52
-      },
-      "properties": {
-        "taper": "Linear"
-      },
-      "visual": {
-        "x": 110,
-        "y": 29,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Bass",
-      "type": "pot",
-      "values": {
-        "totalR": 1000000.0,
-        "pos": 0.54
-      },
-      "properties": {
-        "taper": "Log"
-      },
-      "visual": {
-        "x": 110,
-        "y": 38,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Middle",
-      "type": "pot",
-      "values": {
-        "totalR": 25000.0,
-        "pos": 0.58
-      },
-      "properties": {
-        "taper": "Linear"
-      },
-      "visual": {
-        "x": 110,
-        "y": 47,
-        "rotation": 0,
-        "flipped": true
-      }
-    },
-    {
-      "id": "GND9",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 110,
-        "y": 53,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "C-PI-Coupling",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08,
-        "preampFullScaleVolts": 240.79382
-      },
-      "properties": {
-        "preampTap": "b"
-      },
-      "visual": {
-        "x": 120,
-        "y": 29,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "R-PI-Load",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {
-        "preampOnly": "1"
-      },
-      "visual": {
-        "x": 129,
-        "y": 36,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "GND10",
-      "type": "gnd",
-      "values": {},
-      "properties": {},
-      "visual": {
-        "x": 129,
-        "y": 43,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI-A",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 150,
-        "y": 29,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI-B",
-      "type": "triode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "12AX7",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 150,
-        "y": 56,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI plate A",
-      "type": "res",
-      "values": {
-        "value": 82000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 150,
-        "y": 20,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI plate B",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 150,
-        "y": 46,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI B+",
-      "type": "rail",
-      "values": {
-        "dc": 320
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 158,
-        "y": 11,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI grid A",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 141,
-        "y": 37,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI grid B",
-      "type": "res",
-      "values": {
-        "value": 1000000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 141,
-        "y": 56,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI cathodes",
-      "type": "res",
-      "values": {
-        "value": 470
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 154,
-        "y": 40,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI tail",
-      "type": "res",
-      "values": {
-        "value": 10000
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 158,
-        "y": 65,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI stability",
-      "type": "cap",
-      "values": {
-        "value": 4.7e-11
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 158,
-        "y": 35,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PI reference",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 142,
-        "y": 68,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Feedback",
-      "type": "res",
-      "values": {
-        "value": 100000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 195,
-        "y": 84,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Feedback shunt",
-      "type": "res",
-      "values": {
-        "value": 4700
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 160,
-        "y": 76,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Presence capacitor",
-      "type": "cap",
-      "values": {
-        "value": 1e-07
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 151,
-        "y": 73,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Presence",
-      "type": "pot",
-      "values": {
-        "totalR": 22000.0,
-        "pos": 0.62
-      },
-      "properties": {
-        "taper": "Linear",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 143,
-        "y": 74,
-        "rotation": 0,
-        "flipped": true
-      }
-    },
-    {
-      "id": "PA-GFB",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 159,
-        "y": 83,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output A",
-      "type": "pentode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "EL34PAIR",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 196,
-        "y": 31,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output B",
-      "type": "pentode",
-      "values": {
-        "value": 0
-      },
-      "properties": {
-        "model": "EL34PAIR",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 196,
-        "y": 57,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Grid stopper A",
-      "type": "res",
-      "values": {
-        "value": 2800
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 186,
-        "y": 32,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Grid stopper B",
-      "type": "res",
-      "values": {
-        "value": 2800
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 186,
-        "y": 58,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output coupling A",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 171,
-        "y": 25,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output coupling B",
-      "type": "cap",
-      "values": {
-        "value": 2.2e-08
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 171,
-        "y": 51,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output grid leak A",
-      "type": "res",
-      "values": {
-        "value": 220000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 178,
-        "y": 38,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output grid leak B",
-      "type": "res",
-      "values": {
-        "value": 220000.0
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 178,
-        "y": 67,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Grid bias",
-      "type": "rail",
-      "values": {
-        "dc": -42
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 183,
-        "y": 78,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Screen A",
-      "type": "res",
-      "values": {
-        "value": 500
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 205,
-        "y": 31,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Screen B",
-      "type": "res",
-      "values": {
-        "value": 500
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 205,
-        "y": 57,
-        "rotation": 270,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Screen B+",
-      "type": "rail",
-      "values": {
-        "dc": 468
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 210,
-        "y": 15,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Output B+",
-      "type": "rail",
-      "values": {
-        "dc": 470
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 216,
-        "y": 11,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PA-GK",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 197,
-        "y": 69,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "OT1",
-      "type": "transformer_ct",
-      "values": {
-        "turnsPrimary": 20.615528128088304,
-        "turnsSecondary": 1
-      },
-      "properties": {
-        "model": "Real \u2014 Auto",
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 218,
-        "y": 43,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "Speaker load",
-      "type": "res",
-      "values": {
-        "value": 4
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 229,
-        "y": 48,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "PA-G9",
-      "type": "gnd",
-      "values": {},
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": 229,
-        "y": 55,
-        "rotation": 0,
-        "flipped": false
-      }
-    },
-    {
-      "id": "OUT1",
-      "type": "out",
-      "values": {
-        "fullScaleVolts": 514.40636
-      },
-      "properties": {},
-      "visual": {
-        "x": 239,
-        "y": 40,
-        "rotation": 0,
-        "flipped": false
-      }
-    }
-  ],
+  "name": "Marshall 1959 Super Lead - Jumped",
+  "version": 3,
   "wires": [
     {
       "points": [

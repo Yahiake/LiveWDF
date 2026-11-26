@@ -70,6 +70,8 @@ enum class OpAmpType {
     Lm324,
     Mci2001,
     Lm358,
+    Tba820M,
+    DiscreteClassAB,
 };
 
 inline OpAmpType opAmpTypeFromString(std::string_view name) {
@@ -91,6 +93,8 @@ inline OpAmpType opAmpTypeFromString(std::string_view name) {
     if (lower == "mci2001" || lower == "mci-2001") return OpAmpType::Mci2001;
     if (lower == "api2520") return OpAmpType::Api2520;
     if (lower == "lm358") return OpAmpType::Lm358;
+    if (lower == "tba820m") return OpAmpType::Tba820M;
+    if (lower == "discrete class-ab") return OpAmpType::DiscreteClassAB;
     if (lower == "lm324" || lower == "lm324-n") return OpAmpType::Lm324;
     if (lower == "m5218al" || lower == "m5218a" || lower == "m5218ap" || lower == "m5218afp")
         return OpAmpType::M5218Al;
@@ -124,6 +128,8 @@ inline const char* opAmpTypeName(OpAmpType type) {
         case OpAmpType::Api2520: return "API2520";
         case OpAmpType::Lm324: return "LM324";
         case OpAmpType::Lm358: return "LM358";
+        case OpAmpType::Tba820M: return "TBA820M";
+        case OpAmpType::DiscreteClassAB: return "Discrete Class-AB";
         case OpAmpType::M5218Al: return "M5218AL";
         case OpAmpType::Tl022: return "TL022";
         case OpAmpType::Mc33174: return "MC33174";
@@ -153,13 +159,17 @@ inline constexpr const char* kOpAmpTypeNames[] = {
     "LM308", "LM741", "NE5532", "CA3080", "OP07",
     "M5218AL", "TL022", "MC33174", "MC33179", "BA728N",
     "RC4558-Class-AB", "NJM4558-Class-AB", "TL082-Class-AB", "LM741-Class-AB", "TL061", "OP275", "API2520",
-    "LM324", "MCI2001", "LM358"};
+    "LM324", "MCI2001", "LM358", "TBA820M", "Discrete Class-AB"};
 inline constexpr int kNumOpAmpTypes =
     static_cast<int>(sizeof(kOpAmpTypeNames) / sizeof(kOpAmpTypeNames[0]));
 
 /// Absolute maximum supply voltage (V) for the package, not an operating point.
 inline double opAmpSupplyMax(OpAmpType type) {
     switch (type) {
+        case OpAmpType::Tba820M:
+            return 16.0;
+        case OpAmpType::DiscreteClassAB:
+            return 80.0;
         case OpAmpType::Ba728N:
             return 18.0;
         case OpAmpType::Mci2001:
@@ -429,6 +439,23 @@ struct OpAmpModel {
                 m.gbw = 1.0e6;
                 m.slewRate = 0.5;
                 m.setClassABOutput(25e-3, 6e-8, 1.9);
+                break;
+            case OpAmpType::Tba820M:
+                // ST data at 9 V: 75 dB open loop, 20 kHz bandwidth at 34 dB closed loop.
+                // The model is centered on the 4.5 V quiescent output.
+                m.openLoopGain = 5623.4;
+                m.gbw = 1.0e6;
+                m.slewRate = 1.0;
+                m.outputImpedance = 0.3;
+                m.setVMax(3.6);
+                break;
+            case OpAmpType::DiscreteClassAB:
+                // Closed-loop power-stage equivalents use their own feedback
+                // circuits and rail limits from the amplifier service data.
+                m.openLoopGain = 4000.0;
+                m.gbw = 1.0e6;
+                m.slewRate = 12.0;
+                m.outputImpedance = 0.04;
                 break;
             case OpAmpType::Tl061:
                 // TI SLOS078N, TL061C: 6 V/mV large-signal gain.

@@ -203,7 +203,7 @@ TEST_CASE("SPQR Pendant: reduceToTreeWithPendants produces valid tree for T-filt
     CHECK(!rendered.empty());
 }
 
-static void runUserCircuitTest(const std::string& path, const std::string& name) {
+static void runUserCircuitTest(const std::string& path, const std::string& name, bool preampOnly = false) {
     if (!std::filesystem::exists(path)) {
         WARN("user circuit not found, skipping: " << path);
         return;
@@ -216,6 +216,11 @@ static void runUserCircuitTest(const std::string& path, const std::string& name)
     if (!doc.loadFromFile(path, err)) {
         FAIL("Failed to load " << path << ": " << err);
         return;
+    }
+    if (preampOnly) {
+        wdf::LiveWDFDocument preamp;
+        REQUIRE(doc.makePreampDocument(preamp, err));
+        doc = std::move(preamp);
     }
     wdf::Circuit c = doc.toCircuit();
     std::cout << "Components: " << c.tri.size() << " triodes, "
@@ -366,15 +371,15 @@ TEST_CASE("User Circuit: Klon Centaur", "[user_circuits][klon]") {
 }
 
 TEST_CASE("User Circuit: Orange Rockerverb 50w Clean", "[user_circuits][rockerverb_clean]") {
-    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Clean Channel (Preamp only).livewdf", "Orange Rockerverb Clean");
+    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf", "Orange Rockerverb Clean", true);
 }
 
 TEST_CASE("User Circuit: Orange Rockerverb 50w Dirty", "[user_circuits][rockerverb_dirty]") {
-    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf", "Orange Rockerverb Dirty");
+    runUserCircuitTest("schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf", "Orange Rockerverb Dirty", true);
 }
 
 TEST_CASE("User Circuit: Mesa Boogie Dual Rectifier", "[user_circuits][dual_rectifier]") {
-    runUserCircuitTest("schematics/amps/Mesa Boogie Dual Rectifier (Preamp Only).livewdf", "Mesa Boogie Dual Rectifier");
+    runUserCircuitTest("schematics/amps/Mesa Boogie Dual Rectifier.livewdf", "Mesa Boogie Dual Rectifier", true);
 }
 
 TEST_CASE("User Circuit: Mesa Boogie Mark IIC+ (++) GEQ", "[user_circuits][mark_iic_geq]") {
