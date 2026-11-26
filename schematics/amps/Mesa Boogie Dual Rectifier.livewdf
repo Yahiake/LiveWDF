@@ -21,7 +21,7 @@
       "properties": {},
       "type": "res",
       "values": {
-        "value": 1000
+        "value": 1000000
       },
       "visual": {
         "flipped": false,
@@ -492,7 +492,9 @@
     },
     {
       "id": "VDC1",
-      "properties": {},
+      "properties": {
+        "preampOnly": "1"
+      },
       "type": "rail",
       "values": {
         "dc": 413
@@ -642,7 +644,9 @@
     },
     {
       "id": "VDC2",
-      "properties": {},
+      "properties": {
+        "preampOnly": "1"
+      },
       "type": "rail",
       "values": {
         "dc": 394
@@ -901,7 +905,9 @@
     },
     {
       "id": "VDC3",
-      "properties": {},
+      "properties": {
+        "preampOnly": "1"
+      },
       "type": "rail",
       "values": {
         "dc": 415
@@ -1467,7 +1473,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 566.59776
+        "fullScaleVolts": 485.53735
       },
       "visual": {
         "flipped": false,
@@ -1524,22 +1530,6 @@
         "rotation": 180,
         "x": 291,
         "y": 38
-      }
-    },
-    {
-      "id": "B+ phase inverter",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "rail",
-      "values": {
-        "dc": 412
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 284,
-        "y": -11
       }
     },
     {
@@ -1732,22 +1722,6 @@
         "rotation": 90,
         "x": 302,
         "y": 44
-      }
-    },
-    {
-      "id": "Power grid bias",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "rail",
-      "values": {
-        "dc": -51
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 306,
-        "y": 21
       }
     },
     {
@@ -2097,22 +2071,6 @@
       }
     },
     {
-      "id": "B+ output plates",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "rail",
-      "values": {
-        "dc": 475
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 352,
-        "y": -14
-      }
-    },
-    {
       "id": "Power supply choke",
       "properties": {
         "powerAmp": "1"
@@ -2140,8 +2098,8 @@
       "visual": {
         "flipped": false,
         "rotation": 90,
-        "x": 331,
-        "y": 15
+        "x": 320,
+        "y": -11
       }
     },
     {
@@ -2151,7 +2109,8 @@
       },
       "type": "cap",
       "values": {
-        "value": 4.7e-05
+        "value": 3e-05,
+        "initialVolts": 454
       },
       "visual": {
         "flipped": false,
@@ -2302,9 +2261,774 @@
         "x": 311,
         "y": 78
       }
+    },
+    {
+      "id": "561136 secondary 350 VAC A",
+      "properties": {
+        "powerAmp": "1",
+        "mode": "AC"
+      },
+      "type": "src",
+      "values": {
+        "ac": 494.9747468305833,
+        "freq": 60
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 318,
+        "y": -70
+      }
+    },
+    {
+      "id": "561136 center tap A",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 324,
+        "y": -64
+      }
+    },
+    {
+      "id": "561136 secondary 350 VAC B",
+      "properties": {
+        "powerAmp": "1",
+        "mode": "AC"
+      },
+      "type": "src",
+      "values": {
+        "ac": -494.9747468305833,
+        "freq": 60
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 388,
+        "y": -70
+      }
+    },
+    {
+      "id": "561136 center tap B",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 396,
+        "y": -70
+      }
+    },
+    {
+      "id": "561136 winding resistance 1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 48
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 318,
+        "y": -61
+      }
+    },
+    {
+      "id": "Rectifier selector pole 1",
+      "properties": {
+        "powerAmp": "1",
+        "label": "5U4 RECTIFIER",
+        "select": "0"
+      },
+      "type": "switch_res",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 318,
+        "y": -51
+      }
+    },
+    {
+      "id": "561136 winding resistance 2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 48
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 388,
+        "y": -61
+      }
+    },
+    {
+      "id": "Rectifier selector pole 2",
+      "properties": {
+        "powerAmp": "1",
+        "label": "5U4 RECTIFIER",
+        "select": "0"
+      },
+      "type": "switch_res",
+      "values": {},
+      "visual": {
+        "flipped": true,
+        "rotation": 180,
+        "x": 388,
+        "y": -51
+      }
+    },
+    {
+      "id": "1N4007 rectifier 1",
+      "properties": {
+        "powerAmp": "1",
+        "model": "1N4007"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 327,
+        "y": -39
+      }
+    },
+    {
+      "id": "1N4007 rectifier 2",
+      "properties": {
+        "powerAmp": "1",
+        "model": "1N4007"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 327,
+        "y": -31
+      }
+    },
+    {
+      "id": "1N4007 junction capacitance 1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1.5e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 331,
+        "y": -39
+      }
+    },
+    {
+      "id": "1N4007 junction capacitance 2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1.5e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 331,
+        "y": -31
+      }
+    },
+    {
+      "id": "1N4007 rectifier 3",
+      "properties": {
+        "powerAmp": "1",
+        "model": "1N4007"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 379,
+        "y": -39
+      }
+    },
+    {
+      "id": "1N4007 rectifier 4",
+      "properties": {
+        "powerAmp": "1",
+        "model": "1N4007"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 379,
+        "y": -31
+      }
+    },
+    {
+      "id": "1N4007 junction capacitance 3",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1.5e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 383,
+        "y": -39
+      }
+    },
+    {
+      "id": "1N4007 junction capacitance 4",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1.5e-11
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 383,
+        "y": -31
+      }
+    },
+    {
+      "id": "5U4GB V10 plate 1",
+      "properties": {
+        "powerAmp": "1",
+        "model": "5U4GB"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 300,
+        "y": -35
+      }
+    },
+    {
+      "id": "5U4GB V11 plate 1",
+      "properties": {
+        "powerAmp": "1",
+        "model": "5U4GB"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 309,
+        "y": -35
+      }
+    },
+    {
+      "id": "5U4GB V10 plate 2",
+      "properties": {
+        "powerAmp": "1",
+        "model": "5U4GB"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 397,
+        "y": -35
+      }
+    },
+    {
+      "id": "5U4GB V11 plate 2",
+      "properties": {
+        "powerAmp": "1",
+        "model": "5U4GB"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 406,
+        "y": -35
+      }
+    },
+    {
+      "id": "Reservoir A upper capacitor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.00022,
+        "initialVolts": 230
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 365,
+        "y": -18
+      }
+    },
+    {
+      "id": "Reservoir A lower capacitor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.00022,
+        "initialVolts": 230
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 365,
+        "y": -8
+      }
+    },
+    {
+      "id": "Reservoir A upper balance resistor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 150000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 377,
+        "y": -18
+      }
+    },
+    {
+      "id": "Reservoir A lower balance resistor",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 150000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 377,
+        "y": -8
+      }
+    },
+    {
+      "id": "Reservoir A return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 365,
+        "y": 2
+      }
+    },
+    {
+      "id": "Rail A 47 nF bypass",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08,
+        "initialVolts": 460
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 396,
+        "y": -13
+      }
+    },
+    {
+      "id": "Rail A bypass return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 396,
+        "y": -4
+      }
+    },
+    {
+      "id": "R502 phase inverter supply",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 2700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 302,
+        "y": -11
+      }
+    },
+    {
+      "id": "C63 phase inverter filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 3e-05,
+        "initialVolts": 422
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 273,
+        "y": -5
+      }
+    },
+    {
+      "id": "C63 return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 273,
+        "y": 2
+      }
+    },
+    {
+      "id": "Rail D feed",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 15000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 231,
+        "y": -19
+      }
+    },
+    {
+      "id": "Rail D 30uF filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 3e-05,
+        "initialVolts": 406
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 191,
+        "y": -14
+      }
+    },
+    {
+      "id": "Rail D return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 191,
+        "y": -7
+      }
+    },
+    {
+      "id": "Rail E feed",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 22000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 230,
+        "y": -4
+      }
+    },
+    {
+      "id": "Rail E 30uF filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 3e-05,
+        "initialVolts": 402
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 163,
+        "y": 1
+      }
+    },
+    {
+      "id": "Rail E return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 163,
+        "y": 8
+      }
+    },
+    {
+      "id": "561136 50 VAC bias tap",
+      "properties": {
+        "powerAmp": "1",
+        "mode": "AC"
+      },
+      "type": "src",
+      "values": {
+        "ac": 70.71067811865476,
+        "freq": 60
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 175,
+        "y": -52
+      }
+    },
+    {
+      "id": "Bias tap return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 169,
+        "y": -46
+      }
+    },
+    {
+      "id": "D10 bias rectifier",
+      "properties": {
+        "powerAmp": "1",
+        "model": "1N4007"
+      },
+      "type": "diode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 192,
+        "y": -38
+      }
+    },
+    {
+      "id": "R107 bias limiter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 825
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 205,
+        "y": -38
+      }
+    },
+    {
+      "id": "R333 bias filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 3300
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 90,
+        "x": 225,
+        "y": -38
+      }
+    },
+    {
+      "id": "C71 bias reservoir",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-05,
+        "initialVolts": -62
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 215,
+        "y": -32
+      }
+    },
+    {
+      "id": "C72 bias filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-05,
+        "initialVolts": -51
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 236,
+        "y": -32
+      }
+    },
+    {
+      "id": "C71 return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 215,
+        "y": -25
+      }
+    },
+    {
+      "id": "C72 return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 236,
+        "y": -25
+      }
+    },
+    {
+      "id": "R292 bias return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 82000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 248,
+        "y": -32
+      }
+    },
+    {
+      "id": "R292 return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 248,
+        "y": -25
+      }
+    },
+    {
+      "id": "R256 bias return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 22000
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 258,
+        "y": -32
+      }
+    },
+    {
+      "id": "R256 return",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 258,
+        "y": -25
+      }
     }
   ],
-  "description": "Two-channel Dual Rectifier RP-1F with Orange/Vintage power feedback, Red/Modern preamp Presence and four 6L6GCs into 8 Ω. The power supply uses fixed silicon-mode rails. Transformer winding parameters are estimated.",
+  "description": "Two-channel RP-1F in Orange/Vintage and Red/Modern. 5U4 RECTIFIER selects two hot 5U4GBs or four 1N4007 diodes. Models the domestic Bold transformer secondary and 6L6 fixed-bias path.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -2321,7 +3045,8 @@
       "Orange Presence"
     ],
     "switches": [
-      "RED"
+      "RED",
+      "5U4 RECTIFIER"
     ]
   },
   "name": "Mesa Boogie Dual Rectifier",
@@ -5018,26 +5743,6 @@
     {
       "points": [
         {
-          "x": 328,
-          "y": -11
-        },
-        {
-          "x": 328,
-          "y": 16
-        },
-        {
-          "x": 333,
-          "y": 16
-        },
-        {
-          "x": 333,
-          "y": 15
-        }
-      ]
-    },
-    {
-      "points": [
-        {
           "x": 321,
           "y": 1
         },
@@ -5192,6 +5897,902 @@
         {
           "x": 311,
           "y": 76
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 318,
+          "y": -72
+        },
+        {
+          "x": 311,
+          "y": -72
+        },
+        {
+          "x": 311,
+          "y": -64
+        },
+        {
+          "x": 318,
+          "y": -64
+        },
+        {
+          "x": 318,
+          "y": -63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 318,
+          "y": -68
+        },
+        {
+          "x": 324,
+          "y": -68
+        },
+        {
+          "x": 324,
+          "y": -66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 388,
+          "y": -68
+        },
+        {
+          "x": 388,
+          "y": -63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 388,
+          "y": -72
+        },
+        {
+          "x": 396,
+          "y": -72
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 318,
+          "y": -59
+        },
+        {
+          "x": 318,
+          "y": -53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 388,
+          "y": -59
+        },
+        {
+          "x": 388,
+          "y": -53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 319,
+          "y": -49
+        },
+        {
+          "x": 319,
+          "y": -45
+        },
+        {
+          "x": 327,
+          "y": -45
+        },
+        {
+          "x": 327,
+          "y": -41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -37
+        },
+        {
+          "x": 327,
+          "y": -33
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -29
+        },
+        {
+          "x": 327,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -41
+        },
+        {
+          "x": 331,
+          "y": -41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -37
+        },
+        {
+          "x": 331,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -33
+        },
+        {
+          "x": 331,
+          "y": -33
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 327,
+          "y": -29
+        },
+        {
+          "x": 331,
+          "y": -29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 387,
+          "y": -49
+        },
+        {
+          "x": 387,
+          "y": -45
+        },
+        {
+          "x": 379,
+          "y": -45
+        },
+        {
+          "x": 379,
+          "y": -41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -37
+        },
+        {
+          "x": 379,
+          "y": -33
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -29
+        },
+        {
+          "x": 379,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -41
+        },
+        {
+          "x": 383,
+          "y": -41
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -37
+        },
+        {
+          "x": 383,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -33
+        },
+        {
+          "x": 383,
+          "y": -33
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 379,
+          "y": -29
+        },
+        {
+          "x": 383,
+          "y": -29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 317,
+          "y": -49
+        },
+        {
+          "x": 317,
+          "y": -41
+        },
+        {
+          "x": 300,
+          "y": -41
+        },
+        {
+          "x": 300,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 309,
+          "y": -41
+        },
+        {
+          "x": 309,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 300,
+          "y": -33
+        },
+        {
+          "x": 300,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 309,
+          "y": -33
+        },
+        {
+          "x": 309,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 389,
+          "y": -49
+        },
+        {
+          "x": 389,
+          "y": -41
+        },
+        {
+          "x": 406,
+          "y": -41
+        },
+        {
+          "x": 406,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 397,
+          "y": -41
+        },
+        {
+          "x": 397,
+          "y": -37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 397,
+          "y": -33
+        },
+        {
+          "x": 397,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 406,
+          "y": -33
+        },
+        {
+          "x": 406,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 300,
+          "y": -25
+        },
+        {
+          "x": 406,
+          "y": -25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 365,
+          "y": -25
+        },
+        {
+          "x": 365,
+          "y": -20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 365,
+          "y": -16
+        },
+        {
+          "x": 365,
+          "y": -10
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 377,
+          "y": -25
+        },
+        {
+          "x": 377,
+          "y": -20
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 377,
+          "y": -16
+        },
+        {
+          "x": 377,
+          "y": -10
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 365,
+          "y": -13
+        },
+        {
+          "x": 377,
+          "y": -13
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 365,
+          "y": -6
+        },
+        {
+          "x": 365,
+          "y": -3
+        },
+        {
+          "x": 377,
+          "y": -3
+        },
+        {
+          "x": 377,
+          "y": -6
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 365,
+          "y": -3
+        },
+        {
+          "x": 365,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 396,
+          "y": -25
+        },
+        {
+          "x": 396,
+          "y": -15
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 396,
+          "y": -11
+        },
+        {
+          "x": 396,
+          "y": -6
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 352,
+          "y": -25
+        },
+        {
+          "x": 352,
+          "y": -14
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 328,
+          "y": -11
+        },
+        {
+          "x": 322,
+          "y": -11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 318,
+          "y": -11
+        },
+        {
+          "x": 304,
+          "y": -11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 312,
+          "y": -11
+        },
+        {
+          "x": 312,
+          "y": 15
+        },
+        {
+          "x": 329,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 300,
+          "y": -11
+        },
+        {
+          "x": 135,
+          "y": -11
+        },
+        {
+          "x": 135,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 273,
+          "y": -11
+        },
+        {
+          "x": 273,
+          "y": -7
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 273,
+          "y": -3
+        },
+        {
+          "x": 273,
+          "y": 0
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 233,
+          "y": -19
+        },
+        {
+          "x": 250,
+          "y": -19
+        },
+        {
+          "x": 250,
+          "y": -11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 229,
+          "y": -19
+        },
+        {
+          "x": 78,
+          "y": -19
+        },
+        {
+          "x": 78,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 191,
+          "y": -19
+        },
+        {
+          "x": 191,
+          "y": -16
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 191,
+          "y": -12
+        },
+        {
+          "x": 191,
+          "y": -9
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 232,
+          "y": -4
+        },
+        {
+          "x": 250,
+          "y": -4
+        },
+        {
+          "x": 250,
+          "y": -11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 228,
+          "y": -4
+        },
+        {
+          "x": 30,
+          "y": -4
+        },
+        {
+          "x": 30,
+          "y": 11
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 163,
+          "y": -4
+        },
+        {
+          "x": 163,
+          "y": -1
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 163,
+          "y": 3
+        },
+        {
+          "x": 163,
+          "y": 6
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 175,
+          "y": -50
+        },
+        {
+          "x": 169,
+          "y": -50
+        },
+        {
+          "x": 169,
+          "y": -48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 175,
+          "y": -54
+        },
+        {
+          "x": 184,
+          "y": -54
+        },
+        {
+          "x": 184,
+          "y": -38
+        },
+        {
+          "x": 190,
+          "y": -38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 194,
+          "y": -38
+        },
+        {
+          "x": 203,
+          "y": -38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 207,
+          "y": -38
+        },
+        {
+          "x": 223,
+          "y": -38
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 215,
+          "y": -38
+        },
+        {
+          "x": 215,
+          "y": -34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 215,
+          "y": -30
+        },
+        {
+          "x": 215,
+          "y": -27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 236,
+          "y": -38
+        },
+        {
+          "x": 236,
+          "y": -34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 236,
+          "y": -30
+        },
+        {
+          "x": 236,
+          "y": -27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 248,
+          "y": -38
+        },
+        {
+          "x": 248,
+          "y": -34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 248,
+          "y": -30
+        },
+        {
+          "x": 248,
+          "y": -27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 258,
+          "y": -38
+        },
+        {
+          "x": 258,
+          "y": -34
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 258,
+          "y": -30
+        },
+        {
+          "x": 258,
+          "y": -27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 227,
+          "y": -38
+        },
+        {
+          "x": 286,
+          "y": -38
+        },
+        {
+          "x": 286,
+          "y": -31
+        },
+        {
+          "x": 306,
+          "y": -31
+        },
+        {
+          "x": 306,
+          "y": 21
         }
       ]
     }
