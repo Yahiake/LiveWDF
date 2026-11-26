@@ -144,6 +144,7 @@ target_link_libraries(LiveWDF_PluginBench PRIVATE
 
 if(LIVEWDF_BUILD_TESTS)
     add_test(NAME livewdf_output_effects_state COMMAND LiveWDF_PluginBench --check-output-effects-state)
+    add_test(NAME livewdf_output_effect_controls COMMAND LiveWDF_PluginBench --check-output-effect-controls)
     add_test(NAME livewdf_factory_output_irs COMMAND LiveWDF_PluginBench
         "${CMAKE_CURRENT_SOURCE_DIR}/../schematics/amps/Orange Rockerverb 50w - Dirty Channel (Preamp only).livewdf"
         --check-factory-output-irs)

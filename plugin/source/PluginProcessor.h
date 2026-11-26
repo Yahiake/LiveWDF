@@ -173,6 +173,11 @@ private:
     const std::atomic<float>* cabinetEnabled_ = apvts_.getRawParameterValue("cab_enabled");
     const std::atomic<float>* echoMix_ = apvts_.getRawParameterValue("echo_mix");
     const std::atomic<float>* reverbMix_ = apvts_.getRawParameterValue("reverb_mix");
+    const std::atomic<float>* echoDelay_ = apvts_.getRawParameterValue("echo_delay");
+    const std::atomic<float>* echoFeedback_ = apvts_.getRawParameterValue("echo_feedback");
+    const std::atomic<float>* reverbSize_ = apvts_.getRawParameterValue("reverb_size");
+    const std::atomic<float>* reverbPreDelay_ = apvts_.getRawParameterValue("reverb_predelay");
+    OutputEffects::Settings outputEffectSettings() const noexcept;
     void processOutputEffects(juce::dsp::AudioBlock<float>) noexcept;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)

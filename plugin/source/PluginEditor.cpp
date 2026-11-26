@@ -6,6 +6,7 @@
 #include "gui/AboutDialog.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace livewdf {
@@ -67,38 +68,52 @@ bool loadImpulseFromUrl(LiveWDFPluginProcessor& processor, bool reverb, const ju
 
 class LiveWDFPluginEditor::OutputEffectsPanel final : public juce::Component {
 public:
-    explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters)
-        : echoAttach_(parameters, "echo_mix", echo_), reverbAttach_(parameters, "reverb_mix", reverb_) {
-        addAndMakeVisible(echoLabel_);
-        addAndMakeVisible(reverbLabel_);
-        echo_.setName("Echo mix");
-        echo_.setTooltip("250 ms echo with 42% feedback");
-        reverb_.setName("Reverb mix");
-        for (auto* slider : {&echo_, &reverb_}) {
-            slider->setSliderStyle(juce::Slider::LinearHorizontal);
-            slider->setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 24);
-            slider->setTextValueSuffix(" %");
-            addAndMakeVisible(*slider);
+    explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters) {
+        constexpr struct {
+            const char* id;
+            const char* name;
+            const char* units;
+        } controls[] = {
+            {"echo_delay", "Echo delay", " ms"},
+            {"echo_feedback", "Echo feedback", " %"},
+            {"echo_mix", "Echo mix", " %"},
+            {"reverb_size", "Reverb size", " %"},
+            {"reverb_predelay", "Reverb pre-delay", " ms"},
+            {"reverb_mix", "Reverb mix", " %"},
+        };
+        for (size_t i = 0; i < rows_.size(); ++i) {
+            auto& row = rows_[i];
+            const auto& control = controls[i];
+            row.label.setText(control.name, juce::dontSendNotification);
+            row.slider.setName(control.name);
+            row.slider.setSliderStyle(juce::Slider::LinearHorizontal);
+            row.slider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 64, 24);
+            row.attachment = std::make_unique<SliderAttachment>(parameters, control.id, row.slider);
+            row.slider.setTextValueSuffix(control.units);
+            addAndMakeVisible(row.label);
+            addAndMakeVisible(row.slider);
         }
     }
 
-    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 84); }
+    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 220); }
 
     void resized() override {
         auto bounds = getLocalBounds().reduced(10);
-        const auto placeMix = [&](juce::Label& label, juce::Slider& slider) {
-            auto row = bounds.removeFromTop(32);
-            label.setBounds(row.removeFromLeft(87));
-            slider.setBounds(row);
-        };
-        placeMix(echoLabel_, echo_);
-        placeMix(reverbLabel_, reverb_);
+        for (size_t i = 0; i < rows_.size(); ++i) {
+            if (i == 3) bounds.removeFromTop(8);
+            auto area = bounds.removeFromTop(32);
+            rows_[i].label.setBounds(area.removeFromLeft(124));
+            rows_[i].slider.setBounds(area);
+        }
     }
 
 private:
-    juce::Label echoLabel_{{}, "Echo mix"}, reverbLabel_{{}, "Reverb mix"};
-    juce::Slider echo_, reverb_;
-    SliderAttachment echoAttach_, reverbAttach_;
+    struct Row {
+        juce::Label label;
+        juce::Slider slider;
+        std::unique_ptr<SliderAttachment> attachment;
+    };
+    std::array<Row, 6> rows_;
 };
 
 LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
@@ -144,7 +159,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(loadFileBtn_);
 
     effectsBtn_.onClick = [this] { showOutputEffects(); };
-    effectsBtn_.setTooltip("Adjust the echo and reverb mixes");
+    effectsBtn_.setTooltip("Adjust echo delay, feedback and mix, and reverb size, pre-delay and mix");
     addAndMakeVisible(effectsBtn_);
 
     // 3. Reload Button

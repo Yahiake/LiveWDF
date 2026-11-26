@@ -4,6 +4,7 @@
 #include <juce_dsp/juce_dsp.h>
 
 #include <atomic>
+#include <cstdint>
 #include <memory>
 #include <mutex>
 #include <span>
@@ -23,9 +24,10 @@ public:
     OutputEffects();
     ~OutputEffects();
 
-    void prepare(const juce::dsp::ProcessSpec&);
+    void prepare(const juce::dsp::ProcessSpec&, float reverbSize);
     void release();
     void reclaim();
+    void applyReverbSize(float ratio, bool immediate);
 
     bool loadImpulse(bool reverb, const juce::File&);
     bool selectFactoryImpulse(bool reverb, juce::StringRef id);
@@ -38,8 +40,16 @@ public:
     void save(juce::ValueTree&) const;
     void restore(juce::ValueTree&);
 
-    void process(juce::dsp::AudioBlock<float>, bool cabinet, float echo, float reverb, bool offline) noexcept;
-    double tailSeconds(bool cabinet, bool echo, bool reverb) const noexcept;
+    struct Settings {
+        bool cabinet = false;
+        float echoMix = 0.0f, reverbMix = 0.0f;
+        float echoDelayMs = 250.0f, echoFeedback = 0.42f, preDelayMs = 0.0f;
+    };
+    static constexpr float maxEchoDelayMs = 1500.0f;
+    static constexpr float maxPreDelayMs = 250.0f;
+
+    void process(juce::dsp::AudioBlock<float>, const Settings&, bool offline) noexcept;
+    double tailSeconds(const Settings&) const noexcept;
 
 private:
     struct Impulse {
@@ -51,13 +61,14 @@ private:
         float makeupDb = 0.0f;
     };
     struct Prepared;
+    struct PreparedRoom;
 
     static Impulse decode(juce::MemoryBlock, const juce::String&, bool flac = false);
     static Impulse factoryImpulse(bool reverb, juce::StringRef id);
     static juce::AudioBuffer<float> atRate(const Impulse&, double rate);
     void publish(std::unique_ptr<Prepared>);
     void setImpulse(bool reverb, Impulse);
-    void updateTailLengths();
+    void updateTailLengths(int roomFrames = 0);
     void releasePrepared();
 
     mutable std::mutex setupMutex_;
@@ -65,6 +76,11 @@ private:
     juce::dsp::ProcessSpec spec_{};
     std::unique_ptr<Prepared> active_;
     std::atomic<Prepared*> pending_{nullptr}, retired_{nullptr};
+    std::atomic<PreparedRoom*> pendingRoom_{nullptr}, retiredRoom_{nullptr};
+    std::uint64_t impulseRevision_ = 0;
+    float reverbSize_ = 1.0f, requestedReverbSize_ = 1.0f;
+    juce::uint32 reverbSizeChangedAt_ = 0;
+    bool reverbSizeFailed_ = false;
     std::atomic<unsigned> cabinetMillis_{2}, reverbMillis_{2500};
 };
 

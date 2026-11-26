@@ -2399,7 +2399,7 @@ static bool checkOutputEffectsState() {
     constexpr int echoSample = 12000;
     constexpr int lateSample = 3000;
     const auto render = [=](livewdf::LiveWDFPluginProcessor& processor) {
-        juce::AudioBuffer<float> result(2, echoSample + blockSize);
+        juce::AudioBuffer<float> result(2, 2 * echoSample + blockSize);
         result.clear();
         result.setSample(0, 0, 0.25f);
         result.setSample(1, 0, 0.25f);
@@ -2439,7 +2439,13 @@ static bool checkOutputEffectsState() {
         source.getAPVTS().getParameter("reverb_mix")->setValueNotifyingHost(1.0f);
         source.getStateInformation(saved);
     }
+    auto old = juce::ValueTree::fromXml(*juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize())));
+    for (const auto* id : {"echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
+        old.removeChild(old.getChildWithProperty("id", id), nullptr);
+    juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
     livewdf::LiveWDFPluginProcessor restored;
+    restored.getAPVTS().getParameter("echo_delay")->setValueNotifyingHost(1.0f);
+    restored.getAPVTS().getParameter("echo_feedback")->setValueNotifyingHost(1.0f);
     restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
     restored.setNonRealtime(true);
     restored.prepareToPlay(sampleRate, blockSize);
@@ -2452,7 +2458,8 @@ static bool checkOutputEffectsState() {
         && close(audio.getSample(1, lateSample), 0.0f)
         && close(audio.getSample(1, lateSample + 1), 0.03125f)
         && close(audio.getSample(0, 2 * lateSample), 0.0078125f)
-        && close(audio.getSample(0, echoSample), 0.03125f);
+        && close(audio.getSample(0, echoSample), 0.03125f)
+        && close(audio.getSample(0, 2 * echoSample), 0.013125f);
     if (!customRestored)
         return false;
 
@@ -2463,6 +2470,119 @@ static bool checkOutputEffectsState() {
     const auto* wet = hall.getReadPointer(0);
     return close(wet[0], 0.0f) && std::any_of(wet + 1, wet + hall.getNumSamples(),
         [](float sample) { return std::abs(sample) > 1e-4f; });
+}
+
+static bool checkOutputEffectControls() {
+    constexpr double rate = 48000.0;
+    constexpr int blockSize = 128;
+    constexpr int frames = 22000;
+    constexpr int echoDelay = 3840;
+    constexpr int preDelay = 2400;
+    constexpr int onset = 4800;
+    constexpr int reflection = 6000;
+    constexpr int late = 12000;
+
+    using Processor = livewdf::LiveWDFPluginProcessor;
+    const auto set = [](Processor& processor, const char* id, float value) {
+        auto& parameter = *processor.getAPVTS().getParameter(id);
+        parameter.setValueNotifyingHost(parameter.convertTo0to1(value));
+    };
+    const auto render = [=](Processor& processor) {
+        juce::AudioBuffer<float> output(2, frames);
+        output.clear();
+        for (int channel = 0; channel < output.getNumChannels(); ++channel)
+            output.setSample(channel, 0, 0.25f);
+        juce::MidiBuffer midi;
+        for (int offset = 0; offset < frames; offset += blockSize) {
+            juce::AudioBuffer<float> block(output.getArrayOfWritePointers(), 2, offset,
+                                           std::min(blockSize, frames - offset));
+            processor.processBlock(block, midi);
+        }
+        return output;
+    };
+    const auto close = [](float value, float expected) { return std::abs(value - expected) < 1.e-5f; };
+
+    Processor echo;
+    echo.setNonRealtime(true);
+    set(echo, "echo_delay", 80.0f);
+    set(echo, "echo_feedback", 55.0f);
+    set(echo, "echo_mix", 100.0f);
+    echo.prepareToPlay(rate, blockSize);
+    const auto repeats = render(echo);
+    if (!close(repeats.getSample(0, 0), 0.0f) ||
+        !close(repeats.getSample(0, echoDelay - 1), 0.0f) ||
+        !close(repeats.getSample(0, echoDelay), 0.25f) ||
+        !close(repeats.getSample(0, 2 * echoDelay), 0.1375f) ||
+        !close(repeats.getSample(0, 3 * echoDelay), 0.075625f))
+        return false;
+
+    juce::MemoryBlock state;
+    {
+        juce::TemporaryFile file(".wav");
+        juce::AudioBuffer<float> ir(1, late + 1000);
+        ir.clear();
+        ir.setSample(0, onset, 0.5f);
+        ir.setSample(0, reflection, 0.25f);
+        ir.setSample(0, late, 0.5f);
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::OutputStream> stream = file.getFile().createOutputStream();
+        auto writer = format.createWriterFor(stream, juce::AudioFormatWriterOptions{}
+            .withSampleRate(rate).withNumChannels(1).withBitsPerSample(24));
+        if (!writer || !writer->writeFromAudioSampleBuffer(ir, 0, ir.getNumSamples()))
+            return false;
+        writer.reset();
+        if (!echo.loadOutputImpulse(true, file.getFile()))
+            return false;
+        set(echo, "reverb_mix", 50.0f);
+        set(echo, "reverb_predelay", 50.0f);
+        set(echo, "reverb_size", 150.0f);
+        echo.getStateInformation(state);
+    }
+
+    Processor room;
+    room.setNonRealtime(true);
+    room.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    if (!close(room.getAPVTS().getRawParameterValue("echo_delay")->load(), 80.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("echo_feedback")->load(), 55.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("reverb_size")->load(), 150.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("reverb_predelay")->load(), 50.0f))
+        return false;
+    set(room, "echo_mix", 0.0f);
+    room.prepareToPlay(rate, blockSize);
+    const auto stretched = render(room);
+    if (room.getLatencySamples() != 0 ||
+        !close(stretched.getSample(0, 0), 0.125f) ||
+        !close(stretched.getSample(0, onset), 0.0f) ||
+        !close(stretched.getSample(0, onset + preDelay), 0.0625f) ||
+        !close(stretched.getSample(0, reflection + preDelay), 0.03125f) ||
+        !close(stretched.getSample(0, late + preDelay), 0.0f) ||
+        !close(stretched.getSample(0, 16080), 0.0625f))
+        return false;
+
+    set(room, "reverb_size", 50.0f);
+    const auto shortened = render(room);
+
+#if defined(__GLIBC__)
+    livewdf::OutputEffects live;
+    live.prepare({rate, blockSize, 2}, 1.0f);
+    live.applyReverbSize(1.5f, true);
+    juce::AudioBuffer<float> scratch(2, blockSize);
+    scratch.clear();
+    const auto allocations = tAllocs;
+    livewdf::OutputEffects::Settings settings;
+    settings.echoMix = settings.reverbMix = 0.5f;
+    settings.preDelayMs = 50.0f;
+    for (int i = 0; i < 16; ++i)
+        live.process(juce::dsp::AudioBlock<float>(scratch), settings, false);
+    if (tAllocs != allocations)
+        return false;
+#endif
+
+    return close(shortened.getSample(0, 0), 0.125f) &&
+           close(shortened.getSample(0, onset + preDelay), 0.0625f) &&
+           close(shortened.getSample(0, reflection + preDelay), 0.03125f) &&
+           close(shortened.getSample(0, 12720), 0.0625f) &&
+           close(shortened.getSample(0, 16080), 0.0f);
 }
 
 static bool checkFactoryOutputIrState(const juce::File& amp) {
@@ -2514,6 +2634,8 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
+    if (argc == 2 && std::string(argv[1]) == "--check-output-effect-controls")
+        return checkOutputEffectControls() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--check-output-effects-state")
         return checkOutputEffectsState() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
