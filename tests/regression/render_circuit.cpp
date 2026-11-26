@@ -179,7 +179,7 @@ int main(int argc, char** argv) try {
     const int output = engine.nodeIndex(document.outputNet());
     if (output < 0) throw std::runtime_error("Circuit has no audio output");
     engine.prepareLiveControls();
-    const auto settings = document.sourceAcSettings();
+    const auto settings = document.sourceAcSettings(circuit);
     const auto groups = wdf::potControlGroups(document);
     std::vector<size_t> oscillators;
     for (size_t i = 0; i < settings.size(); ++i)
@@ -194,7 +194,9 @@ int main(int argc, char** argv) try {
                     document.previewPeakVolts(), document.allowPreviewInputPad);
         engine.useMixedAffineReduction(true);
     }
-    const auto initial = engine.dcValues();
+    auto initial = engine.dcValues();
+    for (const auto& source : circuit.isrc)
+        initial.push_back(source.dc);
     auto values = initial;
     const double tolerance = accurate ? wdf::Engine::kDefaultTolerance : wdf::Engine::kFastLiveTolerance;
     const bool bipolarAllowed = preview && outputOnly;

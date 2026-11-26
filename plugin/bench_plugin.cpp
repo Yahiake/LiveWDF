@@ -415,6 +415,7 @@ struct Reference {
     int inIdx = -1;
     int outIdx = -1;
     std::vector<double> base;
+    std::vector<wdf::LiveWDFDocument::SourceAc> acSources;
     double inputScale = 1.0;
     double fullScale = 1.0;
     std::string inputName;
@@ -463,15 +464,26 @@ bool buildReference(const wdf::LiveWDFDocument& doc, double fs,
     ref.base.resize(c.src.size());
     for (size_t i = 0; i < c.src.size(); ++i)
         ref.base[i] = c.src[i].dc;
+    for (const auto& source : c.isrc)
+        ref.base.push_back(source.dc);
+    ref.acSources = doc.sourceAcSettings(c);
     ref.inputScale = doc.inputVoltsPerFullScale();
     ref.fullScale = doc.outputFullScaleVolts();
 
     try {
         ref.engine = std::make_unique<wdf::Engine>(c, fs);
 
-        // Silent pre-roll: match PluginProcessor's settling pass at DC
-        for (int p = 0; p < 64; ++p) {
-            ref.engine->step(ref.base);
+        auto startupSources = ref.base;
+        const bool hasAcSupply = doc.hasAcPowerSupply();
+        const int warmup = hasAcSupply ? static_cast<int>(fs / 4.) : 64;
+        for (int sample = -warmup; sample < 0; ++sample) {
+            if (hasAcSupply) {
+                for (size_t i = 0; i < ref.acSources.size(); ++i) {
+                    const auto& source = ref.acSources[i];
+                    startupSources[i] = wdf::sourceValueAt(ref.base[i], source.ac, source.freq, fs, sample);
+                }
+            }
+            ref.engine->step(startupSources);
         }
     } catch (const std::exception& e) {
         why = e.what();
@@ -622,7 +634,7 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     juce::MidiBuffer midi;
     std::vector<float> blockIn(static_cast<size_t>(blockSize));
     std::vector<double> sv = ref.base;
-    const auto acSources = doc.sourceAcSettings();
+    const auto& acSources = ref.acSources;
 
     double phase = 0.0;
     double sumSq = 0.0;

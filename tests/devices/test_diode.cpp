@@ -108,6 +108,31 @@ wdf::Circuit mixedStageClamped() { return mixedStage(true); }
 // 1. the device law
 // --------------------------------------------------------------------------------------
 
+TEST_CASE("5U4GB follows the RCA single-plate curve with and without a source impedance", "[diode][5u4gb]") {
+    const auto* entry = wdf::findDiodeByName("5U4GB");
+    REQUIRE(entry);
+    const auto plate = entry->model();
+    // Read from the RCA average plate characteristic, 5 V AC filament (1954, p. 2).
+    for (const auto [volts, amps] : {std::pair{20., .064}, {40., .198}, {60., .359},
+                                     {80., .56}, {100., .79}, {110., .92}}) {
+        double i, g;
+        plate.eval(volts, i, g);
+        CHECK(i == Approx(amps).margin(.010));
+        for (double resistance : {1., 150., 10000.}) {
+            double loaded, slope;
+            plate.withSeriesResistance(resistance).eval(volts + resistance * i, loaded, slope);
+            CHECK(loaded == Approx(i).epsilon(1e-12));
+            CHECK(slope == Approx(g / (1. + resistance * g)).epsilon(1e-12));
+        }
+    }
+    for (double volts : {-1200., -1., 0.}) {
+        double i, g;
+        plate.withSeriesResistance(150.).eval(volts, i, g);
+        CHECK(i == 0.);
+        CHECK(g == 0.);
+    }
+}
+
 TEST_CASE("Opt-in low-leakage diode cards retain the forward clipping response", "[diode][device]") {
     struct Case {
         const char* reference;

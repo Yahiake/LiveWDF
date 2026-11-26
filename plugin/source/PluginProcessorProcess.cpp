@@ -255,6 +255,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
         for (int s = 0; s < numSamples; ++s) {
             advanceControls();
+            auto rightSample = acSampleCounter_;
             const double inL = static_cast<double>(leftData[s]);
             const double outL = halfBandOversamplerL_.process(inL, [&](double osIn) -> double {
                 std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
@@ -284,8 +285,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                                 continue;
                             svRight_[static_cast<size_t>(ac.index)] = wdf::sourceValueAt(
                                 baseSourceValues_[static_cast<size_t>(ac.index)], ac.ac, ac.freq,
-                                acSampleRate_, acSampleCounter_);
+                                acSampleRate_, rightSample);
                         }
+                        ++rightSample;
                     }
                     return compensate(solve(*rightEngine_, svRight_, osIn).volts) * outputScale;
                 });

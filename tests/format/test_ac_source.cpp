@@ -91,7 +91,7 @@ TEST_CASE("The document carries a source's amplitude and frequency") {
 
     // The frequency is *not* in the compiled circuit: it is the signal's, not
     // the network's, and it lives in the document.
-    const auto settings = doc.sourceAcSettings();
+    const auto settings = doc.sourceAcSettings(circuit);
     REQUIRE(settings.size() == 1);
     CHECK(settings[0].ac == 2.0);
     CHECK(settings[0].freq == 1.0);
@@ -115,7 +115,7 @@ TEST_CASE("A source in DC mode carries no amplitude, in the circuit or the setti
     CHECK(circuit.src[0].dc == 12.0);
     CHECK(circuit.src[0].ac == 0.0);
 
-    const auto settings = doc.sourceAcSettings();
+    const auto settings = doc.sourceAcSettings(circuit);
     REQUIRE(settings.size() == 1);
     CHECK(settings[0].ac == 0.0);
     CHECK(settings[0].freq == 0.0);
@@ -159,10 +159,9 @@ TEST_CASE("A source survives a save and reopen with its AC settings") {
     REQUIRE(wdf::LiveWDFDocument::fromJson(json, back, error));
     REQUIRE(back.components.size() == 1);
 
-    const auto settings = back.sourceAcSettings();
-    REQUIRE(settings.size() == 1);
-    CHECK(settings[0].ac == 2.0);
-    CHECK(settings[0].freq == 1.0);
+    CHECK(wdf::sourceModeOf(back.components[0]) == wdf::SourceMode::AC);
+    CHECK(back.components[0].values.at("ac") == 2.0);
+    CHECK(back.components[0].values.at("freq") == 1.0);
 }
 
 TEST_CASE("The AC settings line up with the sources the circuit has") {
@@ -176,6 +175,16 @@ TEST_CASE("The AC settings line up with the sources the circuit has") {
     in.pins = {{"sig", "audio"}};
     doc.components.push_back(in);
 
+    wdf::SchematicComponent rail;
+    rail.id = "mains";
+    rail.type = "rail";
+    rail.pins = {{"pos", "mains"}};
+    rail.values = {{"ac", 495.0}, {"freq", 60.0}};
+    rail.properties = {{"mode", "AC"}};
+    doc.components.push_back(rail);
+    rail.id = "same rail";
+    doc.components.push_back(rail);
+
     wdf::SchematicComponent src;
     src.id = "V1";
     src.type = "src";
@@ -185,18 +194,17 @@ TEST_CASE("The AC settings line up with the sources the circuit has") {
     doc.components.push_back(src);
 
     const auto circuit = doc.toCircuit();
-    const auto settings = doc.sourceAcSettings();
+    const auto settings = doc.sourceAcSettings(circuit);
 
-    // The Input terminal converts to a source, so the circuit has two and the
-    // settings list must have two -- in the same order.
-    REQUIRE(circuit.src.size() == 2);
-    REQUIRE(settings.size() == 2);
+    REQUIRE(circuit.src.size() == 3);
+    REQUIRE(settings.size() == 3);
 
     // The input's own entry is silent: the audio drives it, not a sine.
     CHECK(settings[0].ac == 0.0);
     CHECK(settings[0].freq == 0.0);
 
-    // The signal source's entry carries its amplitude and frequency.
-    CHECK(settings[1].ac == 3.0);
-    CHECK(settings[1].freq == 1.0);
+    CHECK(settings[1].ac == 495.0);
+    CHECK(settings[1].freq == 60.0);
+    CHECK(settings[2].ac == 3.0);
+    CHECK(settings[2].freq == 1.0);
 }

@@ -111,11 +111,13 @@ bool CircuitSession::compile(const wdf::LiveWDFDocument& doc, double fs) {
     baseSources_.resize(circuit_.src.size());
     for (size_t i = 0; i < circuit_.src.size(); ++i)
         baseSources_[i] = circuit_.src[i].dc;
+    for (const auto& source : circuit_.isrc)
+        baseSources_.push_back(source.dc);
 
     // The AC settings, in the same order as the sources above. The frequency is
     // the signal's, not the network's, so it lives in the document and is read
     // from there -- the compiled circuit stays a topology description.
-    acSettings_ = doc.sourceAcSettings();
+    acSettings_ = doc.sourceAcSettings(circuit_);
 
     // The Input terminal's source, found by the part's id -- the Input
     // converts to a source *named after itself*, which is what makes this a
@@ -349,18 +351,10 @@ const std::vector<double>& CircuitSession::stepInternal(double inputVolts) {
         if (ac.ac == 0.0 || ac.freq == 0.0)
             continue;
 
-        // The settings list is the voltage sources then the current ones, and
-        // the engine's value vector is laid out the same way: the voltage
-        // sources first, the current ones after them.
-        const size_t nVoltage = acSettings_.size() - circuit_.isrc.size();
-        const size_t slot = (i < nVoltage) ? i : circuit_.src.size() + (i - nVoltage);
-        if (slot >= sv.size())
-            continue;
-
         const double effectiveFs = (osFactor_ == wdf::OversamplingFactor::X1)
                                        ? fs_
                                        : (fs_ * static_cast<double>(osFactor_));
-        sv[slot] = wdf::sourceValueAt(baseSources_[slot], ac.ac, ac.freq, effectiveFs, sampleIndex_);
+        sv[i] = wdf::sourceValueAt(baseSources_[i], ac.ac, ac.freq, effectiveFs, sampleIndex_);
     }
 
     // The input source is the audio, which the caller supplies; it wins over

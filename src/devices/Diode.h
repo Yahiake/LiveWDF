@@ -1,8 +1,8 @@
 #pragma once
 
-// The Shockley diode and its extended form, in closed form.
+// Semiconductor junction and warm vacuum-diode laws.
 //
-// This is the project's one nonlinear two-terminal device law, used by the
+// The Shockley junction and its extended form are used by the
 // netlist `D` element (`src/spice/SpiceNet.h`), where `rs` is the SPICE diode's
 // own `RS`. With `rp > 0` this is the extended Shockley diode model of
 // Bernardini et al. (Bernardini, Werner, Maffezzoni, Sarti, 144th AES Conv.,
@@ -63,8 +63,7 @@ namespace wdf {
 /// by every Shockley-law device, which today is just the netlist diode.
 inline constexpr double kThermalVoltage = 1.38064852e-23 * 300.15 / 1.6021766208e-19;
 
-/// A Shockley diode with a series resistance and the extended form's parallel
-/// resistor -- see the header for the law and its one-omega closed form.
+/// A two-terminal semiconductor junction or a space-charge-limited vacuum plate.
 struct DiodeModel {
     double isat = 1e-9;  // IS, amperes
     double n = 1.0;      // emission coefficient (SPICE's `N`, the paper's eta)
@@ -89,11 +88,21 @@ struct DiodeModel {
     double breakdownV = 0.0;  // terminal voltage at the onset of avalanche current
     double breakdownI = 0.0;  // forward-law terminal current at that voltage
 
+    double perveance = 0.0;   // A/V^(3/2) for a hot vacuum diode plate
+
     /// `exp` of this overflows a double. Clamping the exponent past it keeps the
     /// law finite instead of producing `inf`/`NaN` for the Newton to chew on.
     static constexpr double kMaxExponent = 700.0;
 
     DiodeModel() = default;
+
+    static DiodeModel vacuumPlate(double perveance, double series = 0.0) noexcept {
+        DiodeModel result;
+        result.perveance = perveance;
+        result.rs = series;
+        return result;
+    }
+
     DiodeModel(double saturation, double emission, double series, double parallel = 0.0,
                double breakdown = 0.0, double avalancheCurrent = 1e-3) noexcept
         : isat(saturation),
@@ -146,6 +155,8 @@ struct DiodeModel {
 
     /// Same junction law after absorbing an external series resistance.
     DiodeModel withSeriesResistance(double resistance) const noexcept {
+        if (perveance > 0.0)
+            return vacuumPlate(perveance, resistance);
         return DiodeModel(isat, n, resistance, rp, bv, ibv);
     }
 
@@ -156,6 +167,27 @@ struct DiodeModel {
     /// residual ~5e-4 -- and this engine's Newton gates are 1e-12, so the
     /// refinement is what makes the closed form usable as a truth function.)
     void eval(double v, double& i, double& di) const noexcept {
+        if (perveance > 0.0) {
+            if (v <= 0.0) {
+                i = di = 0.0;
+                return;
+            }
+            double root = std::sqrt(v);
+            if (rs > 0.0) {
+                // For intrinsic voltage u and V = u + R*K*u^(3/2),
+                // t = sqrt(V/u) is the positive root of t^3 - t = R*K*sqrt(V).
+                constexpr double twoOverRootThree = 1.1547005383792515;
+                const double arg = (3.0 / twoOverRootThree) * rs * perveance * root;
+                const double t = twoOverRootThree * (arg <= 1.0
+                    ? std::cos(std::acos(arg) / 3.0)
+                    : std::cosh(std::acosh(arg) / 3.0));
+                root /= t;
+            }
+            i = perveance * root * root * root;
+            const double slope = 1.5 * perveance * root;
+            di = slope / (1.0 + rs * slope);
+            return;
+        }
         if (bv > 0.0 && v < breakdownV) {
             evalForwardLaw(breakdownV - v, i, di);
             i = breakdownI - i;
@@ -210,6 +242,8 @@ public:
     ///
     /// `limited` reports whether either fired, for the caller's diagnostics.
     double limit(double vold, double vnew, bool& limited) const noexcept {
+        if (perveance > 0.0)
+            return vnew;
         if (bv > 0.0 && vnew < breakdownV && rs == 0.0)
             return breakdownV - limitForward(breakdownV - vold, breakdownV - vnew, limited);
         if (rp > 0.0)
@@ -275,7 +309,8 @@ struct AntiParallelDiodeModel {
     AntiParallelDiodeModel() = default;
     AntiParallelDiodeModel(const DiodeModel& a, const DiodeModel& b) noexcept
         : d1(a), d2(b) {
-        symmetrical = (std::abs(a.isat - b.isat) < 1e-15 * a.isat) &&
+        symmetrical = a.perveance == 0.0 && b.perveance == 0.0 &&
+                      (std::abs(a.isat - b.isat) < 1e-15 * a.isat) &&
                       (std::abs(a.n - b.n) < 1e-6) &&
                       (std::abs(a.rs - b.rs) < 1e-6 * (a.rs + 1.0)) &&
                       (std::abs(a.rp - b.rp) <= 1e-9 * (a.rp + 1.0)) &&
@@ -425,7 +460,7 @@ struct AntiParallelDiodeModel {
 // Named diode device registry (Cathodyne table, DAFx / SPICE models)
 // --------------------------------------------------------------------------- //
 
-/// One selectable diode model: a display name and its Shockley-law parameters.
+/// One selectable diode model and its parameters.
 struct DiodeEntry {
     const char* name;
     double isat;
@@ -435,7 +470,11 @@ struct DiodeEntry {
     double bv = 0.0;
     double ibv = 1e-3;
 
-    DiodeModel model() const noexcept { return DiodeModel(isat, n, rs, rp, bv, ibv); }
+    double perveance = 0.0;
+
+    DiodeModel model() const noexcept {
+        return perveance > 0.0 ? DiodeModel::vacuumPlate(perveance, rs) : DiodeModel(isat, n, rs, rp, bv, ibv);
+    }
 };
 
 /// The original Cathodyne cards use the ATTILA extended Shockley fit for
@@ -475,6 +514,9 @@ inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N5231B",       1e-14,    1.0,  17.0,    1e6, 5.1 - 0.02 * 17.0, 0.02},
     {"1N5236B",       1e-14,    1.0,   6.0,    1e6, 7.5 - 0.02 * 6.0,  0.02},
     {"1N5240B",       1e-14,    1.0,  17.0,    1e6, 10.0 - 0.02 * 17.0, 0.02},
+    // RCA 5U4-GB (1954), p. 2, one plate, filament at 5 V. Fit to the 20–110 V curve.
+    // https://frank.pocnet.net/sheets/049/5/5U4GB.pdf
+    {"5U4GB", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00079},
 };
 
 inline constexpr int kNumDiodes = static_cast<int>(sizeof(kDiodeTable) / sizeof(kDiodeTable[0]));
