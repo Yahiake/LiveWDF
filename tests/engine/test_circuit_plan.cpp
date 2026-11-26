@@ -21,11 +21,16 @@ TEST_CASE("Packed Preview drive follows the sparse drive through factory knob tu
         }
     };
     const bool scattered = GENERATE(false, true);
-    const auto file = scattered ? "schematics/amps/EVH 5150 III 100S Stealth - Channel 3 (Preamp only).livewdf"
+    const auto file = scattered ? "schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf"
                                 : "schematics/studio/eq/SSL 4000 E 82E242 Black EQ.livewdf";
     wdf::LiveWDFDocument document;
     std::string error;
     REQUIRE(document.loadFromFile(file, error));
+    if (scattered) {
+        wdf::LiveWDFDocument preamp;
+        REQUIRE(document.makePreampDocument(preamp, error));
+        document = std::move(preamp);
+    }
     const auto circuit = wdf::circuitWithPortImpedances(document);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     REQUIRE(source != circuit.src.end());
@@ -1178,9 +1183,10 @@ TEST_CASE("Loaded junction port capacity is bounded consistently",
 
 TEST_CASE("Tube Preview follows the Soldano normal gain changes without rejected samples",
           "[engine][circuit-plan][triode-preview]") {
-    wdf::LiveWDFDocument document;
+    wdf::LiveWDFDocument full, document;
     std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive (Preamp).livewdf", error));
+    REQUIRE(full.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive.livewdf", error));
+    REQUIRE(full.makePreampDocument(document, error));
     const auto circuit = wdf::circuitWithPortImpedances(document);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     REQUIRE(source != circuit.src.end());

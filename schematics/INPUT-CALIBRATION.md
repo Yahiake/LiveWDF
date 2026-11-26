@@ -51,15 +51,11 @@ At the preset’s saved controls, **Track (level matched)** uses one fixed outpu
 
 Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
 
-Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. Turn **Power Amp** off beside **Circuit** to use its AC-coupled preamp output with the original 220 kΩ grid load. The switch is present on presets with a preamp tap. Both settings use the same input reference and have their own output match. Use **Cabinet** for speaker coloration in either setting.
+Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. Every factory amp has a modeled power stage. Turn **Power Amp** off beside **Circuit** to play through its preamp tap and bypass the power-stage solve. Both settings share the front-input reference and use independently measured output divisors. The [factory output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) cover the powered signal path. The [preamp measurements](../tests/bench/FACTORY-PREAMP-OUTPUT-LEVELS.csv) cover bypass. Use **Cabinet** for speaker and microphone coloration in either setting. See the [power-stage sources](AMP-POWER-SOURCES.md) for service drawings and model details.
 
-To add this option to a schematic, set `properties.powerAmp` to `"1"` on the components to remove, including any feedback from the power stage. On a retained component at the preamp output, set `properties.preampTap` to its signal pin name and `values.preampFullScaleVolts` to its calibrated output divisor. A shared rail can use `values.preampDc` to maintain its voltage under the reduced load.
+To add this option to a schematic, set `properties.powerAmp` to `"1"` on the components to remove, including any feedback from the power stage. On a retained component at the preamp output, set `properties.preampTap` to its signal pin name and `values.preampFullScaleVolts` to its calibrated output divisor. A shared rail can use `values.preampDc` to maintain its voltage under the reduced load. Set `properties.preampOnly` to `"1"` on a component that only connects the preamp tap when the power stage is off.
 
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
-
-On the third excerpt, 78 of 111 presets were within 1 dB of bypass and 104 were within 2 dB, including 18 of the 20 amps from the mixed DI sweep. The largest differences were +4.67 dB on the Maestro FZ-1 and +4.01 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.25 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
-
-The Silver Jubilee uses 0.95 dB more output headroom than the mixed DI fit to accommodate harder-picked passages.
 
 To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg. For the mixed amp DI sweep, pass `--amp-di` and select the desired presets with `--filter` or `--catalog`.
 
@@ -67,5 +63,5 @@ To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench accurate.csv --verify
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fast.csv --verify --fast-live
-python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench champ-preamp.csv --amp-di --preamp-only --filter "Tweed Champ" --verify
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench amp-preamp.csv --catalog schematics/amps --amp-di --preamp-only --verify
 ```
