@@ -171,8 +171,8 @@ private:
     OutputEffects outputEffects_;
     bool cabinetFollowsSuggestion_ = false;
     const std::atomic<float>* cabinetEnabled_ = apvts_.getRawParameterValue("cab_enabled");
-    const std::atomic<float>* echoMix_ = apvts_.getRawParameterValue("echo_mix");
-    const std::atomic<float>* reverbMix_ = apvts_.getRawParameterValue("reverb_mix");
+    const std::atomic<float>* echoLevel_ = apvts_.getRawParameterValue("echo_mix");
+    const std::atomic<float>* reverbLevel_ = apvts_.getRawParameterValue("reverb_mix");
     const std::atomic<float>* echoDelay_ = apvts_.getRawParameterValue("echo_delay");
     const std::atomic<float>* echoFeedback_ = apvts_.getRawParameterValue("echo_feedback");
     const std::atomic<float>* reverbSize_ = apvts_.getRawParameterValue("reverb_size");

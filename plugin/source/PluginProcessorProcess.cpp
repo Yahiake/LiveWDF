@@ -62,7 +62,7 @@ void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buff
 
 OutputEffects::Settings LiveWDFPluginProcessor::outputEffectSettings() const noexcept {
     const auto load = [](const std::atomic<float>* parameter) { return parameter->load(std::memory_order_relaxed); };
-    return {load(cabinetEnabled_) > 0.5f, load(echoMix_) * 0.01f, load(reverbMix_) * 0.01f,
+    return {load(cabinetEnabled_) > 0.5f, load(echoLevel_) * 0.01f, load(reverbLevel_) * 0.01f,
             load(echoDelay_), load(echoFeedback_) * 0.01f, load(reverbPreDelay_)};
 }
 

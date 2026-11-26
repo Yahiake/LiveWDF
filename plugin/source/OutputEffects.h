@@ -42,7 +42,7 @@ public:
 
     struct Settings {
         bool cabinet = false;
-        float echoMix = 0.0f, reverbMix = 0.0f;
+        float echoLevel = 0.0f, reverbLevel = 0.0f;
         float echoDelayMs = 250.0f, echoFeedback = 0.42f, preDelayMs = 0.0f;
     };
     static constexpr float maxEchoDelayMs = 1500.0f;

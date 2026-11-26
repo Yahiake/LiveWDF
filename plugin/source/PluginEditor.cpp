@@ -69,6 +69,7 @@ bool loadImpulseFromUrl(LiveWDFPluginProcessor& processor, bool reverb, const ju
 class LiveWDFPluginEditor::OutputEffectsPanel final : public juce::Component {
 public:
     explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters) {
+        setOpaque(true);
         constexpr struct {
             const char* id;
             const char* name;
@@ -76,10 +77,10 @@ public:
         } controls[] = {
             {"echo_delay", "Echo delay", " ms"},
             {"echo_feedback", "Echo feedback", " %"},
-            {"echo_mix", "Echo mix", " %"},
+            {"echo_mix", "Echo level", " %"},
             {"reverb_size", "Reverb size", " %"},
             {"reverb_predelay", "Reverb pre-delay", " ms"},
-            {"reverb_mix", "Reverb mix", " %"},
+            {"reverb_mix", "Reverb level", " %"},
         };
         for (size_t i = 0; i < rows_.size(); ++i) {
             auto& row = rows_[i];
@@ -96,6 +97,10 @@ public:
     }
 
     void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 220); }
+
+    void paint(juce::Graphics& g) override {
+        g.fillAll(findColour(juce::PopupMenu::backgroundColourId).withAlpha(1.0f));
+    }
 
     void resized() override {
         auto bounds = getLocalBounds().reduced(10);
@@ -750,9 +755,11 @@ void LiveWDFPluginEditor::showOutputEffects() {
         effectsPanel_ = std::make_unique<OutputEffectsPanel>(processor_.getAPVTS());
         effectsPanel_->fitWidth(getWidth());
         effectsBrowser_ = std::make_unique<juce::CallOutBox>(*effectsPanel_, effectsBtn_.getBounds(), this);
+        effectsBrowser_->setAlwaysOnTop(true);
         effectsBrowser_->setDismissalMouseClicksAreAlwaysConsumed(true);
     }
     effectsBrowser_->setVisible(true);
+    effectsBrowser_->toFront(true);
     if (!effectsBrowser_->isCurrentlyModal(false)) {
         const juce::Component::SafePointer<juce::CallOutBox> popup(effectsBrowser_.get());
         effectsBrowser_->enterModalState(true, juce::ModalCallbackFunction::create([popup](int) {

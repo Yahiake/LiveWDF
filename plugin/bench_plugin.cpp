@@ -2455,13 +2455,13 @@ static bool checkOutputEffectsState() {
     const auto close = [](float value, float expected) { return std::abs(value - expected) < 1e-5f; };
     const bool customRestored = restored.outputImpulseName(false) == irName && restored.outputImpulseName(true) == irName
         && restored.getTailLengthSeconds() > 4.0 && restored.getLatencySamples() == 0
-        && close(audio.getSample(0, 0), 0.03125f)
-        && close(audio.getSample(0, lateSample), 0.03125f)
+        && close(audio.getSample(0, 0), 0.1875f)
+        && close(audio.getSample(0, lateSample), 0.125f)
         && close(audio.getSample(1, lateSample), 0.0f)
-        && close(audio.getSample(1, lateSample + 1), 0.03125f)
-        && close(audio.getSample(0, 2 * lateSample), 0.0078125f)
-        && close(audio.getSample(0, echoSample), 0.03125f)
-        && close(audio.getSample(0, 2 * echoSample), 0.013125f);
+        && close(audio.getSample(1, lateSample + 1), 0.125f)
+        && close(audio.getSample(0, 2 * lateSample), 0.015625f)
+        && close(audio.getSample(0, echoSample), 0.09375f)
+        && close(audio.getSample(0, 2 * echoSample), 0.039375f);
     if (!customRestored)
         return false;
 
@@ -2470,7 +2470,7 @@ static bool checkOutputEffectsState() {
     restored.getAPVTS().getParameter("echo_mix")->setValueNotifyingHost(0.0f);
     const auto hall = render(restored);
     const auto* wet = hall.getReadPointer(0);
-    return close(wet[0], 0.0f) && std::any_of(wet + 1, wet + hall.getNumSamples(),
+    return close(wet[0], 0.25f) && std::any_of(wet + 1, wet + hall.getNumSamples(),
         [](float sample) { return std::abs(sample) > 1e-4f; });
 }
 
@@ -2512,7 +2512,7 @@ static bool checkOutputEffectControls() {
     set(echo, "echo_mix", 100.0f);
     echo.prepareToPlay(rate, blockSize);
     const auto repeats = render(echo);
-    if (!close(repeats.getSample(0, 0), 0.0f) ||
+    if (!close(repeats.getSample(0, 0), 0.25f) ||
         !close(repeats.getSample(0, echoDelay - 1), 0.0f) ||
         !close(repeats.getSample(0, echoDelay), 0.25f) ||
         !close(repeats.getSample(0, 2 * echoDelay), 0.1375f) ||
@@ -2554,7 +2554,7 @@ static bool checkOutputEffectControls() {
     room.prepareToPlay(rate, blockSize);
     const auto stretched = render(room);
     if (room.getLatencySamples() != 0 ||
-        !close(stretched.getSample(0, 0), 0.125f) ||
+        !close(stretched.getSample(0, 0), 0.25f) ||
         !close(stretched.getSample(0, onset), 0.0f) ||
         !close(stretched.getSample(0, onset + preDelay), 0.0625f) ||
         !close(stretched.getSample(0, reflection + preDelay), 0.03125f) ||
@@ -2573,7 +2573,7 @@ static bool checkOutputEffectControls() {
     scratch.clear();
     const auto allocations = tAllocs;
     livewdf::OutputEffects::Settings settings;
-    settings.echoMix = settings.reverbMix = 0.5f;
+    settings.echoLevel = settings.reverbLevel = 0.5f;
     settings.preDelayMs = 50.0f;
     for (int i = 0; i < 16; ++i)
         live.process(juce::dsp::AudioBlock<float>(scratch), settings, false);
@@ -2581,7 +2581,7 @@ static bool checkOutputEffectControls() {
         return false;
 #endif
 
-    return close(shortened.getSample(0, 0), 0.125f) &&
+    return close(shortened.getSample(0, 0), 0.25f) &&
            close(shortened.getSample(0, onset + preDelay), 0.0625f) &&
            close(shortened.getSample(0, reflection + preDelay), 0.03125f) &&
            close(shortened.getSample(0, 12720), 0.0625f) &&
