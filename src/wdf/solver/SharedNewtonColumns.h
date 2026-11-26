@@ -102,13 +102,16 @@ public:
 
     // Assemble I + S J C and -S J F from the local device Jacobians. Rows
     // eliminated by S do not contribute to either side.
+    template <bool RefreshMatrix = true>
     void assemble(const double* jacobian, const double* f, int ports,
                   const int* activePorts, const std::vector<RootDevice>& devices) noexcept {
         const int groups = int(representatives_.size());
-        std::fill(matrix_.begin(), matrix_.end(), 0.);
+        if constexpr (RefreshMatrix) {
+            std::fill(matrix_.begin(), matrix_.end(), 0.);
+            for (int g = 0; g < groups; ++g)
+                matrix_[g * groups + g] = 1.;
+        }
         std::fill(rhs_.begin(), rhs_.end(), 0.);
-        for (int g = 0; g < groups; ++g)
-            matrix_[g * groups + g] = 1.;
         for (const RootDevice& device : devices) {
             for (int i = device.activeRowBase; i < device.activeRowBase + device.numActiveRows; ++i) {
                 const auto [group, sign] = members_[i];
@@ -119,9 +122,11 @@ public:
                     const double slope = sign * derivative[q];
                     if (slope == 0.) continue;
                     rhs_[group] -= slope * f[q];
-                    const double* column = columns_.data() + q * groups;
-                    for (int g = 0; g < groups; ++g)
-                        row[g] += slope * column[g];
+                    if constexpr (RefreshMatrix) {
+                        const double* column = columns_.data() + q * groups;
+                        for (int g = 0; g < groups; ++g)
+                            row[g] += slope * column[g];
+                    }
                 }
             }
         }
@@ -146,8 +151,14 @@ public:
         return true;
     }
 
-    bool finish(const double* f, int rows, double* dv) noexcept {
-        if (!detail::solveDroppingZeroCorrections(matrix_.data(), rhs_.data(), int(representatives_.size())))
+    bool finish(const double* f, int rows, double* dv,
+                detail::CorrectionLU* factors = nullptr, bool reuse = false) noexcept {
+        const int groups = int(representatives_.size());
+        const bool solved = factors
+            ? (reuse ? factors->solve(matrix_.data(), rhs_.data())
+                     : factors->factorAndSolve(matrix_.data(), rhs_.data(), groups))
+            : detail::solveDroppingZeroCorrections(matrix_.data(), rhs_.data(), groups);
+        if (!solved)
             return false;
         multiply(packed_.data(), rhs_.data(), int(rhs_.size()), f, nullptr, rows, dv);
         return true;

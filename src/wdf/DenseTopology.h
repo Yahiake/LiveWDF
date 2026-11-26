@@ -208,6 +208,8 @@ struct PhaseProfile {
     double linesearch = 0.0; // halving trials, including their evals
     double post = 0.0;       // node reconstruction + capacitor states
     long long samples = 0;
+    long long factorReuseTrials = 0;
+    long long factorReuseAccepted = 0;
 
     double total() const noexcept {
         return offsets + network + solve + post;

@@ -26,6 +26,13 @@ using wdf::json::Value;
 constexpr double sampleRate = 48000.0;
 constexpr size_t blockSize = 128;
 
+class RenderEngine : public wdf::Engine {
+public:
+    using Engine::Engine;
+    void useJointFactors(bool enabled) noexcept { jointFactorReuseEnabled_ = enabled; }
+    bool hasCompactJoint() const noexcept { return sharedNewtonColumns_.available(); }
+};
+
 Value readJson(const std::filesystem::path& path) {
     std::ifstream input(path);
     if (!input) throw std::runtime_error("Cannot read " + path.string());
@@ -175,7 +182,7 @@ int main(int argc, char** argv) try {
     if (configuration["normalized_input"].asBool(true)) {
         for (double& sample : wave) sample *= document.inputVoltsPerFullScale();
     }
-    wdf::Engine engine(circuit, sampleRate);
+    RenderEngine engine(circuit, sampleRate);
     const int output = engine.nodeIndex(document.outputNet());
     if (output < 0) throw std::runtime_error("Circuit has no audio output");
     engine.prepareLiveControls();
@@ -193,6 +200,12 @@ int main(int argc, char** argv) try {
         prepareFast(engine, circuit, input, output, preview, outputOnly,
                     document.previewPeakVolts(), document.allowPreviewInputPad);
         engine.useMixedAffineReduction(true);
+    }
+    const bool realtimePreview = preview && configuration["realtime_preview"].asBool();
+    if (realtimePreview) {
+        engine.useTriodePreview(true);
+        engine.useJointFactors(configuration["joint_lu_reuse"].asBool());
+        engine.setProfile(configuration["profile_joint_lu"].asBool());
     }
     const auto initial = engine.dcValues();
     auto values = initial;
@@ -218,6 +231,7 @@ int main(int argc, char** argv) try {
     };
     const int warmup = configuration["warmup"].asInt(1024);
     for (int n = 0; n < warmup; ++n) step(0.0, n, false);
+    engine.resetPhaseProfile();
     const auto rejectedBefore = engine.stateRejectCount();
     const auto loadedBefore = engine.loadedJunctionHits(), affineBefore = engine.affineRootHits(), planBefore = engine.circuitPlanHits();
     const auto affineNodeBefore = engine.affineNodePreviewHits();
@@ -258,6 +272,13 @@ int main(int argc, char** argv) try {
     report["plan_hits"] = double(engine.circuitPlanHits() - planBefore);
     report["bipolar_hits"] = double(bipolar);
     report["moves"] = double(nextMove);
+    if (realtimePreview) {
+        report["joint_lu_reuse"] = configuration["joint_lu_reuse"].asBool();
+        report["compact_joint"] = engine.hasCompactJoint();
+        report["adjusted_transfer"] = engine.hasAdjustedLiveTransfer();
+        report["reuse_trials"] = double(engine.phaseProfile().factorReuseTrials);
+        report["reuse_accepted"] = double(engine.phaseProfile().factorReuseAccepted);
+    }
     report["blocks"] = std::move(blocks);
     writeText(prefix.string() + ".json", report.serialize());
     std::ofstream audio(prefix.string() + ".f64", std::ios::binary);

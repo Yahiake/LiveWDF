@@ -825,6 +825,7 @@ public:
                 const int o = dev.portBase;
                 const int rBase = dev.activeRowBase;
                 r[rBase] = -(jData[o * K + o] * fData[o] + jData[o * K + o + 1] * fData[o + 1]);
+                r[rBase + 1] = 0.;
                 break;
             }
             case DeviceKind::Bjt: {
@@ -834,8 +835,19 @@ public:
                 r[rBase + 1] = -(jData[(o + 1) * K + o] * fData[o] + jData[(o + 1) * K + o + 1] * fData[o + 1]);
                 break;
             }
-            case DeviceKind::OpAmp:
+            case DeviceKind::OpAmp: {
+                const int o = dev.portBase;
+                for (int rr = 0; rr < 3; ++rr) {
+                    double rf = 0.;
+                    for (int q = 0; q < 3; ++q) {
+                        const double jrq = jData[(o + rr) * K + o + q];
+                        if (jrq != 0.)
+                            rf += jrq * fData[o + q];
+                    }
+                    r[dev.activeRowBase + rr] = -rf;
+                }
                 break;
+            }
             }
         }
     }

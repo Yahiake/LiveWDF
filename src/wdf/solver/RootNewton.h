@@ -88,6 +88,7 @@ struct NewtonContext {
     double& lastResidual;
     bool skipIdenticalRetry = false;
     bool pentodePreview = false;
+    bool jointFactorReuse = false;
 };
 
 class RootNewton {
@@ -253,6 +254,12 @@ public:
         bool curValid = false;
         bool reached = false;
         const bool poweredPreview = ctx.pentodePreview && !ctx.staticMode;
+        const bool compact = ctx.sharedColumns && ctx.sharedColumns->available();
+        bool useFactors = ctx.jointFactorReuse && poweredPreview && ctx.nRed >= 8 &&
+                          ctx.nRed <= detail::maxCompactSolveSize && !ctx.Zred.empty();
+        detail::CorrectionLU factors;
+        bool reuse = false;
+        int reuseCount = 0;
         int lastImprovement = 0;
         ctx.bestFn = std::numeric_limits<double>::infinity();
         double base = 0.0;
@@ -279,7 +286,8 @@ public:
             }
 
             tPhase = tick();
-            const bool compact = ctx.sharedColumns && ctx.sharedColumns->available();
+            if (reuse && ctx.profileOn)
+                ++ctx.prof->factorReuseTrials;
             const auto assembleFull = [&] {
                 if (!ctx.Zred.empty()) {
                     RootJacobian::reducedAssembleFast(
@@ -291,16 +299,38 @@ public:
                         ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
                 }
             };
-            if (compact)
-                ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
-                                            ctx.redCol.data(), ctx.rootDevices);
-            else
+            if (compact) {
+                if (reuse)
+                    ctx.sharedColumns->assemble<false>(ctx.J.data(), ctx.F.data(), ctx.K,
+                                                       ctx.redCol.data(), ctx.rootDevices);
+                else
+                    ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
+                                                ctx.redCol.data(), ctx.rootDevices);
+            } else if (reuse) {
+                RootJacobian::reducedRhs(ctx.J.data(), ctx.F.data(), ctx.K, ctx.rootDevices.data(),
+                                         ctx.rootDevices.size(), ctx.rN.data());
+            } else {
                 assembleFull();
+            }
             if (ctx.prof)
                 tock(ctx.prof->jacobian);
 
             tPhase = tick();
-            bool solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
+            bool solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data(),
+                                                                useFactors ? &factors : nullptr, reuse);
+            if (!compact && useFactors) {
+                solved = reuse ? factors.solve(ctx.Mr.data(), ctx.rN.data())
+                               : factors.factorAndSolve(ctx.Mr.data(), ctx.rN.data(), ctx.nRed);
+                if (solved)
+                    RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
+                                               ctx.nRed, ctx.K, ctx.dv.data());
+            }
+            if (!solved && useFactors) {
+                useFactors = reuse;
+                reuse = false;
+                --it;
+                continue;
+            }
             if (!solved) {
                 if (compact)
                     assembleFull();
@@ -345,7 +375,7 @@ public:
             double ftNorm = 0.0;
             // Near a hard op-amp rail the fourth trial can still worsen the
             // full residual. A few more backtracks avoid a discarded sample.
-            const int maxTrials = allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4;
+            const int maxTrials = reuse ? 1 : (allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4);
             int h = 0;
             for (; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
@@ -370,6 +400,22 @@ public:
             usedExtraBacktracking |= h >= 4;
             if (ctx.prof)
                 tock(ctx.prof->linesearch);
+
+            constexpr double reuseContraction = .4;
+            const bool contracting = ftNorm < tol || ftNorm < reuseContraction * base;
+            if (reuse) {
+                if (!contracting || !std::all_of(ctx.ft.begin(), ctx.ft.begin() + ctx.K,
+                                                 [](double f) { return std::isfinite(f); })) {
+                    // Refresh at the unchanged iterate and keep the full line search.
+                    reuse = false;
+                    --it;
+                    continue;
+                }
+                if (ctx.profileOn)
+                    ++ctx.prof->factorReuseAccepted;
+            }
+            reuseCount = reuse ? reuseCount + 1 : 0;
+            reuse = useFactors && reuseCount < 2 && h == 0 && contracting && ftNorm < .05;
 
             double maxDelta = 0.0, maxV = 0.0;
             for (int r = 0; r < ctx.K; ++r) {
