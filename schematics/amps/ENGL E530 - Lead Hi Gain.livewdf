@@ -375,6 +375,156 @@
       }
     },
     {
+      "id": "C clean treble",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 49
+      }
+    },
+    {
+      "id": "R clean treble top",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 125000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 53
+      }
+    },
+    {
+      "id": "R clean treble bottom",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 125000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 57
+      }
+    },
+    {
+      "id": "R clean bass",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 60100.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 61
+      }
+    },
+    {
+      "id": "R clean middle",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2400.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 65
+      }
+    },
+    {
+      "id": "GND clean middle",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 69
+      }
+    },
+    {
+      "id": "R clean volume path",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 854000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 57
+      }
+    },
+    {
+      "id": "GND clean volume",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 61
+      }
+    },
+    {
+      "id": "R clean slope",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 20,
+        "y": 49
+      }
+    },
+    {
+      "id": "C clean bass",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 20,
+        "y": 55
+      }
+    },
+    {
+      "id": "C clean mid",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 26,
+        "y": 55
+      }
+    },
+    {
       "id": "GND8",
       "properties": {},
       "type": "gnd",
@@ -1346,6 +1496,94 @@
   "name": "ENGL E530 - Lead Hi Gain",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 40,
+          "y": 17
+        },
+        {
+          "x": 40,
+          "y": 47
+        },
+        {
+          "x": 8,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 8,
+          "y": 55
+        },
+        {
+          "x": 3,
+          "y": 55
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 51
+        },
+        {
+          "x": 20,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 57
+        },
+        {
+          "x": 20,
+          "y": 59
+        },
+        {
+          "x": 8,
+          "y": 59
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 51
+        },
+        {
+          "x": 26,
+          "y": 51
+        },
+        {
+          "x": 26,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 57
+        },
+        {
+          "x": 26,
+          "y": 63
+        },
+        {
+          "x": 8,
+          "y": 63
+        }
+      ]
+    },
     {
       "points": [
         {
