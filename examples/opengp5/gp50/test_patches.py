@@ -24,7 +24,7 @@ def main():
             "0 set POT_0 230", "0 set POT_1 740", "0 set POT_2 610",
             "0 set Input 82", "0 set Level 134",
             "0 set Cab 1", "0 set Delay 35", "0 set Reverb 15", "0 set Effect 0",
-            "0.10 save click",
+            "0.02 drum click", "0.06 para turn 2", "0.10 save click", "0.24 exit click",
             *screens(1.15, "saved"),
             "1.42 para turn 4", "1.44 shot input-saved",
             "1.45 global click", "1.60 shot output-saved",

@@ -283,6 +283,7 @@ void fw_gp50_button(unsigned button, int down)
     case GP50_BUTTON_SAVE:
         for (unsigned i = 0; i < GP5_NPARAMS; ++i)
             patches[patch][i] = (int16_t)gp5_param(i);
+        page.adjusting = 0;
         gp5_ui_page_message(&page, "PATCH SAVED", 900);
         break;
     case GP50_BUTTON_EXIT:
