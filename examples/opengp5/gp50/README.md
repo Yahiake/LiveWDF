@@ -5,12 +5,16 @@ Footswitch A recalls the previous patch and B recalls the next patch. Each
 patch includes the model, all its settings, Input, Level, bypass, cabinet,
 delay and reverb. The initial patch bank has one patch per model.
 
-The left encoder adjusts Drive or Input, the middle encoder adjusts Level,
-and the right encoder adjusts a second model control or Delay. Turn and press PARA to
-browse and edit the other settings. GLOBAL opens the output controls. DRUM
-is a shortcut to Delay, and EXIT leaves the current edit. SAVE updates the
-active patch. On the pedal, **SAVED IN RAM** means storage is unavailable
-and the changes are lost at power-off.
+The screen labels each knob directly. The middle knob always adjusts patch
+Level. On the home screen the outer knobs adjust the model's most useful controls
+or show a shortcut such as Input or Delay. Turn PARA to browse patches and
+press it to open the edit pages. Turn PARA to move between pages, and use the
+left and right knobs to edit the settings shown above them.
+
+GLOBAL opens Cabinet and bypass. DRUM opens Delay and Reverb. EXIT returns home
+and keeps edits. SAVE writes the current patch to its slot. An asterisk marks
+unsaved edits, which are discarded when you recall a different patch. **Saved in
+RAM** means storage is unavailable and changes are lost at power-off.
 Level extends to 200%, with up to 6 dB of extra output above 100%.
 
 The DOD 250 Gray model runs the schematic's capacitor recurrence, the
@@ -77,14 +81,13 @@ pw-jack python3 "$emulator/tools/simulate.py" "$catalog" --gp50 --live \
   --host-dsp "$catalog/livewdf_gp50_catalog.so"
 ```
 
-Use the same patch and encoder controls on the desktop. The **Control**
-row selects a pot or rheostat for deeper edits. Circuit switches use
-their factory settings.
+Use PARA's Circuit pages to access each model's pots and rheostats. Circuit
+switches use their factory settings.
 
 For offline simulations, add `--store /path/to/patches.store` to keep the
 patch bank and reopen the last saved patch on the next run. Use the same
 catalog and parameter layout when reopening a saved bank.
 
-Cab, Delay and Reverb are on the same screen. The emulator’s **Expression**
+The emulator’s **Expression**
 slider moves the original Cry Baby treadle pot. An offline script can use
 `0.1 set Model 15` and `0.3 expression 255`.
