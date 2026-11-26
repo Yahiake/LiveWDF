@@ -316,7 +316,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 // Calibration uses mono native float32 streams at 48 kHz. Keep the host's
 // bypass as the digital reference, including the final short callback.
 int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
-                      bool fastLive) {
+                      bool fastLive, bool preampOnly, const juce::String& cabinet) {
     constexpr int blockSize = 128;
     std::ifstream source(inPath, std::ios::binary);
     std::ofstream dest(outPath, std::ios::binary);
@@ -330,6 +330,7 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         p->setValueNotifyingHost(p->convertTo0to1(value));
     };
     processor.setNonRealtime(!fastLive);
+    set("power_amp", preampOnly ? 0.f : 1.f);
     set("export_4x", 0);
     set("accurate_export", 1);
     set("oversampling", 0);
@@ -340,11 +341,25 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         std::fprintf(stderr, "%s\n", processor.lastError().c_str());
         return 1;
     }
+    if (preampOnly && processor.getCurrentDocument().preampTap() == nullptr) {
+        std::fprintf(stderr, "No preamp output in %s\n", file.getFileName().toRawUTF8());
+        return 1;
+    }
+    if (cabinet.isNotEmpty()) {
+        if (!processor.selectFactoryOutputImpulse(false, cabinet)) {
+            std::fprintf(stderr, "Unknown factory cabinet %s\n", cabinet.toRawUTF8());
+            return 1;
+        }
+        set("cab_enabled", 1);
+    }
     set("input_trim", 0);
     set("output_master", 0);
     set("mix", 100);
     set("match_output", 1);
     set("chain_input", 0);
+    // Keep bypass calls from draining the wet processor's effect history.
+    livewdf::LiveWDFPluginProcessor bypassProcessor;
+    bypassProcessor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
     juce::MidiBuffer midi;
     juce::AudioBuffer<float> wet(2, blockSize), bypass(2, blockSize);
     float in[blockSize];
@@ -356,7 +371,7 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         wet.setSize(2, frames, false, false, true);
         for (int c = 0; c < 2; ++c) wet.copyFrom(c, 0, in, frames);
         bypass.makeCopyOf(wet, true);
-        processor.processBlockBypassed(bypass, midi);
+        bypassProcessor.processBlockBypassed(bypass, midi);
         if (!std::equal(in, in + frames, bypass.getReadPointer(0))) {
             std::fprintf(stderr, "1x host bypass differs from source\n");
             return 1;
@@ -533,6 +548,8 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     // The direct reference steps with the engine's Accurate tolerance.
     auto* quality = processor.getAPVTS().getParameter("solve_quality");
     quality->setValueNotifyingHost(quality->convertTo0to1(0.0f));
+    auto* outputGain = processor.getAPVTS().getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         st.error = "load failed: " + processor.lastError();
@@ -690,6 +707,7 @@ bool checkPhysicalRouting() {
     };
     set("solve_quality", 0);
     set("mix", 50);
+    set("output_master", 0);
     constexpr int frames = 16;
     processor.prepareToPlay(kSampleRate, frames);
     if (!processor.loadCircuitDocument(doc))
@@ -737,6 +755,7 @@ bool checkPreviewPad(const juce::File& factoryPreset) {
     set("compiled_preview", 1);
     set("stereo", 1);
     set("mix", 50);
+    set("output_master", 0);
     set("export_4x", 0);
     juce::AudioBuffer<float> block(2, frames);
     juce::MidiBuffer midi;
@@ -801,6 +820,8 @@ bool checkExternalImpedanceDefaults() {
     livewdf::LiveWDFPluginProcessor processor;
     processor.prepareToPlay(kSampleRate, 16);
     auto& parameters = processor.getAPVTS();
+    auto* outputGain = parameters.getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     const auto output = [&] {
         juce::AudioBuffer<float> block(2, 16);
         juce::MidiBuffer midi;
@@ -2196,6 +2217,55 @@ int runRuntimeCheck(const juce::File& file) {
 
 namespace livewdf {
 
+bool checkPowerAmp(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    processor.setPlayConfigDetails(2, 2, kSampleRate, 128);
+    processor.prepareToPlay(kSampleRate, 128);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return false;
+    }
+    const auto& doc = processor.getCurrentDocument();
+    const auto* tap = doc.preampTap();
+    if (tap == nullptr)
+        return false;
+    const double fullScale = doc.outputFullScaleVolts();
+    const double preampScale = tap->values.at("preampFullScaleVolts");
+    const auto& circuit = processor.settledControlCircuit_;
+    const auto checkMode = [&](bool enabled) {
+        const bool topology = enabled ? circuit.pent.size() == 1 && !circuit.ind.empty()
+                                      : circuit.pent.empty() && circuit.ind.empty();
+        if (topology && processor.outNodeIndex_ >= 0 &&
+            processor.getCircuitOutputFullScaleVolts() == (enabled ? fullScale : preampScale))
+            return true;
+        std::fprintf(stderr, "Unexpected Champ topology or output scale with Power Amp %s\n",
+                     enabled ? "on" : "off");
+        return false;
+    };
+    if (!checkMode(true))
+        return false;
+
+    auto& parameters = processor.getAPVTS();
+    auto* powerAmp = parameters.getParameter("power_amp");
+    auto* volume = parameters.getParameter("pot_0");
+    volume->setValueNotifyingHost(.42f);
+    const float savedVolume = volume->getValue();
+    powerAmp->setValueNotifyingHost(0.f);
+    processor.applyPendingCircuitOptions();
+    if (!checkMode(false) || processor.getCurrentCircuitFile() != file || volume->getValue() != savedVolume)
+        return false;
+
+    juce::MemoryBlock preampState;
+    processor.getStateInformation(preampState);
+    powerAmp->setValueNotifyingHost(1.f);
+    processor.applyPendingCircuitOptions();
+    if (!checkMode(true))
+        return false;
+
+    processor.setStateInformation(preampState.getData(), static_cast<int>(preampState.getSize()));
+    return checkMode(false) && powerAmp->getValue() == 0.f && volume->getValue() == savedVolume;
+}
+
 bool checkLivePreviewCapture(const juce::File& file) {
     LiveWDFPluginProcessor processor;
     const auto set = [&](const char* id, float value) {
@@ -2329,9 +2399,252 @@ bool checkLivePreviewPotMotion(const juce::File& file) {
 
 } // namespace livewdf
 
+static bool checkOutputEffectsState() {
+    constexpr double sampleRate = 48000.0;
+    constexpr int blockSize = 128;
+    constexpr int echoSample = 12000;
+    constexpr int lateSample = 3000;
+    const auto render = [=](livewdf::LiveWDFPluginProcessor& processor) {
+        juce::AudioBuffer<float> result(2, 2 * echoSample + blockSize);
+        result.clear();
+        result.setSample(0, 0, 0.25f);
+        result.setSample(1, 0, 0.25f);
+        juce::MidiBuffer midi;
+        for (int offset = 0; offset < result.getNumSamples(); offset += blockSize) {
+            juce::AudioBuffer<float> block(result.getArrayOfWritePointers(), 2, offset,
+                std::min(blockSize, result.getNumSamples() - offset));
+            processor.processBlock(block, midi);
+        }
+        return result;
+    };
+
+    juce::MemoryBlock saved;
+    juce::String irName;
+    {
+        juce::TemporaryFile file(".wav");
+        irName = file.getFile().getFileName();
+        juce::AudioBuffer<float> ir(2, lateSample + 2);
+        ir.clear();
+        ir.setSample(0, 0, 0.5f);
+        ir.setSample(1, 0, 0.5f);
+        ir.setSample(0, lateSample, 0.25f);
+        ir.setSample(1, lateSample + 1, 0.25f);
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::OutputStream> stream = file.getFile().createOutputStream();
+        auto writer = format.createWriterFor(stream, juce::AudioFormatWriterOptions{}
+            .withSampleRate(sampleRate).withNumChannels(2).withBitsPerSample(24));
+        if (!writer || !writer->writeFromAudioSampleBuffer(ir, 0, ir.getNumSamples()))
+            return false;
+        writer.reset();
+
+        livewdf::LiveWDFPluginProcessor source;
+        if (!source.loadOutputImpulse(false, file.getFile()) || !source.loadOutputImpulse(true, file.getFile()))
+            return false;
+        source.getAPVTS().getParameter("cab_enabled")->setValueNotifyingHost(1.0f);
+        source.getAPVTS().getParameter("echo_mix")->setValueNotifyingHost(0.5f);
+        source.getAPVTS().getParameter("reverb_mix")->setValueNotifyingHost(1.0f);
+        source.getStateInformation(saved);
+    }
+    auto old = juce::ValueTree::fromXml(*juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize())));
+    for (const auto* id : {"output_master", "echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
+        old.removeChild(old.getChildWithProperty("id", id), nullptr);
+    juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
+    livewdf::LiveWDFPluginProcessor restored;
+    restored.getAPVTS().getParameter("echo_delay")->setValueNotifyingHost(1.0f);
+    restored.getAPVTS().getParameter("echo_feedback")->setValueNotifyingHost(1.0f);
+    restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    restored.setNonRealtime(true);
+    restored.prepareToPlay(sampleRate, blockSize);
+    const auto audio = render(restored);
+    const auto close = [](float value, float expected) { return std::abs(value - expected) < 1e-5f; };
+    const bool customRestored = restored.outputImpulseName(false) == irName && restored.outputImpulseName(true) == irName
+        && restored.getTailLengthSeconds() > 4.0 && restored.getLatencySamples() == 0
+        && close(audio.getSample(0, 0), 0.1875f)
+        && close(audio.getSample(0, lateSample), 0.125f)
+        && close(audio.getSample(1, lateSample), 0.0f)
+        && close(audio.getSample(1, lateSample + 1), 0.125f)
+        && close(audio.getSample(0, 2 * lateSample), 0.015625f)
+        && close(audio.getSample(0, echoSample), 0.09375f)
+        && close(audio.getSample(0, 2 * echoSample), 0.039375f);
+    if (!customRestored)
+        return false;
+
+    restored.resetOutputImpulse(true);
+    restored.getAPVTS().getParameter("cab_enabled")->setValueNotifyingHost(0.0f);
+    restored.getAPVTS().getParameter("echo_mix")->setValueNotifyingHost(0.0f);
+    const auto hall = render(restored);
+    const auto* wet = hall.getReadPointer(0);
+    return close(wet[0], 0.25f) && std::any_of(wet + 1, wet + hall.getNumSamples(),
+        [](float sample) { return std::abs(sample) > 1e-4f; });
+}
+
+static bool checkOutputEffectControls() {
+    constexpr double rate = 48000.0;
+    constexpr int blockSize = 128;
+    constexpr int frames = 22000;
+    constexpr int echoDelay = 3840;
+    constexpr int preDelay = 2400;
+    constexpr int onset = 4800;
+    constexpr int reflection = 6000;
+    constexpr int late = 12000;
+
+    using Processor = livewdf::LiveWDFPluginProcessor;
+    const auto set = [](Processor& processor, const char* id, float value) {
+        auto& parameter = *processor.getAPVTS().getParameter(id);
+        parameter.setValueNotifyingHost(parameter.convertTo0to1(value));
+    };
+    const auto render = [=](Processor& processor) {
+        juce::AudioBuffer<float> output(2, frames);
+        output.clear();
+        for (int channel = 0; channel < output.getNumChannels(); ++channel)
+            output.setSample(channel, 0, 0.25f);
+        juce::MidiBuffer midi;
+        for (int offset = 0; offset < frames; offset += blockSize) {
+            juce::AudioBuffer<float> block(output.getArrayOfWritePointers(), 2, offset,
+                                           std::min(blockSize, frames - offset));
+            processor.processBlock(block, midi);
+        }
+        return output;
+    };
+    const auto close = [](float value, float expected) { return std::abs(value - expected) < 1.e-5f; };
+
+    Processor echo;
+    echo.setNonRealtime(true);
+    set(echo, "output_master", 0.0f);
+    set(echo, "echo_delay", 80.0f);
+    set(echo, "echo_feedback", 55.0f);
+    set(echo, "echo_mix", 100.0f);
+    echo.prepareToPlay(rate, blockSize);
+    const auto repeats = render(echo);
+    if (!close(repeats.getSample(0, 0), 0.25f) ||
+        !close(repeats.getSample(0, echoDelay - 1), 0.0f) ||
+        !close(repeats.getSample(0, echoDelay), 0.25f) ||
+        !close(repeats.getSample(0, 2 * echoDelay), 0.1375f) ||
+        !close(repeats.getSample(0, 3 * echoDelay), 0.075625f))
+        return false;
+
+    juce::MemoryBlock state;
+    {
+        juce::TemporaryFile file(".wav");
+        juce::AudioBuffer<float> ir(1, late + 1000);
+        ir.clear();
+        ir.setSample(0, onset, 0.5f);
+        ir.setSample(0, reflection, 0.25f);
+        ir.setSample(0, late, 0.5f);
+        juce::WavAudioFormat format;
+        std::unique_ptr<juce::OutputStream> stream = file.getFile().createOutputStream();
+        auto writer = format.createWriterFor(stream, juce::AudioFormatWriterOptions{}
+            .withSampleRate(rate).withNumChannels(1).withBitsPerSample(24));
+        if (!writer || !writer->writeFromAudioSampleBuffer(ir, 0, ir.getNumSamples()))
+            return false;
+        writer.reset();
+        if (!echo.loadOutputImpulse(true, file.getFile()))
+            return false;
+        set(echo, "reverb_mix", 50.0f);
+        set(echo, "reverb_predelay", 50.0f);
+        set(echo, "reverb_size", 150.0f);
+        echo.getStateInformation(state);
+    }
+
+    Processor room;
+    room.setNonRealtime(true);
+    room.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    if (!close(room.getAPVTS().getRawParameterValue("echo_delay")->load(), 80.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("echo_feedback")->load(), 55.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("reverb_size")->load(), 150.0f) ||
+        !close(room.getAPVTS().getRawParameterValue("reverb_predelay")->load(), 50.0f))
+        return false;
+    set(room, "echo_mix", 0.0f);
+    room.prepareToPlay(rate, blockSize);
+    const auto stretched = render(room);
+    if (room.getLatencySamples() != 0 ||
+        !close(stretched.getSample(0, 0), 0.25f) ||
+        !close(stretched.getSample(0, onset), 0.0f) ||
+        !close(stretched.getSample(0, onset + preDelay), 0.0625f) ||
+        !close(stretched.getSample(0, reflection + preDelay), 0.03125f) ||
+        !close(stretched.getSample(0, late + preDelay), 0.0f) ||
+        !close(stretched.getSample(0, 16080), 0.0625f))
+        return false;
+
+    set(room, "reverb_size", 50.0f);
+    const auto shortened = render(room);
+
+#if defined(__GLIBC__)
+    livewdf::OutputEffects live;
+    live.prepare({rate, blockSize, 2}, 1.0f);
+    live.applyReverbSize(1.5f, true);
+    juce::AudioBuffer<float> scratch(2, blockSize);
+    scratch.clear();
+    const auto allocations = tAllocs;
+    livewdf::OutputEffects::Settings settings;
+    settings.echoLevel = settings.reverbLevel = 0.5f;
+    settings.preDelayMs = 50.0f;
+    for (int i = 0; i < 16; ++i)
+        live.process(juce::dsp::AudioBlock<float>(scratch), settings, false);
+    if (tAllocs != allocations)
+        return false;
+#endif
+
+    return close(shortened.getSample(0, 0), 0.25f) &&
+           close(shortened.getSample(0, onset + preDelay), 0.0625f) &&
+           close(shortened.getSample(0, reflection + preDelay), 0.03125f) &&
+           close(shortened.getSample(0, 12720), 0.0625f) &&
+           close(shortened.getSample(0, 16080), 0.0f);
+}
+
+static bool checkFactoryOutputIrState(const juce::File& amp) {
+    livewdf::LiveWDFPluginProcessor source;
+    for (bool reverb : {false, true}) {
+        for (const auto& preset : source.factoryOutputImpulses(reverb)) {
+            if (!source.selectFactoryOutputImpulse(reverb, preset.id)
+                || source.outputImpulseId(reverb) != preset.id
+                || source.outputImpulseName(reverb) != preset.name) {
+                std::fprintf(stderr, "Could not select bundled IR %s\n", preset.id);
+                return false;
+            }
+        }
+    }
+    if (!source.loadCircuitFromFile(amp) || !source.reloadCircuit()
+        || source.suggestedCabinetId() != "orange-ppc112-v30-sm57"
+        || !source.selectSuggestedCabinet()
+        || !source.selectFactoryOutputImpulse(true, "spring-combo"))
+        return false;
+
+    juce::MemoryBlock saved;
+    source.getStateInformation(saved);
+    livewdf::LiveWDFPluginProcessor restored;
+    restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
+    if (restored.outputImpulseId(false) != "orange-ppc112-v30-sm57"
+        || restored.outputImpulseId(true) != "spring-combo"
+        || restored.suggestedCabinetId() != source.suggestedCabinetId()
+        || !restored.cabinetFollowsSuggestion())
+        return false;
+
+    const auto champ = amp.getSiblingFile("Fender Tweed Champ 5F1 - Input 1.livewdf");
+    if (!restored.loadCircuitFromFile(champ) || restored.outputImpulseId(false) != "jensen-sm57")
+        return false;
+
+    auto unnamed = restored.getDocumentSnapshot();
+    unnamed.name = "Other Circuit";
+    if (!restored.loadCircuitDocument(unnamed) || restored.outputImpulseId(false) != "jensen-sm57"
+        || !restored.cabinetFollowsSuggestion()
+        || !restored.loadCircuitFromFile(amp) || restored.outputImpulseId(false) != "orange-ppc112-v30-sm57")
+        return false;
+
+    return restored.outputImpulseId(true) == "spring-combo"
+        && restored.selectFactoryOutputImpulse(false, "jensen-e606")
+        && !restored.cabinetFollowsSuggestion()
+        && restored.loadCircuitFromFile(champ)
+        && restored.outputImpulseId(false) == "jensen-e606";
+}
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
+    if (argc == 2 && std::string(argv[1]) == "--check-output-effect-controls")
+        return checkOutputEffectControls() ? 0 : 1;
+    if (argc == 2 && std::string(argv[1]) == "--check-output-effects-state")
+        return checkOutputEffectsState() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
         return checkExternalImpedanceDefaults() ? 0 : 1;
     const char* circuitPath = argc > 1 ? argv[1] : "";
@@ -2340,7 +2653,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2350,11 +2663,24 @@ int main(int argc, char** argv) {
         return livewdf::checkLivePreviewPotMotion(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-live-preview-capture")
         return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-factory-output-irs")
+        return checkFactoryOutputIrState(file) ? 0 : 1;
 
-    if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
-        const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
-        if (argc != 5 && !fastLive) return 1;
-        return renderCalibration(file, argv[3], argv[4], fastLive);
+    if (argc == 3 && std::string(argv[2]) == "--check-power-amp")
+        return livewdf::checkPowerAmp(file) ? 0 : 1;
+
+    if (argc >= 5 && std::string(argv[2]) == "--calibration-render") {
+        bool fastLive = false;
+        bool preampOnly = false;
+        juce::String cabinet;
+        for (int i = 5; i < argc; ++i) {
+            const std::string flag(argv[i]);
+            if (flag == "--fast-live") fastLive = true;
+            else if (flag == "--preamp-only") preampOnly = true;
+            else if (flag == "--cabinet" && i + 1 < argc) cabinet = argv[++i];
+            else return 1;
+        }
+        return renderCalibration(file, argv[3], argv[4], fastLive, preampOnly, cabinet);
     }
 
     bool validate = false;

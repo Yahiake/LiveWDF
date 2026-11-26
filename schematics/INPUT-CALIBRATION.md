@@ -4,7 +4,7 @@ In the schematic editor, select **Input** and enter either **Input V peak at 0 d
 
 To set the listening level of a circuit you’re editing, select its main **Output** and click **Calibrate output**. The editor drives a separate copy of the current circuit with a −9 dBFS peak multitone at 48 kHz, matches its AC RMS level to the dry signal, and reserves 1 dB of peak headroom on that test. The result appears in **Matched output V peak at 0 dBFS**. You can type your own value there, undo the change, and save the circuit. Calibration runs only when requested. The factory catalog uses the multi-passage sweep described below.
 
-With **Input from → Track** and **Output to → Track (level matched)** (the defaults), a track drives the circuit at its preset input reference and the return uses its matched output reference. The input voltage is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit input reference use 1 V peak at full scale. Historic Input `fullScaleVolts` annotations do not set playback gain.
+With **Input from → Track** and **Output to → Track (level matched)** (the defaults), a track drives the circuit at its preset input reference and the return uses its matched output reference. The input voltage is `sample × reference_mV / 89.01946957 × 10^(Trim_dB/20)`. Files without an explicit input reference use 1 V peak at full scale. Historic Input `fullScaleVolts` annotations do not set playback gain. New instances start with **Output** at +3 dB for auditioning. Output calibration uses 0 dB trim.
 
 To connect inserts at their simulated terminal voltages, choose **Output to → Next LiveWDF** on the sending instance and **Input from → Previous LiveWDF** on the receiving instance. Both use 13.8 V peak per full-scale sample. This places a +4 dBu studio alignment tone (1.228 V RMS) at −18 dBFS. Floating-point samples above 1.0 can carry higher terminal voltages between inserts. For example, 100 mV peak leaving a pedal arrives as 100 mV peak at the next preset, even if its native input alignment is different. Use unity DAW gain and zero output master/input trim between the two. Choose **Output to → Track (level matched)** at the end to return to the preset’s audition level. The controls also apply in standalone and offline rendering.
 
@@ -51,7 +51,9 @@ At the preset’s saved controls, **Track (level matched)** uses one fixed outpu
 
 Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
 
-Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. For speaker coloration, put a cabinet simulator after LiveWDF.
+Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. Turn **Power Amp** off beside **Circuit** to use its AC-coupled preamp output with the original 220 kΩ grid load. The switch is present on presets with a preamp tap. Both settings use the same input reference and have their own output match. Use **Cabinet** for speaker coloration in either setting.
+
+To add this option to a schematic, set `properties.powerAmp` to `"1"` on the components to remove, including any feedback from the power stage. On a retained component at the preamp output, set `properties.preampTap` to its signal pin name and `values.preampFullScaleVolts` to its calibrated output divisor. A shared rail can use `values.preampDc` to maintain its voltage under the reduced load.
 
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
@@ -65,4 +67,5 @@ To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench accurate.csv --verify
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fast.csv --verify --fast-live
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench champ-preamp.csv --amp-di --preamp-only --filter "Tweed Champ" --verify
 ```
