@@ -381,6 +381,13 @@ const SchematicComponent* LiveWDFDocument::preampTap() const {
     return nullptr;
 }
 
+bool LiveWDFDocument::hasAcPowerSupply() const {
+    return std::ranges::any_of(components, [](const auto& part) {
+        return isPowerAmpPart(part) && (part.type == "src" || part.type == "rail") &&
+               sourceModeOf(part) == SourceMode::AC;
+    });
+}
+
 bool LiveWDFDocument::makePreampDocument(LiveWDFDocument& preamp, std::string& error) const {
     const auto* tap = preampTap();
     if (tap == nullptr) {

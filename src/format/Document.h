@@ -576,6 +576,8 @@ struct LiveWDFDocument {
         double freq = 0.0;
     };
 
+    bool hasAcPowerSupply() const;
+
     /// The AC settings of every source, **in the order `toCircuit` creates
     /// them** -- the voltage sources first, then the current sources -- so a
     /// driver can pair them with the engine's source-value vector by index.
@@ -587,38 +589,23 @@ struct LiveWDFDocument {
     /// Why the settings live here rather than on the compiled source: the
     /// frequency is the *signal's*, not the network's, and the compiled circuit
     /// is a topology description. See `format/AcSource.h`.
-    std::vector<SourceAc> sourceAcSettings() const {
+    std::vector<SourceAc> sourceAcSettings(const Circuit& circuit) const {
         std::vector<SourceAc> out;
-
-        const auto acOf = [](const SchematicComponent& c) {
-            SourceAc s;
-
-            // **A source in DC mode has no AC part.** The amplitude is not
-            // merely hidden in the inspector -- it is *not in the circuit*, so
-            // the two can never both apply. That is what the mode is for.
-            if (sourceModeOf(c) != SourceMode::AC)
-                return s;
-
-            const auto ac = c.values.find("ac");
-            const auto freq = c.values.find("freq");
-            if (ac != c.values.end())
-                s.ac = ac->second;
-            if (freq != c.values.end())
-                s.freq = freq->second;
-            return s;
+        out.reserve(circuit.src.size() + circuit.isrc.size());
+        const auto append = [&](const auto& sources) {
+            for (const auto& source : sources) {
+                SourceAc settings;
+                const auto part = std::ranges::find(components, source.name, &SchematicComponent::id);
+                if (part != components.end() && source.ac != 0.0 && sourceModeOf(*part) == SourceMode::AC) {
+                    const auto freq = part->values.find("freq");
+                    if (freq != part->values.end())
+                        settings = {source.ac, freq->second};
+                }
+                out.push_back(settings);
+            }
         };
-
-        // Voltage sources first, in component order -- the same order
-        // `toCircuit` adds them.
-        for (const auto& c : components)
-            if (c.type == "src" || c.type == "in")
-                out.push_back(acOf(c));
-
-        // Then the current sources, likewise.
-        for (const auto& c : components)
-            if (c.type == "isrc")
-                out.push_back(acOf(c));
-
+        append(circuit.src);
+        append(circuit.isrc);
         return out;
     }
 

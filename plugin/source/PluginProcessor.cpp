@@ -725,6 +725,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     for (size_t i = 0; i < c.src.size(); ++i) {
         baseSources[i] = c.src[i].dc;
     }
+    for (const auto& source : c.isrc)
+        baseSources.push_back(source.dc);
 
     // The AC sources: those with an amplitude *and* a frequency. The plugin
     // generates their sine itself, because a host's audio is not a sine wave
@@ -735,7 +737,7 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     // compiled circuit stays a topology description (see `format/AcSource.h`).
     acSourcesOut.clear();
     {
-        const auto settings = doc.sourceAcSettings();
+        const auto settings = doc.sourceAcSettings(c);
         for (size_t i = 0; i < settings.size(); ++i) {
             if (settings[i].ac == 0.0 || settings[i].freq == 0.0)
                 continue;
@@ -743,16 +745,25 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         }
     }
 
+    const bool hasAcSupply = doc.hasAcPowerSupply();
     const auto build = [&](wdf::Circuit& circuit) {
         left = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
         right = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
 
-        // Settle dynamic states at the DC operating point before audio starts.
+        // Precharge a modeled mains supply off the audio thread, ending at the first playback phase.
         outIdx = left->nodeIndex(doc.outputNet());
         outputBias = 0.;
-        for (int p = 0; p < 64; ++p) {
-            const auto& nodes = left->step(baseSources);
-            right->step(baseSources);
+        auto startupSources = baseSources;
+        const int warmup = hasAcSupply ? static_cast<int>(fs / 4.) : 64;
+        for (int p = -warmup; p < 0; ++p) {
+            if (hasAcSupply) {
+                for (const auto& source : acSourcesOut) {
+                    const auto index = static_cast<size_t>(source.index);
+                    startupSources[index] = wdf::sourceValueAt(baseSources[index], source.ac, source.freq, fs, p);
+                }
+            }
+            const auto& nodes = left->step(startupSources);
+            right->step(startupSources);
             if (outIdx >= 0)
                 outputBias = nodes[static_cast<size_t>(outIdx)];
         }
