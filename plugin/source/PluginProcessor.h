@@ -184,16 +184,12 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler2x_;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler4x_;
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
-    static constexpr int halfRatePreviewChoice = 6;
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
     std::optional<bool> powerAmpEnabled_;
     std::optional<bool> previewPentodePairs_;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
-    bool useHalfRatePreview_ = false;
-    bool halfRateSolveNext_ = true;
-    wdf::HalfRatePreview halfRatePreviewL_, halfRatePreviewR_;
     bool oversamplersPrepared_ = false;
     wdf::HalfBandOversampler halfBandOversamplerL_{wdf::OversamplingFactor::X1};
     wdf::HalfBandOversampler halfBandOversamplerR_{wdf::OversamplingFactor::X1};
