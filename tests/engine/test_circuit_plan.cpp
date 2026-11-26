@@ -1134,3 +1134,48 @@ TEST_CASE("Loaded junction port capacity is bounded consistently",
     REQUIRE(declined.rootCount() > wdf::LoadedJunctionPlan::maxPorts);
     CHECK_FALSE(declined.prepareLoadedJunctionPreview(0, false));
 }
+
+TEST_CASE("Tube Preview follows the Soldano normal gain changes without rejected samples",
+          "[engine][circuit-plan][triode-preview]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/amps/Soldano SLO-100 - Overdrive (Preamp).livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = static_cast<size_t>(source - circuit.src.begin());
+    const auto controls = wdf::potControlGroups(document);
+    const auto normal = std::ranges::find(controls, "Normal Gain", &wdf::LiveControlGroup::name);
+    REQUIRE(normal != controls.end());
+    REQUIRE(normal->members.size() == 1);
+
+    wdf::Engine preview(circuit, 48000.), accurate(circuit, 48000.);
+    preview.useTriodePreview(true);
+    preview.prepareLiveControls();
+    accurate.prepareLiveControls();
+    const int knob = preview.potIndexByName(normal->members.front().id);
+    const int output = preview.nodeIndex(document.outputNet());
+    REQUIRE(knob >= 0);
+    REQUIRE(output >= 0);
+    auto sources = preview.dcValues();
+    double signalEnergy = 0., errorEnergy = 0., peakError = 0.;
+    for (int sample = 0; sample < 8192; ++sample) {
+        if (sample == 512 || sample == 1792 || sample == 2560) {
+            const double position = sample == 1792 ? .05 : 1.;
+            REQUIRE(preview.setLiveControls({{knob, position}}, {}));
+            REQUIRE(accurate.setLiveControls({{knob, position}}, {}));
+        }
+        const double signal = .75 * std::sin(.055 * sample) + .17 * std::sin(.13 * sample);
+        sources[input] = sample < 4096 ? document.inputVoltsPerFullScale() * signal : 0.;
+        const double expected = accurate.step(sources)[output];
+        const double actual = preview.step(sources)[output];
+        const double delta = actual - expected;
+        signalEnergy += expected * expected;
+        errorEnergy += delta * delta;
+        peakError = std::max(peakError, std::abs(delta));
+    }
+    CHECK(preview.triodePreviewHits() > 8000);
+    CHECK(preview.stateRejectCount() == 0);
+    CHECK(errorEnergy < 1.e-6 * signalEnergy);
+    CHECK(peakError / document.outputFullScaleVolts() < .001);
+}
