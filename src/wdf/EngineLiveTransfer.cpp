@@ -1,6 +1,8 @@
 #include "wdf/Engine.h"
+#include "wdf/DenseSolve.h"
 
 #include <algorithm>
+#include <cmath>
 #include <tuple>
 
 namespace wdf {
@@ -102,6 +104,56 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     prepareLoadedJunctionPreview(inputSource);
     sharedNewtonColumns_.prepare(Zred_, K_, nRed_, rootDevices_);
     triodeDomainTransfer_.prepare(Z_, K_, rootDevices_);
+    prepareSlowLag();
+}
+
+void EngineStep::prepareSlowLag() {
+    // Steepest loaded slope |(I + J Zdd)^-1 J| of each device over a sweep of its port voltages.
+    std::vector<double> slope(size_t(K_) * K_, 0.0), v, i(K_), a, x(K_);
+    std::vector<int> pivots(K_);
+    auto newton = makeNewtonContext();
+    constexpr double sweep[] = {-50.0, -5.0, 0.0, 1.0, 5.0, 50.0, 200.0, 400.0};
+    for (int point = 0; point < 512; ++point) {
+        v = vv_;
+        for (const auto& d : rootDevices_)
+            for (int q = 0; q < std::min(d.numPorts, 3); ++q)
+                v[d.portBase + q] += sweep[(point >> (3 * q)) & 7];
+        solver::RootNewton::currentsInto(newton, v, i, J_);
+        for (const auto& d : rootDevices_) {
+            const int m = d.numPorts, b = d.portBase;
+            a.assign(size_t(m) * m, 0.0);
+            for (int r = 0; r < m; ++r)
+                for (int c = 0; c < m; ++c) {
+                    a[r * m + c] = r == c;
+                    for (int k = 0; k < m; ++k)
+                        a[r * m + c] += J_[size_t(b + r) * K_ + b + k] * Z_[size_t(b + k) * K_ + b + c];
+                }
+            const bool factored = detail::factorLUData(a.data(), pivots.data(), m);
+            for (int c = 0; c < m; ++c) {
+                for (int r = 0; r < m; ++r)
+                    x[r] = J_[size_t(b + r) * K_ + b + c];
+                if (factored)
+                    detail::solveLUData(a.data(), pivots.data(), x.data(), m);
+                for (int r = 0; r < m; ++r) {
+                    double& s = slope[size_t(b + r) * K_ + b + c];
+                    s = factored && std::isfinite(x[r]) ? std::max(s, std::abs(x[r])) : HUGE_VAL;
+                }
+            }
+        }
+    }
+    auto base = std::tuple(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_,
+                           allClosedFormBlocks_, hasAntiParallelBlock_);
+    for (auto& b : newtonBlocks_)
+        b.clearLinearReduction();
+    std::vector<uint8_t> lag;
+    auto ctx = makeRootGroupsContext();
+    lagCount_ = solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ? blockCount_ : 0;
+    lagBlocks_ = std::move(newtonBlocks_);
+    lagOrder_ = std::move(groupOrder_);
+    std::tie(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_, allClosedFormBlocks_,
+             hasAntiParallelBlock_) = std::move(base);
+    lagHeld_.assign(K_, 0.0);
+    lagRevision_ = linearRebuilds();
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
@@ -147,6 +199,11 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
+            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
+            std::swap(lagOrder_, preparedEngine.lagOrder_);
+            std::swap(lagHeld_, preparedEngine.lagHeld_);
+            lagCount_ = preparedEngine.lagCount_;
+            lagRevision_ = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds() ? linearRebuilds() : -1;
             if (!packedDrive_.panels.empty())
                 packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);

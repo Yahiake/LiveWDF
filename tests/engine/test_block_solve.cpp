@@ -771,3 +771,38 @@ TEST_CASE("nodes with common root currents retain the scalar transfer", "[engine
         CHECK(engine.scalarDifference() < 1e-12);
     }
 }
+
+TEST_CASE("Preview reads a stiff supply one sample late but keeps a shared cathode exact",
+          "[blocksolve][preview]") {
+    struct Probe : wdf::Engine {
+        using Engine::Engine;
+        int lagBlocks() const { return lagCount_; }
+    };
+    wdf::Circuit c = lwdf_test::sharedCathodePair();
+    c.addSrc("mains", "0", 260.0);
+    c.addRes("mains", "r", 100.0);
+    c.addDiode("r", "b", wdf::DiodeModel(1e-9, 1.0, 0.0), "Drect");
+    c.addCap("b", "0", 47e-6);
+    for (auto& r : c.res)
+        if (r.a == "e")
+            r.a = "b";
+    Probe preview(c, kFs);
+    wdf::Engine fast(c, kFs);
+    REQUIRE(fast.rootBlockCount() == 1);
+    preview.prepareCompiledPreview(0, preview.nodeIndex("out"), false, 1.0, false);
+    preview.useLoadedJunctionPreview(true);
+    REQUIRE(preview.lagBlocks() == 2);
+    REQUIRE(preview.slowLagActive());
+
+    double error = 0.0, signal = 0.0;
+    std::vector<double> sv{0.0, 250.0, 260.0};
+    for (int n = 0; n < 4800; ++n) {
+        sv[0] = sine(1.0, n);
+        const double a = preview.step(sv)[size_t(preview.nodeIndex("out"))];
+        const double b = fast.step(sv)[size_t(fast.nodeIndex("out"))];
+        error += (a - b) * (a - b);
+        signal += b * b;
+    }
+    REQUIRE(preview.blockFallbackCount() == 0);
+    REQUIRE(std::sqrt(error / signal) < 1e-4);
+}

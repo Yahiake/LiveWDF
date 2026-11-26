@@ -185,6 +185,11 @@ protected:
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
     bool triodePreviewEnabled_ = false;
+    std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
+    std::vector<int> lagOrder_;
+    std::vector<double> lagHeld_;
+    int lagCount_ = 0;
+    long long lagRevision_ = -1;
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
@@ -433,7 +438,7 @@ protected:
     /// prediction. Both joint paths retry from the previous sample's root if
     /// their first pass does not converge. The fast path is an optimization only
     /// when the check passes; it is never allowed to define a different circuit.
-    void solveRootBlocks(int maxIter, double tol) {
+    void solveRootBlocks(int maxIter, double tol, bool slowLag = false) {
         if (hasMonotoneClassAB()) {
             lastBlockFallback_ = false;
             const auto result = solver::RootClosedForms::solveClassABOutput(
@@ -462,8 +467,8 @@ protected:
         auto ctx = makeBlockSolveContext();
         auto newtonCtx = makeNewtonContext();
         solver::RootBlockSolve::solveRootBlocks(
-            ctx, newtonCtx, staticBlockView(), maxIter, tol,
-            fineBlockSolver_ ? 6 : 0);
+            ctx, newtonCtx, slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView(),
+            maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 
     /// Runtime active-set variant of `solveRootBlocks`.

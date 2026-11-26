@@ -42,7 +42,7 @@ struct BlockSolveContext {
     std::vector<double>& iv;
     std::vector<double>& J;
     std::vector<double>& F;
-    const std::vector<double>& vOc;
+    std::vector<double>& vOc;
     const std::vector<double>& Z;
     const std::vector<double>& Zred;
     std::vector<double>& vvPrev;
@@ -1171,6 +1171,7 @@ public:
     {
         if (!ctx.gridLag.empty())
             predictLaterGrids(ctx);
+        laggedIntoOpenCircuit(ctx, view, -1.0);
         RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
@@ -1206,6 +1207,9 @@ public:
             if (!acceptedDeviceCurrents)
                 RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
+            for (int s = 0; view.held && s < view.count; ++s)
+                for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged)
+                    ctx.F[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
@@ -1262,6 +1266,7 @@ public:
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
+        laggedIntoOpenCircuit(ctx, view, 1.0);
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
@@ -1280,6 +1285,18 @@ public:
             RootNewton::solveRootsNewton(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
         else
             RootNewton::solveRootsNewtonSeeded(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
+    }
+
+    /// Move the lagged couplings of `view` into (sign -1) or back out of (+1)
+    /// the open-circuit voltages, at the previous sample's currents.
+    static inline void laggedIntoOpenCircuit(BlockSolveContext& ctx, const BlockView& view, double sign) noexcept
+    {
+        for (int s = 0; view.held && s < view.count; ++s)
+            for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged) {
+                if (sign < 0.0)
+                    view.held[d.col] = ctx.ii[static_cast<size_t>(d.col)];
+                ctx.vOc[static_cast<size_t>(r)] += sign * d.z * view.held[d.col];
+            }
     }
 
     /// Runtime active-set variant of `solveRootBlocks`.
