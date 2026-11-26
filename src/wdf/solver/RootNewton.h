@@ -87,6 +87,7 @@ struct NewtonContext {
     bool& lastConverged;
     double& lastResidual;
     bool skipIdenticalRetry = false;
+    bool pentodePreview = false;
 };
 
 class RootNewton {
@@ -251,6 +252,8 @@ public:
 
         bool curValid = false;
         bool reached = false;
+        const bool poweredPreview = ctx.pentodePreview && !ctx.staticMode;
+        int lastImprovement = 0;
         ctx.bestFn = std::numeric_limits<double>::infinity();
         double base = 0.0;
         for (int it = 0; it < maxIter; ++it) {
@@ -268,6 +271,7 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
+                lastImprovement = it;
             }
             if (base < tol) {
                 reached = true;
@@ -300,11 +304,18 @@ public:
             if (!solved) {
                 if (compact)
                     assembleFull();
-                solved = !ctx.Zred.empty()
-                    ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                          ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
-                    : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                          ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                if (poweredPreview && ctx.nRed >= 8 && !ctx.Zred.empty()) {
+                    solved = detail::solveDroppingZeroCorrections(ctx.Mr.data(), ctx.rN.data(), ctx.nRed);
+                    if (solved)
+                        RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
+                                                   ctx.nRed, ctx.K, ctx.dv.data());
+                } else {
+                    solved = !ctx.Zred.empty()
+                        ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                              ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
+                        : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                              ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                }
             }
             if (ctx.prof)
                 tock(ctx.prof->lu);
@@ -378,6 +389,7 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
+                lastImprovement = it;
             }
 
             if (base < tol) {
@@ -385,6 +397,10 @@ public:
                 break;
             }
             if (it > 0 && maxDelta < 1e-13 * std::max(1.0, maxV))
+                break;
+            // Near plate cutoff a badly stalled pass can consume its entire
+            // budget before the retry gets to try the previous voltage seed.
+            if (poweredPreview && it >= 15 && it - lastImprovement >= 10 && ctx.bestFn > 10.0)
                 break;
         }
 
