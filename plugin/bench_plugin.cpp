@@ -102,12 +102,18 @@ bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<f
 
 namespace {
 
-enum class BenchMode { Accurate, FastLive, CompiledPreview };
+enum class BenchMode { Accurate, FastLive, CompiledPreview, HalfRatePreview };
+
+bool isPreview(BenchMode mode) {
+    return mode == BenchMode::CompiledPreview || mode == BenchMode::HalfRatePreview;
+}
 
 const char* selectMode(livewdf::LiveWDFPluginProcessor& processor, BenchMode mode) {
     auto& params = processor.getAPVTS();
     params.getParameter("solve_quality")->setValueNotifyingHost(mode == BenchMode::Accurate ? 0.f : 1.f);
-    params.getParameter("compiled_preview")->setValueNotifyingHost(mode == BenchMode::CompiledPreview ? 1.f : 0.f);
+    params.getParameter("compiled_preview")->setValueNotifyingHost(isPreview(mode) ? 1.f : 0.f);
+    params.getParameter("preview_half_rate")->setValueNotifyingHost(mode == BenchMode::HalfRatePreview ? 1.f : 0.f);
+    if (mode == BenchMode::HalfRatePreview) return "Preview 1/2x";
     if (mode == BenchMode::CompiledPreview) return "Compiled Preview";
     return mode == BenchMode::FastLive ? "Fast Live" : "Accurate";
 }
@@ -189,7 +195,7 @@ Result measure(livewdf::LiveWDFPluginProcessor& processor, const juce::File& fil
         input.setSample(1, i, v);
     }
     if (mode != BenchMode::Accurate &&
-        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        !waitForBenchmarkPlan(processor, buffer, midi, isPreview(mode)))
         return {};
     buffer.makeCopyOf(input);
     processor.processBlock(buffer, midi);
@@ -277,7 +283,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     juce::AudioBuffer<float> buffer(2, blockSize);
     juce::MidiBuffer midi;
     if (mode != BenchMode::Accurate &&
-        !waitForBenchmarkPlan(processor, buffer, midi, mode == BenchMode::CompiledPreview))
+        !waitForBenchmarkPlan(processor, buffer, midi, isPreview(mode)))
         return 1;
     const double budgetNs = blockSize / fs * 1.0e9;
     DeadlineMisses missed;
@@ -2280,6 +2286,66 @@ bool checkPowerAmp(const juce::File& file) {
     return checkMode(false) && powerAmp->getValue() == 0.f && volume->getValue() == savedVolume;
 }
 
+bool checkHalfRatePreview(const juce::File& file) {
+    constexpr int blockSize = 128;
+    LiveWDFPluginProcessor fixed, split;
+    const auto prepare = [](LiveWDFPluginProcessor& processor) {
+        processor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
+        processor.prepareToPlay(kSampleRate, blockSize);
+    };
+    selectMode(fixed, BenchMode::HalfRatePreview);
+    setOversampling(fixed, 0);
+    prepare(fixed);
+    if (!fixed.loadCircuitFromFile(file))
+        return false;
+
+    juce::MemoryBlock state;
+    fixed.getStateInformation(state);
+    prepare(split);
+    split.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    if (fixed.getLatencySamples() != 30 || split.getLatencySamples() != 30) {
+        std::fprintf(stderr, "Half-rate Preview latency did not survive state restore\n");
+        return false;
+    }
+
+    juce::MidiBuffer midi;
+    juce::AudioBuffer<float> a(2, blockSize), b(2, blockSize);
+    float peak = 0.0f;
+    for (int block = 0; block < 8; ++block) {
+        for (int i = 0; i < blockSize; ++i) {
+            const float x = 0.02f * static_cast<float>(std::sin(
+                2 * kPi * 440.0 * (block * blockSize + i) / kSampleRate));
+            for (int channel = 0; channel < 2; ++channel)
+                a.setSample(channel, i, x);
+        }
+        b.makeCopyOf(a);
+        fixed.processBlock(a, midi);
+        for (const auto [start, count] : {std::pair{0, 63}, std::pair{63, 65}}) {
+            juce::AudioBuffer<float> part(b.getArrayOfWritePointers(), 2, start, count);
+            split.processBlock(part, midi);
+        }
+        for (int i = 0; i < blockSize; ++i) {
+            const float expected = a.getSample(0, i);
+            if (!(std::abs(b.getSample(0, i) - expected) <= 1e-6f)) {
+                std::fprintf(stderr, "Half-rate Preview changed across an odd callback boundary\n");
+                return false;
+            }
+            peak = std::max(peak, std::abs(expected));
+        }
+    }
+    if (peak == 0.0f)
+        return false;
+
+    split.getAPVTS().getParameter("export_4x")->setValueNotifyingHost(0.f);
+    split.setNonRealtime(true);
+    prepare(split);
+    if (split.getLatencySamples() != 0) {
+        std::fprintf(stderr, "Half-rate Preview affected offline render latency\n");
+        return false;
+    }
+    return true;
+}
+
 bool checkLivePreviewCapture(const juce::File& file) {
     LiveWDFPluginProcessor processor;
     const auto set = [&](const char* id, float value) {
@@ -2667,7 +2733,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview | --half-rate-preview]\n");
         return 1;
     }
 
@@ -2682,6 +2748,8 @@ int main(int argc, char** argv) {
 
     if (argc == 3 && std::string(argv[2]) == "--check-power-amp")
         return livewdf::checkPowerAmp(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-half-rate-preview")
+        return livewdf::checkHalfRatePreview(file) ? 0 : 1;
 
     if (argc >= 5 && std::string(argv[2]) == "--calibration-render") {
         bool fastLive = false;
@@ -2733,6 +2801,8 @@ int main(int argc, char** argv) {
             mode = BenchMode::FastLive;
         else if (arg == "--live-preview")
             mode = BenchMode::CompiledPreview;
+        else if (arg == "--half-rate-preview")
+            mode = BenchMode::HalfRatePreview;
         else if (arg == "--spice" && i + 1 < argc)
             spiceDir = argv[++i];
         else if (arg == "--probe" && i + 1 < argc)

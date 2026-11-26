@@ -127,6 +127,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"compiled_preview", 1}, "Compiled Preview", true));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"preview_half_rate", 1}, "Half-rate Preview", false));
 
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"chain_input", 1}, "Input from physical chain", false,
@@ -345,6 +347,9 @@ bool LiveWDFPluginProcessor::compiledPreviewRequested() const {
 
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
     constexpr int polyphase4x = 2;
+    if (!isNonRealtime() && compiledPreviewRequested() &&
+        *apvts_.getRawParameterValue("preview_half_rate") > 0.5f)
+        return halfRatePreviewChoice;
     return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f
         ? polyphase4x : static_cast<int>(*apvts_.getRawParameterValue("oversampling"));
 }
@@ -823,9 +828,10 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     attemptedOversamplingChoice_ = effectiveOversamplingChoice();
     attemptedGridCurrent_ = *apvts_.getRawParameterValue("grid_current") > 0.5f;
     constexpr int kFactors[] = {1, 2, 4, 8, 2, 4};
-    const int factor = kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
-    const bool halfBand = attemptedOversamplingChoice_ >= 4;
-    const double effectiveFs = sampleRate_ * static_cast<double>(factor);
+    const bool halfRate = attemptedOversamplingChoice_ == halfRatePreviewChoice;
+    const int factor = halfRate ? 1 : kFactors[std::clamp(attemptedOversamplingChoice_, 0, 5)];
+    const bool halfBand = !halfRate && attemptedOversamplingChoice_ >= 4;
+    const double effectiveFs = sampleRate_ * (halfRate ? 0.5 : static_cast<double>(factor));
 
     std::unique_ptr<wdf::Engine> newLeft, newRight;
     int inSrcIdx = -1;
@@ -920,8 +926,14 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         }
         currentOversamplingFactor_ = factor;
         useHalfBand_ = halfBand;
+        useHalfRatePreview_ = halfRate;
         int latency = 0;
-        if (halfBand) {
+        if (halfRate) {
+            halfRateSolveNext_ = true;
+            halfRatePreviewL_.reset();
+            halfRatePreviewR_.reset();
+            latency = wdf::HalfRatePreview::latencySamples;
+        } else if (halfBand) {
             const auto f = factor == 4 ? wdf::OversamplingFactor::X4 : wdf::OversamplingFactor::X2;
             halfBandOversamplerL_.setFactor(f);
             halfBandOversamplerR_.setFactor(f);
@@ -1327,6 +1339,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
                 state.appendChild(juce::ValueTree{"PARAM", {{"id", id}, {"value", value}}}, nullptr);
         };
         restoreMissing("compiled_preview", 0.0f);
+        restoreMissing("preview_half_rate", 0.0f);
         restoreMissing("preview_pad", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
