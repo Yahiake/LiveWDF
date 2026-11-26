@@ -738,9 +738,9 @@
       "values": {
         "clockHz": 32500,
         "gain": 1.0,
-        "inputBias": 2.5,
-        "inputSwing": 0.81,
-        "outputBias": 2.25,
+        "inputBias": 2.825,
+        "inputSwing": 0.925,
+        "outputBias": 2.575,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": -7.9,
         "stages": 1024
