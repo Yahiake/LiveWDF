@@ -389,7 +389,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
-        powerAmpChanged || pentodePairModeChanged) {
+        powerAmpChanged || pentodePairModeChanged || gatedSwitchChanged_.exchange(false)) {
         const juce::File circuitFile = currentFile_;
         if (!loadCircuitDocument(currentDoc_, false)) {
             if (portTopologyChanged)
@@ -1220,6 +1220,13 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
             if (comp.id == member.id)
                 comp.properties["select"] = select;
         }
+    }
+    for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
+        if (std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
+                const auto gate = comp.properties.find("enabledBy");
+                return gate != comp.properties.end() && gate->second == member.id;
+            }))
+            gatedSwitchChanged_.store(true, std::memory_order_relaxed);
     }
 
     applyLiveControlsToEngines(false, true);
