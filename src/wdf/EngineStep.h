@@ -313,7 +313,6 @@ protected:
     AffineNodePlan affineNodes_;
     long long affineNodeHits_ = 0;
     bool tryTriodePreview() noexcept;
-    bool triodePreviewEnabled_ = false;
     int triodePreviewCooldown_ = 0;
     long long triodePreviewHits_ = 0;
 

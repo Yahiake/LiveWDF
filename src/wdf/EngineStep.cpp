@@ -61,6 +61,10 @@ bool EngineStep::tryTriodePreview() noexcept {
 
 const std::vector<double>& EngineStep::step(const double* sourceValues, std::size_t sourceCount,
                                             int maxIter, double tol) {
+    // Limit the error in the port voltages while evaluating all tube currents.
+    if (triodePreviewEnabled_ && nPent_ > 0)
+        tol = std::max(tol, 3e-3);
+
     // The runtime pass pays a small fixed cost. On cheap low-frequency
     // samples the joint Newton is already one or two iterations, so use
     // the previous sample's work as a cheap gate: only take the block path

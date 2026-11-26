@@ -87,7 +87,8 @@ struct NewtonContext {
     bool& keptBest;
     bool& lastConverged;
     double& lastResidual;
-    bool previewEnabled = false;
+    bool skipIdenticalRetry = false;
+    bool pentodePreview = false;
 };
 
 class RootNewton {
@@ -145,7 +146,7 @@ public:
     }
 
     static const RootDevice* coupledPentodes(const NewtonContext& ctx) noexcept {
-        if (!ctx.previewEnabled || ctx.staticMode || ctx.pentodes.size() != 2 || ctx.rootDevices.size() < 2)
+        if (!ctx.pentodePreview || ctx.staticMode || ctx.pentodes.size() != 2 || ctx.rootDevices.size() < 2)
             return nullptr;
         const auto& devices = ctx.rootDevices;
         const auto left = std::find_if(devices.begin(), devices.end(), [](const RootDevice& d) {
@@ -323,6 +324,8 @@ public:
         const RootDevice* platePair = coupledPentodes(ctx);
         bool curValid = false;
         bool reached = false;
+        const bool poweredPreview = ctx.pentodePreview && !ctx.staticMode;
+        int lastImprovement = 0;
         ctx.bestFn = std::numeric_limits<double>::infinity();
         double base = 0.0;
         for (int it = 0; it < maxIter; ++it) {
@@ -342,6 +345,7 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
+                lastImprovement = it;
             }
             if (base < tol) {
                 reached = true;
@@ -374,11 +378,18 @@ public:
             if (!solved) {
                 if (compact)
                     assembleFull();
-                solved = !ctx.Zred.empty()
-                    ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                          ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
-                    : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                          ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                if (poweredPreview && ctx.nRed >= 8 && !ctx.Zred.empty()) {
+                    solved = detail::solveDroppingZeroCorrections(ctx.Mr.data(), ctx.rN.data(), ctx.nRed);
+                    if (solved)
+                        RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
+                                                   ctx.nRed, ctx.K, ctx.dv.data());
+                } else {
+                    solved = !ctx.Zred.empty()
+                        ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                              ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
+                        : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                              ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                }
             }
             if (ctx.prof)
                 tock(ctx.prof->lu);
@@ -454,6 +465,7 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
+                lastImprovement = it;
             }
 
             if (base < tol) {
@@ -461,6 +473,10 @@ public:
                 break;
             }
             if (it > 0 && maxDelta < 1e-13 * std::max(1.0, maxV))
+                break;
+            // Near plate cutoff a badly stalled pass can consume its entire
+            // budget before the retry gets to try the previous voltage seed.
+            if (poweredPreview && it >= 15 && it - lastImprovement >= 10 && ctx.bestFn > 10.0)
                 break;
         }
 
@@ -523,7 +539,7 @@ public:
         const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
         // A failed deeply damped search can stall near a switching boundary.
         // With the usual four trials, the retry takes a different path even from the same voltage.
-        if (!ctx.lastConverged && (usedExtra || !ctx.previewEnabled || predictionChangesSeed(ctx)))
+        if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || predictionChangesSeed(ctx)))
             solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;

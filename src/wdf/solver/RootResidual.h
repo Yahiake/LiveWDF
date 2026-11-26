@@ -120,8 +120,14 @@ public:
                 const double vpk = vData[base];
                 const double vgk = vData[base + 1];
                 const double vsk = vData[base + 2];
-                const PentodeCurrents cur = pentodes[dev.compIndex].eval(vgk, vsk, vpk);
+                const auto& pentode = pentodes[dev.compIndex];
                 ++deviceEvals;
+                if (!jData && pentode.modelKind == PentodeModelKind::Reefman && pentode.useReefman) {
+                    pentode.reefman.evalCurrents(vgk, vsk, vpk,
+                        iData[base + 1], iData[base + 2], iData[base]);
+                    break;
+                }
+                const PentodeCurrents cur = pentode.eval(vgk, vsk, vpk);
                 iData[base] = cur.ip;
                 iData[base + 1] = cur.ig;
                 iData[base + 2] = cur.is;

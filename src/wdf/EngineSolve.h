@@ -184,6 +184,7 @@ protected:
     /// Each level only forwards construction down the chain; the work happens in
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
+    bool triodePreviewEnabled_ = false;
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
@@ -197,7 +198,8 @@ protected:
             opAmps_, opAmpVp_, opAmpAlpha_, opAmpMaxDv_, triodeDomainPin_,
             staticMode_, K_, nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
-            jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_, loadedJunctionEnabled_
+            jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
+            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0
         };
     }
 

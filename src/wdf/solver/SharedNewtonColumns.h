@@ -147,7 +147,8 @@ public:
     }
 
     bool finish(const double* f, int rows, double* dv) noexcept {
-        if (!solveActive(int(representatives_.size()))) return false;
+        if (!detail::solveDroppingZeroCorrections(matrix_.data(), rhs_.data(), int(representatives_.size())))
+            return false;
         multiply(packed_.data(), rhs_.data(), int(rhs_.size()), f, nullptr, rows, dv);
         return true;
     }
@@ -183,36 +184,6 @@ private:
         }
     }
 
-    bool solveActive(int groups) noexcept {
-        constexpr int maxGroups = 64;
-        if (groups > maxGroups) return detail::solveData(matrix_.data(), rhs_.data(), groups);
-        int active[maxGroups], count = 0;
-        for (int i = 0; i < groups; ++i) {
-            const double* row = matrix_.data() + i * groups;
-            bool zeroCorrection = rhs_[i] == 0. && row[i] == 1.;
-            if (zeroCorrection) {
-                for (int j = 0; j < groups; ++j)
-                    if (j != i && row[j] != 0.) { zeroCorrection = false; break; }
-            }
-            if (!zeroCorrection) active[count++] = i;
-        }
-        if (count + 2 >= groups) return detail::solveData(matrix_.data(), rhs_.data(), groups);
-        // A unit row with a zero right-hand side fixes its current correction at zero.
-        // Sorted indices let us pack the remaining rows forward and scatter the solution backward.
-        for (int i = 0; i < count; ++i) {
-            const double* row = matrix_.data() + active[i] * groups;
-            for (int j = 0; j < count; ++j)
-                matrix_[i * count + j] = row[active[j]];
-            rhs_[i] = rhs_[active[i]];
-        }
-        if (count && !detail::solveData(matrix_.data(), rhs_.data(), count)) return false;
-        int j = count - 1;
-        for (int i = groups - 1; i >= 0; --i) {
-            if (j >= 0 && active[j] == i) rhs_[i] = rhs_[j--];
-            else rhs_[i] = 0.;
-        }
-        return true;
-    }
     struct Member { int group, sign; };
     std::vector<Member> members_;
     std::vector<int> representatives_;
