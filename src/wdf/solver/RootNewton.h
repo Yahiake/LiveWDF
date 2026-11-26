@@ -335,8 +335,6 @@ public:
                 currentsInto(ctx, ctx.vv, ctx.ii, ctx.J);
                 residualInto(ctx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
                 base = maxAbs(ctx.F, ctx.K);
-                if (platePair)
-                    base = projectPentodePlates(ctx, platePair, ctx.vv, ctx.ii, &ctx.J, ctx.F, base);
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 curValid = true;

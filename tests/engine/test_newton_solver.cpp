@@ -12,6 +12,7 @@
 #include <math.h>
 
 #include "format/Document.h"
+#include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"
 
@@ -455,6 +456,36 @@ TEST_CASE("Preview Newton recovers through repeated compressor overloads", "[new
         preview.step(sources, preview.kDefaultMaxIterations, preview.kFastLiveTolerance);
     }
     CHECK(preview.stateRejectCount() == 0);
+}
+
+TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pentode]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = static_cast<size_t>(source - circuit.src.begin());
+
+    wdf::Engine preview(circuit, kFs);
+    const int output = preview.nodeIndex(document.outputNet());
+    REQUIRE(output >= 0);
+    preview.prepareLiveControls();
+    preview.prepareMixedAffineReduction(input);
+    preview.prepareCompiledPreview(input, output, false);
+    preview.useMixedAffineReduction(true);
+    preview.useLoadedJunctionPreview(true);
+    preview.useTriodePreview(true);
+    auto sources = preview.dcValues();
+    for (int sample = 0; sample < 64; ++sample)
+        preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+
+    const auto before = preview.stateRejectCount();
+    for (int sample = 0; sample < 128; ++sample) {
+        sources[input] = -.32 - .00015 * sample;
+        preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+    }
+    CHECK(preview.stateRejectCount() == before);
 }
 
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
