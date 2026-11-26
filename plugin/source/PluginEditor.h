@@ -41,6 +41,7 @@ private:
     // Top Toolbar
     juce::Label titleLabel_;
     juce::TextButton factoryBtn_;
+    juce::ToggleButton powerAmpBtn_{"Power Amp"};
     juce::Label factoryHint_{{}, "Browse"};
     juce::TextButton loadFileBtn_ { "Load .livewdf..." };
     juce::TextButton effectsBtn_ { "Effects" };
@@ -139,6 +140,7 @@ private:
     std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
     std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
     std::unique_ptr<ButtonAttachment> previewPadAttach_;
+    std::unique_ptr<ButtonAttachment> powerAmpAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;

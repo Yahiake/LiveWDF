@@ -6,6 +6,7 @@
 #include "gui/AboutDialog.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 namespace livewdf {
@@ -67,38 +68,57 @@ bool loadImpulseFromUrl(LiveWDFPluginProcessor& processor, bool reverb, const ju
 
 class LiveWDFPluginEditor::OutputEffectsPanel final : public juce::Component {
 public:
-    explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters)
-        : echoAttach_(parameters, "echo_mix", echo_), reverbAttach_(parameters, "reverb_mix", reverb_) {
-        addAndMakeVisible(echoLabel_);
-        addAndMakeVisible(reverbLabel_);
-        echo_.setName("Echo mix");
-        echo_.setTooltip("250 ms echo with 42% feedback");
-        reverb_.setName("Reverb mix");
-        for (auto* slider : {&echo_, &reverb_}) {
-            slider->setSliderStyle(juce::Slider::LinearHorizontal);
-            slider->setTextBoxStyle(juce::Slider::TextBoxRight, false, 60, 24);
-            slider->setTextValueSuffix(" %");
-            addAndMakeVisible(*slider);
+    explicit OutputEffectsPanel(juce::AudioProcessorValueTreeState& parameters) {
+        setOpaque(true);
+        constexpr struct {
+            const char* id;
+            const char* name;
+            const char* units;
+        } controls[] = {
+            {"echo_delay", "Echo delay", " ms"},
+            {"echo_feedback", "Echo feedback", " %"},
+            {"echo_mix", "Echo level", " %"},
+            {"reverb_size", "Reverb size", " %"},
+            {"reverb_predelay", "Reverb pre-delay", " ms"},
+            {"reverb_mix", "Reverb level", " %"},
+        };
+        for (size_t i = 0; i < rows_.size(); ++i) {
+            auto& row = rows_[i];
+            const auto& control = controls[i];
+            row.label.setText(control.name, juce::dontSendNotification);
+            row.slider.setName(control.name);
+            row.slider.setSliderStyle(juce::Slider::LinearHorizontal);
+            row.slider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 64, 24);
+            row.attachment = std::make_unique<SliderAttachment>(parameters, control.id, row.slider);
+            row.slider.setTextValueSuffix(control.units);
+            addAndMakeVisible(row.label);
+            addAndMakeVisible(row.slider);
         }
     }
 
-    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 84); }
+    void fitWidth(int editorWidth) { setSize(juce::jlimit(1, 340, editorWidth - 32), 220); }
+
+    void paint(juce::Graphics& g) override {
+        g.fillAll(findColour(juce::PopupMenu::backgroundColourId).withAlpha(1.0f));
+    }
 
     void resized() override {
         auto bounds = getLocalBounds().reduced(10);
-        const auto placeMix = [&](juce::Label& label, juce::Slider& slider) {
-            auto row = bounds.removeFromTop(32);
-            label.setBounds(row.removeFromLeft(87));
-            slider.setBounds(row);
-        };
-        placeMix(echoLabel_, echo_);
-        placeMix(reverbLabel_, reverb_);
+        for (size_t i = 0; i < rows_.size(); ++i) {
+            if (i == 3) bounds.removeFromTop(8);
+            auto area = bounds.removeFromTop(32);
+            rows_[i].label.setBounds(area.removeFromLeft(124));
+            rows_[i].slider.setBounds(area);
+        }
     }
 
 private:
-    juce::Label echoLabel_{{}, "Echo mix"}, reverbLabel_{{}, "Reverb mix"};
-    juce::Slider echo_, reverb_;
-    SliderAttachment echoAttach_, reverbAttach_;
+    struct Row {
+        juce::Label label;
+        juce::Slider slider;
+        std::unique_ptr<SliderAttachment> attachment;
+    };
+    std::array<Row, 6> rows_;
 };
 
 LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
@@ -126,6 +146,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
     addAndMakeVisible(factoryBtn_);
     factoryBtn_.toBack();
+    addChildComponent(powerAmpBtn_);
+    powerAmpBtn_.setTooltip("Include the power stage. Turn off to use the preamp output.");
+    powerAmpAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "power_amp", powerAmpBtn_);
     factoryHint_.setJustificationType(juce::Justification::centred);
     factoryHint_.setInterceptsMouseClicks(false, false);
     addAndMakeVisible(factoryHint_);
@@ -141,7 +164,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(loadFileBtn_);
 
     effectsBtn_.onClick = [this] { showOutputEffects(); };
-    effectsBtn_.setTooltip("Adjust the echo and reverb mixes");
+    effectsBtn_.setTooltip("Adjust echo delay, feedback and level, and reverb size, pre-delay and level");
     addAndMakeVisible(effectsBtn_);
 
     // 3. Reload Button
@@ -350,7 +373,7 @@ void LiveWDFPluginEditor::updateScopeScales() {
     const auto& doc = schematicCanvas_.getDocument();
     constexpr auto chainVolts = static_cast<float>(wdf::LiveWDFDocument::kChainVoltsPerFullScale);
     oscilloscope_.setTerminalScales(inputRoute_.getSelectedItemIndex() == 1 ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
-                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
+                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(processor_.getCircuitOutputFullScaleVolts()) : chainVolts);
 }
 
 void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool input) {
@@ -572,6 +595,7 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
 void LiveWDFPluginEditor::refreshCircuitView(const juce::String& suffix) {
     const auto doc = processor_.getDocumentSnapshot();
     schematicCanvas_.setDocument(doc);
+    powerAmpBtn_.setVisible(doc.preampTap() != nullptr);
     syncSchematicLiveState();
     rebuildDynamicControls(doc);
     presetStepper_.setName(currentCircuitDescription(doc) + suffix);
@@ -641,7 +665,12 @@ void LiveWDFPluginEditor::setOutputEnabled(bool reverb, bool enabled) {
 void LiveWDFPluginEditor::refreshOutputSelectors() {
     for (bool reverb : {false, true}) {
         auto& selector = reverb ? reverbSelector_ : cabinetSelector_;
-        const auto name = outputEnabled(reverb) ? processor_.outputImpulseName(reverb) : juce::String("Off");
+        auto name = juce::String("Off");
+        if (outputEnabled(reverb)) {
+            name = processor_.outputImpulseName(reverb);
+            if (!reverb && processor_.cabinetFollowsSuggestion())
+                name = "Suggested - " + name;
+        }
         if (selector.getText() != name) {
             selector.setText(name, juce::dontSendNotification);
             selector.setTooltip(name);
@@ -655,6 +684,7 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
     const auto entries = processor_.factoryOutputImpulses(reverb);
     const auto current = processor_.outputImpulseId(reverb);
     const auto recommendation = reverb ? juce::String{} : processor_.suggestedCabinetId();
+    const bool following = !reverb && processor_.cabinetFollowsSuggestion();
     const bool enabled = outputEnabled(reverb);
 
     juce::PopupMenu menu;
@@ -662,14 +692,16 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
     menu.addItem(off, "Off", true, !enabled);
     for (const auto& entry : entries) {
         if (recommendation == entry.id)
-            menu.addItem(suggested, "Suggested - " + juce::String(entry.name));
+            menu.addItem(suggested, "Suggested - " + juce::String(entry.name), true, enabled && following);
     }
+    if (following && recommendation.isEmpty())
+        menu.addItem(suggested, "Suggested - No match for this circuit", false, enabled);
     if (current.isEmpty())
         menu.addItem(imported, processor_.outputImpulseName(reverb), true, enabled);
     menu.addSeparator();
     for (size_t i = 0; i < entries.size(); ++i) {
         const auto& entry = entries[i];
-        menu.addItem(firstFactory + static_cast<int>(i), entry.name, true, enabled && current == entry.id);
+        menu.addItem(firstFactory + static_cast<int>(i), entry.name, true, enabled && !following && current == entry.id);
     }
     menu.addSeparator();
     menu.addItem(importWav, "Load WAV...");
@@ -677,7 +709,7 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
 
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&selector)
                            .withParentComponent(this).withMinimumWidth(selector.getWidth()).withMaximumNumColumns(1),
-                       [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this), reverb, entries, recommendation](int choice) {
+                       [safe = juce::Component::SafePointer<LiveWDFPluginEditor>(this), reverb, entries](int choice) {
         if (safe == nullptr)
             return;
         (reverb ? safe->reverbSelector_ : safe->cabinetSelector_).hidePopup();
@@ -689,9 +721,10 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
             case credits: safe->showFactoryIrCredits(reverb); return;
             default: break;
         }
-        const auto id = choice == suggested ? recommendation
-                                            : juce::String(entries[static_cast<size_t>(choice - firstFactory)].id);
-        if (safe->processor_.selectFactoryOutputImpulse(reverb, id))
+        const bool loaded = choice == suggested
+            ? safe->processor_.selectSuggestedCabinet()
+            : safe->processor_.selectFactoryOutputImpulse(reverb, entries[static_cast<size_t>(choice - firstFactory)].id);
+        if (loaded)
             safe->setOutputEnabled(reverb, true);
         else
             juce::AlertWindow::showMessageBoxAsync(juce::MessageBoxIconType::WarningIcon,
@@ -722,9 +755,11 @@ void LiveWDFPluginEditor::showOutputEffects() {
         effectsPanel_ = std::make_unique<OutputEffectsPanel>(processor_.getAPVTS());
         effectsPanel_->fitWidth(getWidth());
         effectsBrowser_ = std::make_unique<juce::CallOutBox>(*effectsPanel_, effectsBtn_.getBounds(), this);
+        effectsBrowser_->setAlwaysOnTop(true);
         effectsBrowser_->setDismissalMouseClicksAreAlwaysConsumed(true);
     }
     effectsBrowser_->setVisible(true);
+    effectsBrowser_->toFront(true);
     if (!effectsBrowser_->isCurrentlyModal(false)) {
         const juce::Component::SafePointer<juce::CallOutBox> popup(effectsBrowser_.get());
         effectsBrowser_->enterModalState(true, juce::ModalCallbackFunction::create([popup](int) {
@@ -811,6 +846,7 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    updateScopeScales();
     previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
     // The parameter can move from automation or host state restore, not only
@@ -907,6 +943,8 @@ void LiveWDFPluginEditor::layoutSourceSelectors(juce::Rectangle<int> bounds) {
         return area;
     };
     auto circuit = row(circuitLabel_);
+    if (powerAmpBtn_.isVisible())
+        powerAmpBtn_.setBounds(circuit.removeFromRight(112).reduced(4, 2));
     factoryBtn_.setBounds(circuit);
     factoryHint_.setBounds(circuit.removeFromRight(65));
     presetStepper_.setBounds(circuit.reduced(5, 2));

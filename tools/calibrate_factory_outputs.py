@@ -102,7 +102,8 @@ def program(profile, take):
 
 
 def fixture(profile):
-    excerpts = [program(profile, i) for i in range(3)]
+    profiles = ('palm', 'chord', 'picked') if profile == 'amp' else (profile,) * 3
+    excerpts = [program(name, i) for i, name in enumerate(profiles)]
     parts = [np.zeros(REST)]
     for take, level in TRIALS:
         parts.extend([excerpts[take] * 10**(level / 20), np.zeros(REST)])
@@ -164,10 +165,13 @@ def run():
     parser.add_argument('bench', type=Path)
     parser.add_argument('report', type=Path)
     parser.add_argument('--verify', action='store_true')
+    parser.add_argument('--preamp-only', action='store_true', help='calibrate the selected presets at their preamp tap')
     parser.add_argument('--fast-live', action='store_true', help='verify the same divisor in 1x Fast Live')
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--catalog', type=Path, default=ROOT / 'schematics')
     parser.add_argument('--filter', default='')
+    parser.add_argument('--amp-di', action='store_true',
+                        help='fit with palm mutes and strummed chords, then verify with picked notes')
     args = parser.parse_args()
     if args.fast_live and not args.verify:
         parser.error('--fast-live is a verification mode; fit once in Accurate')
@@ -178,7 +182,8 @@ def run():
         parser.error('no matching schematics or invalid worker count')
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
-        inputs = {p: fixture(p) for p in [*SOURCES, 'bus', 'voice']}
+        profiles = ('amp',) if args.amp_di else (*SOURCES, 'bus', 'voice')
+        inputs = {p: fixture(p) for p in profiles}
         for key, values in inputs.items():
             values.tofile(work / (key + '.f32'))
 
@@ -188,19 +193,27 @@ def run():
             try:
                 doc = json.loads(path.read_text())
                 profile, gate = family(path, doc)
+                if args.amp_di:
+                    profile = 'amp'
                 vin = next(c for c in doc['components'] if c['type'] == 'in')['values']['referenceMillivoltsRms'] / 89.01946956877224
-                out = next(c for c in doc['components'] if c['type'] == 'out').setdefault('values', {})
+                if args.preamp_only:
+                    tap = next(c for c in doc['components'] if c.get('properties', {}).get('preampTap'))
+                    out, scale = tap.setdefault('values', {}), 'preampFullScaleVolts'
+                else:
+                    terminal = next(c for c in doc['components'] if c['type'] == 'out')
+                    out, scale = terminal.setdefault('values', {}), 'fullScaleVolts'
                 row.update(profile=profile, input_full_scale_V_peak=vin)
                 load = path
                 if not args.verify:
-                    out['fullScaleVolts'] = 1.
+                    out[scale] = 1.
                     load = work / f'{i}.livewdf'
                     load.write_text(json.dumps(doc))
-                volts = float(out['fullScaleVolts'])
+                volts = float(out[scale])
                 dest = work / f'{i}.f32'
                 result = subprocess.run([str(bench), str(load), '--calibration-render',
                                          str(work / (profile + '.f32')), str(dest),
-                                         *(['--fast-live'] if args.fast_live else [])],
+                                         *(['--fast-live'] if args.fast_live else []),
+                                         *(['--preamp-only'] if args.preamp_only else [])],
                                         capture_output=True, timeout=300, text=True)
                 if result.returncode:
                     raise RuntimeError((result.stderr or result.stdout)[-350:])

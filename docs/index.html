@@ -159,7 +159,7 @@
 
     <section id="benchmark" class="section benchmark" aria-labelledby="benchmark-heading">
       <h2 id="benchmark-heading">Benchmark method</h2>
-      <p>Release build at <a href="https://github.com/Yahiake/LiveWDF/commit/2f71c20e2ce2c802906cf4b9b8bdfcd889007cc1"><code>2f71c20</code></a> on Linux with an Intel Core Ultra 7 155H, pinned to one logical CPU. Preview ran at the factory control positions in mono, 1×, at 48 kHz and 128 samples per block.</p>
+      <p>Release build at <a href="https://github.com/Yahiake/LiveWDF/commit/2f71c20e2ce2c802906cf4b9b8bdfcd889007cc1"><code>2f71c20</code></a> for the original 91 presets and on the factory amp collection branch for the 20 additions. Both runs used Linux and one logical CPU on an Intel Core Ultra 7 155H. Preview ran at the factory control positions in mono, 1×, at 48 kHz and 128 samples per block.</p>
       <p>The <a href="https://github.com/Yahiake/LiveWDF/blob/2f71c20e2ce2c802906cf4b9b8bdfcd889007cc1/tests/regression/render_circuit.cpp">circuit renderer</a> processed three takes of the same Guitar-TECHS Sire T7 DI excerpt, starting at 6 seconds and normalized to −6 dBFS before preset input calibration. Each take discarded 1,024 silent warm-up samples and the first 32 audio blocks, then measured 512 blocks. Statistics pool 1,536 blocks per preset.</p>
       <p>Median is the middle block CPU time. p99 is the CPU time at or below which 99% of measured blocks finished. The block budget at these settings is 2.67 ms. Amber p99 values exceed that budget. These figures measure renderer CPU time.</p>
     </section>

@@ -60,9 +60,11 @@ public:
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
 
-    bool loadOutputImpulse(bool reverb, const juce::File& file) { return outputEffects_.loadImpulse(reverb, file); }
-    bool selectFactoryOutputImpulse(bool reverb, juce::StringRef id) { return outputEffects_.selectFactoryImpulse(reverb, id); }
-    void resetOutputImpulse(bool reverb) { outputEffects_.resetImpulse(reverb); }
+    bool loadOutputImpulse(bool reverb, const juce::File& file);
+    bool selectFactoryOutputImpulse(bool reverb, juce::StringRef id);
+    void resetOutputImpulse(bool reverb);
+    bool selectSuggestedCabinet();
+    bool cabinetFollowsSuggestion() const;
     juce::String outputImpulseName(bool reverb) const { return outputEffects_.impulseName(reverb); }
     juce::String outputImpulseId(bool reverb) const { return outputEffects_.impulseId(reverb); }
     std::span<const FactoryImpulse> factoryOutputImpulses(bool reverb) const noexcept {
@@ -150,6 +152,7 @@ public:
     /// engine is compiled at (times the oversampling factor), which is the one
     /// the editor's scope must use for its timebase.
     double getHostSampleRate() const noexcept { return sampleRate_; }
+    double getCircuitOutputFullScaleVolts() const noexcept { return outputFullScaleVolts_.load(std::memory_order_relaxed); }
 
     const ScopeAudioBuffer& getInputScopeBuffer() const noexcept { return inputScopeBuffer_; }
     const ScopeAudioBuffer& getOutputScopeBuffer() const noexcept { return outputScopeBuffer_; }
@@ -162,12 +165,19 @@ private:
     friend bool waitForBenchmarkPlan(LiveWDFPluginProcessor&, juce::AudioBuffer<float>&,
                                      juce::MidiBuffer&, bool preview);
     friend bool checkLivePreviewCapture(const juce::File& file);
+    friend bool checkPowerAmp(const juce::File& file);
     friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
     OutputEffects outputEffects_;
+    bool cabinetFollowsSuggestion_ = false;
     const std::atomic<float>* cabinetEnabled_ = apvts_.getRawParameterValue("cab_enabled");
-    const std::atomic<float>* echoMix_ = apvts_.getRawParameterValue("echo_mix");
-    const std::atomic<float>* reverbMix_ = apvts_.getRawParameterValue("reverb_mix");
+    const std::atomic<float>* echoLevel_ = apvts_.getRawParameterValue("echo_mix");
+    const std::atomic<float>* reverbLevel_ = apvts_.getRawParameterValue("reverb_mix");
+    const std::atomic<float>* echoDelay_ = apvts_.getRawParameterValue("echo_delay");
+    const std::atomic<float>* echoFeedback_ = apvts_.getRawParameterValue("echo_feedback");
+    const std::atomic<float>* reverbSize_ = apvts_.getRawParameterValue("reverb_size");
+    const std::atomic<float>* reverbPreDelay_ = apvts_.getRawParameterValue("reverb_predelay");
+    OutputEffects::Settings outputEffectSettings() const noexcept;
     void processOutputEffects(juce::dsp::AudioBlock<float>) noexcept;
 
     // Oversampling (1x bypass, 2x, 4x, 8x polyphase IIR, 2x/4x Halfband Butterworth IIR)
@@ -176,6 +186,8 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
+    std::optional<bool> powerAmpEnabled_;
+    std::optional<bool> previewPentodePairs_;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     bool oversamplersPrepared_ = false;
@@ -280,7 +292,7 @@ private:
     /// the Output terminal, and the circuit is not changed, only scaled.
     ///
     /// 1 when the document has not said, which scales nothing.
-    double outputFullScaleVolts_ = 1.0;
+    std::atomic<double> outputFullScaleVolts_{1.0};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     double previewPadScale_ = 1.;
     double previewPadOutputBias_ = 0.;
@@ -385,7 +397,8 @@ private:
                             int& inSrcIdx, int& outIdx, double& outputBias,
                             std::vector<double>& baseSources,
                             std::vector<AcSource>& acSourcesOut,
-                            wdf::Circuit& settledControlCircuit);
+                            wdf::Circuit& settledControlCircuit,
+                            std::optional<bool>& previewPentodePairs);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LiveWDFPluginProcessor)
 };

@@ -57,13 +57,17 @@ void LiveWDFPluginProcessor::processBlockBypassed(juce::AudioBuffer<float>& buff
         processDryDelay(juce::dsp::AudioBlock<float>(buffer).getSubsetChannelBlock(0, inputChannels),
                         true, processingLatencySamples_.load(std::memory_order_relaxed));
     if (buffer.getNumChannels() > 0)
-        outputEffects_.process(juce::dsp::AudioBlock<float>(buffer), false, 0.0f, 0.0f, isNonRealtime());
+        outputEffects_.process(juce::dsp::AudioBlock<float>(buffer), {}, isNonRealtime());
+}
+
+OutputEffects::Settings LiveWDFPluginProcessor::outputEffectSettings() const noexcept {
+    const auto load = [](const std::atomic<float>* parameter) { return parameter->load(std::memory_order_relaxed); };
+    return {load(cabinetEnabled_) > 0.5f, load(echoLevel_) * 0.01f, load(reverbLevel_) * 0.01f,
+            load(echoDelay_), load(echoFeedback_) * 0.01f, load(reverbPreDelay_)};
 }
 
 void LiveWDFPluginProcessor::processOutputEffects(juce::dsp::AudioBlock<float> block) noexcept {
-    outputEffects_.process(block, cabinetEnabled_->load(std::memory_order_relaxed) > 0.5f,
-                           echoMix_->load(std::memory_order_relaxed) * 0.01f,
-                           reverbMix_->load(std::memory_order_relaxed) * 0.01f, isNonRealtime());
+    outputEffects_.process(block, outputEffectSettings(), isNonRealtime());
 }
 
 void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages) {
@@ -87,8 +91,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // A bounce can apply pending processing options itself. Host latency
     // notifications are sent by the control thread.
-    if (isNonRealtime())
+    if (isNonRealtime()) {
+        outputEffects_.reclaim();
+        outputEffects_.applyReverbSize(reverbSize_->load(std::memory_order_relaxed) * 0.01f, true);
         applyPendingCircuitOptions();
+    }
 
     const bool fastLive = !shouldForceAccurate() && *apvts_.getRawParameterValue("solve_quality") > 0.5f;
 
@@ -154,7 +161,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    const float outputScale = static_cast<float>(1.0 / (matchOutput ? outputFullScaleVolts_ : chainVolts));
+    const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() : chainVolts));
     const float dryMix = (1.0f - wetMix) * dryScale;
 
     // Stereo needs a live right engine. Mono deliberately leaves it untouched,
