@@ -316,7 +316,6 @@ public:
                     tryExperimentalSeed(ctx, base, tol)) {
                     *learned = true;
                     ++experimental::seedExperiment->selected;
-                    maxIter = std::min(maxIter, 3);
                 }
 #endif
             }
@@ -556,20 +555,21 @@ public:
                                         const BlockView& view, std::vector<double>& vvPrev,
                                         std::vector<double>& vvPrev2) noexcept {
         pinDomains(ctx, view);
-#ifdef LIVEWDF_NEURAL_NEWTON
         bool learned = false;
-        bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true, false, true, &learned);
-        if (learned && !ctx.lastConverged) {
-            ++experimental::seedExperiment->retries;
-            usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
-        }
+#ifdef LIVEWDF_NEURAL_NEWTON
+        const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true, false, true, &learned);
 #else
         const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
 #endif
         // A failed deeply damped search can stall near a switching boundary.
         // With the usual four trials, the retry takes a different path even from the same voltage.
-        if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || predictionChangesSeed(ctx)))
+        if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || learned || predictionChangesSeed(ctx))) {
+#ifdef LIVEWDF_NEURAL_NEWTON
+            if (learned)
+                ++experimental::seedExperiment->retries;
+#endif
             solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
+        }
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;
         vvPrev = ctx.vv;
