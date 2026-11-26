@@ -649,7 +649,7 @@ void LiveWDFPluginEditor::refreshOutputSelectors() {
         if (outputEnabled(reverb)) {
             name = processor_.outputImpulseName(reverb);
             if (!reverb && processor_.cabinetFollowsSuggestion())
-                name = "Suggested · " + name;
+                name = "Suggested - " + name;
         }
         if (selector.getText() != name) {
             selector.setText(name, juce::dontSendNotification);
@@ -672,10 +672,10 @@ void LiveWDFPluginEditor::showOutputImpulseMenu(bool reverb) {
     menu.addItem(off, "Off", true, !enabled);
     for (const auto& entry : entries) {
         if (recommendation == entry.id)
-            menu.addItem(suggested, "Suggested · " + juce::String(entry.name), true, enabled && following);
+            menu.addItem(suggested, "Suggested - " + juce::String(entry.name), true, enabled && following);
     }
     if (following && recommendation.isEmpty())
-        menu.addItem(suggested, "Suggested · No match for this circuit", false, enabled);
+        menu.addItem(suggested, "Suggested - No match for this circuit", false, enabled);
     if (current.isEmpty())
         menu.addItem(imported, processor_.outputImpulseName(reverb), true, enabled);
     menu.addSeparator();
