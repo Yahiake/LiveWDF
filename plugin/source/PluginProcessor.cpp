@@ -1,4 +1,5 @@
 #include "PluginProcessor.h"
+#include "spice/MatchedPentodes.h"
 #include "PluginEditor.h"
 #include "FactorySchematics.h"
 #include "FastLiveCache.h"
@@ -372,10 +373,11 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     auto* powerAmp = apvts_.getParameter("power_amp");
     const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
     const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
+    const bool pentodePairModeChanged = previewPentodePairs_ && compiledPreviewRequested() != *previewPentodePairs_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
-        powerAmpChanged) {
+        powerAmpChanged || pentodePairModeChanged) {
         const juce::File circuitFile = currentFile_;
         if (!loadCircuitDocument(currentDoc_, false)) {
             if (portTopologyChanged)
@@ -641,7 +643,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
                                                int& inSrcIdx, int& outIdx, double& outputBias,
                                                std::vector<double>& baseSources,
                                                std::vector<AcSource>& acSourcesOut,
-                                               wdf::Circuit& settledControlCircuit) {
+                                               wdf::Circuit& settledControlCircuit,
+                                               std::optional<bool>& previewPentodePairs) {
     // **A document can be rejected before there is an engine.** `toCircuit`
     // throws for a rail wired to ground, for example, and that is a drawing
     // error the user can fix -- not a reason to take the plugin down. The
@@ -723,23 +726,47 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         }
     }
 
-    // Build twin engines for stereo
-    try {
-        // Construction already resets both engines at their DC operating point.
-        left = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
-        right = std::make_unique<wdf::Engine>(c, fs, attemptedGridCurrent_);
+    const auto build = [&](wdf::Circuit& circuit) {
+        left = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
+        right = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
 
-        // Silent pre-roll: settle dynamic states (op-amp GBW, reactive waves,
-        // nonlinear predictors) at the DC operating point to eliminate
-        // sample-0 transient clicks upon audio startup.
+        // Settle dynamic states at the DC operating point before audio starts.
         outIdx = left->nodeIndex(doc.outputNet());
+        outputBias = 0.;
         for (int p = 0; p < 64; ++p) {
             const auto& nodes = left->step(baseSources);
             right->step(baseSources);
             if (outIdx >= 0)
                 outputBias = nodes[static_cast<size_t>(outIdx)];
         }
-        settledControlCircuit = std::move(c);
+        settledControlCircuit = std::move(circuit);
+    };
+    if (c.pent.size() >= 2) {
+        std::vector<std::size_t> varyingSources;
+        if (inSrcIdx >= 0)
+            varyingSources.push_back(static_cast<std::size_t>(inSrcIdx));
+        for (const auto& source : acSourcesOut)
+            varyingSources.push_back(static_cast<std::size_t>(source.index));
+        try {
+            auto reduced = c;
+            if (wdf::collapseMatchedPentodes(reduced, varyingSources) != 0) {
+                previewPentodePairs = false;
+                if (compiledPreviewRequested()) {
+                    build(reduced);
+                    if (outIdx >= 0) {
+                        previewPentodePairs = true;
+                        return;
+                    }
+                    previewPentodePairs.reset();
+                }
+            }
+        } catch (...) {
+            previewPentodePairs.reset();
+        }
+    }
+
+    try {
+        build(c);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -806,8 +833,9 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     }
 
     wdf::Circuit newSettledControlCircuit;
+    std::optional<bool> newPreviewPentodePairs;
     buildEngineFromDoc(playbackDoc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, outputBias, baseSources,
-                       acSources, newSettledControlCircuit);
+                       acSources, newSettledControlCircuit, newPreviewPentodePairs);
 
     if (!newLeft || !newRight) {
         return false;
@@ -823,8 +851,12 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     currentFile_ = juce::File();
 
     powerAmpEnabled_ = hasPowerAmp ? std::optional(enablePowerAmp) : std::nullopt;
+    previewPentodePairs_ = newPreviewPentodePairs;
     rejectedPortRequest_.reset();
-    cacheDocument_ = std::make_shared<const std::string>(wdf::playbackCacheKey(playbackDoc, fixtureNames));
+    auto cacheKey = wdf::playbackCacheKey(playbackDoc, fixtureNames);
+    if (previewPentodePairs_.value_or(false))
+        cacheKey += "\npreview-pentode-pairs";
+    cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
