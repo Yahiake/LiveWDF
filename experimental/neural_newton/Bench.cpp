@@ -5,6 +5,7 @@
 #include "wdf/Engine.h"
 
 #include <algorithm>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <ctime>
@@ -77,7 +78,7 @@ struct Model {
         }
     }
 
-    bool predict(std::span<float> input, const wdf::experimental::NewtonSeed& seed) {
+    bool predict(std::span<float> input, std::span<double> guess) {
         for (size_t i = 0; i < input.size(); ++i) {
             input[i] = (input[i] - center[i]) * invScale[i];
             if (!(std::abs(input[i]) <= 12.f))
@@ -92,15 +93,29 @@ struct Model {
             if (!(std::abs(v) <= 12.f))
                 return false;
         for (size_t i = 0; i < values.size(); ++i)
-            seed.guess[i] += values[i] * correctionScale[i];
+            guess[i] += values[i] * correctionScale[i];
         return true;
     }
 };
 
+enum class SeedMode { Residual, EarlyVoltage, Current, CarriedCurrent };
+
+SeedMode seedMode(std::string_view model, std::string_view trace) {
+    if (model == "carry-current")
+        return SeedMode::CarriedCurrent;
+    if (model.starts_with("voltage:") || trace.starts_with("voltage:"))
+        return SeedMode::EarlyVoltage;
+    if (model.starts_with("current:") || trace.starts_with("current:"))
+        return SeedMode::Current;
+    return SeedMode::Residual;
+}
+
 struct Run {
     Model* model = nullptr;
     std::vector<float> input, target;
-    std::vector<double> stock;
+    std::vector<double> stock, priorDrive;
+    SeedMode mode;
+    bool driveReady = false;
     bool seen = false;
     bool collecting = false;
     double control = 0.0;
@@ -108,14 +123,16 @@ struct Run {
     long long previousWork = 0;
     size_t calls = 0, attempts = 0, rows = 0;
 
-    explicit Run(size_t ports)
-        : input(3 * ports + 1), target(ports), stock(ports) {}
+    Run(size_t ports, SeedMode seed)
+        : input(3 * ports + 1), target(ports), stock(ports), priorDrive(ports), mode(seed) {}
 
     void record(std::ofstream& file, const BenchEngine& engine, int work) {
-        if (!seen || !engine.lastConverged() || engine.lastStateRejected())
+        if (!seen || (mode != SeedMode::Residual && calls == 1) ||
+            !engine.lastConverged() || engine.lastStateRejected())
             return;
+        const auto& solved = mode == SeedMode::Current ? engine.rootCurrents() : engine.solvedPorts();
         for (size_t i = 0; i < target.size(); ++i)
-            target[i] = static_cast<float>(engine.solvedPorts()[i] - stock[i]);
+            target[i] = static_cast<float>(solved[i] - stock[i]);
         const float cost = static_cast<float>(work);
         const auto write = [&file](std::span<const float> values) {
             file.write(reinterpret_cast<const char*>(values.data()),
@@ -146,9 +163,54 @@ bool seedHook(const wdf::experimental::NewtonSeed& seed) noexcept {
         r.stock[i] = seed.guess[i];
     }
     r.input.back() = static_cast<float>(r.control);
-    if (!r.model || !r.model->predict(r.input, seed))
+    if (!r.model || !r.model->predict(r.input, seed.guess))
         return false;
     ++r.attempts;
+    return true;
+}
+
+bool earlySeed(wdf::solver::NewtonContext& ctx) noexcept {
+    auto& r = *run;
+    if (r.seen)
+        return false;
+    r.seen = true;
+    ++r.calls;
+    const bool carry = r.mode == SeedMode::CarriedCurrent;
+    const bool current = r.mode != SeedMode::EarlyVoltage;
+    const auto& seed = current ? ctx.ii : ctx.vv;
+    if (!carry) {
+        const bool features = r.driveReady && (r.collecting || r.previousWork >= r.gate);
+        r.driveReady = true;
+        for (int i = 0; i < ctx.K; ++i) {
+            if (features) {
+                r.input[i] = static_cast<float>(ctx.vvPrev[i]);
+                r.input[ctx.K + i] = static_cast<float>(ctx.vvPrev[i] - ctx.vvPrev2[i]);
+                r.input[2 * ctx.K + i] = static_cast<float>(ctx.vOc[i] - r.priorDrive[i]);
+                r.stock[i] = seed[i];
+            }
+            r.priorDrive[i] = ctx.vOc[i];
+        }
+        r.input.back() = static_cast<float>(r.control);
+        if (!r.model || !features)
+            return false;
+    }
+
+    auto& proposal = current ? ctx.iv : ctx.vt;
+    std::copy(seed.begin(), seed.end(), proposal.begin());
+    if (!carry && !r.model->predict(r.input, proposal))
+        return false;
+    ++r.attempts;
+    if (current) {
+        wdf::solver::RootNewton::residualInto(ctx, ctx.vOc, ctx.vOc, ctx.Z, proposal, ctx.F);
+        for (int i = 0; i < ctx.K; ++i)
+            ctx.vt[i] = ctx.vOc[i] - ctx.F[i];
+    }
+    for (int i = 0; i < ctx.K; ++i) {
+        const double move = ctx.vt[i] - ctx.vvPrev[i];
+        if (!std::isfinite(move) || move < -ctx.stepDown[i] || move > ctx.stepUp[i])
+            return false;
+    }
+    std::copy(ctx.vt.begin(), ctx.vt.end(), ctx.vv.begin());
     return true;
 }
 
@@ -251,15 +313,27 @@ int bench(int argc, char** argv) {
     if (output < 0)
         throw std::runtime_error("No circuit output");
 
-    const uint64_t circuitId = circuitFingerprint(argv[1], controls);
-    Run state(static_cast<size_t>(engine.rootCount()));
+    const std::string_view modelPath = argv[6], tracePath = argv[7];
+    const SeedMode mode = seedMode(modelPath, tracePath);
+    const auto path = [](std::string_view spec) {
+        if (spec.starts_with("voltage:") || spec.starts_with("current:"))
+            spec.remove_prefix(spec.find(':') + 1);
+        return std::string(spec);
+    };
+    uint64_t circuitId = circuitFingerprint(argv[1], controls);
+    if (mode != SeedMode::Residual) {
+        circuitId = (circuitId ^ static_cast<uint64_t>(mode)) * 1099511628211ull;
+        for (const auto& [_, position] : controls)
+            circuitId = (circuitId ^ std::bit_cast<uint64_t>(position)) * 1099511628211ull;
+    }
+    Run state(static_cast<size_t>(engine.rootCount()), mode);
     std::optional<Model> model;
-    if (std::string_view(argv[6]) != "-")
-        state.model = &model.emplace(argv[6], state.target.size(), circuitId);
+    if (modelPath != "-" && mode != SeedMode::CarriedCurrent)
+        state.model = &model.emplace(path(modelPath), state.target.size(), circuitId);
     std::ofstream trace;
-    if (std::string_view(argv[7]) != "-") {
-        trace.open(argv[7], std::ios::binary);
-        if (!trace || state.model)
+    if (tracePath != "-") {
+        trace.open(path(tracePath), std::ios::binary);
+        if (!trace || modelPath != "-")
             throw std::runtime_error("Training trace requires stock solver");
         const uint32_t ports = static_cast<uint32_t>(state.target.size());
         trace.write(reinterpret_cast<const char*>(&circuitId), sizeof(circuitId));
@@ -272,7 +346,11 @@ int bench(int argc, char** argv) {
     const bool profile = state.gate < 0;
     engine.setProfile(profile);
     wdf::experimental::SeedExperiment experiment{&seedHook};
-    if (state.collecting || state.model || profile)
+    if (mode != SeedMode::Residual) {
+        experiment.propose = nullptr;
+        experiment.early = &earlySeed;
+    }
+    if (state.collecting || modelPath != "-" || profile)
         wdf::experimental::seedExperiment = &experiment;
 
     BlockTimes times;

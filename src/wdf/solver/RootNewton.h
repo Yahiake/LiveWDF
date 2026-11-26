@@ -282,6 +282,13 @@ public:
             }
         }
 
+#ifdef LIVEWDF_NEURAL_NEWTON
+        if (learned && !ctx.staticMode && experimental::seedExperiment &&
+            experimental::seedExperiment->early && experimental::seedExperiment->early(ctx)) {
+            *learned = true;
+            ++experimental::seedExperiment->selected;
+        }
+#endif
         for (const auto& gl : ctx.gridJunctionLimiters) {
             const int r = gl.port;
             bool limited = false;
@@ -310,7 +317,7 @@ public:
                 base = maxAbs(ctx.F, ctx.K);
 #ifdef LIVEWDF_NEURAL_NEWTON
                 if (it == 0 && learned && experimental::seedExperiment && !ctx.staticMode &&
-                    tryExperimentalSeed(ctx, base, tol)) {
+                    experimental::seedExperiment->propose && tryExperimentalSeed(ctx, base, tol)) {
                     *learned = true;
                     ++experimental::seedExperiment->selected;
                 }

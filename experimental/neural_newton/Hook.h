@@ -3,6 +3,10 @@
 #include <cstddef>
 #include <span>
 
+namespace wdf::solver {
+struct NewtonContext;
+}
+
 namespace wdf::experimental {
 
 struct NewtonSeed {
@@ -14,6 +18,7 @@ struct NewtonSeed {
 
 struct SeedExperiment {
     bool (*propose)(const NewtonSeed&) noexcept;
+    bool (*early)(solver::NewtonContext&) noexcept = nullptr;
     std::size_t selected = 0;
     std::size_t retries = 0;
 };
