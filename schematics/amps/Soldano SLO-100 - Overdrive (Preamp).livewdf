@@ -1279,7 +1279,8 @@
     {
       "id": "R PI load",
       "properties": {
-        "preampTap": "a"
+        "preampTap": "a",
+        "preampOnly": "1"
       },
       "type": "res",
       "values": {
@@ -1298,29 +1299,13 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 281.81382
+        "fullScaleVolts": 299.34019
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
         "x": 117,
         "y": 157
-      }
-    },
-    {
-      "id": "Power PI input",
-      "type": "cap",
-      "values": {
-        "value": 1e-06
-      },
-      "properties": {
-        "powerAmp": "1"
-      },
-      "visual": {
-        "x": -1,
-        "y": 145,
-        "rotation": 90,
-        "flipped": false
       }
     },
     {
@@ -3544,19 +3529,7 @@
           "y": 145
         },
         {
-          "x": -3,
-          "y": 145
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 1,
-          "y": 145
-        },
-        {
-          "x": 1,
+          "x": -10,
           "y": 149
         },
         {

@@ -1255,7 +1255,8 @@
     {
       "id": "R PI load",
       "properties": {
-        "preampTap": "a"
+        "preampTap": "a",
+        "preampOnly": "1"
       },
       "type": "res",
       "values": {
@@ -1274,7 +1275,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 5.2933345
+        "fullScaleVolts": 6.307847
       },
       "visual": {
         "flipped": false,
