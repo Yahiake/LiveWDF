@@ -24,6 +24,7 @@
 #include "EditorLookAndFeel.h"
 #include "ElementAccess.h"
 #include "InspectorPanel.h"
+#include "SchematicEditor.h"
 #include "format/PartLibrary.h"
 #include "format/PartModels.h"
 #include "devices/MosfetPresets.h"
@@ -166,6 +167,82 @@ juce::Viewport* findViewport(juce::Component& panel) {
 }
 
 }  // namespace
+
+TEST_CASE("The inspector authors a preamp-only playback circuit") {
+    SchematicEditor schematic;
+    auto& doc = schematic.getDocument();
+    const auto& parts = doc.components;
+    const auto resistor = std::ranges::find(parts, "res", &wdf::SchematicComponent::type);
+    const auto capacitor = std::ranges::find(parts, "cap", &wdf::SchematicComponent::type);
+    const auto ground = std::ranges::find(parts, "gnd", &wdf::SchematicComponent::type);
+    REQUIRE(resistor != parts.end());
+    REQUIRE(capacitor != parts.end());
+    REQUIRE(ground != parts.end());
+
+    InspectorPanel panel;
+    panel.setSize(320, 700);
+    panel.setTarget(&doc, resistor->id);
+    const auto choose = [&](const juce::String& caption, const juce::String& item) {
+        auto* box = findPickerBelowCaption(panel, caption);
+        REQUIRE(box != nullptr);
+        int id = 0;
+        for (int i = 0; i < box->getNumItems(); ++i)
+            if (box->getItemText(i) == item) id = box->getItemId(i);
+        REQUIRE(id != 0);
+        box->setSelectedId(id, juce::dontSendNotification);
+        box->onChange();
+    };
+
+    REQUIRE(doc.preampTap() == nullptr);
+    choose("Preamp output pin:", "b");
+    REQUIRE(doc.preampTap() == &*resistor);
+
+    panel.setTarget(&doc, capacitor->id);
+    choose("Preamp output pin:", "a");
+    REQUIRE(doc.preampTap() == &*capacitor);
+    CHECK_FALSE(resistor->properties.contains("preampTap"));
+
+    panel.setTarget(&doc, resistor->id);
+    choose("Preamp output pin:", "b");
+    panel.setTarget(&doc, resistor->id);
+    auto* scale = findEditorBelowCaption(panel, "Preamp output full scale (V):");
+    REQUIRE(scale != nullptr);
+    scale->setText("25", false);
+    scale->onFocusLost();
+
+    wdf::LiveWDFDocument preamp;
+    std::string error;
+    panel.setTarget(&doc, capacitor->id);
+    choose("Amp section:", "Preamp only");
+    CHECK(doc.toCircuit().cap.empty());
+    REQUIRE(doc.makePreampDocument(preamp, error));
+    CHECK(preamp.toCircuit().cap.size() == 1);
+    choose("Amp section:", "Both modes");
+    CHECK(doc.toCircuit().cap.size() == 1);
+
+    panel.setTarget(&doc, capacitor->id, {capacitor->id, ground->id});
+    choose("Amp section:", "Power amp only");
+    CHECK(ground->properties.count("powerAmp") == 1);
+
+    REQUIRE(doc.makePreampDocument(preamp, error));
+    CHECK(preamp.toCircuit().cap.empty());
+    CHECK(doc.toCircuit().cap.size() == 1);
+    CHECK(preamp.outputFullScaleVolts() == 25.0);
+    const auto retained = std::ranges::find(preamp.components, resistor->id, &wdf::SchematicComponent::id);
+    REQUIRE(retained != preamp.components.end());
+    CHECK(preamp.outputNet() == retained->pins.at("b"));
+
+    const auto tapId = resistor->id;
+    schematic.reloadFromDocument();
+    schematic.selectPart(tapId);
+    schematic.duplicateSelection();
+    REQUIRE(schematic.getDocument().preampTap() != nullptr);
+    CHECK(schematic.getDocument().preampTap()->id == tapId);
+    const auto copy = std::ranges::find(schematic.getDocument().components,
+                                        schematic.selectedPartId(), &wdf::SchematicComponent::id);
+    REQUIRE(copy != schematic.getDocument().components.end());
+    CHECK_FALSE(copy->properties.contains("preampTap"));
+}
 
 TEST_CASE("Clicking a part with a model does not rewrite the model") {
     // The symptom of the bug that crashed the editor: the picker's *opening*
@@ -419,16 +496,13 @@ TEST_CASE("The widget whose callback is running is still alive when it returns")
     CHECK(box->getText() == juce::String(*other));
 }
 
-TEST_CASE("A part with no variants gets no picker") {
-    // A resistor has no model, so it must not get a control that offers one. A
-    // picker with an empty list is a control that shows nothing, which is worse
-    // than no control.
+TEST_CASE("A resistor has no device model picker") {
     auto doc = documentWith("res");
 
     InspectorPanel panel;
     panel.setTarget(&doc, doc.components.front().id);
 
-    CHECK(findPicker(panel) == nullptr);
+    CHECK(findPickerBelowCaption(panel, "Model:") == nullptr);
 }
 
 TEST_CASE("A BJT inspector offers the Ebers-Moll card values") {
