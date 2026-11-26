@@ -164,7 +164,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     addAndMakeVisible(loadFileBtn_);
 
     effectsBtn_.onClick = [this] { showOutputEffects(); };
-    effectsBtn_.setTooltip("Adjust echo delay, feedback and mix, and reverb size, pre-delay and mix");
+    effectsBtn_.setTooltip("Adjust echo delay, feedback and level, and reverb size, pre-delay and level");
     addAndMakeVisible(effectsBtn_);
 
     // 3. Reload Button
