@@ -127,3 +127,107 @@ exact plate difference added iterations on both tracks. The model trained
 with the NAM loss produced raw output deltas of 42.4 V peak on Sire and
 53.7 V peak on Strat relative to the stock solve. The narrow scalar
 intervention remains an opt-in benchmark.
+
+## Next-sample plate prediction
+
+The history experiment feeds accepted simulated plate values back into the
+guesser. The output is the same differential plate signal defined above,
+one sample ahead. At sample `t`, A2-Lite receives `d[t-1]`. The small
+network receives `d[t-1]` through `d[t-8]`, with an optional additional
+feature for the current calibrated dry input. It has one hidden layer of 14
+Leaky ReLU units and a scalar linear head. History starts at zero and
+advances after each circuit solve, using the held value if the engine
+rejects a sample. All models only supply the starting plate difference for
+the same Newton solve.
+
+Use the same captures and native Release build above. Train all three models
+on all 9,120,000 targets from the V3 capture, for 20 epochs each. They use the
+NAM loss, Adam and schedule described above.
+
+```bash
+python experimental/neural_newton/train_a2_plate.py \
+  --rig-converter "$rig" --kernel "$scratch/liba2lite.so" \
+  --captures "$scratch" --official-wave "$nam_v3" --output "$scratch/history-a2" \
+  --input plate-history --epochs 20 --chunk 32768 --threads 6 --recipe nam
+python experimental/neural_newton/train_small_plate_history.py \
+  --rig-converter "$rig" --captures "$scratch" --official-wave "$nam_v3" \
+  --output "$scratch/small-history" --epochs 20 --threads 2
+python experimental/neural_newton/train_small_plate_history.py \
+  --rig-converter "$rig" --captures "$scratch" --official-wave "$nam_v3" \
+  --output "$scratch/small-conditioned" --epochs 20 --threads 2 --guitar
+```
+
+Use the same native DI command with `a2-history:$scratch/history-a2/a2-guess.nam`,
+`small-plate:$scratch/small-history/guess.json` or
+`small-plate:$scratch/small-conditioned/guess.json` as the model argument.
+Keep the gate at zero to try every sample. For A2-Lite, the engine runs the
+network one frame at a time inside block timing. The small models also run
+without NAM Core.
+
+Held-out training scores use previous samples from the stock DI trace.
+During native testing each solver run uses its own accepted plate history.
+
+### One-step prediction
+
+Every model completed 182,400,000 supervised sample visits and 940 Adam
+updates. The full NAM V3 excitation in the capture matched the original WAV
+within 5.96e-8 after one uniform gain. Training uses waveform samples.
+The spectral term compares STFT magnitudes at three window sizes.
+
+| Inputs | Parameters | Sire RMSE | Strat RMSE |
+|---|---:|---:|---:|
+| Previous plate value directly | — | 741.0 V | 1126.3 V |
+| Plate value two samples back | — | 268.8 V | 269.1 V |
+| Least-squares, eight past plate samples | 9 | 253.5 V | 264.2 V |
+| Least-squares, eight past plate samples and current guitar | 10 | 252.9 V | 264.0 V |
+| Small net, eight past plate samples | 141 | 253.1 V | 240.0 V |
+| Small net, eight past plate samples and current guitar | 155 | 249.5 V | 236.5 V |
+| A2-Lite, plate history | 1,871 | 249.0 V | 230.3 V |
+
+The least-squares fits use the same full V3 trace as the nets. The strong
+two-sample correlation makes lag two a more informative baseline than
+carrying the last value. Adding current guitar to the small net lowers
+RMSE about 1.4% on each DI. A2-Lite trained on plate history improves
+substantially over the original dry-input A2-Lite on the same two DIs.
+
+| Model | NAM objective, epoch 1 | Epoch 15 | Epoch 20 |
+|---|---:|---:|---:|
+| Small net, plate history | .01053 | .00375 | .00366 |
+| Small net, plate history and guitar | .01028 | .00366 | .00359 |
+| A2-Lite, plate history | .00776 | .00390 | .00344 |
+
+On both held-out stock plate traces, the interim epoch 9 A2-Lite checkpoint
+returned numerically identical values in one-frame and 128-frame Core
+inference. One-frame inference used about .16 ms CPU per 128 frames, up
+from .056–.059 ms when batching known input. Both timings exclude prewarm.
+
+### Native solve
+
+The fixed-rail Rectifier ran at 48 kHz in full-rate mono Preview with
+128-frame blocks, Balanced power, and one performance core. Both passes
+used the same four seconds of each DI and ran the modes in opposite order.
+Each render repeated bit for bit. CPU p99 is the median of the two runs.
+
+| DI | Guess | CPU p99 | Late blocks / 1,500 | Newton iterations | Rejected samples | Output delta RMS relative to stock |
+|---|---|---:|---:|---:|---:|---:|
+| Sire | Stock | 4.35 ms | 11–150 | 1,015,736 | 3 | — |
+| Sire | Exact plate difference from stock | 2.55 ms | 3–7 | 1,058,617 | 6 | −47.8 dB |
+| Sire | Small net, plate history | 2.58 ms | 2–6 | 1,066,601 | 3 | −44.4 dB |
+| Sire | Small net, plate history and guitar | 5.15 ms | 135–139 | 1,066,741 | 3 | −45.2 dB |
+| Sire | A2-Lite, plate history | 4.13 ms | 20–153 | 1,067,189 | 2 | −44.6 dB |
+| Strat | Stock | 2.91 ms | 39–53 | 1,155,838 | 19 | — |
+| Strat | Exact plate difference from stock | 4.20 ms | 50–160 | 1,191,952 | 18 | −56.8 dB |
+| Strat | Small net, plate history | 3.54 ms | 41–105 | 1,193,493 | 10 | −26.2 dB |
+| Strat | Small net, plate history and guitar | 3.28 ms | 40–109 | 1,192,262 | 11 | −26.2 dB |
+| Strat | A2-Lite, plate history | 4.08 ms | 122–124 | 1,191,347 | 9 | −26.1 dB |
+
+Sire stock CPU p99 varied from 2.63 to 6.07 ms. All three learned seeds
+increased Newton iterations and median CPU p50 on both takes. Their raw
+output deltas reached about 43 V peak on Sire and 53–54 V on Strat.
+Even the exact scalar from the stock trace added iterations, which shows
+the limit of replacing the plate differential alone in the coupled seed.
+
+A second check gated the A2-Lite and guitar-conditioned small net at eight
+iterations plus line-search trials in the preceding sample. Both still
+added iterations on each DI. The raw output differences were comparable
+to their ungated runs. The models remain opt-in benchmark modes.

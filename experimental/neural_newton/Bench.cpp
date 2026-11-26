@@ -1,6 +1,7 @@
 #include "neural_newton/Hook.h"
 
 #include "format/Document.h"
+#include "format/Json.h"
 #include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 
@@ -19,6 +20,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 #include <stdexcept>
 #include <string_view>
 
@@ -164,8 +166,74 @@ struct PlateSeed {
     }
 };
 
+struct SmallPlateModel {
+    static constexpr size_t historySize = 8;
+    static constexpr size_t hiddenSize = 14;
+    float plateScale;
+    float guitarScale;
+    Layer hidden;
+    std::array<float, hiddenSize> outputWeights;
+    float outputBias;
+
+    explicit SmallPlateModel(const std::string& path) {
+        std::ifstream stream(path);
+        const std::string contents((std::istreambuf_iterator<char>(stream)), {});
+        wdf::json::Value parsed;
+        std::string error;
+        if (!wdf::json::Value::parse(contents, parsed, error))
+            throw std::runtime_error("Invalid small plate model JSON: " + error);
+        const auto& model = parsed;
+        if (model["plate_history"].asDouble() != historySize || !model.objVal.contains("guitar_scale"))
+            throw std::runtime_error("Expected an eight-sample plate history model");
+
+        const auto number = [](const wdf::json::Value& value) {
+            const auto f = static_cast<float>(value.asDouble());
+            if (!value.isNumber() || !std::isfinite(f))
+                throw std::runtime_error("Invalid small plate model number");
+            return f;
+        };
+        const auto read = [&](const wdf::json::Value& value, size_t count, auto dest) {
+            if (!value.isArray() || value.arrVal.size() != count)
+                throw std::runtime_error("Invalid small plate model shape");
+            for (const auto& item : value.arrVal)
+                *dest++ = number(item);
+        };
+        plateScale = number(model["plate_scale_volts"]);
+        const auto& guitar = model["guitar_scale"];
+        const bool conditioned = guitar.type != wdf::json::Type::Null;
+        guitarScale = conditioned ? number(guitar) : 0.f;
+        if (plateScale <= 0.f || (conditioned && guitarScale <= 0.f))
+            throw std::runtime_error("Invalid plate or guitar scale");
+
+        hidden.inputs = historySize + conditioned;
+        const auto& rows = model["input_weights"];
+        if (!rows.isArray() || rows.arrVal.size() != hiddenSize)
+            throw std::runtime_error("Expected a fourteen-unit hidden layer");
+        for (const auto& row : rows.arrVal)
+            read(row, hidden.inputs, std::back_inserter(hidden.weights));
+        read(model["input_bias"], hiddenSize, std::back_inserter(hidden.bias));
+        read(model["output_weights"], hiddenSize, outputWeights.begin());
+        hidden.output.resize(hiddenSize);
+        outputBias = number(model["output_bias"]);
+    }
+
+    float predict(const std::array<float, historySize>& history, float guitar) {
+        std::array<float, historySize + 1> input;
+        for (size_t i = 0; i < historySize; ++i)
+            input[i] = history[i] / plateScale;
+        if (guitarScale > 0.f)
+            input.back() = guitar / guitarScale;
+        hidden.run(std::span(input).first(hidden.inputs), true);
+        float estimate = outputBias;
+        for (size_t i = 0; i < hiddenSize; ++i)
+            estimate += hidden.output[i] * outputWeights[i];
+        return estimate * plateScale;
+    }
+};
+
 SeedMode seedMode(std::string_view model, std::string_view trace) {
-    if (model.starts_with("a2:") || model.starts_with("plate:") || trace.starts_with("plate:"))
+    if (model.starts_with("a2:") || model.starts_with("a2-history:") ||
+        model.starts_with("small-plate:") || model.starts_with("plate:") || trace.starts_with("plate:"))
         return SeedMode::Plate;
     if (model == "carry-current")
         return SeedMode::CarriedCurrent;
@@ -390,23 +458,37 @@ int bench(int argc, char** argv) {
     const std::string_view modelPath = argv[6], tracePath = argv[7];
     const SeedMode mode = seedMode(modelPath, tracePath);
     const bool plateTrace = tracePath.starts_with("plate:");
-    const bool liveA2 = modelPath.starts_with("a2:");
+    const bool historyA2 = modelPath.starts_with("a2-history:");
+    const bool liveA2 = historyA2 || modelPath.starts_with("a2:");
+    const auto seedFile = [&] { return std::string(modelPath.substr(modelPath.find(':') + 1)); };
+    std::optional<SmallPlateModel> smallPlate;
+    if (modelPath.starts_with("small-plate:"))
+        smallPlate.emplace(seedFile());
+    std::array<float, SmallPlateModel::historySize> plateHistory{};
 #ifdef LIVEWDF_BENCH_NAM_A2
     std::unique_ptr<nam::DSP> a2;
     std::array<NAM_SAMPLE, blockSize> a2Input, a2Output;
     double a2Cpu = 0;
+    float historyScale = 1.f;
     if (liveA2) {
-        std::ifstream stream(std::string(modelPath.substr(3)));
+        std::ifstream stream(seedFile());
         nlohmann::json model;
         if (!(stream >> model) || model.at("sample_rate") != sampleRate)
             throw std::runtime_error("Expected a 48 kHz NAM model");
+        if (historyA2) {
+            historyScale = model.at("metadata").at("plate_history_input_scale_volts").get<float>();
+            if (!(historyScale > 0 && std::isfinite(historyScale)))
+                throw std::runtime_error("Invalid A2 Lite plate history scale");
+        } else if (model.value("metadata", nlohmann::json::object()).contains("plate_history_input_scale_volts")) {
+            throw std::runtime_error("Use a2-history: for a plate history model");
+        }
         const auto& config = model.at("config");
         int channels = 0;
         auto weights = model.at("weights").get<std::vector<float>>();
         if (!nam::wavenet::a2_fast::is_a2_shape(config, &channels) || channels != 3 || weights.size() != 1871)
             throw std::runtime_error("Expected the stock A2 Lite architecture");
         a2 = nam::wavenet::a2_fast::create_a2_fast_config(config, sampleRate)->create(std::move(weights), sampleRate);
-        a2->Reset(sampleRate, blockSize);
+        a2->Reset(sampleRate, historyA2 ? 1 : blockSize);
     }
 #else
     if (liveA2)
@@ -422,8 +504,8 @@ int bench(int argc, char** argv) {
             plateTargets.resize(audio.size());
         } else {
             plates->predictions.resize(audio.size());
-            if (!liveA2) {
-                std::ifstream estimate(std::string(modelPath.substr(6)), std::ios::binary);
+            if (!liveA2 && !smallPlate) {
+                std::ifstream estimate(seedFile(), std::ios::binary);
                 estimate.read(reinterpret_cast<char*>(plates->predictions.data()),
                               static_cast<std::streamsize>(audio.size() * sizeof(float)));
                 if (!estimate || estimate.peek() != std::ifstream::traits_type::eof())
@@ -483,7 +565,7 @@ int bench(int argc, char** argv) {
         const auto wall = Clock::now();
         const double cpu = threadSeconds();
 #ifdef LIVEWDF_BENCH_NAM_A2
-        if (a2) {
+        if (a2 && !historyA2) {
             for (size_t i = 0; i < blockSize; ++i)
                 a2Input[i] = static_cast<float>(audio[start + i] * drive / voltsPerFullScale);
             auto* input = a2Input.data();
@@ -497,11 +579,28 @@ int bench(int argc, char** argv) {
             state.seen = false;
             if (plates)
                 plates->sample = i;
+            if (smallPlate && state.previousWork >= state.gate)
+                plates->predictions[i] = smallPlate->predict(
+                    plateHistory, static_cast<float>(audio[i] * drive / voltsPerFullScale));
+#ifdef LIVEWDF_BENCH_NAM_A2
+            if (historyA2) {
+                NAM_SAMPLE inputValue = plateHistory.front() / historyScale;
+                NAM_SAMPLE outputValue;
+                auto* input = &inputValue;
+                auto* output = &outputValue;
+                a2->process(&input, &output, 1);
+                plates->predictions[i] = static_cast<float>(outputValue);
+            }
+#endif
             sources[inputIndex] = in->dc + audio[i] * drive;
             const auto& nodes = engine.step(sources, BenchEngine::kDefaultMaxIterations, BenchEngine::kFastLiveTolerance);
             rendered[i] = nodes[output];
             if (plateTrace)
                 plateTargets[i] = static_cast<float>(plates->differential(engine.solvedPorts()));
+            if (smallPlate || historyA2) {
+                std::copy_backward(plateHistory.begin(), plateHistory.end() - 1, plateHistory.end());
+                plateHistory.front() = static_cast<float>(plates->differential(engine.solvedPorts()));
+            }
             iterations += engine.newtonIterations();
             trials += engine.lineSearchTrials();
             evals += engine.deviceEvaluations();
@@ -555,7 +654,7 @@ int bench(int argc, char** argv) {
                   << phases.solve * 1000 << '/' << phases.device * 1000 << '/' << phases.jacobian * 1000
                   << '/' << phases.lu * 1000 << '/' << phases.linesearch * 1000 << '\n';
 #ifdef LIVEWDF_BENCH_NAM_A2
-    if (a2)
+    if (a2 && !historyA2)
         std::cout << "A2 Lite mean CPU ms/block " << a2Cpu * 1000 / times.cpu.size() << '\n';
 #endif
     times.summarize("CPU ", times.cpu);
