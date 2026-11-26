@@ -166,7 +166,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
     }
     leftEngine_->useLoadedJunctionPreview(compiledPreview);
-    if (processStereo) rightEngine_->useLoadedJunctionPreview(compiledPreview);
+    leftEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+    if (processStereo) {
+        rightEngine_->useLoadedJunctionPreview(compiledPreview);
+        rightEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+    }
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
     if (processStereo) {
