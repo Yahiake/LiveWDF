@@ -107,7 +107,9 @@ set_target_properties(livewdf_gp50_catalog PROPERTIES PREFIX "" LIBRARY_OUTPUT_D
 
 if(LIVEWDF_BUILD_TESTS)
     find_package(Python3 3.8 REQUIRED COMPONENTS Interpreter)
-    add_test(NAME livewdf_gp50_catalog
-        COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_catalog.py"
-               "${LIVEWDF_OPENGP5_EMULATOR}/tools/simulate.py" "${catalog}" "$<TARGET_FILE:livewdf_gp50_catalog>")
+    foreach(test IN ITEMS catalog patches)
+        add_test(NAME livewdf_gp50_${test}
+            COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_${test}.py"
+                    "${LIVEWDF_OPENGP5_EMULATOR}/tools/simulate.py" "${catalog}" "$<TARGET_FILE:livewdf_gp50_catalog>")
+    endforeach()
 endif()

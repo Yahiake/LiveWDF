@@ -1,9 +1,16 @@
 # LiveWDF model pack for GP-50
 
-This example generates a GP-50 firmware folder with two models from the
-LiveWDF factory library. The right encoder and FS2 select the model. Left
-changes Gain, middle changes Level, and FS1 toggles bypass. Turn and press
-PARA to edit the cabinet, delay and reverb settings.
+This example generates GP-50 firmware for the DOD 250 and MXR Micro Amp.
+Footswitch A recalls the previous patch and B recalls the next patch. Each
+patch includes the model, all its settings, Input, Level, bypass, cabinet,
+delay and reverb. The initial patch bank has one patch per model.
+
+The left encoder adjusts Drive or Input, the middle encoder adjusts Level,
+and the right encoder adjusts a model control. Turn and press PARA to
+browse and edit the other settings. GLOBAL opens the output controls. DRUM
+is a shortcut to Delay, and EXIT leaves the current edit. SAVE updates the
+active patch in RAM. The GP-50 loses these changes when it powers off.
+Level extends to 200%, with up to 6 dB of extra output above 100%.
 
 The DOD 250 Gray model runs the schematic's capacitor recurrence, the
 LM741's dominant pole and rail limits, and the antiparallel 1N4148 pair.
@@ -47,15 +54,14 @@ In a control script, `set Model 0` selects the DOD 250 and `set Model 1`
 selects the Micro Amp.
 The [live simulator](https://github.com/jopdorp/OpenGP5-Emulator) also accepts
 the generated source folder and runs it with JACK audio. The board build
-produces emulator inputs. Physical audio, cycle timing and recovery need
-testing on the GP-50.
+produces emulator inputs. Hardware playback and timing qualification are
+separate steps.
 
 ## Desktop catalog
 
-The desktop GP-50 emulator can run the 16 factory circuits from MXR Micro Amp
-through Dunlop Cry Baby. It runs their LiveWDF schematics at 44.1 kHz with the
-saved knob settings, voltage references and port impedances. The list is in
-[catalog.cmake](catalog.cmake). This target runs on the computer.
+The desktop GP-50 emulator runs all 47 circuits in [catalog.cmake](catalog.cmake)
+at 44.1 kHz with the factory knob settings, voltage references and port
+impedances. For amps with a preamp tap, it uses that path.
 
 Use an [OpenGP5-Emulator checkout with native DSP support](https://github.com/jopdorp/OpenGP5-Emulator/pull/3),
 including its OpenGP5 submodule.
@@ -70,11 +76,9 @@ pw-jack python3 "$emulator/tools/simulate.py" "$catalog" --gp50 --live \
   --host-dsp "$catalog/livewdf_gp50_catalog.so"
 ```
 
-Right and FS2 select the circuit, middle adjusts the output level, and FS1
-toggles bypass. Turn PARA to the **Control** row, press it to edit, then turn
-to choose a pot or rheostat. Left adjusts that part. Switches use their
-factory settings. Each circuit keeps its knob edits and state while the
-emulator is open.
+Use the same patch and encoder controls on the desktop. The **Control**
+row selects a pot or rheostat for deeper edits. Circuit switches use
+their factory settings.
 
 Cab, Delay and Reverb are on the same screen. The emulator’s **Expression**
 slider moves the original Cry Baby treadle pot. An offline script can use
