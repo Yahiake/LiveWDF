@@ -1247,7 +1247,7 @@
     {
       "id": "VR3",
       "properties": {
-        "label": "PRESENCE",
+        "label": "Red Presence",
         "taper": "Log"
       },
       "type": "varres",
@@ -1467,7 +1467,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 567.07776
+        "fullScaleVolts": 566.59776
       },
       "visual": {
         "flipped": false,
@@ -1483,7 +1483,7 @@
       },
       "type": "cap",
       "values": {
-        "value": 2.2e-08
+        "value": 2e-08
       },
       "visual": {
         "flipped": false,
@@ -1549,7 +1549,7 @@
       },
       "type": "res",
       "values": {
-        "value": 90000
+        "value": 82000
       },
       "visual": {
         "flipped": false,
@@ -1565,7 +1565,7 @@
       },
       "type": "res",
       "values": {
-        "value": 82000
+        "value": 90000
       },
       "visual": {
         "flipped": false,
@@ -2193,17 +2193,19 @@
       }
     },
     {
-      "id": "PGND7",
+      "id": "Power feedback C51",
       "properties": {
         "powerAmp": "1"
       },
-      "type": "gnd",
-      "values": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
       "visual": {
         "flipped": false,
-        "rotation": 0,
-        "x": 343,
-        "y": 59
+        "rotation": 90,
+        "x": 347,
+        "y": 47
       }
     },
     {
@@ -2271,14 +2273,14 @@
     {
       "id": "Power Presence",
       "properties": {
-        "label": "Power Presence",
+        "label": "Orange Presence",
         "powerAmp": "1",
         "taper": "Linear"
       },
-      "type": "varres",
+      "type": "pot",
       "values": {
-        "maxR": 25000,
-        "pos": 0.5
+        "pos": 0.5,
+        "totalR": 25000
       },
       "visual": {
         "flipped": false,
@@ -2302,7 +2304,7 @@
       }
     }
   ],
-  "description": "Two-channel Dual Rectifier RP-1F, with the four-6L6 power stage, silicon-rectifier rail and selectable red/modern feedback. The 8 Ω load and output transformer use estimated winding parameters.",
+  "description": "Two-channel Dual Rectifier RP-1F with Orange/Vintage power feedback, Red/Modern preamp Presence and four 6L6GCs into 8 Ω. The power supply uses fixed silicon-mode rails. Transformer winding parameters are estimated.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -2315,8 +2317,8 @@
       "BASS",
       "MIDDLE",
       "MASTER",
-      "PRESENCE",
-      "Power Presence"
+      "Red Presence",
+      "Orange Presence"
     ],
     "switches": [
       "RED"
@@ -4532,6 +4534,18 @@
           "y": 47
         },
         {
+          "x": 349,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 345,
+          "y": 47
+        },
+        {
           "x": 337,
           "y": 47
         },
@@ -4880,22 +4894,6 @@
     {
       "points": [
         {
-          "x": 339,
-          "y": 56
-        },
-        {
-          "x": 343,
-          "y": 56
-        },
-        {
-          "x": 343,
-          "y": 57
-        }
-      ]
-    },
-    {
-      "points": [
-        {
           "x": 324,
           "y": 3
         },
@@ -5178,6 +5176,22 @@
         {
           "x": 334,
           "y": 55
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 314,
+          "y": 71
+        },
+        {
+          "x": 314,
+          "y": 76
+        },
+        {
+          "x": 311,
+          "y": 76
         }
       ]
     }
