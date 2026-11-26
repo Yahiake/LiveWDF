@@ -8,7 +8,10 @@
         "model": "JRC4558"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 7,
+        "vRailMin": 2
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -278,7 +281,10 @@
         "model": "JRC4558"
       },
       "type": "opamp",
-      "values": {},
+      "values": {
+        "vRailMax": 7,
+        "vRailMin": 2
+      },
       "visual": {
         "flipped": false,
         "rotation": 0,
@@ -353,9 +359,9 @@
       },
       "visual": {
         "flipped": false,
-        "rotation": 180,
+        "rotation": 0,
         "x": 53,
-        "y": 31
+        "y": 21
       }
     },
     {
@@ -451,9 +457,9 @@
       "values": {},
       "visual": {
         "flipped": false,
-        "rotation": 180,
+        "rotation": 0,
         "x": 53,
-        "y": 19
+        "y": 33
       }
     }
   ],
