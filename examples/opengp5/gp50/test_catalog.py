@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+import re
 import struct
 import subprocess
 import sys
@@ -23,6 +24,8 @@ def render(root, name, events, duration, input_name="input"):
 
 
 def main():
+    config = (Path(sys.argv[2]) / "catalog_config.h").read_text(encoding="utf-8")
+    model_count = int(re.search(r"^#define CATALOG_MODELS (\d+)$", config, re.MULTILINE)[1])
     with tempfile.TemporaryDirectory(prefix="livewdf-gp50-catalog-") as directory:
         root = Path(directory)
         segment = RATE // 4
@@ -31,24 +34,24 @@ def main():
                        + 1700 * math.sin(2 * math.pi * 2416 * i / RATE)) for i in range(segment)]
         with wave.open(str(root / "input.wav"), "wb") as stream:
             stream.setparams((1, 2, RATE, 0, "NONE", "not compressed"))
-            stream.writeframes(b"".join(struct.pack("<h", sample) for sample in drive) * 17)
+            stream.writeframes(b"".join(struct.pack("<h", sample) for sample in drive) * (model_count + 1))
 
-        sequence = [f"{model / 4} set Model {model}" for model in range(16)]
-        wet = render(root, "catalog", sequence, 4.25)
-        dry = render(root, "bypass", ["0 foot"], 0.25)
+        sequence = [f"{model / 4} set Model {model}" for model in range(model_count)]
+        wet = render(root, "catalog", sequence, (model_count + 1) / 4)
+        dry = render(root, "bypass", ["0 set Effect Bypass"], 0.25)
         start_frame, end_frame = segment // 2, segment - 64
         start, end = start_frame * 6, end_frame * 6
         dry_fragment = dry[start:end]
         expected = b"".join((sample << 8).to_bytes(3, "little", signed=True) * 2
                             for sample in drive[start_frame:end_frame])
-        assert dry_fragment == expected, "FS1 bypass changed the input"
+        assert dry_fragment == expected, "Effect bypass changed the input"
         responses = set()
-        for model in range(16):
+        for model in range(model_count):
             offset = model * segment * 6
             fragment = wet[offset + start:offset + end]
             assert any(fragment) and fragment != dry_fragment, f"model {model} failed to process audio"
             responses.add(fragment)
-        assert len(responses) == 16, "two model choices rendered the same response"
+        assert len(responses) == model_count, "two model choices rendered the same response"
 
         expression = render(root, "expression", ["0 expression 32", "0.10 set Model 15",
                             "0.20 expression 255", "0.30 expression 0", "0.40 expression 128"], 0.5)
