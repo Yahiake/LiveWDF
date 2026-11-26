@@ -51,11 +51,15 @@ At the preset’s saved controls, **Track (level matched)** uses one fixed outpu
 
 Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
 
+Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. For speaker coloration, put a cabinet simulator after LiveWDF.
+
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
-On the third excerpt, 68 of 91 presets were within 1 dB of bypass and 86 were within 2 dB. The largest differences were +4.67 dB on the Maestro FZ-1 and +4.01 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.25 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
+On the third excerpt, 78 of 111 presets were within 1 dB of bypass and 104 were within 2 dB, including 18 of the 20 amps from the mixed DI sweep. The largest differences were +4.67 dB on the Maestro FZ-1 and +4.01 dB on the ZVEX Fuzz Factory. The highest output sample across both modes was −3.25 dBFS on the Roger Mayer Octavia. The largest difference between the Accurate and Fast Live median levels was 0.15 dB on the MXR M234.
 
-To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg.
+The Silver Jubilee uses 0.95 dB more output headroom than the mixed DI fit to accommodate harder-picked passages.
+
+To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg. For the mixed amp DI sweep, pass `--amp-di` and select the desired presets with `--filter` or `--catalog`.
 
 ```sh
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
