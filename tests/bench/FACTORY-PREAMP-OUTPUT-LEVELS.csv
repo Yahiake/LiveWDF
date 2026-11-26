@@ -1,6 +1,6 @@
 schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurate_minus12_error_dB,accurate_minus9_error_dB,accurate_minus6_error_dB,accurate_median_error_dB,accurate_holdout_error_dB,accurate_max_peak_dBFS,fast_live_minus12_error_dB,fast_live_minus9_error_dB,fast_live_minus6_error_dB,fast_live_median_error_dB,fast_live_holdout_error_dB,fast_live_max_peak_dBFS
 schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,8.5272462,0.002,0.000,-0.004,0.000,-0.209,-5.620,0.002,0.000,-0.004,0.000,-0.209,-5.620
-schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.4839007,1.261,0.000,-1.493,0.000,0.286,-7.998,1.261,0.000,-1.493,0.000,0.286,-7.998
+schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,0.79225652,0.322,0.000,-0.737,0.000,-1.291,-5.097,0.322,0.000,-0.737,0.000,-1.291,-5.097
 schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,25.042251,2.906,0.000,-2.938,0.000,0.398,-17.131,2.906,0.000,-2.938,0.000,0.398,-17.131
 schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,37.732624,0.034,0.000,-0.070,0.000,2.189,-6.669,0.034,0.000,-0.070,0.000,2.189,-6.669
 schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,61.80259,0.026,0.000,-0.042,0.000,1.634,-6.428,0.026,0.000,-0.042,0.000,1.634,-6.428
