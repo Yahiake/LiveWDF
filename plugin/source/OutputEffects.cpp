@@ -153,7 +153,7 @@ public:
 
     void reset() noexcept { position_ = filled_ = 0; }
 
-    void process(Block block, int delay, float mix, float feedback) noexcept {
+    void process(Block block, int delay, float feedback) noexcept {
         const int capacity = ring_.getNumSamples();
         delay = std::clamp(delay, 0, capacity - 1);
         if (filled_ == 0) {
@@ -180,7 +180,7 @@ public:
                 const float newSample = read(ring, target_, input);
                 const float delayed = moving ? std::lerp(read(ring, previous_, input), newSample, fraction) : newSample;
                 ring[position_] = input + feedback * delayed;
-                audio[i] = input + mix * (delayed - input);
+                audio[i] = delayed;
             }
             if (++position_ == capacity) position_ = 0;
             if (filled_ < capacity) ++filled_;
@@ -279,7 +279,7 @@ struct OutputEffects::Prepared {
     }
 
     void process(Block audio, const Settings& settings, bool offline) noexcept {
-        if (!settings.cabinet && settings.echoMix == 0.0f && settings.reverbMix == 0.0f
+        if (!settings.cabinet && settings.echoLevel == 0.0f && settings.reverbLevel == 0.0f
             && cabDrain == 0 && reverb->drain == 0) {
             echo.reset();
             preDelay.reset();
@@ -301,14 +301,17 @@ struct OutputEffects::Prepared {
                 cabinet.process(juce::dsp::ProcessContextReplacing<float>(wet));
                 cabDrain -= std::min(cabDrain, frames);
             }
-            if (settings.echoMix > 0.0f)
-                echo.process(block, echoDelay, settings.echoMix, settings.echoFeedback);
-            else
-                echo.reset();
-
-            if (settings.reverbMix > 0.0f) {
+            if (settings.echoLevel > 0.0f) {
                 wet.copyFrom(block);
-                preDelay.process(wet, reverbDelay, 1.0f, 0.0f);
+                echo.process(wet, echoDelay, settings.echoFeedback);
+                block.add(wet.multiplyBy(settings.echoLevel));
+            } else {
+                echo.reset();
+            }
+
+            if (settings.reverbLevel > 0.0f) {
+                wet.copyFrom(block);
+                preDelay.process(wet, reverbDelay, 0.0f);
                 if (fadeRemaining > 0) {
                     auto oldWet = Block(fadeScratch).getSubsetChannelBlock(0, wet.getNumChannels()).getSubBlock(0, frames);
                     oldWet.copyFrom(wet);
@@ -328,7 +331,7 @@ struct OutputEffects::Prepared {
                 } else {
                     reverb->reverb->process(wet, offline);
                 }
-                block.multiplyBy(1.0f - settings.reverbMix).add(wet.multiplyBy(settings.reverbMix));
+                block.add(wet.multiplyBy(settings.reverbLevel));
                 reverb->drain = reverb->history;
             } else {
                 preDelay.reset();
@@ -615,12 +618,12 @@ void OutputEffects::applyReverbSize(float ratio, bool immediate) {
 double OutputEffects::tailSeconds(const Settings& settings) const noexcept {
     double seconds = 0.0;
     if (settings.cabinet) seconds += cabinetMillis_.load(std::memory_order_relaxed) * 0.001;
-    if (settings.echoMix > 0.0f) {
+    if (settings.echoLevel > 0.0f) {
         const double repeats = settings.echoFeedback > 0.0f
             ? 1.0 + std::ceil(std::log(1.e-6) / std::log(settings.echoFeedback)) : 1.0;
         seconds += repeats * settings.echoDelayMs * 0.001;
     }
-    if (settings.reverbMix > 0.0f)
+    if (settings.reverbLevel > 0.0f)
         seconds += (reverbMillis_.load(std::memory_order_relaxed) + settings.preDelayMs) * 0.001;
     return seconds;
 }

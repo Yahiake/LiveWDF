@@ -145,11 +145,11 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"cab_enabled", 1}, "Cabinet IR", false));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"echo_mix", 1}, "Echo Mix",
+        juce::ParameterID{"echo_mix", 1}, "Echo Level",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
-        juce::ParameterID{"reverb_mix", 1}, "Reverb Mix",
+        juce::ParameterID{"reverb_mix", 1}, "Reverb Level",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
