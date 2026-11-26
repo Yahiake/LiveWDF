@@ -538,6 +538,8 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     // The direct reference steps with the engine's Accurate tolerance.
     auto* quality = processor.getAPVTS().getParameter("solve_quality");
     quality->setValueNotifyingHost(quality->convertTo0to1(0.0f));
+    auto* outputGain = processor.getAPVTS().getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         st.error = "load failed: " + processor.lastError();
@@ -695,6 +697,7 @@ bool checkPhysicalRouting() {
     };
     set("solve_quality", 0);
     set("mix", 50);
+    set("output_master", 0);
     constexpr int frames = 16;
     processor.prepareToPlay(kSampleRate, frames);
     if (!processor.loadCircuitDocument(doc))
@@ -742,6 +745,7 @@ bool checkPreviewPad(const juce::File& factoryPreset) {
     set("compiled_preview", 1);
     set("stereo", 1);
     set("mix", 50);
+    set("output_master", 0);
     set("export_4x", 0);
     juce::AudioBuffer<float> block(2, frames);
     juce::MidiBuffer midi;
@@ -806,6 +810,8 @@ bool checkExternalImpedanceDefaults() {
     livewdf::LiveWDFPluginProcessor processor;
     processor.prepareToPlay(kSampleRate, 16);
     auto& parameters = processor.getAPVTS();
+    auto* outputGain = parameters.getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     const auto output = [&] {
         juce::AudioBuffer<float> block(2, 16);
         juce::MidiBuffer midi;
@@ -2430,7 +2436,7 @@ static bool checkOutputEffectsState() {
         source.getStateInformation(saved);
     }
     auto old = juce::ValueTree::fromXml(*juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize())));
-    for (const auto* id : {"echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
+    for (const auto* id : {"output_master", "echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
         old.removeChild(old.getChildWithProperty("id", id), nullptr);
     juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
     livewdf::LiveWDFPluginProcessor restored;
@@ -2494,6 +2500,7 @@ static bool checkOutputEffectControls() {
 
     Processor echo;
     echo.setNonRealtime(true);
+    set(echo, "output_master", 0.0f);
     set(echo, "echo_delay", 80.0f);
     set(echo, "echo_feedback", 55.0f);
     set(echo, "echo_mix", 100.0f);
