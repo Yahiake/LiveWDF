@@ -5,6 +5,7 @@
 #include "wdf/Engine.h"
 
 #include <algorithm>
+#include <bit>
 #include <chrono>
 #include <cmath>
 #include <ctime>
@@ -12,6 +13,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <string_view>
 
@@ -96,6 +98,134 @@ struct Model {
         return true;
     }
 };
+
+enum class LuSelector { Neural, Nearest, Constant };
+
+struct LuBank {
+    LuSelector selector;
+    size_t ports, size;
+    std::vector<double> transfer;
+    std::vector<std::vector<double>> factors;
+    std::vector<std::vector<int>> pivots;
+    std::vector<float> input, center, invScale, representatives;
+    std::vector<Layer> layers;
+    bool checkedTransfer = false;
+
+    LuBank(std::string_view path, LuSelector selector, size_t ports, uint64_t expectedId)
+        : selector(selector), ports(ports), size(0), input(ports), center(ports), invScale(ports) {
+        std::ifstream file{std::string(path)};
+        uint64_t id = 0;
+        size_t count = 0, inputs = 0, hidden = 0;
+        if (!(file >> id >> inputs >> size >> count >> hidden) || id != expectedId ||
+            inputs != ports || size == 0 || size > 64 || count == 0 || count > 32 || hidden == 0 || hidden > 32)
+            throw std::runtime_error("Weights do not match circuit, fixed controls or LU bank shape");
+        const auto read = [&file](auto& values) {
+            for (auto& value : values)
+                if (!(file >> value) || !std::isfinite(value))
+                    throw std::runtime_error("Invalid LU bank values");
+        };
+        transfer.resize(ports * size);
+        representatives.resize(ports * count);
+        read(transfer);
+        read(center);
+        read(invScale);
+        read(representatives);
+        for (size_t i = 0; i < count; ++i) {
+            auto& matrix = factors.emplace_back(size * size);
+            auto& permutation = pivots.emplace_back(size);
+            read(matrix);
+            if (!wdf::detail::factorLUData(matrix.data(), permutation.data(), static_cast<int>(size)))
+                throw std::runtime_error("Singular LU bank member");
+        }
+        for (const auto& [in, out] : {std::pair{ports, hidden}, std::pair{hidden, count}}) {
+            Layer layer{in, std::vector<float>(in * out), std::vector<float>(out), std::vector<float>(out)};
+            read(layer.weights);
+            read(layer.bias);
+            layers.push_back(std::move(layer));
+        }
+    }
+
+    wdf::experimental::LuFactors choose(const wdf::solver::NewtonContext& ctx) {
+        if (ctx.nRed != static_cast<int>(size) || ctx.K != static_cast<int>(ports))
+            return {};
+        if (!checkedTransfer) {
+            if (ctx.Zred != transfer)
+                return {};
+            checkedTransfer = true;
+        }
+        size_t selected = 0;
+        if (selector != LuSelector::Constant) {
+            for (size_t i = 0; i < ports; ++i) {
+                input[i] = (static_cast<float>(ctx.vv[i]) - center[i]) * invScale[i];
+                if (!(std::abs(input[i]) <= 24.f))
+                    return {};
+            }
+            if (selector == LuSelector::Neural) {
+                layers[0].run(input, true);
+                layers[1].run(layers[0].output, false);
+                const auto& scores = layers[1].output;
+                selected = static_cast<size_t>(std::max_element(scores.begin(), scores.end()) - scores.begin());
+            } else {
+                float best = std::numeric_limits<float>::infinity();
+                for (size_t i = 0; i < factors.size(); ++i) {
+                    float distance = 0;
+                    for (size_t j = 0; j < ports; ++j) {
+                        const float difference = input[j] - representatives[i * ports + j];
+                        distance += difference * difference;
+                    }
+                    if (distance < best) {
+                        best = distance;
+                        selected = i;
+                    }
+                }
+            }
+        }
+        return {factors[selected].data(), pivots[selected].data()};
+    }
+};
+
+struct LuTrace {
+    std::ofstream stream;
+    uint64_t circuitId;
+    size_t calls = 0, rows = 0;
+    std::vector<double> matrix, rhs;
+
+    void observe(const wdf::solver::NewtonContext& ctx) {
+        if (calls++ % 12 != 0)
+            return;
+        const auto write = [&](std::span<const double> data) {
+            stream.write(reinterpret_cast<const char*>(data.data()),
+                         static_cast<std::streamsize>(data.size_bytes()));
+        };
+        if (rows == 0) {
+            const uint32_t counts[]{static_cast<uint32_t>(ctx.K), static_cast<uint32_t>(ctx.nRed)};
+            stream.write(reinterpret_cast<const char*>(&circuitId), sizeof(circuitId));
+            stream.write(reinterpret_cast<const char*>(counts), sizeof(counts));
+            write(ctx.Zred);
+            matrix.resize(static_cast<size_t>(ctx.nRed) * ctx.nRed);
+            rhs.resize(static_cast<size_t>(ctx.nRed));
+        }
+        wdf::solver::RootJacobian::reducedAssembleFast(
+            ctx.Zred.data(), ctx.J.data(), ctx.F.data(), ctx.nRed, ctx.K, ctx.rootDevices.data(),
+            ctx.rootDevices.size(), matrix.data(), rhs.data());
+        write(ctx.vv);
+        write(ctx.F);
+        write(rhs);
+        write(matrix);
+        ++rows;
+    }
+};
+
+LuBank* luBank = nullptr;
+LuTrace* luTrace = nullptr;
+
+wdf::experimental::LuFactors luHook(const wdf::solver::NewtonContext& ctx) noexcept {
+    if (luTrace) {
+        luTrace->observe(ctx);
+        return {};
+    }
+    return luBank->choose(ctx);
+}
 
 struct Run {
     Model* model = nullptr;
@@ -253,11 +383,39 @@ int bench(int argc, char** argv) {
 
     const uint64_t circuitId = circuitFingerprint(argv[1], controls);
     Run state(static_cast<size_t>(engine.rootCount()));
+    uint64_t luId = circuitId;
+    for (const auto& [_, position] : controls)
+        luId = (luId ^ std::bit_cast<uint64_t>(position)) * 1099511628211ull;
+    std::optional<LuBank> bank;
+    const std::string_view modelPath = argv[6];
+    const std::string_view tracePath = argv[7];
+    const auto luSeparator = modelPath.find(':');
+    if (modelPath.starts_with("lu:") || modelPath.starts_with("lu-nearest:") ||
+        modelPath.starts_with("lu-constant:")) {
+        const auto selector = modelPath.starts_with("lu:") ? LuSelector::Neural :
+            modelPath.starts_with("lu-nearest:") ? LuSelector::Nearest : LuSelector::Constant;
+        luBank = &bank.emplace(modelPath.substr(luSeparator + 1), selector, state.target.size(), luId);
+    }
+
     std::optional<Model> model;
-    if (std::string_view(argv[6]) != "-")
+    if (modelPath != "-" && !bank)
         state.model = &model.emplace(argv[6], state.target.size(), circuitId);
+    std::optional<LuTrace> bankTrace;
+    if (tracePath.starts_with("lu:")) {
+        if (bank || model)
+            throw std::runtime_error("LU trace requires stock solver");
+        bankTrace.emplace();
+        luTrace = &*bankTrace;
+        luTrace->circuitId = luId;
+        luTrace->stream.open(std::string(tracePath.substr(3)), std::ios::binary);
+        if (!luTrace->stream)
+            throw std::runtime_error("Opening LU trace failed");
+    }
+    wdf::experimental::LuExperiment luExperiment{&luHook};
+    if (bank || bankTrace)
+        wdf::experimental::luExperiment = &luExperiment;
     std::ofstream trace;
-    if (std::string_view(argv[7]) != "-") {
+    if (tracePath != "-" && !bankTrace) {
         trace.open(argv[7], std::ios::binary);
         if (!trace || state.model)
             throw std::runtime_error("Training trace requires stock solver");
@@ -305,6 +463,12 @@ int bench(int argc, char** argv) {
         times.wall.push_back(std::chrono::duration<double, std::milli>(Clock::now() - wall).count());
     }
     wdf::experimental::seedExperiment = nullptr;
+    wdf::experimental::luExperiment = nullptr;
+    if (bankTrace && (!bankTrace->stream || bankTrace->rows == 0))
+        throw std::runtime_error("No eligible systems captured in the LU trace");
+    if (bank || bankTrace)
+        std::cout << "LU bank attempted " << luExperiment.attempted << " accepted "
+                  << luExperiment.accepted << " trace rows " << (bankTrace ? bankTrace->rows : 0) << '\n';
     if (std::string_view(argv[8]) != "-") {
         std::ofstream file(argv[8], std::ios::binary);
         file.write(reinterpret_cast<const char*>(rendered.data()),

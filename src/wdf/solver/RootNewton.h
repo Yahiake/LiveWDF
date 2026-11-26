@@ -298,6 +298,9 @@ public:
         int lastImprovement = 0;
         ctx.bestFn = std::numeric_limits<double>::infinity();
         double base = 0.0;
+#ifdef LIVEWDF_NEURAL_NEWTON
+        bool triedLuEstimate = false;
+#endif
         for (int it = 0; it < maxIter; ++it) {
             ++ctx.newtonIters;
             if (!curValid) {
@@ -341,32 +344,57 @@ public:
                         ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.Mr.data(), ctx.rN.data());
                 }
             };
-            if (compact)
-                ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
-                                            ctx.redCol.data(), ctx.rootDevices);
-            else
-                assembleFull();
-            if (ctx.prof)
-                tock(ctx.prof->jacobian);
-
-            tPhase = tick();
-            bool solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
-            if (!solved) {
-                if (compact)
-                    assembleFull();
-                if (poweredPreview && ctx.nRed >= 8 && !ctx.Zred.empty()) {
-                    solved = detail::solveDroppingZeroCorrections(ctx.Mr.data(), ctx.rN.data(), ctx.nRed);
-                    if (solved)
-                        RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
-                                                   ctx.nRed, ctx.K, ctx.dv.data());
-                } else {
-                    solved = !ctx.Zred.empty()
-                        ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                              ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
-                        : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
-                              ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+            bool solved = false;
+#ifdef LIVEWDF_NEURAL_NEWTON
+            bool estimated = false;
+            if (it == 0 && !triedLuEstimate && usePrediction && !useCurrentSeed && !ctx.staticMode &&
+                !ctx.Zred.empty() && ctx.opAmps.empty() && experimental::luExperiment) {
+                triedLuEstimate = true;
+                const auto proposal = experimental::luExperiment->choose(ctx);
+                if (proposal.matrix) {
+                    ++experimental::luExperiment->attempted;
+                    std::fill_n(ctx.rN.data(), ctx.nRed, 0.0);
+                    RootJacobian::reducedRhs(ctx.J.data(), ctx.F.data(), ctx.K,
+                        ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.rN.data());
+                    detail::solveLUData(proposal.matrix, proposal.pivots, ctx.rN.data(), ctx.nRed);
+                    RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
+                        ctx.nRed, ctx.K, ctx.dv.data());
+                    estimated = std::all_of(ctx.dv.begin(), ctx.dv.begin() + ctx.K,
+                                            [](double value) { return std::isfinite(value); });
+                    solved = estimated;
                 }
             }
+            if (!estimated) {
+#endif
+                if (compact)
+                    ctx.sharedColumns->assemble(ctx.J.data(), ctx.F.data(), ctx.K,
+                                                ctx.redCol.data(), ctx.rootDevices);
+                else
+                    assembleFull();
+                if (ctx.prof)
+                    tock(ctx.prof->jacobian);
+
+                tPhase = tick();
+                solved = compact && ctx.sharedColumns->finish(ctx.F.data(), ctx.K, ctx.dv.data());
+                if (!solved) {
+                    if (compact)
+                        assembleFull();
+                    if (poweredPreview && ctx.nRed >= 8 && !ctx.Zred.empty()) {
+                        solved = detail::solveDroppingZeroCorrections(ctx.Mr.data(), ctx.rN.data(), ctx.nRed);
+                        if (solved)
+                            RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
+                                                       ctx.nRed, ctx.K, ctx.dv.data());
+                    } else {
+                        solved = !ctx.Zred.empty()
+                            ? RootJacobian::reducedFinishFast(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                                  ctx.Zred.data(), ctx.F.data(), ctx.K, ctx.dv.data())
+                            : RootJacobian::reducedFinish(ctx.Mr.data(), ctx.rN.data(), ctx.nRed,
+                                  ctx.Z.data(), ctx.F.data(), ctx.redCol.data(), ctx.K, ctx.dv.data());
+                    }
+                }
+#ifdef LIVEWDF_NEURAL_NEWTON
+            }
+#endif
             if (ctx.prof)
                 tock(ctx.prof->lu);
             if (!solved)
@@ -395,7 +423,12 @@ public:
             double ftNorm = 0.0;
             // Near a hard op-amp rail the fourth trial can still worsen the
             // full residual. A few more backtracks avoid a discarded sample.
+#ifdef LIVEWDF_NEURAL_NEWTON
+            const int maxTrials = estimated ? 1 :
+                (allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4);
+#else
             const int maxTrials = allowExtraBacktracking && compact && !ctx.opAmps.empty() ? 10 : 4;
+#endif
             int h = 0;
             for (; h < maxTrials; ++h) {
                 ++ctx.lineTrials;
@@ -420,6 +453,19 @@ public:
             usedExtraBacktracking |= h >= 4;
             if (ctx.prof)
                 tock(ctx.prof->linesearch);
+
+#ifdef LIVEWDF_NEURAL_NEWTON
+            if (estimated) {
+                if (!(ftNorm < base * 0.4) ||
+                    !std::all_of(ctx.ft.begin(), ctx.ft.begin() + ctx.K,
+                                 [](double value) { return std::isfinite(value); })) {
+                    // Retry the same Newton iteration with freshly computed factors.
+                    --it;
+                    continue;
+                }
+                ++experimental::luExperiment->accepted;
+            }
+#endif
 
             double maxDelta = 0.0, maxV = 0.0;
             for (int r = 0; r < ctx.K; ++r) {
