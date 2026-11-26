@@ -532,9 +532,7 @@
     },
     {
       "id": "COUT",
-      "properties": {
-        "preampOnly": "1"
-      },
+      "properties": {},
       "type": "cap",
       "values": {
         "value": 1e-07
@@ -548,9 +546,7 @@
     },
     {
       "id": "ROUT",
-      "properties": {
-        "preampOnly": "1"
-      },
+      "properties": {},
       "type": "res",
       "values": {
         "value": 220000.0
@@ -563,6 +559,64 @@
       }
     },
     {
+      "id": "CNORM",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 100,
+        "y": 66
+      }
+    },
+    {
+      "id": "RNORM",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 108,
+        "y": 66
+      }
+    },
+    {
+      "id": "INTENSITY",
+      "properties": {
+        "label": "Intensity",
+        "taper": "RevLog"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 50000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 58
+      }
+    },
+    {
+      "id": "GND intensity",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 64
+      }
+    },
+    {
       "id": "RL",
       "properties": {
         "label": "Preamp bypass load",
@@ -571,7 +625,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 61.80259,
+        "preampFullScaleVolts": 20.056244,
         "value": 470000.0
       },
       "visual": {
@@ -586,7 +640,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 247.87868
+        "fullScaleVolts": 142.27216
       },
       "visual": {
         "flipped": true,
@@ -1302,6 +1356,94 @@
   "name": "Fender Deluxe Reverb AB763",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 70,
+          "y": 40
+        },
+        {
+          "x": 78,
+          "y": 40
+        },
+        {
+          "x": 78,
+          "y": 66
+        },
+        {
+          "x": 98,
+          "y": 66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 66
+        },
+        {
+          "x": 106,
+          "y": 66
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 66
+        },
+        {
+          "x": 150,
+          "y": 66
+        },
+        {
+          "x": 150,
+          "y": 17
+        },
+        {
+          "x": 148,
+          "y": 17
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 133,
+          "y": 17
+        },
+        {
+          "x": 133,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 56
+        },
+        {
+          "x": 162,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 162,
+          "y": 60
+        },
+        {
+          "x": 162,
+          "y": 62
+        }
+      ]
+    },
     {
       "points": [
         {
@@ -2225,11 +2367,11 @@
     {
       "points": [
         {
-          "x": 122,
+          "x": 148,
           "y": 17
         },
         {
-          "x": 122,
+          "x": 148,
           "y": 3
         },
         {
