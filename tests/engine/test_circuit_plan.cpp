@@ -355,6 +355,47 @@ TEST_CASE("Loaded junction preview declines a transistor with extra transport te
     REQUIRE_FALSE(preview.hasLoadedJunctionPreview());
 }
 
+TEST_CASE("Loaded junction Preview follows a transistor-only fuzz through a depth sweep",
+          "[engine][circuit-plan][live-junction]") {
+    wdf::LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(doc.loadFromFile("schematics/pedals_fx/Mosrite Fuzzrite Silicon.livewdf", error));
+    const auto circuit = doc.toCircuit();
+    const auto source = std::ranges::find(circuit.src, doc.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const size_t input = source - circuit.src.begin();
+    wdf::Engine reference(circuit, 48000.), preview(circuit, 48000.);
+    const int output = reference.nodeIndex(doc.outputNet());
+    REQUIRE(output >= 0);
+    REQUIRE(circuit.diode.empty());
+    REQUIRE(preview.prepareLoadedJunctionPreview(input, false));
+    preview.useLoadedJunctionPreview(true);
+    reference.prepareLiveControls();
+    preview.prepareLiveControls();
+    const int depth = reference.potIndexByName("P1");
+    REQUIRE(depth >= 0);
+
+    auto drive = reference.dcValues();
+    double signalEnergy = 0., errorEnergy = 0.;
+    for (int i = 0; i < 1024; ++i) {
+        if (i % 8 == 0) {
+            const std::vector<std::pair<int, double>> knob{{depth, .2 + .55 * i / 1024.}};
+            REQUIRE(reference.setLiveControls(knob, {}));
+            REQUIRE(preview.setLiveControls(knob, {}));
+        }
+        drive[input] = .55 * (.7 * std::sin(.13 * i) + .3 * std::sin(.63 * i));
+        const double expected = reference.step(drive)[output];
+        const double actual = preview.step(drive, 60, wdf::Engine::kFastLiveTolerance)[output];
+        REQUIRE_FALSE(preview.lastStateRejected());
+        signalEnergy += expected * expected;
+        errorEnergy += (actual - expected) * (actual - expected);
+    }
+    CHECK(preview.loadedJunctionHits() > 1000);
+    CHECK(errorEnergy < 1e-5 * signalEnergy);
+    for (size_t i = 0; i < circuit.cap.size(); ++i)
+        CHECK(preview.getCapacitorState(i) == Approx(reference.getCapacitorState(i)).margin(.0005));
+}
+
 namespace {
 wdf::Circuit bipolarPreviewStage() {
     wdf::Circuit c;

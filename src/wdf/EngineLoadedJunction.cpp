@@ -58,7 +58,8 @@ void EngineStep::swapLoadedJunctionPreview(EngineStep& prepared) noexcept {
 
 bool EngineStep::prepareLoadedJunctionPreview(size_t inputSource, bool screenBenefit) {
     loadedJunction_ = {};
-    if (!nD_ || K_ > LoadedJunctionPlan::maxPorts || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
+    const bool onlyBjtRoots = nBjt_ > 0 && static_cast<size_t>(nBjt_) == rootDevices_.size();
+    if ((!nD_ && !onlyBjtRoots) || K_ > LoadedJunctionPlan::maxPorts || hasAdjustedLiveTransfer() || powerSagEnabled_ ||
         !vcas_.empty() || !otas_.empty() || !dbx200Biases_.empty())
         return false;
 
