@@ -246,7 +246,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         const auto& nodes = engine.step(sources, maxIterations, solveTolerance);
         return {nodes[static_cast<size_t>(outIdx)], &nodes};
     };
-    const bool hasProbeSample = !useHalfRatePreview_ || numSamples > 1 || halfRateSolveNext_;
     OutputSample lastLeft{};
     float maxAbsOut = 0.0f;
 
@@ -307,13 +306,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float* leftData = oversampledBlock.getChannelPointer(0);
         float* rightData = (numChannels > 1) ? oversampledBlock.getChannelPointer(1) : nullptr;
 
-        const auto renderLeft = [&](double sample) {
-            lastLeft = solve(*leftEngine_, svLeft_, sample);
-            return static_cast<float>(compensate(lastLeft.volts)) * outputScale;
-        };
-        const auto renderRight = [&](double sample) {
-            return static_cast<float>(compensate(solve(*rightEngine_, svRight_, sample).volts)) * outputScale;
-        };
+        // Process sample by sample through WDF engine
         const int oversampling = activeOversampler ? currentOversamplingFactor_ : 1;
         int phase = 0;
         for (size_t s = 0; s < osSamples; ++s) {
@@ -321,10 +314,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 advanceControls();
             if (++phase == oversampling)
                 phase = 0;
-            const bool solveThisFrame = !useHalfRatePreview_ || halfRateSolveNext_;
-            if (useHalfRatePreview_)
-                halfRateSolveNext_ = !halfRateSolveNext_;
-            if (solveThisFrame && !acSources_.empty()) {
+            if (!acSources_.empty()) {
                 for (const auto& ac : acSources_) {
                     if (ac.index < 0 || ac.index >= static_cast<int>(svLeft_.size()))
                         continue;
@@ -339,16 +329,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 ++acSampleCounter_;
             }
 
-            const float outL = useHalfRatePreview_
-                ? static_cast<float>(halfRatePreviewL_.process(leftData[s], solveThisFrame, renderLeft))
-                : renderLeft(leftData[s]);
+            lastLeft = solve(*leftEngine_, svLeft_, leftData[s]);
+            const float outL = static_cast<float>(compensate(lastLeft.volts)) * outputScale;
             leftData[s] = outL;
             maxAbsOut = std::max(maxAbsOut, std::abs(outL));
 
             if (processStereo && rightData) {
-                const float outR = useHalfRatePreview_
-                    ? static_cast<float>(halfRatePreviewR_.process(rightData[s], solveThisFrame, renderRight))
-                    : renderRight(rightData[s]);
+                const float outR = static_cast<float>(compensate(solve(*rightEngine_, svRight_, rightData[s]).volts)) * outputScale;
                 rightData[s] = outR;
                 maxAbsOut = std::max(maxAbsOut, std::abs(outR));
             } else if (rightData) {
@@ -360,7 +347,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Read live node probe voltages for UI from the last processed sample.
     // **Do not step again here.** An extra step advances the engine's state and
     // makes the probe readout a different circuit from the one just heard.
-    if (hasProbeSample) {
+    {
         std::unique_lock<std::mutex> pLock(probeMutex_, std::try_to_lock);
         if (pLock.owns_lock()) {
             for (size_t i = 0; i < probeNodes_.size(); ++i) {

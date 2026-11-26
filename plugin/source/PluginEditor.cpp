@@ -211,8 +211,7 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     solveQualityCombo_.addItem("Accurate", 1);
     solveQualityCombo_.addItem("Fast", 2);
     solveQualityCombo_.addItem("Preview", 3);
-    solveQualityCombo_.addItem("Preview 1/2x", 4);
-    solveQualityCombo_.setTooltip("Preview uses compiled circuit approximations when available. Preview 1/2x runs the circuit at half the host rate during playback.");
+    solveQualityCombo_.setTooltip("Preview uses compiled circuit approximations when available.");
     addAndMakeVisible(solveQualityCombo_);
     auto& parameters = processor_.getAPVTS();
     const auto refreshQuality = [this](float) { refreshSolveQuality(); };
@@ -220,12 +219,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
         *parameters.getParameter("solve_quality"), refreshQuality);
     compiledPreviewAttach_ = std::make_unique<juce::ParameterAttachment>(
         *parameters.getParameter("compiled_preview"), refreshQuality);
-    halfRatePreviewAttach_ = std::make_unique<juce::ParameterAttachment>(
-        *parameters.getParameter("preview_half_rate"), refreshQuality);
     solveQualityCombo_.onChange = [this] {
         const int choice = solveQualityCombo_.getSelectedId();
-        halfRatePreviewAttach_->setValueAsCompleteGesture(choice == 4 ? 1.0f : 0.0f);
-        compiledPreviewAttach_->setValueAsCompleteGesture(choice >= 3 ? 1.0f : 0.0f);
+        compiledPreviewAttach_->setValueAsCompleteGesture(choice == 3 ? 1.0f : 0.0f);
         solveQualityAttach_->setValueAsCompleteGesture(choice == 1 ? 0.0f : 1.0f);
     };
     refreshSolveQuality();
@@ -836,10 +832,7 @@ void LiveWDFPluginEditor::refreshSolveQuality() {
     auto& parameters = processor_.getAPVTS();
     const bool fast = parameters.getRawParameterValue("solve_quality")->load() > 0.5f;
     const bool preview = parameters.getRawParameterValue("compiled_preview")->load() > 0.5f;
-    const bool halfRate = fast && preview && parameters.getRawParameterValue("preview_half_rate")->load() > 0.5f;
-    const int id = halfRate ? 4 : fast ? (preview ? 3 : 2) : 1;
-    solveQualityCombo_.setSelectedId(id, juce::dontSendNotification);
-    oversamplingCombo_.setEnabled(!halfRate);
+    solveQualityCombo_.setSelectedId(fast ? (preview ? 3 : 2) : 1, juce::dontSendNotification);
 }
 
 void LiveWDFPluginEditor::timerCallback() {
