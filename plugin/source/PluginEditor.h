@@ -149,6 +149,7 @@ private:
     std::unique_ptr<ButtonAttachment> oversampleExportAttach_;
     std::unique_ptr<juce::ParameterAttachment> solveQualityAttach_;
     std::unique_ptr<juce::ParameterAttachment> compiledPreviewAttach_;
+    std::unique_ptr<juce::ParameterAttachment> halfRatePreviewAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
     std::unique_ptr<ButtonAttachment> stereoAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;

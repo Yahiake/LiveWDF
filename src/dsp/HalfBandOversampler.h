@@ -195,4 +195,45 @@ private:
     HalfBandFilter downsampleFilter_;
 };
 
+class HalfRatePreview {
+public:
+    static constexpr int latencySamples = 30;
+
+    void reset() noexcept {
+        down_ = {};
+        up_ = {};
+    }
+
+    template <typename Solve>
+    double process(double sample, bool solveThisFrame, Solve&& solve) noexcept {
+        const double filtered = down_.process(std::isfinite(sample) ? sample : 0.0);
+        const double output = solveThisFrame ? 2.0 * solve(filtered) : 0.0;
+        return up_.process(std::isfinite(output) ? output : 0.0);
+    }
+
+private:
+    struct Filter {
+        // A normalized 31-tap linear-phase half-band FIR with a Kaiser window.
+        static constexpr std::array<double, 8> taps{
+            -0.0000496282324038, 0.000642232722038, -0.00273435071621, 0.00802005797654,
+            -0.0192270001505, 0.041535326889, -0.0912217822181, 0.31303514373
+        };
+
+        double process(double sample) noexcept {
+            history[cursor] = sample;
+            const auto read = [this](size_t age) { return history[(cursor + history.size() - age) % history.size()]; };
+            double value = 0.5 * read(15);
+            for (size_t i = 0; i < taps.size(); ++i)
+                value += taps[i] * (read(2 * i) + read(30 - 2 * i));
+            cursor = (cursor + 1) % history.size();
+            return value;
+        }
+
+        std::array<double, 31> history{};
+        size_t cursor = 0;
+    };
+
+    Filter down_, up_;
+};
+
 }  // namespace wdf
