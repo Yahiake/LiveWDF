@@ -10304,7 +10304,7 @@
       "wave_sha256": "ccf2b0e66bfce5df655b225f2e28523aee9a014734f6e727636d3b0eaaa80d25",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/accurate": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/accurate": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10332,13 +10332,13 @@
         "peak": 37.735451747554656,
         "max_step": 42.76300367163479
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884.f32.gz",
       "wave_sha256": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/fast": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10366,13 +10366,13 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/preview": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10400,8 +10400,8 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
@@ -11322,6 +11322,108 @@
       "case": "Vox AC30 - Top Boost",
       "wave": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a.f32.gz",
       "wave_sha256": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/accurate": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 158687,
+      "line_trials": 8209,
+      "loaded_hits": 0,
+      "mode": "accurate",
+      "moves": 0,
+      "newton": 17356,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.5272296936685,
+        "mean": 0.32377857987782444,
+        "peak": 83.68619533551909,
+        "max_step": 84.66939744804132,
+        "band_375": 16.913949925018343,
+        "band_1500": 30.81510378111508,
+        "band_6000": 32.23137920424474
+      },
+      "wave_bounds": {
+        "ac_rms": 39.5272296936685,
+        "mean": 0.32377857987782444,
+        "peak": 83.68619533551909,
+        "max_step": 84.66939744804132
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "a567e3314a8ab738b00eee68b4c5a13b292f1445dee8f153a7e0674528d98750.f32.gz",
+      "wave_sha256": "a567e3314a8ab738b00eee68b4c5a13b292f1445dee8f153a7e0674528d98750",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/fast": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 151297,
+      "line_trials": 7952,
+      "loaded_hits": 0,
+      "mode": "fast",
+      "moves": 0,
+      "newton": 16000,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392,
+        "band_375": 16.913949880256848,
+        "band_1500": 30.815103857639837,
+        "band_6000": 32.23137932248128
+      },
+      "wave_bounds": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282.f32.gz",
+      "wave_sha256": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/preview": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 151297,
+      "line_trials": 7952,
+      "loaded_hits": 0,
+      "mode": "preview",
+      "moves": 0,
+      "newton": 16000,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392,
+        "band_375": 16.913949880256848,
+        "band_1500": 30.815103857639837,
+        "band_6000": 32.23137932248128
+      },
+      "wave_bounds": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282.f32.gz",
+      "wave_sha256": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282",
       "reference_stride": 7
     }
   },
