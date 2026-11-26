@@ -173,6 +173,8 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
+    long long triodePreviewHits() const noexcept { return triodePreviewHits_; }
     bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
     bool hasLinearDrivePlan() const noexcept {
         return circuitPlanRevision_ == linearRebuilds() && !driveCoefficients_.empty();
@@ -219,6 +221,7 @@ protected:
         // the old history would describe a different operating point.
         runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
         blockFallbackCooldown_ = 0;
+        triodePreviewCooldown_ = 0;
         jointLastIters_ = 0;
         jointLastTrials_ = 0;
         runtimeBlockUsed_ = false;
@@ -309,6 +312,11 @@ protected:
     };
     AffineNodePlan affineNodes_;
     long long affineNodeHits_ = 0;
+    bool tryTriodePreview() noexcept;
+    bool triodePreviewEnabled_ = false;
+    int triodePreviewCooldown_ = 0;
+    long long triodePreviewHits_ = 0;
+
     bool buildAffineNodePreview();
     void swapAffineNodePreview(EngineStep& prepared) noexcept;
     bool tryAffineNodes(const double* sources, size_t count, double tolerance) noexcept;
