@@ -165,6 +165,7 @@ def run():
     parser.add_argument('bench', type=Path)
     parser.add_argument('report', type=Path)
     parser.add_argument('--verify', action='store_true')
+    parser.add_argument('--preamp-only', action='store_true', help='calibrate the selected presets at their preamp tap')
     parser.add_argument('--fast-live', action='store_true', help='verify the same divisor in 1x Fast Live')
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--catalog', type=Path, default=ROOT / 'schematics')
@@ -195,18 +196,24 @@ def run():
                 if args.amp_di:
                     profile = 'amp'
                 vin = next(c for c in doc['components'] if c['type'] == 'in')['values']['referenceMillivoltsRms'] / 89.01946956877224
-                out = next(c for c in doc['components'] if c['type'] == 'out').setdefault('values', {})
+                if args.preamp_only:
+                    tap = next(c for c in doc['components'] if c.get('properties', {}).get('preampTap'))
+                    out, scale = tap.setdefault('values', {}), 'preampFullScaleVolts'
+                else:
+                    terminal = next(c for c in doc['components'] if c['type'] == 'out')
+                    out, scale = terminal.setdefault('values', {}), 'fullScaleVolts'
                 row.update(profile=profile, input_full_scale_V_peak=vin)
                 load = path
                 if not args.verify:
-                    out['fullScaleVolts'] = 1.
+                    out[scale] = 1.
                     load = work / f'{i}.livewdf'
                     load.write_text(json.dumps(doc))
-                volts = float(out['fullScaleVolts'])
+                volts = float(out[scale])
                 dest = work / f'{i}.f32'
                 result = subprocess.run([str(bench), str(load), '--calibration-render',
                                          str(work / (profile + '.f32')), str(dest),
-                                         *(['--fast-live'] if args.fast_live else [])],
+                                         *(['--fast-live'] if args.fast_live else []),
+                                         *(['--preamp-only'] if args.preamp_only else [])],
                                         capture_output=True, timeout=300, text=True)
                 if result.returncode:
                     raise RuntimeError((result.stderr or result.stdout)[-350:])

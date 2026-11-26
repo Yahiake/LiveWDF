@@ -152,6 +152,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         juce::ParameterID{"reverb_mix", 1}, "Reverb Mix",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"power_amp", 2}, "Power Amp", true));
 
     return { params.begin(), params.end() };
 }
@@ -328,12 +330,20 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
         portTopologyChanged |= port.enabled != (port.range && port.range->needsFixture(requestedPorts[i], port.enabled));
     }
     if (!portTopologyChanged) rejectedPortRequest_.reset();
+    auto* powerAmp = apvts_.getParameter("power_amp");
+    const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
+    const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
-        (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_) {
+        (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
+        powerAmpChanged) {
         const juce::File circuitFile = currentFile_;
-        if (!loadCircuitDocument(currentDoc_, false) && portTopologyChanged)
-            rejectedPortRequest_ = requestedPorts;
+        if (!loadCircuitDocument(currentDoc_, false)) {
+            if (portTopologyChanged)
+                rejectedPortRequest_ = requestedPorts;
+            if (powerAmpChanged && (powerAmp->getValue() > 0.5f) == requestedPowerAmp)
+                powerAmp->setValueNotifyingHost(*powerAmpEnabled_ ? 1.f : 0.f);
+        }
         currentFile_ = circuitFile;
     }
     // A headless export can start before the UI timer has prepared a live plan.
@@ -722,11 +732,12 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     lastError_.clear();
     liveControlUpdateFailed_.store(false, std::memory_order_relaxed);
 
-    // A document loaded from anywhere but a file has no file to reload. The
-    // callers that *do* have a file set `currentFile_` again afterwards, so
-    // this clearing is what makes the Reload button go dead for a circuit
-    // restored from host state.
-    currentFile_ = juce::File();
+    const bool hasPowerAmp = doc.preampTap() != nullptr;
+    const bool enablePowerAmp = !hasPowerAmp || *apvts_.getRawParameterValue("power_amp") > 0.5f;
+    wdf::LiveWDFDocument preamp;
+    if (!enablePowerAmp && !doc.makePreampDocument(preamp, lastError_))
+        return false;
+    const auto& playbackDoc = enablePowerAmp ? doc : preamp;
 
     attemptedOversamplingChoice_ = effectiveOversamplingChoice();
     attemptedGridCurrent_ = *apvts_.getRawParameterValue("grid_current") > 0.5f;
@@ -746,27 +757,38 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     std::array<std::string, numPorts> fixtureNames;
     std::array<std::optional<wdf::PortImpedanceRange>, numPorts> portRanges;
     for (size_t i = 0; i < numPorts; ++i) {
-        portRanges[i] = wdf::portImpedanceRange(doc, i == 0);
+        portRanges[i] = wdf::portImpedanceRange(playbackDoc, i == 0);
         portPositions[i] = initializePotParameters
             ? (portRanges[i] ? portRanges[i]->defaultPosition : 0.)
             : ports_[i].parameter->load(std::memory_order_relaxed);
     }
 
     wdf::Circuit newSettledControlCircuit;
-    buildEngineFromDoc(doc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, outputBias, baseSources,
+    buildEngineFromDoc(playbackDoc, effectiveFs, portPositions, fixtureNames, newLeft, newRight, inSrcIdx, outIdx, outputBias, baseSources,
                        acSources, newSettledControlCircuit);
 
     if (!newLeft || !newRight) {
         return false;
     }
+    if (!enablePowerAmp && outIdx < 0) {
+        lastError_ = "The preamp output is not connected";
+        return false;
+    }
+    // A document loaded from anywhere but a file has no file to reload. The
+    // callers that *do* have a file set `currentFile_` again afterwards, so
+    // this clearing is what makes the Reload button go dead for a circuit
+    // restored from host state.
+    currentFile_ = juce::File();
+
+    powerAmpEnabled_ = hasPowerAmp ? std::optional(enablePowerAmp) : std::nullopt;
     rejectedPortRequest_.reset();
-    cacheDocument_ = std::make_shared<const std::string>(wdf::playbackCacheKey(doc, fixtureNames));
+    cacheDocument_ = std::make_shared<const std::string>(wdf::playbackCacheKey(playbackDoc, fixtureNames));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
     // its scope parts, keyed by the net each one watches, which is how the
     // schematic canvas wants its voltages.
     std::vector<std::pair<std::string, int>> probeNodes;
-    for (const auto& probe : doc.allProbes()) {
+    for (const auto& probe : playbackDoc.allProbes()) {
         const int idx = newLeft->nodeIndex(probe.second);
         if (idx >= 0)
             probeNodes.emplace_back(probe.second, idx);
@@ -788,7 +810,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         currentDoc_ = doc;
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
-        outputFullScaleVolts_ = doc.outputFullScaleVolts();
+        outputFullScaleVolts_.store(playbackDoc.outputFullScaleVolts(), std::memory_order_relaxed);
         previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
             ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;
         previewPadOutputBias_ = outputBias;
@@ -1220,6 +1242,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("preview_pad", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
+        restoreMissing("power_amp", 1.0f);
         restoreMissing("cab_enabled", 0.0f);
         restoreMissing("echo_mix", 0.0f);
         restoreMissing("reverb_mix", 0.0f);

@@ -316,7 +316,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 // Calibration uses mono native float32 streams at 48 kHz. Keep the host's
 // bypass as the digital reference, including the final short callback.
 int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
-                      bool fastLive) {
+                      bool fastLive, bool preampOnly) {
     constexpr int blockSize = 128;
     std::ifstream source(inPath, std::ios::binary);
     std::ofstream dest(outPath, std::ios::binary);
@@ -330,6 +330,7 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         p->setValueNotifyingHost(p->convertTo0to1(value));
     };
     processor.setNonRealtime(!fastLive);
+    set("power_amp", preampOnly ? 0.f : 1.f);
     set("export_4x", 0);
     set("accurate_export", 1);
     set("oversampling", 0);
@@ -338,6 +339,10 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return 1;
+    }
+    if (preampOnly && processor.getCurrentDocument().preampTap() == nullptr) {
+        std::fprintf(stderr, "No preamp output in %s\n", file.getFileName().toRawUTF8());
         return 1;
     }
     set("input_trim", 0);
@@ -2196,6 +2201,55 @@ int runRuntimeCheck(const juce::File& file) {
 
 namespace livewdf {
 
+bool checkPowerAmp(const juce::File& file) {
+    LiveWDFPluginProcessor processor;
+    processor.setPlayConfigDetails(2, 2, kSampleRate, 128);
+    processor.prepareToPlay(kSampleRate, 128);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return false;
+    }
+    const auto& doc = processor.getCurrentDocument();
+    const auto* tap = doc.preampTap();
+    if (tap == nullptr)
+        return false;
+    const double fullScale = doc.outputFullScaleVolts();
+    const double preampScale = tap->values.at("preampFullScaleVolts");
+    const auto& circuit = processor.settledControlCircuit_;
+    const auto checkMode = [&](bool enabled) {
+        const bool topology = enabled ? circuit.pent.size() == 1 && !circuit.ind.empty()
+                                      : circuit.pent.empty() && circuit.ind.empty();
+        if (topology && processor.outNodeIndex_ >= 0 &&
+            processor.getCircuitOutputFullScaleVolts() == (enabled ? fullScale : preampScale))
+            return true;
+        std::fprintf(stderr, "Unexpected Champ topology or output scale with Power Amp %s\n",
+                     enabled ? "on" : "off");
+        return false;
+    };
+    if (!checkMode(true))
+        return false;
+
+    auto& parameters = processor.getAPVTS();
+    auto* powerAmp = parameters.getParameter("power_amp");
+    auto* volume = parameters.getParameter("pot_0");
+    volume->setValueNotifyingHost(.42f);
+    const float savedVolume = volume->getValue();
+    powerAmp->setValueNotifyingHost(0.f);
+    processor.applyPendingCircuitOptions();
+    if (!checkMode(false) || processor.getCurrentCircuitFile() != file || volume->getValue() != savedVolume)
+        return false;
+
+    juce::MemoryBlock preampState;
+    processor.getStateInformation(preampState);
+    powerAmp->setValueNotifyingHost(1.f);
+    processor.applyPendingCircuitOptions();
+    if (!checkMode(true))
+        return false;
+
+    processor.setStateInformation(preampState.getData(), static_cast<int>(preampState.getSize()));
+    return checkMode(false) && powerAmp->getValue() == 0.f && volume->getValue() == savedVolume;
+}
+
 bool checkLivePreviewCapture(const juce::File& file) {
     LiveWDFPluginProcessor processor;
     const auto set = [&](const char* id, float value) {
@@ -2441,7 +2495,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32>] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2454,10 +2508,19 @@ int main(int argc, char** argv) {
     if (argc == 3 && std::string(argv[2]) == "--check-factory-output-irs")
         return checkFactoryOutputIrState(file) ? 0 : 1;
 
-    if (argc >= 3 && std::string(argv[2]) == "--calibration-render") {
-        const bool fastLive = argc == 6 && std::string(argv[5]) == "--fast-live";
-        if (argc != 5 && !fastLive) return 1;
-        return renderCalibration(file, argv[3], argv[4], fastLive);
+    if (argc == 3 && std::string(argv[2]) == "--check-power-amp")
+        return livewdf::checkPowerAmp(file) ? 0 : 1;
+
+    if (argc >= 5 && std::string(argv[2]) == "--calibration-render") {
+        bool fastLive = false;
+        bool preampOnly = false;
+        for (int i = 5; i < argc; ++i) {
+            const std::string flag(argv[i]);
+            if (flag == "--fast-live") fastLive = true;
+            else if (flag == "--preamp-only") preampOnly = true;
+            else return 1;
+        }
+        return renderCalibration(file, argv[3], argv[4], fastLive, preampOnly);
     }
 
     bool validate = false;

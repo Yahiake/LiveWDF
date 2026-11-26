@@ -150,6 +150,7 @@ public:
     /// engine is compiled at (times the oversampling factor), which is the one
     /// the editor's scope must use for its timebase.
     double getHostSampleRate() const noexcept { return sampleRate_; }
+    double getCircuitOutputFullScaleVolts() const noexcept { return outputFullScaleVolts_.load(std::memory_order_relaxed); }
 
     const ScopeAudioBuffer& getInputScopeBuffer() const noexcept { return inputScopeBuffer_; }
     const ScopeAudioBuffer& getOutputScopeBuffer() const noexcept { return outputScopeBuffer_; }
@@ -162,6 +163,7 @@ private:
     friend bool waitForBenchmarkPlan(LiveWDFPluginProcessor&, juce::AudioBuffer<float>&,
                                      juce::MidiBuffer&, bool preview);
     friend bool checkLivePreviewCapture(const juce::File& file);
+    friend bool checkPowerAmp(const juce::File& file);
     friend bool checkLivePreviewPotMotion(const juce::File& file);
     juce::AudioProcessorValueTreeState apvts_;
     OutputEffects outputEffects_;
@@ -176,6 +178,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
+    std::optional<bool> powerAmpEnabled_;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     bool oversamplersPrepared_ = false;
@@ -280,7 +283,7 @@ private:
     /// the Output terminal, and the circuit is not changed, only scaled.
     ///
     /// 1 when the document has not said, which scales nothing.
-    double outputFullScaleVolts_ = 1.0;
+    std::atomic<double> outputFullScaleVolts_{1.0};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     double previewPadScale_ = 1.;
     double previewPadOutputBias_ = 0.;

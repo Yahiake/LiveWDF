@@ -126,6 +126,9 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
     addAndMakeVisible(factoryBtn_);
     factoryBtn_.toBack();
+    addChildComponent(powerAmpBtn_);
+    powerAmpBtn_.setTooltip("Include the power stage. Turn off to use the preamp output.");
+    powerAmpAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "power_amp", powerAmpBtn_);
     factoryHint_.setJustificationType(juce::Justification::centred);
     factoryHint_.setInterceptsMouseClicks(false, false);
     addAndMakeVisible(factoryHint_);
@@ -350,7 +353,7 @@ void LiveWDFPluginEditor::updateScopeScales() {
     const auto& doc = schematicCanvas_.getDocument();
     constexpr auto chainVolts = static_cast<float>(wdf::LiveWDFDocument::kChainVoltsPerFullScale);
     oscilloscope_.setTerminalScales(inputRoute_.getSelectedItemIndex() == 1 ? chainVolts : static_cast<float>(doc.inputVoltsPerFullScale()),
-                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(doc.outputFullScaleVolts()) : chainVolts);
+                                   outputRoute_.getSelectedItemIndex() == 1 ? static_cast<float>(processor_.getCircuitOutputFullScaleVolts()) : chainVolts);
 }
 
 void LiveWDFPluginEditor::addImpedanceKnob(const wdf::LiveWDFDocument& doc, bool input) {
@@ -572,6 +575,7 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
 void LiveWDFPluginEditor::refreshCircuitView(const juce::String& suffix) {
     const auto doc = processor_.getDocumentSnapshot();
     schematicCanvas_.setDocument(doc);
+    powerAmpBtn_.setVisible(doc.preampTap() != nullptr);
     syncSchematicLiveState();
     rebuildDynamicControls(doc);
     presetStepper_.setName(currentCircuitDescription(doc) + suffix);
@@ -811,6 +815,7 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    updateScopeScales();
     previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
     // The parameter can move from automation or host state restore, not only
@@ -907,6 +912,8 @@ void LiveWDFPluginEditor::layoutSourceSelectors(juce::Rectangle<int> bounds) {
         return area;
     };
     auto circuit = row(circuitLabel_);
+    if (powerAmpBtn_.isVisible())
+        powerAmpBtn_.setBounds(circuit.removeFromRight(112).reduced(4, 2));
     factoryBtn_.setBounds(circuit);
     factoryHint_.setBounds(circuit.removeFromRight(65));
     presetStepper_.setBounds(circuit.reduced(5, 2));

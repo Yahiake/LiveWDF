@@ -154,7 +154,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    const float outputScale = static_cast<float>(1.0 / (matchOutput ? outputFullScaleVolts_ : chainVolts));
+    const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() : chainVolts));
     const float dryMix = (1.0f - wetMix) * dryScale;
 
     // Stereo needs a live right engine. Mono deliberately leaves it untouched,

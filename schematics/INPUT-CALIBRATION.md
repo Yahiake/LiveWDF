@@ -51,7 +51,9 @@ At the preset’s saved controls, **Track (level matched)** uses one fixed outpu
 
 Two excerpts per preset are played at −12, −9 and −6 dBFS peak, with 400 ms of silence between excerpts. The fit averages the two level differences in dB at each drive and takes the median of the three results. A peak constraint reserves 1 dB of digital headroom on the fitting passages. A third excerpt at −9 dBFS tests how the setting translates to other material. A positive error in the [output measurements](../tests/bench/FACTORY-OUTPUT-LEVELS.csv) means the effect returned more level than bypass. Drive, release, EQ and playing style can move that value away from zero.
 
-Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. For speaker coloration, put a cabinet simulator after LiveWDF.
+Presets marked `amp` in the output table fit on palm mutes and strummed chords from an Ibanez PF300 DI, then verify on a separate Sire T7 performance. The dry preamps end at the loaded output indicated in each schematic. The Tweed Champ includes its 6V6 output stage, transformer and resistive speaker load. Turn **Power Amp** off beside **Circuit** to use its AC-coupled preamp output with the original 220 kΩ grid load. The switch is present on presets with a preamp tap. Both settings use the same input reference and have their own output match. Use **Cabinet** for speaker coloration in either setting.
+
+To add this option to a schematic, set `properties.powerAmp` to `"1"` on the components to remove, including any feedback from the power stage. On a retained component at the preamp output, set `properties.preampTap` to its signal pin name and `values.preampFullScaleVolts` to its calibrated output divisor. A shared rail can use `values.preampDc` to maintain its voltage under the reduced load.
 
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
@@ -65,4 +67,5 @@ To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench accurate.csv --verify
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fast.csv --verify --fast-live
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench champ-preamp.csv --amp-di --preamp-only --filter "Tweed Champ" --verify
 ```
