@@ -1037,8 +1037,8 @@
         "brightOhms": 1000.0,
         "referenceVolts": 40.0,
         "gamma": 0.7,
-        "attackSeconds": 0.005,
-        "releaseSeconds": 0.05
+        "attackSeconds": 0.01,
+        "releaseSeconds": 0.02
       },
       "visual": {
         "flipped": false,
