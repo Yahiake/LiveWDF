@@ -155,6 +155,17 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"power_amp", 2}, "Power Amp", true));
 
+    const auto addOutputControl = [&](const char* id, const char* label, float min, float max,
+                                      float step, float start, const char* units) {
+        params.push_back(std::make_unique<juce::AudioParameterFloat>(
+            juce::ParameterID{id, 3}, label, juce::NormalisableRange<float>(min, max, step), start,
+            juce::AudioParameterFloatAttributes().withLabel(units)));
+    };
+    addOutputControl("echo_delay", "Echo Delay", 10.0f, OutputEffects::maxEchoDelayMs, 1.0f, 250.0f, "ms");
+    addOutputControl("echo_feedback", "Echo Feedback", 0.0f, 95.0f, 0.5f, 42.0f, "%");
+    addOutputControl("reverb_size", "Reverb Size", 50.0f, 150.0f, 1.0f, 100.0f, "%");
+    addOutputControl("reverb_predelay", "Reverb Pre-delay", 0.0f, OutputEffects::maxPreDelayMs, 1.0f, 0.0f, "ms");
+
     return { params.begin(), params.end() };
 }
 
@@ -227,7 +238,8 @@ void LiveWDFPluginProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
     // block so an oversized callback never has to allocate on the audio thread.
     dryBuffer_.setSize(2, std::max(samplesPerBlock, 4096), false, false, true);
     outputEffects_.prepare({sampleRate, static_cast<juce::uint32>(std::max(1, samplesPerBlock)),
-                            static_cast<juce::uint32>(std::max(1, getMainBusNumOutputChannels()))});
+                            static_cast<juce::uint32>(std::max(1, getMainBusNumOutputChannels()))},
+                           reverbSize_->load(std::memory_order_relaxed) * 0.01f);
 
     // Rebuild engines with current sample rate and oversampling factor. This is
     // not a new document, so keep the user's pot positions. With no circuit
@@ -256,9 +268,7 @@ void LiveWDFPluginProcessor::releaseResources() {
 }
 
 double LiveWDFPluginProcessor::getTailLengthSeconds() const {
-    return outputEffects_.tailSeconds(cabinetEnabled_->load(std::memory_order_relaxed) > 0.5f,
-                                      echoMix_->load(std::memory_order_relaxed) > 0.0f,
-                                      reverbMix_->load(std::memory_order_relaxed) > 0.0f);
+    return outputEffects_.tailSeconds(outputEffectSettings());
 }
 
 juce::String LiveWDFPluginProcessor::suggestedCabinetId() const {
@@ -302,6 +312,8 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     outputEffects_.reclaim();
+    if (!isNonRealtime())
+        outputEffects_.applyReverbSize(reverbSize_->load(std::memory_order_relaxed) * 0.01f, false);
     const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     if (liveControlUpdateFailed_.exchange(false, std::memory_order_relaxed))
         lastError_ = "Could not apply a live control setting";
@@ -1245,7 +1257,11 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("power_amp", 1.0f);
         restoreMissing("cab_enabled", 0.0f);
         restoreMissing("echo_mix", 0.0f);
+        restoreMissing("echo_delay", 250.0f);
+        restoreMissing("echo_feedback", 42.0f);
         restoreMissing("reverb_mix", 0.0f);
+        restoreMissing("reverb_size", 100.0f);
+        restoreMissing("reverb_predelay", 0.0f);
         for (const auto id : portParameterIds) restoreMissing(id, 0.f);
         outputEffects_.restore(state);
         apvts_.replaceState(state);
