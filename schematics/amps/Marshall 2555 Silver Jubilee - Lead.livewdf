@@ -2019,10 +2019,10 @@
         "powerAmp": "1",
         "taper": "Linear"
       },
-      "type": "varres",
+      "type": "pot",
       "values": {
-        "maxR": 22000,
-        "pos": 0.5
+        "pos": 0.5,
+        "totalR": 22000
       },
       "visual": {
         "flipped": false,
@@ -4587,6 +4587,22 @@
         {
           "x": 95,
           "y": 185
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 60,
+          "y": 219
+        },
+        {
+          "x": 60,
+          "y": 221
+        },
+        {
+          "x": 57,
+          "y": 221
         }
       ]
     }

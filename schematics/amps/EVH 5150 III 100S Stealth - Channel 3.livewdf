@@ -2120,10 +2120,10 @@
         "powerAmp": "1",
         "taper": "Linear"
       },
-      "type": "varres",
+      "type": "pot",
       "values": {
-        "maxR": 10000,
-        "pos": 0.5
+        "pos": 0.5,
+        "totalR": 10000
       },
       "visual": {
         "flipped": false,
@@ -4860,6 +4860,22 @@
         {
           "x": 365,
           "y": 42
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 330,
+          "y": 76
+        },
+        {
+          "x": 330,
+          "y": 78
+        },
+        {
+          "x": 327,
+          "y": 78
         }
       ]
     }

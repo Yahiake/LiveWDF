@@ -928,12 +928,12 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.62,
+        "pos": 0.38,
         "totalR": 22000.0
       },
       "visual": {
-        "flipped": true,
-        "rotation": 0,
+        "flipped": false,
+        "rotation": 180,
         "x": 189,
         "y": 69
       }
