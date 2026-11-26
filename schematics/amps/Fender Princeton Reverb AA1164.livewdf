@@ -494,7 +494,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 103.51838
+        "fullScaleVolts": 102.7326
       },
       "visual": {
         "flipped": true,
@@ -911,13 +911,13 @@
       },
       "type": "rail",
       "values": {
-        "dc": 400
+        "dc": 402
       },
       "visual": {
         "flipped": true,
         "rotation": 0,
         "x": 29,
-        "y": 77
+        "y": 72
       }
     },
     {
@@ -982,6 +982,52 @@
         "rotation": 90,
         "x": 134,
         "y": 150
+      }
+    },
+    {
+      "id": "PA Screen Feed",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 29,
+        "y": 74
+      }
+    },
+    {
+      "id": "PA Screen Filter",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 26,
+        "y": 80
+      }
+    },
+    {
+      "id": "PA Screen Filter Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 26,
+        "y": 84
       }
     }
   ],
@@ -2302,6 +2348,34 @@
         {
           "x": 20,
           "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 29,
+          "y": 76
+        },
+        {
+          "x": 29,
+          "y": 77
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 78
+        },
+        {
+          "x": 26,
+          "y": 77
+        },
+        {
+          "x": 29,
+          "y": 77
         }
       ]
     }
