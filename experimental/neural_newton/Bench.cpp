@@ -33,6 +33,8 @@ class BenchEngine : public wdf::Engine {
 public:
     using Engine::Engine;
     const std::vector<double>& solvedPorts() const { return vv_; }
+    const std::vector<double>& previousPorts() const { return vvPrev_; }
+    const std::vector<double>& olderPorts() const { return vvPrev2_; }
 };
 
 struct Layer {
@@ -54,7 +56,7 @@ struct Model {
     std::vector<float> center, invScale, correctionScale;
     std::vector<Layer> layers;
 
-    explicit Model(const std::string& path, size_t ports, uint64_t circuitId) {
+    explicit Model(const std::string& path, size_t ports, uint64_t circuitId, bool portHistory = false) {
         std::ifstream file(path);
         const auto read = [&file](auto& values) {
             for (auto& value : values)
@@ -64,7 +66,8 @@ struct Model {
         size_t depth = 0, width = 0;
         uint64_t modelCircuitId = 0;
         if (!(file >> modelCircuitId >> depth >> width) || modelCircuitId != circuitId ||
-            depth < 1 || depth > 3 || width != 3 * ports + 1)
+            depth < 1 || depth > 3 ||
+            (width != 3 * ports + 1 && !(portHistory && width == 2 * ports + 1)))
             throw std::runtime_error("Weights do not match the circuit, control order or port count");
         center.resize(width);
         invScale.resize(width);
@@ -106,7 +109,7 @@ struct Model {
     }
 };
 
-enum class SeedMode { Residual, EarlyVoltage, Current, CarriedCurrent, Plate };
+enum class SeedMode { Residual, EarlyVoltage, Current, CarriedCurrent, Plate, PortHistory };
 
 struct PlateSeed {
     std::array<std::vector<int>, 2> plates;
@@ -232,6 +235,9 @@ struct SmallPlateModel {
 };
 
 SeedMode seedMode(std::string_view model, std::string_view trace) {
+    if (model.starts_with("ports:") || model.starts_with("ports-guarded:") ||
+        model.starts_with("ports-replay:") || trace.starts_with("ports:"))
+        return SeedMode::PortHistory;
     if (model.starts_with("a2:") || model.starts_with("a2-history:") ||
         model.starts_with("small-plate:") || model.starts_with("plate:") || trace.starts_with("plate:"))
         return SeedMode::Plate;
@@ -253,6 +259,14 @@ struct Run {
     bool driveReady = false;
     bool seen = false;
     bool collecting = false;
+    bool portTrace = false;
+    bool compareInitial = false;
+    bool guardInitial = false;
+    bool proposalReady = false;
+    float guitar = 0.f;
+    std::span<const float> replay;
+    std::vector<double> residualRatios;
+    size_t lowerResidual = 0, nonfiniteResidual = 0, unsupportedResidual = 0;
     double control = 0.0;
     int gate = 0;
     long long previousWork = 0;
@@ -281,6 +295,54 @@ struct Run {
 };
 
 Run* run = nullptr;
+
+bool boundedVoltageMove(const wdf::solver::NewtonContext& ctx) noexcept {
+    for (int i = 0; i < ctx.K; ++i) {
+        const double move = ctx.vt[i] - ctx.vvPrev[i];
+        if (!std::isfinite(move) || move < -ctx.stepDown[i] || move > ctx.stepUp[i])
+            return false;
+    }
+    return true;
+}
+
+void inspectResidual(wdf::solver::NewtonContext& ctx, double stockResidual) noexcept {
+    auto& r = *run;
+    if (!r.proposalReady)
+        return;
+    r.proposalReady = false;
+    if (ctx.sharedColumns) {
+        ++r.unsupportedResidual;
+        return;
+    }
+    const auto evaluations = ctx.deviceEvals;
+    for (const auto& limiter : ctx.gridJunctionLimiters) {
+        const int port = limiter.port;
+        bool limited = false;
+        ctx.vt[port] = limiter.limitGrid(ctx.vvPrev[port], ctx.vt[port], limited);
+    }
+    using wdf::solver::RootNewton;
+    RootNewton::currentsInto(ctx, ctx.vt, ctx.iv, ctx.Jt);
+    RootNewton::residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
+    ctx.deviceEvals = evaluations;
+    const auto finite = [](double value) { return std::isfinite(value); };
+    if (!std::all_of(ctx.F.begin(), ctx.F.end(), finite) ||
+        !std::all_of(ctx.ft.begin(), ctx.ft.end(), finite)) {
+        ++r.nonfiniteResidual;
+        return;
+    }
+    const double candidate = RootNewton::maxAbs(ctx.ft, ctx.K);
+    r.lowerResidual += candidate < stockResidual;
+    r.residualRatios.push_back(std::max(candidate, 1e-30) / std::max(stockResidual, 1e-30));
+}
+
+bool guardedPortSeed(const wdf::experimental::NewtonSeed& seed) noexcept {
+    auto& r = *run;
+    if (!r.proposalReady)
+        return false;
+    r.proposalReady = false;
+    std::copy(r.stock.begin(), r.stock.end(), seed.guess.begin());
+    return true;
+}
 
 bool seedHook(const wdf::experimental::NewtonSeed& seed) noexcept {
     auto& r = *run;
@@ -316,6 +378,45 @@ bool earlySeed(wdf::solver::NewtonContext& ctx) noexcept {
         ++r.attempts;
         return r.plates->apply(ctx);
     }
+    if (r.mode == SeedMode::PortHistory) {
+        if (r.portTrace) {
+            std::copy(ctx.vv.begin(), ctx.vv.end(), r.stock.begin());
+            return false;
+        }
+        if (r.previousWork < r.gate)
+            return false;
+        if (!r.replay.empty()) {
+            std::copy(r.replay.begin(), r.replay.end(), ctx.vt.begin());
+        } else if (r.model) {
+            const bool withStock = r.input.size() == 3 * static_cast<size_t>(ctx.K) + 1;
+            for (int i = 0; i < ctx.K; ++i) {
+                r.input[i] = static_cast<float>(ctx.vvPrev[i]);
+                r.input[ctx.K + i] = r.input[i] - static_cast<float>(ctx.vvPrev2[i]);
+                if (withStock)
+                    r.input[2 * ctx.K + i] = static_cast<float>(ctx.vv[i]);
+            }
+            r.input.back() = r.guitar;
+            std::copy(ctx.vv.begin(), ctx.vv.end(), ctx.vt.begin());
+            if (!r.model->predict(r.input, ctx.vt))
+                return false;
+        } else {
+            return false;
+        }
+        ++r.attempts;
+        if (!boundedVoltageMove(ctx))
+            return false;
+        if (r.guardInitial) {
+            std::copy(ctx.vt.begin(), ctx.vt.end(), r.stock.begin());
+            r.proposalReady = true;
+            return false;
+        }
+        if (r.compareInitial) {
+            r.proposalReady = true;
+            return false;
+        }
+        std::copy(ctx.vt.begin(), ctx.vt.end(), ctx.vv.begin());
+        return true;
+    }
     const bool carry = r.mode == SeedMode::CarriedCurrent;
     const bool current = r.mode != SeedMode::EarlyVoltage;
     const auto& seed = current ? ctx.ii : ctx.vv;
@@ -346,11 +447,8 @@ bool earlySeed(wdf::solver::NewtonContext& ctx) noexcept {
         for (int i = 0; i < ctx.K; ++i)
             ctx.vt[i] = ctx.vOc[i] - ctx.F[i];
     }
-    for (int i = 0; i < ctx.K; ++i) {
-        const double move = ctx.vt[i] - ctx.vvPrev[i];
-        if (!std::isfinite(move) || move < -ctx.stepDown[i] || move > ctx.stepUp[i])
-            return false;
-    }
+    if (!boundedVoltageMove(ctx))
+        return false;
     std::copy(ctx.vt.begin(), ctx.vt.end(), ctx.vv.begin());
     return true;
 }
@@ -458,6 +556,16 @@ int bench(int argc, char** argv) {
     const std::string_view modelPath = argv[6], tracePath = argv[7];
     const SeedMode mode = seedMode(modelPath, tracePath);
     const bool plateTrace = tracePath.starts_with("plate:");
+    const bool portTrace = tracePath.starts_with("ports:");
+    const bool portReplay = modelPath.starts_with("ports-replay:");
+    const bool compareInitial = tracePath == "paired";
+    const bool guardInitial = modelPath.starts_with("ports-guarded:");
+    const bool capAccept = modelPath == "cap8-accept";
+    const bool capped = capAccept || modelPath == "cap8-hold";
+    if (compareInitial && (mode != SeedMode::PortHistory || modelPath == "-" || guardInitial))
+        throw std::runtime_error("Paired residuals require a port prediction");
+    if (capped && !preview)
+        throw std::runtime_error("The cap benchmark requires powered Preview");
     const bool historyA2 = modelPath.starts_with("a2-history:");
     const bool liveA2 = historyA2 || modelPath.starts_with("a2:");
     const auto seedFile = [&] { return std::string(modelPath.substr(modelPath.find(':') + 1)); };
@@ -525,13 +633,41 @@ int bench(int argc, char** argv) {
             circuitId = (circuitId ^ std::bit_cast<uint64_t>(position)) * 1099511628211ull;
     }
     Run state(static_cast<size_t>(engine.rootCount()), mode);
+    const size_t portCount = state.target.size();
     if (plates)
         state.plates = &*plates;
+    state.portTrace = portTrace;
+    state.compareInitial = compareInitial;
+    state.guardInitial = guardInitial;
+    if (compareInitial)
+        state.residualRatios.reserve(audio.size());
+    std::vector<float> portSeeds, portTargets, portInitial;
+    std::vector<uint8_t> portRejected;
+    if (portTrace) {
+        if (modelPath != "-")
+            throw std::runtime_error("Port targets require the stock solver");
+        portSeeds.resize(audio.size() * portCount);
+        portTargets.resize(audio.size() * portCount);
+        portRejected.resize(audio.size());
+        portInitial.insert(portInitial.end(), engine.previousPorts().begin(), engine.previousPorts().end());
+        portInitial.insert(portInitial.end(), engine.olderPorts().begin(), engine.olderPorts().end());
+    } else if (portReplay) {
+        portTargets.resize(audio.size() * portCount);
+        std::ifstream file(seedFile(), std::ios::binary);
+        file.read(reinterpret_cast<char*>(portTargets.data()),
+                  static_cast<std::streamsize>(portTargets.size() * sizeof(float)));
+        if (!file || file.peek() != std::ifstream::traits_type::eof())
+            throw std::runtime_error("Expected one complete port vector per sample");
+    }
     std::optional<Model> model;
-    if (modelPath != "-" && mode != SeedMode::CarriedCurrent && mode != SeedMode::Plate)
-        state.model = &model.emplace(path(modelPath), state.target.size(), circuitId);
+    if (modelPath != "-" && mode != SeedMode::CarriedCurrent && mode != SeedMode::Plate &&
+        !portReplay && !capped) {
+        const bool history = mode == SeedMode::PortHistory;
+        state.model = &model.emplace(history ? seedFile() : path(modelPath), portCount, circuitId, history);
+        state.input.resize(model->center.size());
+    }
     std::ofstream trace;
-    if (tracePath != "-" && !plateTrace) {
+    if (tracePath != "-" && !plateTrace && !portTrace && !compareInitial) {
         trace.open(path(tracePath), std::ios::binary);
         if (!trace || modelPath != "-")
             throw std::runtime_error("Training trace requires stock solver");
@@ -546,11 +682,17 @@ int bench(int argc, char** argv) {
     const bool profile = state.gate < 0;
     engine.setProfile(profile);
     wdf::experimental::SeedExperiment experiment{&seedHook};
+    if (compareInitial)
+        experiment.inspect = &inspectResidual;
+    if (capped) {
+        experiment.iterationCap = 8;
+        experiment.acceptUnconverged = capAccept;
+    }
     if (mode != SeedMode::Residual) {
-        experiment.propose = nullptr;
+        experiment.propose = guardInitial ? &guardedPortSeed : nullptr;
         experiment.early = &earlySeed;
     }
-    if (!plateTrace && (state.collecting || modelPath != "-" || profile))
+    if (!plateTrace && (portTrace || state.collecting || modelPath != "-" || profile))
         wdf::experimental::seedExperiment = &experiment;
 
     BlockTimes times;
@@ -577,6 +719,10 @@ int bench(int argc, char** argv) {
 #endif
         for (size_t i = start; i < start + blockSize; ++i) {
             state.seen = false;
+            if (compareInitial || guardInitial)
+                state.proposalReady = false;
+            if (capped)
+                experiment.cappedSample = false;
             if (plates)
                 plates->sample = i;
             if (smallPlate && state.previousWork >= state.gate)
@@ -593,8 +739,22 @@ int bench(int argc, char** argv) {
             }
 #endif
             sources[inputIndex] = in->dc + audio[i] * drive;
+            if (mode == SeedMode::PortHistory)
+                state.guitar = static_cast<float>(audio[i] * drive / voltsPerFullScale);
+            if (portReplay)
+                state.replay = std::span(portTargets).subspan(i * portCount, portCount);
             const auto& nodes = engine.step(sources, BenchEngine::kDefaultMaxIterations, BenchEngine::kFastLiveTolerance);
+            if (capped && !experiment.cappedSample)
+                throw std::runtime_error("The cap benchmark requires a joint Newton pass on every sample");
             rendered[i] = nodes[output];
+            if (portTrace) {
+                if (!state.seen)
+                    throw std::runtime_error("Port capture requires a joint Newton pass on every sample");
+                std::copy(state.stock.begin(), state.stock.end(), portSeeds.data() + i * portCount);
+                const auto& solved = engine.solvedPorts();
+                std::copy(solved.begin(), solved.end(), portTargets.data() + i * portCount);
+                portRejected[i] = engine.lastStateRejected();
+            }
             if (plateTrace)
                 plateTargets[i] = static_cast<float>(plates->differential(engine.solvedPorts()));
             if (smallPlate || historyA2) {
@@ -622,22 +782,40 @@ int bench(int argc, char** argv) {
         if (!file)
             throw std::runtime_error("Output write failed");
     }
-    if (plateTrace) {
+    if (plateTrace || portTrace) {
         const std::string prefix(tracePath.substr(6));
-        const auto writeFloats = [](const std::string& name, const std::vector<float>& samples) {
+        const auto writeSamples = [](const std::string& name, const auto& samples) {
             std::ofstream file(name, std::ios::binary);
             file.write(reinterpret_cast<const char*>(samples.data()),
-                       static_cast<std::streamsize>(samples.size() * sizeof(float)));
+                       static_cast<std::streamsize>(std::span(samples).size_bytes()));
             if (!file)
-                throw std::runtime_error("Plate trace write failed");
+                throw std::runtime_error("Voltage trace write failed");
         };
         for (float& v : audio)
             v = static_cast<float>(v * drive / voltsPerFullScale);
-        writeFloats(prefix + ".x.f32", audio);
-        writeFloats(prefix + ".y.f32", plateTargets);
+        writeSamples(prefix + ".x.f32", audio);
+        writeSamples(prefix + ".y.f32", plateTrace ? plateTargets : portTargets);
+        if (portTrace) {
+            writeSamples(prefix + ".seed.f32", portSeeds);
+            writeSamples(prefix + ".initial.f32", portInitial);
+            writeSamples(prefix + ".rejected.u8", portRejected);
+            std::ofstream file(prefix + ".id");
+            if (!(file << circuitId << '\n'))
+                throw std::runtime_error("Circuit id write failed");
+        }
     }
     if (trace.is_open() && !trace)
         throw std::runtime_error("Trace write failed");
+    if (compareInitial) {
+        auto& ratios = state.residualRatios;
+        if (ratios.empty() || state.unsupportedResidual != 0)
+            throw std::runtime_error("Expected paired residuals with the ordinary reduced network");
+        std::sort(ratios.begin(), ratios.end());
+        std::cout << "paired residuals " << ratios.size() << " lower " << state.lowerResidual
+                  << " nonfinite " << state.nonfiniteResidual
+                  << " ratio p50/p90 " << ratios[ratios.size() / 2]
+                  << '/' << ratios[ratios.size() * 9 / 10] << '\n';
+    }
     std::sort(costs.begin(), costs.end());
     const auto& phases = engine.phaseProfile();
     std::cout << std::fixed << std::setprecision(3) << "ports " << state.target.size()
@@ -650,9 +828,12 @@ int bench(int argc, char** argv) {
               << " work p50/p99/max " << costs[costs.size()/2] << '/' << costs[costs.size()*99/100]
               << '/' << costs.back() << '\n';
     if (profile)
-        std::cout << "phase ms solve/device/jacobian/LU/line "
-                  << phases.solve * 1000 << '/' << phases.device * 1000 << '/' << phases.jacobian * 1000
-                  << '/' << phases.lu * 1000 << '/' << phases.linesearch * 1000 << '\n';
+        std::cout << "joint root retries " << experiment.rootRetries << '\n'
+                  << "phase ms solve/predict/device/jacobian/LU/line "
+                  << phases.solve * 1000 << '/' << phases.predict * 1000
+                  << '/' << phases.device * 1000 << '/' << phases.jacobian * 1000
+                  << '/' << phases.lu * 1000 << '/' << phases.linesearch * 1000
+                  << " retry ms (included) " << experiment.retrySeconds * 1000 << '\n';
 #ifdef LIVEWDF_BENCH_NAM_A2
     if (a2 && !historyA2)
         std::cout << "A2 Lite mean CPU ms/block " << a2Cpu * 1000 / times.cpu.size() << '\n';

@@ -316,6 +316,9 @@ public:
                 curValid = true;
                 base = maxAbs(ctx.F, ctx.K);
 #ifdef LIVEWDF_NEURAL_NEWTON
+                if (it == 0 && learned && !ctx.staticMode && experimental::seedExperiment &&
+                    experimental::seedExperiment->inspect)
+                    experimental::seedExperiment->inspect(ctx, base);
                 if (it == 0 && learned && experimental::seedExperiment && !ctx.staticMode &&
                     experimental::seedExperiment->propose && tryExperimentalSeed(ctx, base, tol)) {
                     *learned = true;
@@ -518,6 +521,14 @@ public:
         pinDomains(ctx, view);
         bool learned = false;
 #ifdef LIVEWDF_NEURAL_NEWTON
+        auto* experiment = ctx.staticMode ? nullptr : experimental::seedExperiment;
+        if (experiment && experiment->iterationCap > 0) {
+            solveRootsNewtonPass(ctx, std::min(maxIter, experiment->iterationCap), tol, true, false, false);
+            experiment->cappedSample = true;
+            vvPrev2 = vvPrev;
+            vvPrev = ctx.vv;
+            return;
+        }
         const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true, false, true, &learned);
 #else
         const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
@@ -526,10 +537,19 @@ public:
         // With the usual four trials, the retry takes a different path even from the same voltage.
         if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || learned || predictionChangesSeed(ctx))) {
 #ifdef LIVEWDF_NEURAL_NEWTON
-            if (learned)
-                ++experimental::seedExperiment->retries;
+            if (experiment) {
+                ++experiment->rootRetries;
+                experiment->retries += learned;
+            }
+            const auto start = experiment && ctx.profileOn ? std::chrono::steady_clock::now()
+                                                           : std::chrono::steady_clock::time_point{};
 #endif
             solveRootsNewtonPass(ctx, maxIter, tol, false, false, !usedExtra);
+#ifdef LIVEWDF_NEURAL_NEWTON
+            if (experiment && ctx.profileOn)
+                experiment->retrySeconds +=
+                    std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+#endif
         }
         resolveTriodeDomains(ctx, maxIter, tol, view);
         vvPrev2 = vvPrev;

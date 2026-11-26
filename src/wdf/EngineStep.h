@@ -427,10 +427,17 @@ protected:
     /// closed-form roots deliberately leave the residual unevaluated (NaN),
     /// but their converged flag is still mandatory.
     bool stateAcceptable() const {
-        if (!lastConverged_)
+        if (!lastConverged_) {
+#ifdef LIVEWDF_NEURAL_NEWTON
+            const auto* experiment = experimental::seedExperiment;
+            if (!experiment || !experiment->acceptUnconverged || !experiment->cappedSample)
+                return false;
+#else
             return false;
+#endif
+        }
         if (std::isnan(lastResidual_))
-            return explicitRootsActive_;
+            return lastConverged_ && explicitRootsActive_;
         return std::isfinite(lastResidual_) && lastResidual_ <= 1e12;
     }
 
