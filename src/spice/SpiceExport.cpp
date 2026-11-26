@@ -358,6 +358,18 @@ SpiceExportResult spiceExport(const Circuit& c,
         const std::string base = d.name.empty() ? ("D" + std::to_string(i)) : d.name;
         const std::string a = nodeOrGround(d.a);
         const std::string b = nodeOrGround(d.b);
+        if (d.model.perveance > 0.0) {
+            std::string plate = a;
+            if (d.model.rs > 0.0) {
+                plate = spiceUnique("plate_" + spiceSafe(base), usedNodes);
+                f << spiceUnique("Rs_" + spiceSafe(base), used) << " " << a << " " << plate
+                  << " " << spiceNum(d.model.rs) << "\n";
+            }
+            f << spiceUnique("B_" + spiceSafe(base), used) << " " << plate << " " << b
+              << " I = {" << spiceNum(d.model.perveance) << "*pow(max(V(" << plate
+              << "," << b << "),0),1.5)}\n";
+            continue;
+        }
         const double isat = d.model.isat;
         const double rs = d.model.rs;
         const double rp = d.model.rp;

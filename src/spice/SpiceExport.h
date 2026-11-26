@@ -10,7 +10,7 @@
 //
 // Supported elements:
 //   Res, Cap, Ind, MutualInd (transformers), Src, Isrc, VCVS (op-amps),
-//   Triode (quadric DAFx-23), Diode (extended Shockley, incl. Rp subcircuit),
+//   Triode (quadric DAFx-23), Diode (extended Shockley or warm vacuum plate),
 //   Pentode (Reefman DerkD/DerkE and Koren, via behavioural subcircuits),
 //   Jfet, Mosfet, Bjt (Ebers-Moll via behavioural subcircuits).
 //

@@ -190,9 +190,13 @@ void emitRecurrence(std::ostream& output, const wdf::Engine& e, int inputSource,
         const auto& d = e.compiled().diode.front().second;
         const double r = d.rs + e.rootImpedance()[0];
         if (!(r > 0 && std::isfinite(r))) throw std::invalid_argument("invalid loaded diode impedance");
-        out << "    const wdf::DiodeModel loadedDiode{" << d.isat << ", " << d.n << ", "
-            << r << ", " << d.rp << ", " << d.bv << ", " << d.ibv << "};\n"
-            << "    double step(const Sources& source) {\n"
+        if (d.perveance > 0.0)
+            out << "    const wdf::DiodeModel loadedDiode = wdf::DiodeModel::vacuumPlate("
+                << d.perveance << ", " << r << ");\n";
+        else
+            out << "    const wdf::DiodeModel loadedDiode{" << d.isat << ", " << d.n << ", "
+                << r << ", " << d.rp << ", " << d.bv << ", " << d.ibv << "};\n";
+        out << "    double step(const Sources& source) {\n"
             << "        double i, slope;\n        loadedDiode.eval(openCircuit(source)[0], i, slope);\n"
             << "        return advance(source, {i});\n    }\n";
     }

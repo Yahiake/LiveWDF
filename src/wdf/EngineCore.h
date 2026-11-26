@@ -424,10 +424,11 @@ public:
             }
             case DeviceKind::Diode: {
                 const int e = dev.portBase;
-                predUp_[static_cast<size_t>(e)] = lim_.predDiodeUp;
-                predDown_[static_cast<size_t>(e)] = lim_.predDiodeDown;
-                stepUp_[static_cast<size_t>(e)] = lim_.stepDiodeUp;
-                stepDown_[static_cast<size_t>(e)] = lim_.stepDiodeDown;
+                const bool vacuum = comp_.diode[dev.compIndex].second.perveance > 0.0;
+                predUp_[static_cast<size_t>(e)] = vacuum ? lim_.predPlateUp : lim_.predDiodeUp;
+                predDown_[static_cast<size_t>(e)] = vacuum ? lim_.predPlateDown : lim_.predDiodeDown;
+                stepUp_[static_cast<size_t>(e)] = vacuum ? lim_.stepPlateUp : lim_.stepDiodeUp;
+                stepDown_[static_cast<size_t>(e)] = vacuum ? lim_.stepPlateDown : lim_.stepDiodeDown;
                 break;
             }
             case DeviceKind::ControlledRes: {
