@@ -442,6 +442,37 @@ static void screen_text(const gp5_font_t *font, const char *text, int x, int y, 
     gp5_draw_text(strip, GP5_SCREEN_W, STRIP_H, x, y, font, fitted, color);
 }
 
+#ifdef GP50_HAS_STATUS
+static gp50_status_t displayed_status;
+
+static void draw_status(void)
+{
+    const gp5_font_t *font = &gp5_font_sans_12;
+    unsigned bluetooth = displayed_status.bluetooth;
+    const char *wireless = bluetooth == GP50_BT_PAIRED ? "BT Paired" :
+                           bluetooth == GP50_BT_UNPAIRED ? "BT Unpaired" : "BT Off";
+    screen_text(font, wireless, 6, 16, 72, bluetooth == GP50_BT_PAIRED ? accent : muted, 0);
+
+    enum { X = 135, Y = 20, WIDTH = 20, HEIGHT = 10 };
+    int battery = displayed_status.battery;
+    uint32_t color = battery == 0 ? 0xff8580 : battery > 0 ? ink : muted;
+    uint16_t pixel = gp5_color(color);
+    for (unsigned y = 0; y < HEIGHT; ++y)
+        for (unsigned x = 0; x < WIDTH + 2; ++x) {
+            int outline = x < WIDTH ? x == 0 || x == WIDTH - 1 || y == 0 || y == HEIGHT - 1 :
+                                      y >= 3 && y < 7;
+            int bar = x >= 2 && x < 2 + 4 * (unsigned)(battery > 0 ? battery : 0) &&
+                      (x - 2) % 4 < 3 && y >= 2 && y < HEIGHT - 2;
+            if (outline || bar) strip[(Y + y) * GP5_SCREEN_W + X + x] = pixel;
+        }
+    if (battery < 0) screen_text(font, "?", X + 7, 17, 8, muted, 0);
+    if (displayed_status.charging > 0) {
+        int width = gp5_text_width(font, "Charging");
+        screen_text(font, "Charging", X - width - 5, 16, width, accent, 0);
+    }
+}
+#endif
+
 static const char *param_label(unsigned id)
 {
 #ifdef LIVEWDF_GP50_CATALOG
@@ -520,6 +551,14 @@ static void draw_parameter(unsigned index, int y, int selected)
 int fw_draw(int force)
 {
     if (force) redraw = ALL;
+#ifdef GP50_HAS_STATUS
+    gp50_status_t status = gp50_status();
+    if (status.battery != displayed_status.battery || status.charging != displayed_status.charging ||
+        status.bluetooth != displayed_status.bluetooth) {
+        displayed_status = status;
+        redraw |= CONTEXT;
+    }
+#endif
     if (message && (int32_t)(gp5_ms() - message_until) >= 0) {
         message = 0;
         redraw |= CONTEXT;
@@ -563,7 +602,12 @@ int fw_draw(int force)
             if (screen == PLAY) hint = "Turn PARA to edit";
             else hint = adjusting ? "Press PARA to finish" : "Press PARA to adjust";
         }
+#ifdef GP50_HAS_STATUS
+        screen_text(&gp5_font_sans_12, hint, 8, 0, 144, message ? amber : muted, 0);
+        draw_status();
+#else
         screen_text(&gp5_font_sans_12, hint, 8, 7, 144, message ? amber : muted, 0);
+#endif
     } else {
         y = 96;
         for (unsigned encoder = 0; encoder <= GP50_ENCODER_RIGHT; ++encoder) draw_knob(encoder);

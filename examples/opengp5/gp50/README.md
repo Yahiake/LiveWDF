@@ -16,6 +16,12 @@ edits, which are discarded when you recall a different patch. **Saved in RAM**
 means storage is unavailable and changes are lost at power-off.
 Level extends to 200%, with up to 6 dB of extra output above 100%.
 
+The status line shows a four-bar battery gauge, **Charging** while the
+charger is active, and **BT Off**, **BT Unpaired**, or **BT Paired**. On
+OpenGP5 hardware, Bluetooth displays Off until the wireless stack is ported.
+In the emulator, F6/F7 change the battery level, F8 toggles charging, and
+F9 cycles Bluetooth status.
+
 The DOD 250 Gray model runs the schematic's capacitor recurrence, the
 LM741's dominant pole and rail limits, and the antiparallel 1N4148 pair.
 
@@ -67,7 +73,7 @@ The desktop GP-50 emulator runs all 47 circuits in [catalog.cmake](catalog.cmake
 at 44.1 kHz with the factory knob settings, voltage references and port
 impedances. For amps with a preamp tap, it uses that path.
 
-Use an [OpenGP5-Emulator checkout with native DSP support](https://github.com/jopdorp/OpenGP5-Emulator/pull/3),
+Use the [GP-50 branch of OpenGP5-Emulator](https://github.com/jopdorp/OpenGP5-Emulator/tree/fix/live-patch-storage),
 including its OpenGP5 submodule.
 
 ```sh
