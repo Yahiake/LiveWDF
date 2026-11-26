@@ -10,6 +10,7 @@
 
 #include "wdf/DenseTopology.h"
 #include "wdf/solver/RootResidual.h"
+#include "wdf/solver/PentodePlatePair.h"
 #include "wdf/solver/RootJacobian.h"
 #include "wdf/solver/SharedNewtonColumns.h"
 #include "wdf/solver/TriodeDomainTransfer.h"
@@ -144,6 +145,76 @@ public:
         }
     }
 
+    static const RootDevice* coupledPentodes(const NewtonContext& ctx) noexcept {
+        if (!ctx.pentodePreview || ctx.staticMode || ctx.pentodes.size() != 2 || ctx.rootDevices.size() < 2)
+            return nullptr;
+        const auto& devices = ctx.rootDevices;
+        const auto left = std::find_if(devices.begin(), devices.end(), [](const RootDevice& d) {
+            return d.kind == DeviceKind::Pentode;
+        });
+        if (left == devices.end() || left + 1 == devices.end() || left[1].kind != DeviceKind::Pentode)
+            return nullptr;
+        const int l = left[0].portBase, r = left[1].portBase;
+        const double* zl = ctx.Z.data() + l * ctx.K;
+        const double* zr = ctx.Z.data() + r * ctx.K;
+        // Grid current is held fixed. Screen current changes with plate voltage,
+        // so an isolated plate-pair map requires no screen-to-plate transfer.
+        if (zl[l + 2] != 0. || zl[r + 2] != 0. || zr[l + 2] != 0. || zr[r + 2] != 0. ||
+            zl[r] == 0. || !(std::abs(zl[r] - zr[l]) <= 1e-12 * std::abs(zl[r])))
+            return nullptr;
+        return &*left;
+    }
+
+    static double projectPentodePlates(NewtonContext& ctx, const RootDevice* pair, std::vector<double>& v,
+                                     std::vector<double>& i, std::vector<double>* jacobian,
+                                     std::vector<double>& residual, double initialNorm) noexcept {
+        const auto& left = pair[0];
+        const auto& right = pair[1];
+        const int l = left.portBase, r = right.portBase;
+        // Near the solution a further ordinary Newton step costs less.
+        if (std::max(std::abs(residual[l]), std::abs(residual[r])) < .05)
+            return initialNorm;
+        const double* zl = ctx.Z.data() + l * ctx.K;
+        const double* zr = ctx.Z.data() + r * ctx.K;
+        const auto& model1 = ctx.pentodes[left.compIndex];
+        const auto& model2 = ctx.pentodes[right.compIndex];
+        DerkDPlate law1, law2;
+        if (!law1.at(model1, v.data() + l, i[l + 2]) || !law2.at(model2, v.data() + r, i[r + 2]))
+            return initialNorm;
+        const double drive1 = v[l] - residual[l] + zl[l] * i[l] + zl[r] * i[r];
+        const double drive2 = v[r] - residual[r] + zr[l] * i[l] + zr[r] * i[r];
+        double plate1, plate2;
+        if (!solvePentodePlatePair(law1, law2, drive1, drive2, zl[l], zr[r], zl[r], plate1, plate2))
+            return initialNorm;
+
+        // A plate crossing can abruptly change screen current. Accept the
+        // projection only if every row stays within the original residual norm.
+        const auto screenDelta = [&](int port, double plate, const DerkDPlate& law, const ReefmanPentode& m) {
+            return (plate >= 0. ? law.screenBase * (1. + m.alpha_s / (1. + m.beta * plate)) : 0.) - i[port + 2];
+        };
+        const double dIp1 = law1.current(plate1) - i[l], dIp2 = law2.current(plate2) - i[r];
+        const double dIs1 = screenDelta(l, plate1, law1, model1.reefman);
+        const double dIs2 = screenDelta(r, plate2, law2, model2.reefman);
+        for (int j = 0; j < ctx.K; ++j) {
+            const double* row = ctx.Z.data() + j * ctx.K;
+            const double dv = j == l ? plate1 - v[l] : (j == r ? plate2 - v[r] : 0.);
+            const double projected = residual[j] + dv + row[l] * dIp1 + row[r] * dIp2 +
+                                     row[l + 2] * dIs1 + row[r + 2] * dIs2;
+            if (!(std::abs(projected) <= initialNorm))
+                return initialNorm;
+        }
+        v[l] = plate1;
+        v[r] = plate2;
+        for (const auto* device : {&left, &right}) {
+            RootResidual::currentsForDevice(*device, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(),
+                ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K, v.data(), i.data(),
+                jacobian ? jacobian->data() : nullptr, ctx.deviceEvals);
+        }
+        residualInto(ctx, v, ctx.vOc, ctx.Z, i, residual);
+        return maxAbs(residual, ctx.K);
+    }
+
     static inline int limitDiodePorts(NewtonContext& ctx, double* v, const double* vOld) noexcept {
         return RootResidual::limitDiodePorts(
             v, vOld, ctx.junctionLimiters.data(), ctx.junctionLimiters.size(),
@@ -250,6 +321,7 @@ public:
         if (ctx.prof)
             tock(ctx.prof->predict);
 
+        const RootDevice* platePair = coupledPentodes(ctx);
         bool curValid = false;
         bool reached = false;
         const bool poweredPreview = ctx.pentodePreview && !ctx.staticMode;
@@ -262,10 +334,12 @@ public:
                 tPhase = tick();
                 currentsInto(ctx, ctx.vv, ctx.ii, ctx.J);
                 residualInto(ctx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
+                base = maxAbs(ctx.F, ctx.K);
+                if (platePair)
+                    base = projectPentodePlates(ctx, platePair, ctx.vv, ctx.ii, &ctx.J, ctx.F, base);
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 curValid = true;
-                base = maxAbs(ctx.F, ctx.K);
             }
             if (base < ctx.bestFn) {
                 ctx.bestFn = base;
@@ -363,6 +437,8 @@ public:
                 }
                 residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
                 ftNorm = maxAbs(ctx.ft, ctx.K);
+                if (platePair && (ftNorm >= base || h > 0))
+                    ftNorm = projectPentodePlates(ctx, platePair, ctx.vt, ctx.iv, stepHasJ ? &ctx.Jt : nullptr, ctx.ft, ftNorm);
                 if (ftNorm <= base || h + 1 == maxTrials)
                     break;
                 stepSize = clampAwareStep(ctx, stepSize);
