@@ -361,6 +361,20 @@
       }
     },
     {
+      "id": "R clean shunt",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 102,
+        "y": 29
+      }
+    },
+    {
       "id": "GND8",
       "properties": {},
       "type": "gnd",
@@ -1332,6 +1346,30 @@
   "name": "ENGL E530 - Lead Hi Gain",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 27
+        },
+        {
+          "x": 98,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 31
+        },
+        {
+          "x": 98,
+          "y": 31
+        }
+      ]
+    },
     {
       "points": [
         {

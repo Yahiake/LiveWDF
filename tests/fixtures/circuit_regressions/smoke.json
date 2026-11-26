@@ -9400,24 +9400,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995,
+        "band_375": 0.2105629806985664,
+        "band_1500": 0.2309323296362304,
+        "band_6000": 0.14529326175131593
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "ac2c42f0ab2370bf0053fc15f8ab12458d47b34f02fa80461a88d9913c26a507",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e.f32.gz",
+      "wave_sha256": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e",
       "reference_stride": 7
     },
     "ENGL E530 - Lead Hi Gain/fast": {
@@ -9434,24 +9434,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995,
+        "band_375": 0.2105629806985664,
+        "band_1500": 0.2309323296362304,
+        "band_6000": 0.14529326175131593
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "ac2c42f0ab2370bf0053fc15f8ab12458d47b34f02fa80461a88d9913c26a507",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e.f32.gz",
+      "wave_sha256": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e",
       "reference_stride": 7
     },
     "ENGL E530 - Lead Hi Gain/preview": {
@@ -9468,24 +9468,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995,
+        "band_375": 0.2105629806985664,
+        "band_1500": 0.2309323296362304,
+        "band_6000": 0.14529326175131593
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.301619122876155,
+        "mean": -0.0005397738942689741,
+        "peak": 0.976623968103843,
+        "max_step": 0.2833839616137995
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "ac2c42f0ab2370bf0053fc15f8ab12458d47b34f02fa80461a88d9913c26a507",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e.f32.gz",
+      "wave_sha256": "895dab28168bb7e675ecd32d546fbcd7bad3c25c76b86b0ae4bdc974ab80709e",
       "reference_stride": 7
     },
     "Fender Bassman 5F6-A/accurate": {
