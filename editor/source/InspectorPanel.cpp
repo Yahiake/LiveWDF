@@ -19,6 +19,18 @@ namespace livewdf::editor {
 
 namespace {
 
+enum AmpSection { bothModes = 1, powerAmpOnly, preampOnly };
+
+AmpSection ampSectionOf(const wdf::SchematicComponent& part) {
+    if (wdf::componentProperty(part, "powerAmp") == "1") return powerAmpOnly;
+    if (wdf::componentProperty(part, "preampOnly") == "1") return preampOnly;
+    return bothModes;
+}
+
+bool canSetAmpSection(const wdf::SchematicComponent& part) {
+    return part.type != "in" && part.type != "out";
+}
+
 /// A combo box in the inspector's colours: the same dark ground as a text
 /// field, the same accent for the open list.
 ///
@@ -150,7 +162,8 @@ InspectorPanel::InspectorPanel() {
 }
 
 
-void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id) {
+void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id,
+                               const std::vector<std::string>& selectedParts) {
     // Selecting a *different* part should start at the top. A rebuild caused by
     // editing the part that is already selected (the host re-targets it after a
     // model change) should not jump away from the row the user is using.
@@ -159,6 +172,9 @@ void InspectorPanel::setTarget(wdf::LiveWDFDocument* doc, const std::string& id)
     if (!sameTarget) cancelOutputCalibration();
     doc_ = doc;
     id_ = id;
+    selectedParts_ = selectedParts;
+    if (selectedParts_.empty() && !id_.empty())
+        selectedParts_.push_back(id_);
     wire_ = {};          // a part target and a wire target are mutually exclusive
     rebuild();
 
@@ -172,6 +188,7 @@ void InspectorPanel::setWireTarget(const WireInfo& wire) {
     cancelOutputCalibration();
     doc_ = nullptr;
     id_.clear();
+    selectedParts_.clear();
     wire_ = wire;
     rebuild();
     viewport_.setViewPosition(0, 0);
@@ -353,7 +370,7 @@ void InspectorPanel::rebuild() {
     for (const std::string& key : propertyOrder) {
         const std::string& val = comp.properties.at(key);
         // The name has its own row above.
-        if (key == "label")
+        if (key == "label" || key == "powerAmp" || key == "preampOnly" || key == "preampTap")
             continue;
 
         // The throw already has its own row above.
@@ -482,6 +499,7 @@ void InspectorPanel::rebuild() {
             order.push_back(k);
     for (const auto& [k, v] : comp.values)
         if (!(comp.type == "in" && k == "fullScaleVolts") && k != "externalDefaultOhms" &&
+            k != "preampFullScaleVolts" &&
             k != primary && std::find(order.begin(), order.end(), k) == order.end())
             order.push_back(k);
 
@@ -568,8 +586,12 @@ void InspectorPanel::rebuild() {
     }
 
 
+    if (comp.properties.count("preampTap"))
+        order.push_back("preampFullScaleVolts");
+
     for (const auto& key : order) {
-        auto* lab = labels.add(new juce::Label({}, juce::String(valueKeyLabel(key)) + ":"));
+        const auto caption = key == "preampFullScaleVolts" ? "Preamp output full scale (V)" : valueKeyLabel(key);
+        auto* lab = labels.add(new juce::Label({}, juce::String(caption) + ":"));
         lab->setColour(juce::Label::textColourId, glow::getColourTextSecondary());
         lab->setFont(Fonts::semiBold(11.5f));
         content_.addAndMakeVisible(lab);
@@ -685,6 +707,95 @@ void InspectorPanel::rebuild() {
         ++row;
     }
 
+    const auto addSplitPicker = [&](const juce::String& caption, const juce::String& tooltip) {
+        auto* label = labels.add(new juce::Label({}, caption + ":"));
+        label->setColour(juce::Label::textColourId, glow::getColourTextSecondary());
+        label->setFont(Fonts::semiBold(11.5f));
+        content_.addAndMakeVisible(label);
+        auto* box = new juce::ComboBox();
+        stylePicker(*box);
+        box->setTooltip(tooltip);
+        content_.addAndMakeVisible(box);
+        editors.add(box);
+        return box;
+    };
+
+    const auto inSelection = [this](const wdf::SchematicComponent& part) {
+        return canSetAmpSection(part) && std::ranges::find(selectedParts_, part.id) != selectedParts_.end();
+    };
+    const auto firstPart = std::ranges::find_if(doc_->components, inSelection);
+    if (firstPart != doc_->components.end()) {
+        const auto section = ampSectionOf(*firstPart);
+        const bool mixed = std::ranges::any_of(doc_->components, [&](const auto& part) {
+            return inSelection(part) && ampSectionOf(part) != section;
+        });
+        const bool includesGround = std::ranges::any_of(doc_->components, [&](const auto& part) {
+            return part.type == "gnd" && inSelection(part);
+        });
+        auto* box = addSplitPicker("Amp section", "Set which playback modes include the selected parts.");
+        box->addItem("Both modes", bothModes);
+        box->addItem("Power amp only", powerAmpOnly);
+        box->addItem("Preamp only", preampOnly);
+        box->setItemEnabled(preampOnly, !includesGround);
+        box->setTextWhenNothingSelected("Mixed");
+        box->setSelectedId(mixed ? 0 : section, juce::dontSendNotification);
+        box->onChange = [this, box, inSelection] {
+            const int section = box->getSelectedId();
+            if (section == 0) return;
+            bool changed = false;
+            for (auto& part : doc_->components) {
+                if (!inSelection(part) || ampSectionOf(part) == section) continue;
+                part.properties.erase("powerAmp");
+                part.properties.erase("preampOnly");
+                if (section == powerAmpOnly) {
+                    part.properties["powerAmp"] = "1";
+                    part.properties.erase("preampTap");
+                    part.values.erase("preampFullScaleVolts");
+                } else if (section == preampOnly) {
+                    part.properties["preampOnly"] = "1";
+                }
+                changed = true;
+            }
+            if (changed) notifyChanged();
+        };
+    }
+
+    if (selectedParts_.size() == 1 && canSetAmpSection(comp) && ampSectionOf(comp) != powerAmpOnly) {
+        std::vector<std::string> pins{std::string()};
+        if (const auto* spec = findPart(comp.type)) {
+            for (const auto& pin : spec->pins) {
+                const auto net = comp.pins.find(pin);
+                if (net != comp.pins.end() && !net->second.empty() && net->second != doc_->groundNode)
+                    pins.push_back(pin);
+            }
+        }
+        const auto oldTap = wdf::componentProperty(comp, "preampTap");
+        if (pins.size() > 1 || !oldTap.empty()) {
+            auto* box = addSplitPicker("Preamp output pin", "Use this pin as the output when Power Amp is off.");
+            box->addItem("None", 1);
+            for (size_t i = 1; i < pins.size(); ++i)
+                box->addItem(juce::String(pins[i]), static_cast<int>(i + 1));
+            const auto selected = std::ranges::find(pins, oldTap);
+            box->setSelectedId(selected == pins.end() ? 0 : static_cast<int>(selected - pins.begin() + 1),
+                               juce::dontSendNotification);
+            box->onChange = [this, box, pins = std::move(pins)] {
+                const int choice = box->getSelectedId();
+                if (choice == 0) return;
+                const auto& pin = pins[static_cast<size_t>(choice - 1)];
+                auto tap = std::ranges::find(doc_->components, id_, &wdf::SchematicComponent::id);
+                if (tap == doc_->components.end() || wdf::componentProperty(*tap, "preampTap") == pin) return;
+
+                for (auto& part : doc_->components) {
+                    if ((&part == &*tap || !pin.empty()) && part.properties.erase("preampTap") != 0)
+                        part.values.erase("preampFullScaleVolts");
+                }
+                if (!pin.empty())
+                    tap->properties["preampTap"] = pin;
+                notifyChanged();
+            };
+        }
+    }
+
     // The swap. Everything above built into locals, so a rebuild that was
     // re-entered cannot have had the members pulled out from under it.
     labels_ = std::move(labels);
@@ -773,6 +884,7 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
     const std::string key = peakInput ? "referenceMillivoltsRms" : displayedKey;
     const bool inputReference = it->type == "in" && key == "referenceMillivoltsRms";
     const bool outputReference = it->type == "out" && key == "fullScaleVolts";
+    const bool preampReference = key == "preampFullScaleVolts" && it->properties.count("preampTap") != 0;
     if (key == "previewPadDb" && doc_->terminal("in") == &*it) {
         bool ok = false;
         const double db = parseValue(text.toStdString(), &ok);
@@ -780,7 +892,7 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
             text == juce::String(formatValue(doc_->previewPadDb, "")) || db == doc_->previewPadDb)
             return;
         doc_->previewPadDb = db;
-    } else if (it->values.count(key) || inputReference || outputReference) {
+    } else if (it->values.count(key) || inputReference || outputReference || preampReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
 
@@ -812,7 +924,7 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
                 if (text == juce::String(formatValue(wdf::LiveWDFDocument::inputVoltsPerFullScale(*it), ""))) return;
                 value *= wdf::LiveWDFDocument::kReferenceMillivolts;
             }
-            if (!ok || ((inputReference || outputReference)
+            if (!ok || ((inputReference || outputReference || preampReference)
                         && (!std::isfinite(value) || value <= 0.)))
                 return;
 
@@ -835,7 +947,7 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
                 const double original = stored != it->values.end() ? stored->second : wdf::LiveWDFDocument::kReferenceMillivolts;
                 if (text == juce::String(formatValue(original, ""))) return;
             }
-            if (outputReference) {
+            if (outputReference || preampReference) {
                 const double original = stored == it->values.end() ? 1. : stored->second;
                 if (value == original || text == juce::String(formatValue(original, ""))) return;
             }
@@ -993,6 +1105,10 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
         }
     }
 
+    notifyChanged();
+}
+
+void InspectorPanel::notifyChanged() {
     if (onChanged) {
         // **Deferred, and deliberately so.**
         //

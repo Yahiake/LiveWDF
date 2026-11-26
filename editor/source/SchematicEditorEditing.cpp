@@ -11,6 +11,14 @@
 #include <set>
 
 namespace livewdf::editor {
+
+namespace {
+void clearCopiedPreampTap(wdf::SchematicComponent& part) {
+    if (part.properties.erase("preampTap") != 0)
+        part.values.erase("preampFullScaleVolts");
+}
+}  // namespace
+
 void SchematicEditor::copySelection() {
     ClipboardGroup group;
 
@@ -149,6 +157,9 @@ void SchematicEditor::pasteClipboard() {
     // **The parts**, with fresh ids and fresh nets -- the same as a newly
     // placed part -- and their values and settings carried over.
     std::vector<std::string> pasted;
+    bool hasPreampTap = std::ranges::any_of(doc_.components, [](const auto& part) {
+        return part.properties.contains("preampTap");
+    });
 
     for (const auto& entry : clipboard_.parts) {
         const auto id = schematic_.addPart(entry.type,
@@ -162,6 +173,10 @@ void SchematicEditor::pasteClipboard() {
             part->visual.flipped = entry.flipped;
             part->values = entry.values;
             part->properties = entry.properties;
+            if (hasPreampTap)
+                clearCopiedPreampTap(*part);
+            else
+                hasPreampTap = part->properties.contains("preampTap");
         }
 
         pasted.push_back(id);
@@ -242,6 +257,7 @@ void SchematicEditor::clonePart(const std::string& partId) {
     // resistor you already set up should not mean setting the value up four more
     // times. The copy is held, not placed -- the next click drops it.
     pendingClone_ = *source;
+    clearCopiedPreampTap(*pendingClone_);
     pendingType_ = source->type;
     pendingSpec_ = nullptr;
     pendingOrientation_ = source->visual.rotation;
@@ -321,6 +337,7 @@ void SchematicEditor::duplicateSelection() {
         // Read the source out before adding: adding can reallocate the part
         // vector and invalidate the pointer.
         wdf::SchematicComponent original = *source;
+        clearCopiedPreampTap(original);
 
         original.id.clear();   // a fresh id is minted from the palette
         original.visual.x += offset;

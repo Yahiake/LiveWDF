@@ -23,7 +23,8 @@ public:
     /// Point the inspector at `id` inside `doc` ("" clears it). The document is
     /// held by pointer because the inspector edits in place -- it is a view onto
     /// the canvas's model, not a copy of it.
-    void setTarget(wdf::LiveWDFDocument* doc, const std::string& id);
+    void setTarget(wdf::LiveWDFDocument* doc, const std::string& id,
+                   const std::vector<std::string>& selectedParts = {});
 
     /// What the inspector shows when a *wire* is selected, or none.
     ///
@@ -92,9 +93,11 @@ private:
     /// property by which map already holds the key, so the callers stay free of
     /// the ordering bookkeeping `rebuild` does.
     void commitEdit(const std::string& key, const juce::String& text);
+    void notifyChanged();
 
     wdf::LiveWDFDocument* doc_ = nullptr;
     std::string id_;
+    std::vector<std::string> selectedParts_;
     WireInfo wire_;
 
     /// The rows live inside a viewport rather than directly in the panel.

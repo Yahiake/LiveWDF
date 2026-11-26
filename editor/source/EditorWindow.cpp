@@ -121,7 +121,7 @@ EditorWindow::Content::Content() {
         if (wire.valid()) {
             inspector_.setWireTarget(wire);
         } else {
-            inspector_.setTarget(&editor_.getDocument(), editor_.selectedPartId());
+            inspector_.setTarget(&editor_.getDocument(), editor_.selectedPartId(), editor_.selectedPartIds());
         }
 
         // **The scope follows the selection.** A scope probe stamps nothing into
