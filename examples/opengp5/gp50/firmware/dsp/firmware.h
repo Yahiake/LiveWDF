@@ -33,7 +33,9 @@ static void fw_process(const int32_t *in, int32_t *out_left, int32_t *out_right)
         active_model = model;
     }
 
-    float level_scale = model == MODEL_MICROAMP ? level / 100.0f : level_scales[level];
+    unsigned circuit_level = level > DOD250_LEVEL_MAX ? DOD250_LEVEL_MAX : level;
+    float level_scale = model == MODEL_MICROAMP ? circuit_level / 100.0f : level_scales[circuit_level];
+    if (level > DOD250_LEVEL_MAX) level_scale *= level / 100.0f;
     float input_volts = model == MODEL_MICROAMP ? MICROAMP_INPUT_VOLTS : VOLTS_PER_FULL_SCALE;
     float normalize = model == MODEL_MICROAMP ? 1.0f / MICROAMP_OUTPUT_VOLTS : 1.0f / VOLTS_PER_FULL_SCALE;
     for (unsigned i = 0; i < GP5_BLOCK; ++i) {
