@@ -78,7 +78,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
         juce::ParameterID{"output_master", 1}, "Output Master",
-        juce::NormalisableRange<float>(-48.0f, 12.0f, 0.1f), 0.0f,
+        juce::NormalisableRange<float>(-48.0f, 18.0f, 0.1f), 3.0f,
         juce::AudioParameterFloatAttributes().withLabel("dB")));
 
     params.push_back(std::make_unique<juce::AudioParameterFloat>(
@@ -1330,6 +1330,7 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("preview_pad", 0.0f);
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
+        restoreMissing("output_master", 0.0f);
         restoreMissing("power_amp", 1.0f);
         restoreMissing("cab_enabled", 0.0f);
         restoreMissing("echo_mix", 0.0f);

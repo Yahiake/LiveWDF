@@ -2440,7 +2440,7 @@ static bool checkOutputEffectsState() {
         source.getStateInformation(saved);
     }
     auto old = juce::ValueTree::fromXml(*juce::AudioProcessor::getXmlFromBinary(saved.getData(), static_cast<int>(saved.getSize())));
-    for (const auto* id : {"echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
+    for (const auto* id : {"output_master", "echo_delay", "echo_feedback", "reverb_size", "reverb_predelay"})
         old.removeChild(old.getChildWithProperty("id", id), nullptr);
     juce::AudioProcessor::copyXmlToBinary(*old.createXml(), saved);
     livewdf::LiveWDFPluginProcessor restored;
@@ -2504,6 +2504,7 @@ static bool checkOutputEffectControls() {
 
     Processor echo;
     echo.setNonRealtime(true);
+    set(echo, "output_master", 0.0f);
     set(echo, "echo_delay", 80.0f);
     set(echo, "echo_feedback", 55.0f);
     set(echo, "echo_mix", 100.0f);
