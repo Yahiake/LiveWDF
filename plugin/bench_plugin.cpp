@@ -548,6 +548,8 @@ AuditStats runOne(const juce::File& file, int blockSize, const AuditCase& testCa
     // The direct reference steps with the engine's Accurate tolerance.
     auto* quality = processor.getAPVTS().getParameter("solve_quality");
     quality->setValueNotifyingHost(quality->convertTo0to1(0.0f));
+    auto* outputGain = processor.getAPVTS().getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         st.error = "load failed: " + processor.lastError();
@@ -818,6 +820,8 @@ bool checkExternalImpedanceDefaults() {
     livewdf::LiveWDFPluginProcessor processor;
     processor.prepareToPlay(kSampleRate, 16);
     auto& parameters = processor.getAPVTS();
+    auto* outputGain = parameters.getParameter("output_master");
+    outputGain->setValueNotifyingHost(outputGain->convertTo0to1(0.0f));
     const auto output = [&] {
         juce::AudioBuffer<float> block(2, 16);
         juce::MidiBuffer midi;
