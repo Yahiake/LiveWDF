@@ -61,7 +61,8 @@ SpiceExportResult spiceExport(const Circuit& c,
         usedNodes.insert(spiceKey(node));
     std::map<std::string, std::string> internalNodes;
     for (const auto& node : circuitNodes) {
-        if (node.find('$') != std::string::npos)
+        if (node.find('$') != std::string::npos &&
+            std::any_of(node.begin(), node.end(), [](unsigned char c) { return std::isspace(c); }))
             internalNodes.try_emplace(node, spiceUnique("lwdf_" + spiceSafe(node), usedNodes));
     }
     const auto nodeOrGround = [&](const std::string& name) -> std::string {
