@@ -695,6 +695,7 @@ bool checkPhysicalRouting() {
     };
     set("solve_quality", 0);
     set("mix", 50);
+    set("output_master", 0);
     constexpr int frames = 16;
     processor.prepareToPlay(kSampleRate, frames);
     if (!processor.loadCircuitDocument(doc))
@@ -742,6 +743,7 @@ bool checkPreviewPad(const juce::File& factoryPreset) {
     set("compiled_preview", 1);
     set("stereo", 1);
     set("mix", 50);
+    set("output_master", 0);
     set("export_4x", 0);
     juce::AudioBuffer<float> block(2, frames);
     juce::MidiBuffer midi;
