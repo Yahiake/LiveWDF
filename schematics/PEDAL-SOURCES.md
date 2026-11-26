@@ -53,6 +53,10 @@ The included presets document which revisions and circuit approximations they us
 - Alternative original-style model 250 reproduction https://www.guitars-of-love.com/images/ADIP_audio_production_projects/DOD_OD-250/DOD_OD-250_schematic.pdf; 2009 third-party redrawing with 4558, explicitly notes copyright restrictions. Not necessarily same '77 gray revision.
 - Single op-amp noninverting drive; output coupling, symmetric silicon diode shunt clipping, and output volume; not feedback diode soft clipping. Include frequency shaping and finite supply/headroom, 9 V bias. Check values against chosen schematic's own labels, not the standard variant's BOM.
 
+### Ibanez TS808
+- The factory preset covers the two-op-amp clipping and tone core. Both halves share 9 V and ground. The hardware also has input and output buffers and electronic bypass. [Steve Cerutti's TS-808 redraw](https://www.synthxl.com/wp-content/uploads/2021/06/Ibanez_ts-808_ORIGINAL.pdf)
+- Both JRC4558 stages use modeled 2–7 V output bounds. This estimates 2 V of headroom on either side of the 9 V supply by extrapolating the typical 2 kΩ, 25 °C swing curve below its plotted ±6 V supply. [NJM4558 datasheet, p. 4](https://www.mouser.com/datasheet/2/294/NJM4558_E-1917509.pdf)
+
 ### Boss SD-1
 - Recommended manufacturer service notes, first edition Mar 3 1981, second printing Jan 1984, complete circuit: https://www.synfo.nl/servicemanuals/Boss/BOSS_SD-1_SERVICE_NOTES.pdf. Service schematics PDF alternate: https://civade.com/AudioPro/Boss/Boss_SD-1_Super_Overdrive_Schematic.pdf.
 - Implement JFET/BJT input buffer, op-amp drive with asymmetric diode network in feedback, post-drive tone and level, and output buffer in proper sequence. Asymmetric feedback clipping differs from the DOD shunt clipper. Service schematic includes electronic bypass, power switching, indicator and DC supply; decide explicitly whether simulation scope includes switching or effect signal path only. Manufacturer document identifies this historical service edition; do not claim all later production revisions are identical.
