@@ -987,6 +987,68 @@
       }
     },
     {
+      "id": "NE glow",
+      "properties": {
+        "enabledBy": "VIBRATO",
+        "label": "Neon strike and extinction"
+      },
+      "type": "photores",
+      "values": {
+        "darkOhms": 10000000.0,
+        "brightOhms": 100.0,
+        "referenceVolts": 1.0,
+        "gamma": 1.0,
+        "attackSeconds": 1e-05,
+        "releaseSeconds": 1e-05,
+        "strikeVolts": 89.9,
+        "extinguishVolts": 57.98
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 211,
+        "y": 20
+      }
+    },
+    {
+      "id": "R neon leakage",
+      "properties": {
+        "enabledBy": "VIBRATO"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 204,
+        "y": 20
+      }
+    },
+    {
+      "id": "NE strike",
+      "properties": {
+        "enabledBy": "VIBRATO",
+        "label": "Neon strike excess",
+        "model": "Custom"
+      },
+      "type": "diode",
+      "values": {
+        "isat": 1e-14,
+        "n": 1.0,
+        "rs": 0.0,
+        "bv": 32.0,
+        "ibv": 0.0001
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 202,
+        "y": 20
+      }
+    },
+    {
       "id": "LDR",
       "properties": {
         "enabledBy": "VIBRATO"
@@ -1764,6 +1826,126 @@
     {
       "points": [
         {
+          "x": 202,
+          "y": 18
+        },
+        {
+          "x": 204,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 202,
+          "y": 22
+        },
+        {
+          "x": 204,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 204,
+          "y": 18
+        },
+        {
+          "x": 207,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 204,
+          "y": 22
+        },
+        {
+          "x": 204,
+          "y": 23
+        },
+        {
+          "x": 208,
+          "y": 23
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 215,
+          "y": 22
+        },
+        {
+          "x": 215,
+          "y": 23
+        },
+        {
+          "x": 208,
+          "y": 23
+        },
+        {
+          "x": 208,
+          "y": 22
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 208,
+          "y": 18
+        },
+        {
+          "x": 207,
+          "y": 18
+        },
+        {
+          "x": 207,
+          "y": 24
+        },
+        {
+          "x": 205,
+          "y": 24
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 214,
+          "y": 18
+        },
+        {
+          "x": 215,
+          "y": 18
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 214,
+          "y": 22
+        },
+        {
+          "x": 214,
+          "y": 26
+        },
+        {
+          "x": 205,
+          "y": 26
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 164,
           "y": 24
         },
@@ -2162,22 +2344,6 @@
         {
           "x": 215,
           "y": 18
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 215,
-          "y": 22
-        },
-        {
-          "x": 215,
-          "y": 24
-        },
-        {
-          "x": 205,
-          "y": 24
         }
       ]
     },
