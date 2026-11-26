@@ -6,7 +6,7 @@ patch includes the model, all its settings, Input, Level, bypass, cabinet,
 delay and reverb. The initial patch bank has one patch per model.
 
 The left encoder adjusts Drive or Input, the middle encoder adjusts Level,
-and the right encoder adjusts a model control. Turn and press PARA to
+and the right encoder adjusts a second model control or Delay. Turn and press PARA to
 browse and edit the other settings. GLOBAL opens the output controls. DRUM
 is a shortcut to Delay, and EXIT leaves the current edit. SAVE updates the
 active patch in RAM. The GP-50 loses these changes when it powers off.
