@@ -4,7 +4,13 @@
 #include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 
+#ifdef LIVEWDF_BENCH_NAM_A2
+#include "NAM/dsp.h"
+#include "NAM/wavenet/a2_fast.h"
+#endif
+
 #include <algorithm>
+#include <array>
 #include <bit>
 #include <chrono>
 #include <cmath>
@@ -98,9 +104,69 @@ struct Model {
     }
 };
 
-enum class SeedMode { Residual, EarlyVoltage, Current, CarriedCurrent };
+enum class SeedMode { Residual, EarlyVoltage, Current, CarriedCurrent, Plate };
+
+struct PlateSeed {
+    std::array<std::vector<int>, 2> plates;
+    std::vector<float> predictions;
+    size_t sample = 0;
+
+    explicit PlateSeed(const BenchEngine& engine) {
+        std::array<int, 2> nodes{-1, -1};
+        for (const auto& device : engine.rootLayout().devices) {
+            if (device.kind != wdf::RootKind::Pentode)
+                continue;
+            const int port = device.portBase;
+            const int node = engine.rootPorts()[port][0];
+            const size_t side = nodes[0] < 0 || nodes[0] == node ? 0 : 1;
+            if (node < 0 || (nodes[side] >= 0 && nodes[side] != node))
+                throw std::runtime_error("Expected two power-tube plate nodes");
+            nodes[side] = node;
+            plates[side].push_back(port);
+        }
+        if (plates[0].size() != 2 || plates[1].size() != 2)
+            throw std::runtime_error("Expected two pairs of power-tube plate ports");
+        std::cout << "Plate ports";
+        for (const auto& side : plates) {
+            std::cout << " [";
+            for (const int port : side)
+                std::cout << ' ' << port;
+            std::cout << " ]";
+        }
+        std::cout << '\n';
+    }
+
+    double differential(std::span<const double> voltages) const {
+        const auto mean = [&](size_t side) {
+            double sum = 0;
+            for (int port : plates[side])
+                sum += voltages[port];
+            return sum / plates[side].size();
+        };
+        return 0.5 * (mean(0) - mean(1));
+    }
+
+    bool apply(wdf::solver::NewtonContext& ctx) const noexcept {
+        const double correction = static_cast<double>(predictions[sample]) - differential(ctx.vv);
+        for (size_t side = 0; side < plates.size(); ++side) {
+            const double offset = side == 0 ? correction : -correction;
+            for (const int port : plates[side]) {
+                const double move = ctx.vv[port] + offset - ctx.vvPrev[port];
+                if (!std::isfinite(move) || move < -ctx.stepDown[port] || move > ctx.stepUp[port])
+                    return false;
+            }
+        }
+        for (int port : plates[0])
+            ctx.vv[port] += correction;
+        for (int port : plates[1])
+            ctx.vv[port] -= correction;
+        return true;
+    }
+};
 
 SeedMode seedMode(std::string_view model, std::string_view trace) {
+    if (model.starts_with("a2:") || model.starts_with("plate:") || trace.starts_with("plate:"))
+        return SeedMode::Plate;
     if (model == "carry-current")
         return SeedMode::CarriedCurrent;
     if (model.starts_with("voltage:") || trace.starts_with("voltage:"))
@@ -112,6 +178,7 @@ SeedMode seedMode(std::string_view model, std::string_view trace) {
 
 struct Run {
     Model* model = nullptr;
+    PlateSeed* plates = nullptr;
     std::vector<float> input, target;
     std::vector<double> stock, priorDrive;
     SeedMode mode;
@@ -175,6 +242,12 @@ bool earlySeed(wdf::solver::NewtonContext& ctx) noexcept {
         return false;
     r.seen = true;
     ++r.calls;
+    if (r.mode == SeedMode::Plate) {
+        if (r.previousWork < r.gate)
+            return false;
+        ++r.attempts;
+        return r.plates->apply(ctx);
+    }
     const bool carry = r.mode == SeedMode::CarriedCurrent;
     const bool current = r.mode != SeedMode::EarlyVoltage;
     const auto& seed = current ? ctx.ii : ctx.vv;
@@ -278,7 +351,8 @@ int bench(int argc, char** argv) {
         peak = std::max(peak, std::abs(static_cast<double>(v)));
     if (!(peak > 0))
         throw std::runtime_error("Silent DI");
-    const double drive = std::stod(argv[5]) * doc.inputVoltsPerFullScale() / peak;
+    const double voltsPerFullScale = doc.inputVoltsPerFullScale();
+    const double drive = std::stod(argv[5]) * voltsPerFullScale / peak;
     std::vector<std::pair<int, double>> controls;
     for (std::string_view settings = argv[10]; !settings.empty();) {
         const auto end = settings.find(',');
@@ -315,6 +389,48 @@ int bench(int argc, char** argv) {
 
     const std::string_view modelPath = argv[6], tracePath = argv[7];
     const SeedMode mode = seedMode(modelPath, tracePath);
+    const bool plateTrace = tracePath.starts_with("plate:");
+    const bool liveA2 = modelPath.starts_with("a2:");
+#ifdef LIVEWDF_BENCH_NAM_A2
+    std::unique_ptr<nam::DSP> a2;
+    std::array<NAM_SAMPLE, blockSize> a2Input, a2Output;
+    double a2Cpu = 0;
+    if (liveA2) {
+        std::ifstream stream(std::string(modelPath.substr(3)));
+        nlohmann::json model;
+        if (!(stream >> model) || model.at("sample_rate") != sampleRate)
+            throw std::runtime_error("Expected a 48 kHz NAM model");
+        const auto& config = model.at("config");
+        int channels = 0;
+        auto weights = model.at("weights").get<std::vector<float>>();
+        if (!nam::wavenet::a2_fast::is_a2_shape(config, &channels) || channels != 3 || weights.size() != 1871)
+            throw std::runtime_error("Expected the stock A2 Lite architecture");
+        a2 = nam::wavenet::a2_fast::create_a2_fast_config(config, sampleRate)->create(std::move(weights), sampleRate);
+        a2->Reset(sampleRate, blockSize);
+    }
+#else
+    if (liveA2)
+        throw std::runtime_error("Build the benchmark with Release NAM Core for live A2 Lite inference");
+#endif
+    std::optional<PlateSeed> plates;
+    std::vector<float> plateTargets;
+    if (mode == SeedMode::Plate) {
+        plates.emplace(engine);
+        if (plateTrace) {
+            if (modelPath != "-")
+                throw std::runtime_error("Plate targets require the stock solver");
+            plateTargets.resize(audio.size());
+        } else {
+            plates->predictions.resize(audio.size());
+            if (!liveA2) {
+                std::ifstream estimate(std::string(modelPath.substr(6)), std::ios::binary);
+                estimate.read(reinterpret_cast<char*>(plates->predictions.data()),
+                              static_cast<std::streamsize>(audio.size() * sizeof(float)));
+                if (!estimate || estimate.peek() != std::ifstream::traits_type::eof())
+                    throw std::runtime_error("Expected one plate prediction per sample");
+            }
+        }
+    }
     const auto path = [](std::string_view spec) {
         if (spec.starts_with("voltage:") || spec.starts_with("current:"))
             spec.remove_prefix(spec.find(':') + 1);
@@ -327,11 +443,13 @@ int bench(int argc, char** argv) {
             circuitId = (circuitId ^ std::bit_cast<uint64_t>(position)) * 1099511628211ull;
     }
     Run state(static_cast<size_t>(engine.rootCount()), mode);
+    if (plates)
+        state.plates = &*plates;
     std::optional<Model> model;
-    if (modelPath != "-" && mode != SeedMode::CarriedCurrent)
+    if (modelPath != "-" && mode != SeedMode::CarriedCurrent && mode != SeedMode::Plate)
         state.model = &model.emplace(path(modelPath), state.target.size(), circuitId);
     std::ofstream trace;
-    if (tracePath != "-") {
+    if (tracePath != "-" && !plateTrace) {
         trace.open(path(tracePath), std::ios::binary);
         if (!trace || modelPath != "-")
             throw std::runtime_error("Training trace requires stock solver");
@@ -350,7 +468,7 @@ int bench(int argc, char** argv) {
         experiment.propose = nullptr;
         experiment.early = &earlySeed;
     }
-    if (state.collecting || modelPath != "-" || profile)
+    if (!plateTrace && (state.collecting || modelPath != "-" || profile))
         wdf::experimental::seedExperiment = &experiment;
 
     BlockTimes times;
@@ -364,11 +482,26 @@ int bench(int argc, char** argv) {
     for (size_t start = 0; start < audio.size(); start += blockSize) {
         const auto wall = Clock::now();
         const double cpu = threadSeconds();
+#ifdef LIVEWDF_BENCH_NAM_A2
+        if (a2) {
+            for (size_t i = 0; i < blockSize; ++i)
+                a2Input[i] = static_cast<float>(audio[start + i] * drive / voltsPerFullScale);
+            auto* input = a2Input.data();
+            auto* output = a2Output.data();
+            a2->process(&input, &output, blockSize);
+            std::copy(a2Output.begin(), a2Output.end(), plates->predictions.begin() + start);
+            a2Cpu += threadSeconds() - cpu;
+        }
+#endif
         for (size_t i = start; i < start + blockSize; ++i) {
             state.seen = false;
+            if (plates)
+                plates->sample = i;
             sources[inputIndex] = in->dc + audio[i] * drive;
             const auto& nodes = engine.step(sources, BenchEngine::kDefaultMaxIterations, BenchEngine::kFastLiveTolerance);
             rendered[i] = nodes[output];
+            if (plateTrace)
+                plateTargets[i] = static_cast<float>(plates->differential(engine.solvedPorts()));
             iterations += engine.newtonIterations();
             trials += engine.lineSearchTrials();
             evals += engine.deviceEvaluations();
@@ -390,6 +523,20 @@ int bench(int argc, char** argv) {
         if (!file)
             throw std::runtime_error("Output write failed");
     }
+    if (plateTrace) {
+        const std::string prefix(tracePath.substr(6));
+        const auto writeFloats = [](const std::string& name, const std::vector<float>& samples) {
+            std::ofstream file(name, std::ios::binary);
+            file.write(reinterpret_cast<const char*>(samples.data()),
+                       static_cast<std::streamsize>(samples.size() * sizeof(float)));
+            if (!file)
+                throw std::runtime_error("Plate trace write failed");
+        };
+        for (float& v : audio)
+            v = static_cast<float>(v * drive / voltsPerFullScale);
+        writeFloats(prefix + ".x.f32", audio);
+        writeFloats(prefix + ".y.f32", plateTargets);
+    }
     if (trace.is_open() && !trace)
         throw std::runtime_error("Trace write failed");
     std::sort(costs.begin(), costs.end());
@@ -407,6 +554,10 @@ int bench(int argc, char** argv) {
         std::cout << "phase ms solve/device/jacobian/LU/line "
                   << phases.solve * 1000 << '/' << phases.device * 1000 << '/' << phases.jacobian * 1000
                   << '/' << phases.lu * 1000 << '/' << phases.linesearch * 1000 << '\n';
+#ifdef LIVEWDF_BENCH_NAM_A2
+    if (a2)
+        std::cout << "A2 Lite mean CPU ms/block " << a2Cpu * 1000 / times.cpu.size() << '\n';
+#endif
     times.summarize("CPU ", times.cpu);
     times.summarize("wall", times.wall);
     return 0;

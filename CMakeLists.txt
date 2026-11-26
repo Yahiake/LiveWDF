@@ -43,6 +43,16 @@ if(LIVEWDF_BUILD_NEURAL_NEWTON)
     target_link_libraries(livewdf_neural_newton PRIVATE livewdf livewdf_options)
     target_compile_definitions(livewdf PUBLIC LIVEWDF_NEURAL_NEWTON)
     target_include_directories(livewdf PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/experimental")
+    set(LIVEWDF_NAM_CORE_SOURCE "" CACHE PATH "NAM Core source for the A2 Lite benchmark")
+    set(LIVEWDF_NAM_CORE_LIBRARY "" CACHE FILEPATH "Release NAM Core archive with A2 fast inference")
+    if(LIVEWDF_NAM_CORE_SOURCE AND LIVEWDF_NAM_CORE_LIBRARY)
+        target_compile_definitions(livewdf_neural_newton PRIVATE LIVEWDF_BENCH_NAM_A2 NAM_ENABLE_A2_FAST)
+        target_include_directories(livewdf_neural_newton SYSTEM PRIVATE
+            "${LIVEWDF_NAM_CORE_SOURCE}"
+            "${LIVEWDF_NAM_CORE_SOURCE}/Dependencies/eigen"
+            "${LIVEWDF_NAM_CORE_SOURCE}/Dependencies/nlohmann")
+        target_link_libraries(livewdf_neural_newton PRIVATE "${LIVEWDF_NAM_CORE_LIBRARY}")
+    endif()
 endif()
 
 # Only the dispatched kernels may contain AVX2/FMA instructions. Keep this
