@@ -34,6 +34,8 @@ The factory presets model one dry signal path per channel selection. Tube circui
 
 ## Solid-state and hybrid amps
 
+The reduced JC-120 and Valvestate stages model gain, feedback, and rail clipping with linear output resistance. Crossover distortion and current limiting are outside their model scope.
+
 - **ENGL E530** routes the normalled loop through the level buffer and the built-in TBA820M practice amp into 4 Ω. The IC model uses centered 9 V rails, measured-spec swing and gain, and the external gain and speaker coupling capacitors. [ENGL service drawing](https://schematicheaven.net/bargainbin/engl_e530.pdf) · [ENGL manual](https://www.engl-amps.com/wp-content/uploads/2021/12/om_e530.pdf) · [ST TBA820M datasheet](https://www.st.com/resource/en/datasheet/tba820m.pdf)
 - **Roland JC-120** follows the 1979 AP113 power circuit, including the 47 kΩ voltage feedback, 1 kΩ current-feedback leg, output choke and 8 Ω speaker load. A reduced class-AB stage models the active circuitry and rails. The choke inductance is estimated. [Roland fourth-edition service notes](https://www.synfo.nl/servicemanuals/Roland/ROLAND_JC-120_JC-160_SERVICE_NOTES_4th.pdf)
 - **Marshall Valvestate 8100** uses the PC0689P input coupling and the speaker voltage/current-sense network. A rail-limited class-AB equivalent represents the IC8B drive and complementary Darlington output on estimated ±36 V rails with a 4 Ω load. [Marshall PC0689P power board](https://www.drtube.com/schematics/marshall/8080-pwr.gif)
