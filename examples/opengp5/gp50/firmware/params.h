@@ -12,4 +12,5 @@ enum { MODEL_DOD250, MODEL_MICROAMP };
     C(MODEL, "Model", "Circuit", 2, "DOD 250|Micro Amp", MODEL_DOD250, GP5_P_DSP) \
     C(CAB, "Cab", "Output", 2, "Off|On", 0, GP5_P_DSP) \
     P(DELAY, "Delay", "Output", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP) \
-    P(REVERB, "Reverb", "Output", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP)
+    P(REVERB, "Reverb", "Output", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP) \
+    P(INPUT, "Input", "Circuit", 0, 200, 100, GP5_U_PERCENT, GP5_P_DSP)

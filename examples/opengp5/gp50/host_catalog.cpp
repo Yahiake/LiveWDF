@@ -140,16 +140,17 @@ extern "C" void livewdf_catalog_init(unsigned rate) {
     previousOutput = 0.0;
 }
 
-extern "C" void livewdf_catalog_block(unsigned model, unsigned level, unsigned frames,
+extern "C" void livewdf_catalog_block(unsigned model, unsigned inputGain, unsigned level, unsigned frames,
                                       const int32_t* controls, const int32_t* input, int32_t* output) {
     constexpr double fullScale = 2147483648.0;
     const bool changed = model != active;
     const double previous = previousOutput;
+    const double inputScale = inputGain * 0.01 / fullScale;
     active = model;
     auto& circuit = models[model];
     circuit.update(controls, frames);
     for (unsigned i = 0; i < frames; ++i) {
-        double sample = circuit.step(input[i] / fullScale) * (level * 0.01);
+        double sample = circuit.step(input[i] * inputScale) * (level * 0.01);
         if (changed) sample = std::lerp(previous, sample, static_cast<double>(i + 1) / frames);
         previousOutput = std::isfinite(sample) ? std::clamp(sample, -1.0, 1.0 - 1.0 / fullScale) : 0.0;
         output[i] = static_cast<int32_t>(previousOutput * fullScale);

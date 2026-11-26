@@ -22,6 +22,13 @@ Model readModel(const char* label, const std::string& path) {
     std::string error;
     if (!file || !wdf::LiveWDFDocument::fromJson(model.schematic, doc, error))
         throw std::runtime_error(path + ": " + error);
+    if (doc.preampTap()) {
+        wdf::LiveWDFDocument preamp;
+        if (!doc.makePreampDocument(preamp, error))
+            throw std::runtime_error(path + ": " + error);
+        doc = std::move(preamp);
+        model.schematic = doc.toJson();
+    }
     for (const auto& group : wdf::potControlGroups(doc)) {
         const auto part = std::find_if(doc.components.begin(), doc.components.end(),
             [&](const auto& member) { return member.id == group.members.front().id; });
@@ -63,11 +70,12 @@ void writeCatalog(const std::filesystem::path& folder, const std::vector<Model>&
            << "    P(CONTROL, \"Control\", \"Circuit\", 0, " << controlCount - 1
            << ", 0, GP5_U_CUSTOM, 0) \\\n"
               "    P(VALUE, \"Value\", \"Circuit\", 0, 1000, 500, GP5_U_CUSTOM, 0) \\\n"
-              "    P(LEVEL, \"Level\", \"Circuit\", 0, 100, 100, GP5_U_PERCENT, GP5_P_DSP) \\\n"
+              "    P(LEVEL, \"Level\", \"Circuit\", 0, 200, 100, GP5_U_PERCENT, GP5_P_DSP) \\\n"
               "    C(ON, \"Effect\", \"Circuit\", 2, \"Bypass|On\", 1, GP5_P_DSP) \\\n"
               "    C(CAB, \"Cab\", \"Output\", 2, \"Off|On\", 0, GP5_P_DSP) \\\n"
               "    P(DELAY, \"Delay\", \"Output\", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP) \\\n"
-              "    P(REVERB, \"Reverb\", \"Output\", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP)";
+              "    P(REVERB, \"Reverb\", \"Output\", 0, 100, 0, GP5_U_PERCENT, GP5_P_DSP) \\\n"
+              "    P(INPUT, \"Input\", \"Circuit\", 0, 200, 100, GP5_U_PERCENT, GP5_P_DSP)";
     for (size_t i = 0; i < controlCount; ++i)
         params << " \\\n    P(POT_" << i << ", \"Pot " << i + 1
                << "\", \"Circuit\", -1, 1000, -1, GP5_U_NONE, GP5_P_DSP | GP5_P_HIDDEN)";
