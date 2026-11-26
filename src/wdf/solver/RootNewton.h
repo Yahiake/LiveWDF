@@ -15,6 +15,10 @@
 #include "wdf/solver/TriodeDomainTransfer.h"
 #include "wdf/solver/RootClosedForms.h"
 
+#ifdef LIVEWDF_NEURAL_NEWTON
+#include "neural_newton/Hook.h"
+#endif
+
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
 #elif defined(__GNUC__) || defined(__clang__)
@@ -208,10 +212,48 @@ public:
         return false;
     }
 
+#ifdef LIVEWDF_NEURAL_NEWTON
+    static bool tryExperimentalSeed(NewtonContext& ctx, double& base, double tol) noexcept {
+        if (base < tol)
+            return false;
+        std::copy(ctx.vv.begin(), ctx.vv.end(), ctx.vt.begin());
+        if (!experimental::seedExperiment->propose({ctx.vt, ctx.vvPrev, ctx.vvPrev2, ctx.F}))
+            return false;
+        for (int i = 0; i < ctx.K; ++i) {
+            const double correction = ctx.vt[i] - ctx.vv[i];
+            if (!std::isfinite(correction))
+                return false;
+            ctx.vt[i] = ctx.vv[i] + std::clamp(correction, -ctx.stepDown[i], ctx.stepUp[i]);
+        }
+        limitDiodePorts(ctx, ctx.vt.data(), ctx.vvPrev.data());
+        limitBjtJunctions(ctx, ctx.vt.data(), ctx.vvPrev.data());
+        currentsInto(ctx, ctx.vt, ctx.iv, ctx.Jt);
+        residualInto(ctx, ctx.vt, ctx.vOc, ctx.Z, ctx.iv, ctx.ft);
+        double norm = 0.0;
+        for (double f : ctx.ft) {
+            if (!std::isfinite(f))
+                return false;
+            norm = std::max(norm, std::abs(f));
+        }
+        if (norm > base * 0.5)
+            return false;
+        ctx.vv.swap(ctx.vt);
+        ctx.ii.swap(ctx.iv);
+        ctx.J.swap(ctx.Jt);
+        ctx.F.swap(ctx.ft);
+        base = norm;
+        return true;
+    }
+#endif
+
     /// One pass of `solveRootsNewton`, with or without the extrapolated seed.
     static inline bool solveRootsNewtonPass(NewtonContext& ctx, int maxIter, double tol,
                                            bool usePrediction, bool useCurrentSeed = false,
-                                           bool allowExtraBacktracking = true) noexcept {
+                                           bool allowExtraBacktracking = true
+#ifdef LIVEWDF_NEURAL_NEWTON
+                                           , bool* learned = nullptr
+#endif
+                                           ) noexcept {
         bool usedExtraBacktracking = false;
         const long long jointIt0 = ctx.newtonIters;
         const long long jointTr0 = ctx.lineTrials;
@@ -266,6 +308,14 @@ public:
                     tock(ctx.prof->device);
                 curValid = true;
                 base = maxAbs(ctx.F, ctx.K);
+#ifdef LIVEWDF_NEURAL_NEWTON
+                if (it == 0 && learned && experimental::seedExperiment && !ctx.staticMode &&
+                    tryExperimentalSeed(ctx, base, tol)) {
+                    *learned = true;
+                    ++experimental::seedExperiment->selected;
+                    maxIter = std::min(maxIter, 3);
+                }
+#endif
             }
             if (base < ctx.bestFn) {
                 ctx.bestFn = base;
@@ -460,7 +510,16 @@ public:
                                         const BlockView& view, std::vector<double>& vvPrev,
                                         std::vector<double>& vvPrev2) noexcept {
         pinDomains(ctx, view);
+#ifdef LIVEWDF_NEURAL_NEWTON
+        bool learned = false;
+        bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true, false, true, &learned);
+        if (learned && !ctx.lastConverged) {
+            ++experimental::seedExperiment->retries;
+            usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
+        }
+#else
         const bool usedExtra = solveRootsNewtonPass(ctx, maxIter, tol, true);
+#endif
         // A failed deeply damped search can stall near a switching boundary.
         // With the usual four trials, the retry takes a different path even from the same voltage.
         if (!ctx.lastConverged && (usedExtra || !ctx.skipIdenticalRetry || predictionChangesSeed(ctx)))

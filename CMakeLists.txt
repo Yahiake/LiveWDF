@@ -37,6 +37,14 @@ target_link_libraries(livewdf PRIVATE livewdf_options)
 target_compile_definitions(livewdf PRIVATE LIVEWDF_VERSION_STRING="${PROJECT_VERSION}")
 set_target_properties(livewdf PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
+option(LIVEWDF_BUILD_NEURAL_NEWTON "Build the neural Newton benchmark" OFF)
+if(LIVEWDF_BUILD_NEURAL_NEWTON)
+    add_executable(livewdf_neural_newton experimental/neural_newton/Bench.cpp)
+    target_link_libraries(livewdf_neural_newton PRIVATE livewdf livewdf_options)
+    target_compile_definitions(livewdf PUBLIC LIVEWDF_NEURAL_NEWTON)
+    target_include_directories(livewdf PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/experimental")
+endif()
+
 # Only the dispatched kernels may contain AVX2/FMA instructions. Keep this
 # translation unit out of LTO so its instructions cannot enter baseline code.
 # Visual Studio's -A sets the compiler target independently of the host.
