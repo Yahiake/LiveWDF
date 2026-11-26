@@ -9,6 +9,11 @@ on:
     branches: [main]
     paths-ignore: [README.md, 'media/**']
   workflow_dispatch:
+    inputs:
+      full_audit:
+        description: Audit every factory amp and pedal
+        type: boolean
+        default: false
 
 concurrency:
   group: tests-${{ github.event.pull_request.number || github.sha }}
@@ -21,7 +26,7 @@ jobs:
   linux:
     if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: ${{ inputs.full_audit && 120 || 60 }}
     env:
       CCACHE_MAXSIZE: 500M
     steps:
@@ -66,9 +71,23 @@ jobs:
 
       - name: End-to-end tests
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        env:
+          FULL_AUDIT: ${{ inputs.full_audit }}
         run: |
           xvfb-run -a "build/editor/LiveWDF_Editor_artefacts/Release/LiveWDF Editor" --selftest
-          for circuit in schematics/*/*.livewdf; do
+          if [[ "$FULL_AUDIT" == true ]]; then
+            circuits=(schematics/*/*.livewdf)
+          else
+            # CTest already renders the full factory catalog.
+            circuits=(
+              "schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf"
+              "schematics/amps/Roland JC-120.livewdf"
+              "schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf"
+              "schematics/pedals_fx/Boss MT-2 Metal Zone.livewdf"
+              "schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf"
+            )
+          fi
+          for circuit in "${circuits[@]}"; do
             printf 'Auditing %s\n' "$circuit"
             stdbuf -oL build/plugin/LiveWDF_PluginBench_artefacts/Release/LiveWDF_PluginBench "$circuit" --audit
           done
