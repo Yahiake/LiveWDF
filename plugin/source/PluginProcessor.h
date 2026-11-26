@@ -184,6 +184,7 @@ private:
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
     std::optional<bool> powerAmpEnabled_;
+    std::optional<bool> previewPentodePairs_;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     bool oversamplersPrepared_ = false;
@@ -393,7 +394,8 @@ private:
                             int& inSrcIdx, int& outIdx, double& outputBias,
                             std::vector<double>& baseSources,
                             std::vector<AcSource>& acSourcesOut,
-                            wdf::Circuit& settledControlCircuit);
+                            wdf::Circuit& settledControlCircuit,
+                            std::optional<bool>& previewPentodePairs);
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LiveWDFPluginProcessor)
 };
