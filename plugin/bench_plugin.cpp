@@ -316,7 +316,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 // Calibration uses mono native float32 streams at 48 kHz. Keep the host's
 // bypass as the digital reference, including the final short callback.
 int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
-                      bool fastLive, bool preampOnly) {
+                      bool fastLive, bool preampOnly, const juce::String& cabinet) {
     constexpr int blockSize = 128;
     std::ifstream source(inPath, std::ios::binary);
     std::ofstream dest(outPath, std::ios::binary);
@@ -345,11 +345,21 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         std::fprintf(stderr, "No preamp output in %s\n", file.getFileName().toRawUTF8());
         return 1;
     }
+    if (cabinet.isNotEmpty()) {
+        if (!processor.selectFactoryOutputImpulse(false, cabinet)) {
+            std::fprintf(stderr, "Unknown factory cabinet %s\n", cabinet.toRawUTF8());
+            return 1;
+        }
+        set("cab_enabled", 1);
+    }
     set("input_trim", 0);
     set("output_master", 0);
     set("mix", 100);
     set("match_output", 1);
     set("chain_input", 0);
+    // Keep bypass calls from draining the wet processor's effect history.
+    livewdf::LiveWDFPluginProcessor bypassProcessor;
+    bypassProcessor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
     juce::MidiBuffer midi;
     juce::AudioBuffer<float> wet(2, blockSize), bypass(2, blockSize);
     float in[blockSize];
@@ -361,7 +371,7 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
         wet.setSize(2, frames, false, false, true);
         for (int c = 0; c < 2; ++c) wet.copyFrom(c, 0, in, frames);
         bypass.makeCopyOf(wet, true);
-        processor.processBlockBypassed(bypass, midi);
+        bypassProcessor.processBlockBypassed(bypass, midi);
         if (!std::equal(in, in + frames, bypass.getReadPointer(0))) {
             std::fprintf(stderr, "1x host bypass differs from source\n");
             return 1;
@@ -2469,7 +2479,7 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
     }
     if (!source.loadCircuitFromFile(amp) || !source.reloadCircuit()
         || source.suggestedCabinetId() != "orange-ppc112-v30-sm57"
-        || !source.selectFactoryOutputImpulse(false, source.suggestedCabinetId())
+        || !source.selectSuggestedCabinet()
         || !source.selectFactoryOutputImpulse(true, "spring-combo"))
         return false;
 
@@ -2477,9 +2487,28 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
     source.getStateInformation(saved);
     livewdf::LiveWDFPluginProcessor restored;
     restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
-    return restored.outputImpulseId(false) == "orange-ppc112-v30-sm57"
-        && restored.outputImpulseId(true) == "spring-combo"
-        && restored.suggestedCabinetId() == source.suggestedCabinetId();
+    if (restored.outputImpulseId(false) != "orange-ppc112-v30-sm57"
+        || restored.outputImpulseId(true) != "spring-combo"
+        || restored.suggestedCabinetId() != source.suggestedCabinetId()
+        || !restored.cabinetFollowsSuggestion())
+        return false;
+
+    const auto champ = amp.getSiblingFile("Fender Tweed Champ 5F1 - Input 1.livewdf");
+    if (!restored.loadCircuitFromFile(champ) || restored.outputImpulseId(false) != "jensen-sm57")
+        return false;
+
+    auto unnamed = restored.getDocumentSnapshot();
+    unnamed.name = "Other Circuit";
+    if (!restored.loadCircuitDocument(unnamed) || restored.outputImpulseId(false) != "jensen-sm57"
+        || !restored.cabinetFollowsSuggestion()
+        || !restored.loadCircuitFromFile(amp) || restored.outputImpulseId(false) != "orange-ppc112-v30-sm57")
+        return false;
+
+    return restored.outputImpulseId(true) == "spring-combo"
+        && restored.selectFactoryOutputImpulse(false, "jensen-e606")
+        && !restored.cabinetFollowsSuggestion()
+        && restored.loadCircuitFromFile(champ)
+        && restored.outputImpulseId(false) == "jensen-e606";
 }
 
 int main(int argc, char** argv) {
@@ -2495,7 +2524,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2514,13 +2543,15 @@ int main(int argc, char** argv) {
     if (argc >= 5 && std::string(argv[2]) == "--calibration-render") {
         bool fastLive = false;
         bool preampOnly = false;
+        juce::String cabinet;
         for (int i = 5; i < argc; ++i) {
             const std::string flag(argv[i]);
             if (flag == "--fast-live") fastLive = true;
             else if (flag == "--preamp-only") preampOnly = true;
+            else if (flag == "--cabinet" && i + 1 < argc) cabinet = argv[++i];
             else return 1;
         }
-        return renderCalibration(file, argv[3], argv[4], fastLive, preampOnly);
+        return renderCalibration(file, argv[3], argv[4], fastLive, preampOnly, cabinet);
     }
 
     bool validate = false;

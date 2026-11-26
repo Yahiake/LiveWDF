@@ -15,6 +15,7 @@ struct FactoryImpulse {
     const char* id;
     const char* name;
     const char* file;
+    float makeupDb = 0.0f;
 };
 
 class OutputEffects {
@@ -47,6 +48,7 @@ private:
         juce::AudioBuffer<float> samples;
         double sampleRate = 0.0;
         juce::String factoryId{};
+        float makeupDb = 0.0f;
     };
     struct Prepared;
 

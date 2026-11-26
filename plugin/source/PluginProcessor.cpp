@@ -261,6 +261,45 @@ double LiveWDFPluginProcessor::getTailLengthSeconds() const {
                                       reverbMix_->load(std::memory_order_relaxed) > 0.0f);
 }
 
+bool LiveWDFPluginProcessor::loadOutputImpulse(bool reverb, const juce::File& file) {
+    const std::lock_guard lock(loadMutex_);
+    if (!outputEffects_.loadImpulse(reverb, file))
+        return false;
+    if (!reverb)
+        cabinetFollowsSuggestion_ = false;
+    return true;
+}
+
+bool LiveWDFPluginProcessor::selectFactoryOutputImpulse(bool reverb, juce::StringRef id) {
+    const std::lock_guard lock(loadMutex_);
+    if (!outputEffects_.selectFactoryImpulse(reverb, id))
+        return false;
+    if (!reverb)
+        cabinetFollowsSuggestion_ = false;
+    return true;
+}
+
+void LiveWDFPluginProcessor::resetOutputImpulse(bool reverb) {
+    const std::lock_guard lock(loadMutex_);
+    outputEffects_.resetImpulse(reverb);
+    if (!reverb)
+        cabinetFollowsSuggestion_ = false;
+}
+
+bool LiveWDFPluginProcessor::selectSuggestedCabinet() {
+    const std::lock_guard lock(loadMutex_);
+    const auto id = OutputEffects::suggestedCabinet(currentDoc_.name);
+    if (id.isEmpty() || (id != outputEffects_.impulseId(false) && !outputEffects_.selectFactoryImpulse(false, id)))
+        return false;
+    cabinetFollowsSuggestion_ = true;
+    return true;
+}
+
+bool LiveWDFPluginProcessor::cabinetFollowsSuggestion() const {
+    const std::lock_guard lock(loadMutex_);
+    return cabinetFollowsSuggestion_;
+}
+
 juce::String LiveWDFPluginProcessor::suggestedCabinetId() const {
     const std::lock_guard lock(loadMutex_);
     return OutputEffects::suggestedCabinet(currentDoc_.name);
@@ -720,10 +759,13 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
 }
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc) {
-    const bool loaded = loadCircuitDocument(doc, true);
-    if (loaded)
-        updateReportedLatency();
-    return loaded;
+    const std::lock_guard lock(loadMutex_);
+    if (!loadCircuitDocument(doc, true))
+        return false;
+    if (cabinetFollowsSuggestion_)
+        selectSuggestedCabinet();
+    updateReportedLatency();
+    return true;
 }
 
 bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc,
@@ -1219,6 +1261,8 @@ void LiveWDFPluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     auto state = apvts_.copyState();
     outputEffects_.save(state);
+    if (cabinetFollowsSuggestion_)
+        state.setProperty("cabinet_follow_suggested", true, nullptr);
     std::unique_ptr<juce::XmlElement> xml(state.createXml());
 
     // Save active LiveWDF JSON document
@@ -1247,6 +1291,8 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("echo_mix", 0.0f);
         restoreMissing("reverb_mix", 0.0f);
         for (const auto id : portParameterIds) restoreMissing(id, 0.f);
+        cabinetFollowsSuggestion_ = static_cast<bool>(state.getProperty("cabinet_follow_suggested", false));
+        state.removeProperty("cabinet_follow_suggested", nullptr);
         outputEffects_.restore(state);
         apvts_.replaceState(state);
 

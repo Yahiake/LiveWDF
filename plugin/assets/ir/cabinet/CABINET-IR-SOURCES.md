@@ -4,6 +4,8 @@ These are measurements of physical speakers, cabinets and microphones. Each WAV 
 
 The source samples were converted to mono 48 kHz with a polyphase resampler where needed. We trimmed before the first sample within 50 dB of the impulse peak, leaving up to eight samples before that point. We kept up to 4,096 samples and applied a cosine fade over the final 256 samples or 10% of the response, whichever was shorter. Gain targets a −6 dB pink-weighted mean-square response over 80 Hz to 6 kHz, with a 0 dB ceiling on the highest bin of a 16,384-point FFT. Files are mono 24-bit PCM WAVs and end in silence. There is no equalization or minimum-phase conversion.
 
+LiveWDF applies fixed makeup gain to each factory IR. The fit compares active-frame K-weighted RMS before and after convolution on factory clean, crunch and high-gain amp DI renders. The Ampeg cabinet uses the B-15N render with a 12 dB gain cap to leave headroom on other amps. Imported WAVs play at their authored gain.
+
 ## Jester Dyne measurements
 
 These six recordings by [jesterdyne on Freesound](https://freesound.org/people/jesterdyne/) are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). We obtained the audio from the lossless FLAC copies listed in the [Axion IR manifest](https://axion.cab/irs/MANIFEST.json).
