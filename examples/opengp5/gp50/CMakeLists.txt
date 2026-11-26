@@ -22,6 +22,11 @@ add_custom_command(
 )
 add_custom_target(livewdf_opengp5_gp50 DEPENDS "${header}" "${microamp_header}" ${firmware_copies})
 
+set(LIVEWDF_OPENGP5_EMULATOR "" CACHE PATH "OpenGP5-Emulator checkout for the desktop GP-50 catalog")
+if(LIVEWDF_OPENGP5_EMULATOR)
+    include(catalog.cmake)
+endif()
+
 if(LIVEWDF_BUILD_TESTS)
     add_executable(livewdf_dod250_parity parity.cpp)
     target_link_libraries(livewdf_dod250_parity PRIVATE livewdf livewdf_options)
