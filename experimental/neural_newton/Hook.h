@@ -26,6 +26,8 @@ inline thread_local SeedExperiment* seedExperiment = nullptr;
 struct LuFactors {
     const double* matrix = nullptr;
     const int* pivots = nullptr;
+    const double* inverseRowScale = nullptr;
+    double residualRatio = .4;
 };
 
 struct LuExperiment {

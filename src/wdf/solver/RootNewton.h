@@ -346,15 +346,20 @@ public:
             bool solved = false;
 #ifdef LIVEWDF_NEURAL_NEWTON
             bool estimated = false;
+            experimental::LuFactors proposal;
             if (it == 0 && !triedLuEstimate && usePrediction && !useCurrentSeed && !ctx.staticMode &&
                 !ctx.Zred.empty() && ctx.opAmps.empty() && experimental::luExperiment) {
                 triedLuEstimate = true;
-                const auto proposal = experimental::luExperiment->choose(ctx);
+                proposal = experimental::luExperiment->choose(ctx);
                 if (proposal.matrix) {
                     ++experimental::luExperiment->attempted;
                     std::fill_n(ctx.rN.data(), ctx.nRed, 0.0);
                     RootJacobian::reducedRhs(ctx.J.data(), ctx.F.data(), ctx.K,
                         ctx.rootDevices.data(), ctx.rootDevices.size(), ctx.rN.data());
+                    if (proposal.inverseRowScale) {
+                        for (int row = 0; row < ctx.nRed; ++row)
+                            ctx.rN[row] *= proposal.inverseRowScale[row];
+                    }
                     detail::solveLUData(proposal.matrix, proposal.pivots, ctx.rN.data(), ctx.nRed);
                     RootJacobian::backsubFast(ctx.rN.data(), ctx.Zred.data(), ctx.F.data(),
                         ctx.nRed, ctx.K, ctx.dv.data());
@@ -455,7 +460,7 @@ public:
 
 #ifdef LIVEWDF_NEURAL_NEWTON
             if (estimated) {
-                if (!(ftNorm < base * 0.4) ||
+                if (!(ftNorm < base * proposal.residualRatio) ||
                     !std::all_of(ctx.ft.begin(), ctx.ft.begin() + ctx.K,
                                  [](double value) { return std::isfinite(value); })) {
                     // Retry the same Newton iteration with freshly computed factors.

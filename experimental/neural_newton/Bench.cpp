@@ -184,6 +184,117 @@ struct LuBank {
     }
 };
 
+struct LuDirect {
+    size_t ports, size = 0;
+    std::vector<double> transfer, matrix, mean, basis, inverseRowScale;
+    std::vector<int> pivots;
+    std::vector<size_t> variableEntries;
+    std::vector<float> input, center, invScale;
+    std::vector<Layer> layers;
+    bool checkedTransfer = false;
+
+    LuDirect(std::string_view path, size_t ports, uint64_t expectedId) : ports(ports) {
+        std::ifstream file{std::string(path)};
+        uint64_t id = 0;
+        size_t inputs = 0, hidden = 0, rank = 0;
+        std::string scaling;
+        if (!(file >> id >> inputs >> size >> hidden >> rank >> scaling) || id != expectedId ||
+            inputs != ports || size == 0 || size > 64 || rank == 0 || rank > 32 ||
+            hidden == 0 || hidden > 64 || scaling != "diagonal")
+            throw std::runtime_error("Weights do not match circuit, fixed controls or direct LU shape");
+        const auto read = [&file](auto& values) {
+            for (auto& value : values)
+                if (!(file >> value) || !std::isfinite(value))
+                    throw std::runtime_error("Invalid direct LU value");
+        };
+        transfer.resize(ports * size);
+        pivots.resize(size);
+        inverseRowScale.resize(size);
+        input.resize(ports + size);
+        center.resize(input.size());
+        invScale.resize(input.size());
+        mean.resize(size * size);
+        basis.resize(size * size * rank);
+        read(transfer);
+        read(pivots);
+        read(center);
+        read(invScale);
+        read(mean);
+        read(basis);
+        for (size_t row = 0; row < size; ++row) {
+            if (pivots[row] < static_cast<int>(row) || pivots[row] >= static_cast<int>(size))
+                throw std::runtime_error("Invalid direct LU pivot order");
+        }
+        for (size_t i = 0; i < mean.size(); ++i) {
+            if (std::any_of(basis.begin() + i * rank, basis.begin() + (i + 1) * rank,
+                           [](double weight) { return weight != 0.; }))
+                variableEntries.push_back(i);
+        }
+        matrix = mean;
+        for (const auto& [in, out] : {std::pair{input.size(), hidden}, std::pair{hidden, rank}}) {
+            Layer layer{in, std::vector<float>(in * out), std::vector<float>(out), std::vector<float>(out)};
+            read(layer.weights);
+            read(layer.bias);
+            layers.push_back(std::move(layer));
+        }
+        std::cout << "Direct LU variable factor entries " << variableEntries.size() << '/' << mean.size()
+                  << " rank " << rank << '\n';
+    }
+
+    wdf::experimental::LuFactors choose(const wdf::solver::NewtonContext& ctx) {
+        if (ctx.nRed != static_cast<int>(size) || ctx.K != static_cast<int>(ports))
+            return {};
+        if (!checkedTransfer) {
+            if (ctx.Zred != transfer)
+                return {};
+            for (const auto& device : ctx.rootDevices) {
+                switch (device.kind) {
+                case wdf::DeviceKind::Triode:
+                case wdf::DeviceKind::Pentode:
+                case wdf::DeviceKind::Diode:
+                case wdf::DeviceKind::ControlledRes:
+                    break;
+                default:
+                    return {};
+                }
+            }
+            checkedTransfer = true;
+        }
+        for (size_t i = 0; i < ports; ++i)
+            input[i] = static_cast<float>(ctx.vv[i]);
+        for (const auto& device : ctx.rootDevices) {
+            for (int local = 0; local < device.numActiveRows; ++local) {
+                const int row = device.activeRowBase + local;
+                const double* j = ctx.J.data() + ctx.redCol[row] * ctx.K;
+                double diagonal = 0.;
+                for (int q = device.portBase; q < device.portBase + device.numPorts; ++q)
+                    diagonal += j[q] * transfer[q * size + row];
+                inverseRowScale[row] = 1. / std::max(1., std::abs(1. + diagonal));
+                input[ports + row] = static_cast<float>(inverseRowScale[row]);
+            }
+        }
+        for (size_t i = 0; i < input.size(); ++i) {
+            input[i] = (input[i] - center[i]) * invScale[i];
+            if (!(std::abs(input[i]) <= 24.f))
+                return {};
+        }
+        layers[0].run(input, true);
+        layers[1].run(layers[0].output, false);
+        const auto& scores = layers[1].output;
+        const size_t rank = scores.size();
+        for (const size_t i : variableEntries) {
+            double value = mean[i];
+            for (size_t j = 0; j < rank; ++j)
+                value += basis[i * rank + j] * scores[j];
+            matrix[i] = value;
+        }
+        for (size_t row = 0; row < size; ++row)
+            if (!(std::abs(matrix[row * size + row]) > 1.e-7))
+                return {};
+        return {matrix.data(), pivots.data(), inverseRowScale.data(), 1.};
+    }
+};
+
 struct LuTrace {
     std::ofstream stream;
     uint64_t circuitId;
@@ -217,6 +328,7 @@ struct LuTrace {
 };
 
 LuBank* luBank = nullptr;
+LuDirect* luDirect = nullptr;
 LuTrace* luTrace = nullptr;
 
 wdf::experimental::LuFactors luHook(const wdf::solver::NewtonContext& ctx) noexcept {
@@ -224,7 +336,7 @@ wdf::experimental::LuFactors luHook(const wdf::solver::NewtonContext& ctx) noexc
         luTrace->observe(ctx);
         return {};
     }
-    return luBank->choose(ctx);
+    return luDirect ? luDirect->choose(ctx) : luBank->choose(ctx);
 }
 
 struct Run {
@@ -387,6 +499,7 @@ int bench(int argc, char** argv) {
     for (const auto& [_, position] : controls)
         luId = (luId ^ std::bit_cast<uint64_t>(position)) * 1099511628211ull;
     std::optional<LuBank> bank;
+    std::optional<LuDirect> direct;
     const std::string_view modelPath = argv[6];
     const std::string_view tracePath = argv[7];
     const auto luSeparator = modelPath.find(':');
@@ -395,14 +508,16 @@ int bench(int argc, char** argv) {
         const auto selector = modelPath.starts_with("lu:") ? LuSelector::Neural :
             modelPath.starts_with("lu-nearest:") ? LuSelector::Nearest : LuSelector::Constant;
         luBank = &bank.emplace(modelPath.substr(luSeparator + 1), selector, state.target.size(), luId);
+    } else if (modelPath.starts_with("lu-direct:")) {
+        luDirect = &direct.emplace(modelPath.substr(luSeparator + 1), state.target.size(), luId);
     }
 
     std::optional<Model> model;
-    if (modelPath != "-" && !bank)
+    if (modelPath != "-" && !bank && !direct)
         state.model = &model.emplace(argv[6], state.target.size(), circuitId);
     std::optional<LuTrace> bankTrace;
     if (tracePath.starts_with("lu:")) {
-        if (bank || model)
+        if (bank || direct || model)
             throw std::runtime_error("LU trace requires stock solver");
         bankTrace.emplace();
         luTrace = &*bankTrace;
@@ -412,7 +527,7 @@ int bench(int argc, char** argv) {
             throw std::runtime_error("Opening LU trace failed");
     }
     wdf::experimental::LuExperiment luExperiment{&luHook};
-    if (bank || bankTrace)
+    if (bank || direct || bankTrace)
         wdf::experimental::luExperiment = &luExperiment;
     std::ofstream trace;
     if (tracePath != "-" && !bankTrace) {
@@ -466,8 +581,9 @@ int bench(int argc, char** argv) {
     wdf::experimental::luExperiment = nullptr;
     if (bankTrace && (!bankTrace->stream || bankTrace->rows == 0))
         throw std::runtime_error("No eligible systems captured in the LU trace");
-    if (bank || bankTrace)
-        std::cout << "LU bank attempted " << luExperiment.attempted << " accepted "
+    if (bank || direct || bankTrace)
+        std::cout << (direct ? "Direct LU attempted " : "LU bank attempted ")
+                  << luExperiment.attempted << " accepted "
                   << luExperiment.accepted << " trace rows " << (bankTrace ? bankTrace->rows : 0) << '\n';
     if (std::string_view(argv[8]) != "-") {
         std::ofstream file(argv[8], std::ios::binary);
