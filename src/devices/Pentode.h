@@ -59,6 +59,8 @@ struct ReefmanPentode {
     // Count / matched-pair scaling
     double count = 1.0;
 
+    bool operator==(const ReefmanPentode&) const = default;
+
     static ReefmanPentode el34(double count = 1.0) noexcept {
         ReefmanPentode r;
         r.mu = 12.50;
@@ -424,6 +426,8 @@ struct KorenPentode {
     double grid_is = 1e-9;
     double grid_vt = 0.025;
 
+    bool operator==(const KorenPentode&) const = default;
+
     static KorenPentode el34(double count = 1.0) noexcept {
         KorenPentode k;
         k.mu = 11.0;
@@ -616,6 +620,8 @@ struct Pentode {
     double v_max = 500.0;
     double grid_is = 1e-9;
     double grid_vt = 0.025;
+
+    bool operator==(const Pentode&) const = default;
 
     static Pentode makeReefman(const ReefmanPentode& r) {
         Pentode p{};
