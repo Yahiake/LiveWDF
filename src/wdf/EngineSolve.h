@@ -200,7 +200,7 @@ protected:
             staticMode_, K_, nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
             jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
-            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0
+            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_
         };
     }
 
