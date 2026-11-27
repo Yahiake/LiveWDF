@@ -35,25 +35,56 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
     if (mains.empty())
         return false;
 
-    // The winding side: everything the mains sources reach through resistors.
-    std::set<std::string> winding;
+    // The winding side: everything the mains sources reach through resistors, and through diodes into
+    // nodes that hold no DC (series rectifier diodes, a limiter between rectifier and reservoir).
+    const auto filterNode = [&](const std::string& n) {
+        return std::ranges::any_of(c.cap, [&](const Cap& x) { return x.holdsDc && (x.a == n || x.b == n); });
+    };
+    std::set<std::string> winding, outputs;
     std::vector<std::string> todo;
     for (size_t i : mains)
         for (const auto& n : {c.src[i].a, c.src[i].b})
             if (n != ground && winding.insert(n).second) todo.push_back(n);
+    const auto reach = [&](const std::string& y) {
+        if (y == ground || winding.count(y)) return;
+        if (filterNode(y)) outputs.insert(y);
+        else if (winding.insert(y).second) todo.push_back(y);
+    };
     while (!todo.empty()) {
         const auto n = todo.back();
         todo.pop_back();
         for (const auto& r : c.res)
             for (const auto& [x, y] : {std::pair{r.a, r.b}, std::pair{r.b, r.a}})
-                if (x == n && y != ground && winding.insert(y).second) todo.push_back(y);
+                if (x == n) reach(y);
+        for (const auto& d : c.diode)
+            for (const auto& [x, y] : {std::pair{d.a, d.b}, std::pair{d.b, d.a}})
+                if (x == n) reach(y);
     }
     const auto onWinding = [&](const std::string& n) { return n == ground || winding.count(n); };
-    std::set<std::string> outputs;
-    for (const auto& d : c.diode)
-        if (onWinding(d.a) != onWinding(d.b))
-            outputs.insert(onWinding(d.a) ? d.b : d.a);
-    const auto inSupply = [&](const std::string& n) { return onWinding(n) || outputs.count(n); };
+    const auto terminals = [&](const std::string& n) {
+        long count = 0;
+        for (const auto& r : c.res) count += (r.a == n) + (r.b == n);
+        for (const auto& l : c.ind) count += (l.a == n) + (l.b == n);
+        for (const auto& x : c.cap) count += (x.a == n) + (x.b == n);
+        for (const auto& x : c.src) count += (x.a == n) + (x.b == n);
+        for (const auto& x : c.diode) count += (x.a == n) + (x.b == n);
+        for (const auto& t : c.tri) count += (t.g == n) + (t.p == n) + (t.k == n);
+        for (const auto& t : c.pent) count += (t.g == n) + (t.p == n) + (t.k == n) + (t.s == n);
+        return count;
+    };
+    // A node inside a series reservoir stack (two capacitors with balance resistors) belongs to the supply.
+    std::set<std::string> stack;
+    const auto inStack = [&](const std::string& m) {
+        const auto out = [&](const std::string& n) { return n == ground || outputs.count(n); };
+        long links = 0;
+        for (const auto& r : c.res) links += (r.a == m && out(r.b)) + (r.b == m && out(r.a));
+        for (const auto& x : c.cap) links += (x.a == m && out(x.b)) + (x.b == m && out(x.a));
+        return links == terminals(m);
+    };
+    for (const auto& x : c.cap)
+        for (const auto& [o, m] : {std::pair{x.a, x.b}, std::pair{x.b, x.a}})
+            if (x.holdsDc && outputs.count(o) && m != ground && !outputs.count(m) && inStack(m)) stack.insert(m);
+    const auto inSupply = [&](const std::string& n) { return onWinding(n) || outputs.count(n) || stack.count(n); };
 
     // Idle voltage of each output: its precharge, summed along held capacitors from ground.
     std::map<std::string, double> held{{ground, 0.0}};
@@ -76,7 +107,7 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
     for (size_t i : mains) mainsNames.insert(c.src[i].name);
     const auto removeWinding = [&] {
         std::erase_if(c.src, [&](const Src& s) { return mainsNames.count(s.name) != 0; });
-        std::erase_if(c.res, [&](const Res& r) { return onWinding(r.a) && onWinding(r.b); });
+        std::erase_if(c.res, [&](const Res& r) { return (onWinding(r.a) && onWinding(r.b)) || winding.count(r.a) || winding.count(r.b); });
         std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
         std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
     };
@@ -86,33 +117,19 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
     // filter node nor a plain series joint, so a precharged oscillator capacitor stays a capacitor.
     if (stiff) {
         removeWinding();
-        const auto terminals = [&](const std::string& n) {
-            long count = 0;
-            for (const auto& r : c.res) count += (r.a == n) + (r.b == n);
-            for (const auto& l : c.ind) count += (l.a == n) + (l.b == n);
-            for (const auto& x : c.cap) count += (x.a == n) + (x.b == n);
-            for (const auto& x : c.src) count += (x.a == n) + (x.b == n);
-            for (const auto& x : c.diode) count += (x.a == n) + (x.b == n);
-            for (const auto& t : c.tri) count += (t.g == n) + (t.p == n) + (t.k == n);
-            for (const auto& t : c.pent) count += (t.g == n) + (t.p == n) + (t.k == n) + (t.s == n);
-            return count;
-        };
-        const auto filterNode = [&](const std::string& n) {
-            return std::ranges::any_of(c.cap, [&](const Cap& x) { return x.holdsDc && (x.a == n || x.b == n); });
-        };
         std::set<std::string> chain(out.begin(), out.end());
         std::vector<std::string> next(out.begin(), out.end());
         while (!next.empty()) {
             const auto n = next.back();
             next.pop_back();
-            const auto reach = [&](const std::string& m, bool series) {
+            const auto walk = [&](const std::string& m, bool series) {
                 if (m != ground && !chain.count(m) && (filterNode(m) || (series && terminals(m) == 2)) && chain.insert(m).second)
                     next.push_back(m);
             };
             for (const auto& x : c.cap)
-                if (x.holdsDc) { if (x.a == n) reach(x.b, false); if (x.b == n) reach(x.a, false); }
-            for (const auto& r : c.res) { if (r.a == n) reach(r.b, true); if (r.b == n) reach(r.a, true); }
-            for (const auto& l : c.ind) { if (l.a == n) reach(l.b, true); if (l.b == n) reach(l.a, true); }
+                if (x.holdsDc) { if (x.a == n) walk(x.b, false); if (x.b == n) walk(x.a, false); }
+            for (const auto& r : c.res) { if (r.a == n) walk(r.b, true); if (r.b == n) walk(r.a, true); }
+            for (const auto& l : c.ind) { if (l.a == n) walk(l.b, true); if (l.b == n) walk(l.a, true); }
         }
         const auto supplyCap = [&](const Cap& x) {
             return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
