@@ -14,6 +14,7 @@
 
 #include "format/AcSource.h"
 #include "format/Document.h"
+#include "format/MainsSupply.h"
 #include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"
@@ -464,7 +465,9 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
     wdf::LiveWDFDocument document;
     std::string error;
     REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
-    const auto circuit = wdf::circuitWithPortImpedances(document);
+    auto circuit = wdf::circuitWithPortImpedances(document);
+    // Preview plays the drawn supply on stiff rails, as the plugin builds it.
+    REQUIRE(wdf::replaceMainsSupplies(circuit, document, kFs, true));
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     REQUIRE(source != circuit.src.end());
     const auto input = static_cast<size_t>(source - circuit.src.begin());

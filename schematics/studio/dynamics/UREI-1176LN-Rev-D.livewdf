@@ -986,7 +986,7 @@
       "values": {
         "externalMinOhms": 600,
         "externalMaxOhms": 100000,
-        "fullScaleVolts": 7.9885537
+        "fullScaleVolts": 8.0365073
       },
       "visual": {
         "x": 247,

@@ -80,15 +80,48 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
         std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
     };
-    // Stiff: every precharged capacitor becomes a source at its precharge, so each supply node is a fixed rail
-    // and the stages do not couple through the filter chain.
+    // Stiff: each reservoir and filter capacitor becomes a source at its precharge, so each supply node is a fixed
+    // rail and the stages do not couple through the filter chain. The filter chain is walked from the rectifier
+    // outputs through held capacitors and series resistors and chokes, stopping at any node that is neither a
+    // filter node nor a plain series joint, so a precharged oscillator capacitor stays a capacitor.
     if (stiff) {
         removeWinding();
+        const auto terminals = [&](const std::string& n) {
+            long count = 0;
+            for (const auto& r : c.res) count += (r.a == n) + (r.b == n);
+            for (const auto& l : c.ind) count += (l.a == n) + (l.b == n);
+            for (const auto& x : c.cap) count += (x.a == n) + (x.b == n);
+            for (const auto& x : c.src) count += (x.a == n) + (x.b == n);
+            for (const auto& x : c.diode) count += (x.a == n) + (x.b == n);
+            for (const auto& t : c.tri) count += (t.g == n) + (t.p == n) + (t.k == n);
+            for (const auto& t : c.pent) count += (t.g == n) + (t.p == n) + (t.k == n) + (t.s == n);
+            return count;
+        };
+        const auto filterNode = [&](const std::string& n) {
+            return std::ranges::any_of(c.cap, [&](const Cap& x) { return x.holdsDc && (x.a == n || x.b == n); });
+        };
+        std::set<std::string> chain(out.begin(), out.end());
+        std::vector<std::string> next(out.begin(), out.end());
+        while (!next.empty()) {
+            const auto n = next.back();
+            next.pop_back();
+            const auto reach = [&](const std::string& m, bool series) {
+                if (m != ground && !chain.count(m) && (filterNode(m) || (series && terminals(m) == 2)) && chain.insert(m).second)
+                    next.push_back(m);
+            };
+            for (const auto& x : c.cap)
+                if (x.holdsDc) { if (x.a == n) reach(x.b, false); if (x.b == n) reach(x.a, false); }
+            for (const auto& r : c.res) { if (r.a == n) reach(r.b, true); if (r.b == n) reach(r.a, true); }
+            for (const auto& l : c.ind) { if (l.a == n) reach(l.b, true); if (l.b == n) reach(l.a, true); }
+        }
+        const auto supplyCap = [&](const Cap& x) {
+            return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
+        };
         std::set<std::pair<std::string, std::string>> rails;
         for (const auto& cap : c.cap)
-            if (cap.holdsDc && rails.insert(std::minmax(cap.a, cap.b)).second)
+            if (supplyCap(cap) && rails.insert(std::minmax(cap.a, cap.b)).second)
                 c.addSrc(cap.a, cap.b, *cap.initialVolts, 0.0, {}, "$mains rail " + cap.name);
-        std::erase_if(c.cap, [](const Cap& cap) { return cap.holdsDc; });
+        std::erase_if(c.cap, supplyCap);
         return true;
     }
 
