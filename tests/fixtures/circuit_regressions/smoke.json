@@ -9706,24 +9706,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 1.6379952959688062,
-        "mean": 0.0053206762647458865,
-        "peak": 5.476452637315264,
-        "max_step": 4.723628225436547,
-        "band_375": 0.8490593788709867,
-        "band_1500": 0.8083582005336722,
-        "band_6000": 1.4231541555544016
+        "ac_rms": 1.6376648015454123,
+        "mean": 0.005316210063800821,
+        "peak": 5.477779544036565,
+        "max_step": 4.724865824331395,
+        "band_375": 0.8488767005001681,
+        "band_1500": 0.8081748643735731,
+        "band_6000": 1.422828774990553
       },
       "wave_bounds": {
-        "ac_rms": 1.6379952959688062,
-        "mean": 0.0053206762647458865,
-        "peak": 5.476452637315264,
-        "max_step": 4.723628225436547
+        "ac_rms": 1.6376648015454123,
+        "mean": 0.005316210063800821,
+        "peak": 5.477779544036565,
+        "max_step": 4.724865824331395
       },
-      "circuit_sha256": "d9e0b277bb8a75b96d6f14b90b182ff363d1ac9b515097946a65c76b0c3c62ad",
+      "circuit_sha256": "ac859f419c6d8e3ebcae4ba5a59b8c7c8a749f8092949e1b215a0e5748dd57de",
       "case": "Fender Princeton Reverb AA1164",
-      "wave": "8307c547e07e0343b24937f5871f709c4268aaf84e22f62d5199e35c58c1cedf.f32.gz",
-      "wave_sha256": "8307c547e07e0343b24937f5871f709c4268aaf84e22f62d5199e35c58c1cedf",
+      "wave": "a010a12a8640f165560f39811d41cdd0f8676808435f4f17c4274aebd315795e.f32.gz",
+      "wave_sha256": "a010a12a8640f165560f39811d41cdd0f8676808435f4f17c4274aebd315795e",
       "reference_stride": 7
     },
     "Fender Princeton Reverb AA1164/fast": {
@@ -9740,24 +9740,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 1.6379952959665784,
-        "mean": 0.0053206763335973215,
-        "peak": 5.476452636796745,
-        "max_step": 4.723628224982437,
-        "band_375": 0.8490593788720809,
-        "band_1500": 0.8083582005438157,
-        "band_6000": 1.423154155557366
+        "ac_rms": 1.6376648015669864,
+        "mean": 0.005316210141079627,
+        "peak": 5.477779544257,
+        "max_step": 4.724865824487055,
+        "band_375": 0.8488767005239084,
+        "band_1500": 0.808174864393287,
+        "band_6000": 1.4228287750060034
       },
       "wave_bounds": {
-        "ac_rms": 1.6379952959665784,
-        "mean": 0.0053206763335973215,
-        "peak": 5.476452636796745,
-        "max_step": 4.723628224982437
+        "ac_rms": 1.6376648015669864,
+        "mean": 0.005316210141079627,
+        "peak": 5.477779544257,
+        "max_step": 4.724865824487055
       },
-      "circuit_sha256": "d9e0b277bb8a75b96d6f14b90b182ff363d1ac9b515097946a65c76b0c3c62ad",
+      "circuit_sha256": "ac859f419c6d8e3ebcae4ba5a59b8c7c8a749f8092949e1b215a0e5748dd57de",
       "case": "Fender Princeton Reverb AA1164",
-      "wave": "749c5332257ee9df223037c19009b65d4d574fcaa941f0a4da630a325e24a9f4.f32.gz",
-      "wave_sha256": "749c5332257ee9df223037c19009b65d4d574fcaa941f0a4da630a325e24a9f4",
+      "wave": "c145fba332aae570e89f600cc03b615c0b7ac391ce6b802122f6afa8e9208f8f.f32.gz",
+      "wave_sha256": "c145fba332aae570e89f600cc03b615c0b7ac391ce6b802122f6afa8e9208f8f",
       "reference_stride": 7
     },
     "Fender Princeton Reverb AA1164/preview": {
@@ -9774,24 +9774,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 1.6379952959665784,
-        "mean": 0.0053206763335973215,
-        "peak": 5.476452636796745,
-        "max_step": 4.723628224982437,
-        "band_375": 0.8490593788720809,
-        "band_1500": 0.8083582005438157,
-        "band_6000": 1.423154155557366
+        "ac_rms": 1.6376648015669864,
+        "mean": 0.005316210141079627,
+        "peak": 5.477779544257,
+        "max_step": 4.724865824487055,
+        "band_375": 0.8488767005239084,
+        "band_1500": 0.808174864393287,
+        "band_6000": 1.4228287750060034
       },
       "wave_bounds": {
-        "ac_rms": 1.6379952959665784,
-        "mean": 0.0053206763335973215,
-        "peak": 5.476452636796745,
-        "max_step": 4.723628224982437
+        "ac_rms": 1.6376648015669864,
+        "mean": 0.005316210141079627,
+        "peak": 5.477779544257,
+        "max_step": 4.724865824487055
       },
-      "circuit_sha256": "d9e0b277bb8a75b96d6f14b90b182ff363d1ac9b515097946a65c76b0c3c62ad",
+      "circuit_sha256": "ac859f419c6d8e3ebcae4ba5a59b8c7c8a749f8092949e1b215a0e5748dd57de",
       "case": "Fender Princeton Reverb AA1164",
-      "wave": "749c5332257ee9df223037c19009b65d4d574fcaa941f0a4da630a325e24a9f4.f32.gz",
-      "wave_sha256": "749c5332257ee9df223037c19009b65d4d574fcaa941f0a4da630a325e24a9f4",
+      "wave": "c145fba332aae570e89f600cc03b615c0b7ac391ce6b802122f6afa8e9208f8f.f32.gz",
+      "wave_sha256": "c145fba332aae570e89f600cc03b615c0b7ac391ce6b802122f6afa8e9208f8f",
       "reference_stride": 7
     },
     "Fender Tweed Champ 5F1 - Input 1/accurate": {
@@ -11428,7 +11428,7 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "cb8950a286f0b14fa7554a4ab4def7b155e7e08a",
+    "declared_core_revision": "d28b90412de92a6f4fc6c82cf4577e3fcfbef4d4",
     "renderer_sha256": "54893a3db9cfc9aaf208d82c27f94a03854b7930b894f717cbae435994e153fd",
     "sample_rate": 48000,
     "block_size": 128,
