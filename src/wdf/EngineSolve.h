@@ -207,6 +207,18 @@ protected:
         int watch = -1, length = 0, period = 0, previous = 0, base = 0, phase = 0;
         double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0;
     } lamp_;
+    /// Two-core Preview: this clone solves one side of the first power-tube block; the
+    /// other side's port currents come in from the other clone. Stage 1 reads them as
+    /// lagged couplings, stage 2 folds them in as solved predecessors.
+    struct PipelineStage {
+        int stage = 0;
+        bool lagView = false;
+        long long revision = -1;
+        std::vector<NewtonBlock> blocks;
+        std::vector<int> order, ownPorts, inPorts;
+        std::vector<unsigned char> frozen;
+        std::vector<double> held, input;
+    } pipe_;
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
@@ -502,6 +514,23 @@ protected:
                     lamp_.order.push_back(b);
             view = {view.blocks, &lamp_.order, static_cast<int>(lamp_.order.size()), view.held, lamp_.frozen.data()};
         }
+        solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
+    }
+
+    void solvePipelineStage(int maxIter, double tol, bool adjusted) {
+        const size_t n = pipe_.inPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            ii_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[k];
+            vv_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[n + k];
+        }
+        auto ctx = makeBlockSolveContext();
+        ctx.mixedEnabled &= !adjusted;
+        ctx.reductions = !adjusted;
+        auto newtonCtx = makeNewtonContext();
+        const bool first = pipe_.stage == 1;
+        const BlockView view{first ? &pipe_.blocks : pipe_.lagView ? &lagBlocks_ : &newtonBlocks_, &pipe_.order,
+                             static_cast<int>(pipe_.order.size()),
+                             first ? pipe_.held.data() : pipe_.lagView ? lagHeld_.data() : nullptr, pipe_.frozen.data()};
         solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 

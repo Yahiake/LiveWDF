@@ -1194,7 +1194,7 @@ public:
         int relaxSweeps = 0) noexcept
     {
         if (!ctx.gridLag.empty())
-            predictLaterGrids(ctx);
+            predictLaterGrids(ctx, view.frozen);
         laggedIntoOpenCircuit(ctx, view, -1.0);
         RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
@@ -1228,8 +1228,14 @@ public:
             // pre-resolve iterate that happens to leave a small stale residual.
             // A single Newton block already evaluated all device currents at
             // its accepted voltage. Still check the full residual.
+            // Frozen ports keep the currents they were given; F is scratch until the residual.
+            for (int r = 0; view.frozen && r < ctx.K; ++r)
+                ctx.F[static_cast<size_t>(r)] = ctx.ii[static_cast<size_t>(r)];
             if (!acceptedDeviceCurrents)
                 RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+            for (int r = 0; view.frozen && r < ctx.K; ++r)
+                if (view.frozen[r])
+                    ctx.ii[static_cast<size_t>(r)] = ctx.F[static_cast<size_t>(r)];
             RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
             for (int s = 0; view.held && s < view.count; ++s)
                 for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged)
@@ -1457,7 +1463,7 @@ public:
 
     /// A later block's grid current is folded in before that block is solved,
     /// so predict it from the last two samples.
-    static inline void predictLaterGrids(BlockSolveContext& ctx) noexcept
+    static inline void predictLaterGrids(BlockSolveContext& ctx, const unsigned char* frozen = nullptr) noexcept
     {
         const int K = ctx.K;
         double* ii = ctx.ii.data();
@@ -1467,7 +1473,7 @@ public:
                 continue;
             const int c = dev.portBase + 2;
             const double now = ii[c];
-            ii[c] = lag[K + c] = std::max(0.0, 2.0 * now - lag[c]);
+            ii[c] = lag[K + c] = frozen && frozen[c] ? now : std::max(0.0, 2.0 * now - lag[c]);
             lag[c] = now;
         }
     }

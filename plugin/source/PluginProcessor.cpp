@@ -100,6 +100,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     // editor exposes it as a button next to the oversampling choice.
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"stereo", 1}, "Stereo", false));
+    params.push_back(std::make_unique<juce::AudioParameterBool>(
+        juce::ParameterID{"two_cores", 1}, "Two cores", false));
 
     // Dynamic Potentiometers. The layout has to exist before the document is
     // known, so this is the ceiling: kMaxPotKnobs groups always get a
@@ -361,7 +363,7 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     outputEffects_.reclaim();
-    if (*apvts_.getRawParameterValue("stereo") > 0.5f)
+    if (*apvts_.getRawParameterValue("stereo") > 0.5f || *apvts_.getRawParameterValue("two_cores") > 0.5f)
         rightWorker_.start();
     if (!isNonRealtime())
         outputEffects_.applyReverbSize(reverbSize_->load(std::memory_order_relaxed) * 0.01f, false);
