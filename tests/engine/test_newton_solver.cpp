@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <filesystem>
 #include <string>
 #include <vector>
 
@@ -540,29 +541,34 @@ TEST_CASE("A missed sample after a knob move is taken in half steps and follows 
     CHECK(worst(event, event + 200) < 2. * worst(event - 500, event));
 }
 
-TEST_CASE("Deluxe Reverb Preview follows Fast on pickup hum", "[newton][preview][pentode]") {
-    wdf::LiveWDFDocument document;
-    std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
-    const auto circuit = wdf::circuitWithPortImpedances(document);
-    const auto input = static_cast<size_t>(std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin());
-    wdf::Engine fast(circuit, kFs), preview(circuit, kFs);
-    const auto output = static_cast<size_t>(preview.nodeIndex(document.outputNet()));
-    preview.useTriodePreview(true);
-    std::vector<double> sources;
-    for (const auto& src : circuit.src)
-        sources.push_back(src.dc);
-    double error2 = 0.0, signal2 = 0.0;
-    for (int sample = 0; sample < 2400; ++sample) {
-        sources[input] = circuit.src[input].dc + .003 * std::sin(2 * M_PI * 50 * sample / kFs);
-        const double reference = fast.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
-        const double value = preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
-        if (sample >= 1200) {
-            error2 += (value - reference) * (value - reference);
-            signal2 += reference * reference;
+TEST_CASE("Powered amp Preview follows Fast on pickup hum", "[newton][preview][pentode]") {
+    for (const auto& file : std::filesystem::directory_iterator("schematics/amps")) {
+        wdf::LiveWDFDocument document;
+        std::string error;
+        REQUIRE(document.loadFromFile(file.path().string(), error));
+        const auto circuit = wdf::circuitWithPortImpedances(document);
+        if (circuit.pent.empty())
+            continue;
+        const auto input = static_cast<size_t>(std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin());
+        wdf::Engine fast(circuit, kFs), preview(circuit, kFs);
+        const auto output = static_cast<size_t>(preview.nodeIndex(document.outputNet()));
+        preview.useTriodePreview(true);
+        std::vector<double> sources;
+        for (const auto& src : circuit.src)
+            sources.push_back(src.dc);
+        double error2 = 0.0, signal2 = 0.0;
+        for (int sample = 0; sample < 2400; ++sample) {
+            sources[input] = circuit.src[input].dc + .003 * std::sin(2 * M_PI * 50 * sample / kFs);
+            const double reference = fast.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
+            const double value = preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
+            if (sample >= 1200) {
+                error2 += (value - reference) * (value - reference);
+                signal2 += reference * reference;
+            }
         }
+        CAPTURE(file.path().filename().string());
+        CHECK(error2 < 1e-7 * signal2);
     }
-    CHECK(error2 < 1e-6 * signal2);
 }
 
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
