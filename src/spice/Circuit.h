@@ -406,14 +406,13 @@ inline TransformerSpec resolveTransformerSpec(TransformerSpec spec) {
     } else if (manualModel) {
         if (!(spec.Lm > 0.0) || !std::isfinite(spec.Lm))
             spec.Lm = autoLm;
-        if (!std::isfinite(spec.leakage) || spec.leakage < 0.0)
+        if (!(spec.leakage > 0.0) || !std::isfinite(spec.leakage))
             spec.leakage = autoLeakage;
         // A manual card can describe a near-rank-one transformer, but the
-        // solver needs a finite inverse. The floor is purely numerical: it is
-        // below normal model-card noise for the turns ratio, and it keeps
-        // leakage 0 from turning into a singular inductance matrix.
+        // solver needs a finite inverse. The floor is purely numerical, far
+        // below any wound transformer's leakage.
         const double minimumLeakage =
-            std::max({autoLeakage, 1.0e-9 * spec.Lm, std::numeric_limits<double>::min()});
+            std::max(1.0e-9 * spec.Lm, std::numeric_limits<double>::min());
         if (!(spec.leakage >= minimumLeakage))
             spec.leakage = minimumLeakage;
     } else {
