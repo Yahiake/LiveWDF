@@ -188,3 +188,16 @@ TEST_CASE("An unconnected part is left out of the circuit, and reported",
     CHECK(compiles(loose));
     CHECK(loose.unconnectedPins().size() == 1);
 }
+
+TEST_CASE("An op-amp on a 9 V single supply clips inside that supply") {
+    LiveWDFDocument doc;
+    doc.components.push_back(part("U1", "opamp", {{"out", "out"}, {"neg", "out"}, {"pos", "in"},
+                                                  {"vcc", "v9"}, {"vee", "0"}}));
+    doc.components.push_back(part("IN1", "in", {{"sig", "in"}}));
+    doc.components.push_back(part("V9", "rail", {{"pos", "v9"}}, {{"dc", 9.0}}));
+    const auto circuit = doc.toCircuit();
+
+    REQUIRE(circuit.opamp.size() == 1);
+    CHECK(circuit.opamp[0].model.railLow() == Approx(1.5));
+    CHECK(circuit.opamp[0].model.railHigh() == Approx(7.5));
+}

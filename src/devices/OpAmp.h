@@ -208,6 +208,8 @@ struct OpAmpModel {
     double vRailPos = 12.0;
     /// Maximum negative output swing below zero (V).
     double vRailNeg = 12.0;
+    /// Symmetric supply the swing above is specified on (V).
+    double supplyVolts = 15.0;
     /// Output impedance (ohm). 50-200 ohm for a voltage-feedback op-amp.
     double outputImpedance = 75.0;
     /// Output stage capacitance (F). Carried for model fidelity and future
@@ -262,6 +264,7 @@ struct OpAmpModel {
                 m.slewRate = 13.0;
                 m.outputImpedance = 75.0;
                 m.outputCapacitance = 20e-12;
+                m.setVMax(13.5);  // typical at ±15 V into 10 kΩ, TI SLOS080W p.15
                 break;
             case OpAmpType::Tl082:
                 m.openLoopGain = 200000.0;
@@ -276,6 +279,7 @@ struct OpAmpModel {
                 m.slewRate = 1.7;
                 m.outputImpedance = 75.0;
                 m.outputCapacitance = 20e-12;
+                m.setVMax(14.0);  // typical at ±15 V into 10 kΩ, NJM4558 data sheet p.2
                 break;
             case OpAmpType::Rc4558:
                 m.openLoopGain = 100000.0;
@@ -283,6 +287,7 @@ struct OpAmpModel {
                 m.slewRate = 1.5;
                 m.outputImpedance = 75.0;
                 m.outputCapacitance = 20e-12;
+                m.setVMax(14.1);  // typical at ±15 V into 10 kΩ, TI SLOS073H p.6
                 break;
             case OpAmpType::Lm308:
                 m.openLoopGain = 300000.0;
@@ -327,6 +332,7 @@ struct OpAmpModel {
                 m.slewRate = 2.3;
                 // Correct the measured loaded swing for the model's estimated Ro.
                 m.vRailPos = m.vRailNeg = 17.36 * (1.0 + m.outputImpedance / 600.0);
+                m.supplyVolts = 24.0;
                 break;
             case OpAmpType::Api2520:
                 // API's 2520 data sheet gives >110 dB, 50 MHz and a 40 kHz
@@ -383,6 +389,7 @@ struct OpAmpModel {
                 m.openLoopGain = 316227.766;
                 m.gbw = 7.0e6;
                 m.slewRate = 3.0;
+                m.setVMax(14.0);  // typical at ±15 V into 10 kΩ, data sheet p.2
                 break;
             case OpAmpType::Tl022:
                 // TI TL022C datasheet, typical values at ±15 V and 25 °C.
@@ -390,6 +397,7 @@ struct OpAmpModel {
                 m.openLoopGain = 10000.0;
                 m.gbw = 0.5e6;
                 m.slewRate = 0.5;
+                m.setVMax(13.0);  // 26 V p-p typical at ±15 V into 10 kΩ, TI SLOS076 p.3
                 break;
             case OpAmpType::Mc33174:
                 // onsemi MC33171/72/74 datasheet: 500 V/mV large-signal gain.
@@ -448,6 +456,7 @@ struct OpAmpModel {
                 m.slewRate = 1.0;
                 m.outputImpedance = 0.3;
                 m.setVMax(3.6);
+                m.supplyVolts = 4.5;
                 break;
             case OpAmpType::DiscreteClassAB:
                 // Closed-loop power-stage equivalents use their own feedback

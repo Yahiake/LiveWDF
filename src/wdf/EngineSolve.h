@@ -185,6 +185,11 @@ protected:
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
     bool triodePreviewEnabled_ = false;
+    std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
+    std::vector<int> lagOrder_;
+    std::vector<double> lagHeld_;
+    int lagCount_ = 0;
+    long long lagRevision_ = -1;
     double modeTol_ = 0.0;
 
     solver::NewtonContext makeNewtonContext() {
@@ -226,15 +231,22 @@ protected:
     }
 
     solver::RootGroupsContext makeRootGroupsContext() {
+        return makeRootGroupsContext(newtonBlocks_, groupOrder_, blockOf_, allClosedFormBlocks_,
+                                     hasAntiParallelBlock_, blockCount_, scalarBlockCount_);
+    }
+
+    solver::RootGroupsContext makeRootGroupsContext(std::vector<NewtonBlock>& blocks, std::vector<int>& order,
+                                                    std::vector<int>& owner, bool& closed, bool& antiParallel,
+                                                    int& count, int& scalars) {
         return solver::RootGroupsContext{
             rootDevices_, circuit_, comp_, ctrlResValues_, Z_,
             K_, nTri_, nD_, nCtrl_, nPent_, nJfet_, nMosfet_, nBjt_, nOpAmp_,
             explicitRootsAllowed_, runtimeBlockEnabled_, fineBlockSolver_,
-            explicitRootsActive_, allClosedFormBlocks_, hasAntiParallelBlock_,
-            blockCount_, scalarBlockCount_, groupCount_,
+            explicitRootsActive_, closed, antiParallel,
+            count, scalars, groupCount_,
             runtimeBlockCount_, runtimeBlockUsed_,
-            groupOrder_, grpIndeg_, grpQueue_, grpDiode_,
-            newtonBlocks_, blockOf_, blockReach_, blockAdj_,
+            order, grpIndeg_, grpQueue_, grpDiode_,
+            blocks, owner, blockReach_, blockAdj_,
             runtimeBlocks_, runtimeOrder_, runtimePartitions_, runtimePartition_
         };
     }
@@ -435,7 +447,7 @@ protected:
     /// prediction. Both joint paths retry from the previous sample's root if
     /// their first pass does not converge. The fast path is an optimization only
     /// when the check passes; it is never allowed to define a different circuit.
-    void solveRootBlocks(int maxIter, double tol) {
+    void solveRootBlocks(int maxIter, double tol, bool slowLag = false) {
         if (hasMonotoneClassAB()) {
             lastBlockFallback_ = false;
             const auto result = solver::RootClosedForms::solveClassABOutput(
@@ -464,8 +476,8 @@ protected:
         auto ctx = makeBlockSolveContext();
         auto newtonCtx = makeNewtonContext();
         solver::RootBlockSolve::solveRootBlocks(
-            ctx, newtonCtx, staticBlockView(), maxIter, tol,
-            fineBlockSolver_ ? 6 : 0);
+            ctx, newtonCtx, slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView(),
+            maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 
     /// Runtime active-set variant of `solveRootBlocks`.

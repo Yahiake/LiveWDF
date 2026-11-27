@@ -1,35 +1,35 @@
 schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurate_minus12_error_dB,accurate_minus9_error_dB,accurate_minus6_error_dB,accurate_median_error_dB,accurate_holdout_error_dB,accurate_max_peak_dBFS,fast_live_minus12_error_dB,fast_live_minus9_error_dB,fast_live_minus6_error_dB,fast_live_median_error_dB,fast_live_holdout_error_dB,fast_live_max_peak_dBFS
 schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,271.24772,2.942,0.000,-2.968,0.000,0.152,-16.328,2.942,0.000,-2.968,0.000,0.152,-16.328
 schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf,amp,0.87059607,6.5291355,1.831,0.000,-1.936,0.000,1.545,-12.841,1.831,0.000,-1.936,0.000,1.545,-12.841
-schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,485.53735,2.544,0.000,-2.719,0.000,0.520,-19.589,2.544,0.000,-2.719,0.000,0.520,-19.589
-schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,94.730621,0.231,0.000,-0.450,0.000,0.665,-10.944,0.231,0.000,-0.450,0.000,0.665,-10.944
-schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,290.31818,2.388,0.000,-2.480,0.000,1.243,-19.953,2.388,0.000,-2.480,0.000,1.243,-19.953
+schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,500.00163,2.530,0.000,-2.712,0.000,0.394,-20.785,2.530,0.000,-2.712,0.000,0.394,-20.785
+schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,95.059271,0.232,0.000,-0.446,0.000,0.717,-10.993,0.232,0.000,-0.446,0.000,0.717,-10.993
+schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,300.93722,2.347,0.000,-2.445,0.000,1.069,-20.555,2.347,0.000,-2.445,0.000,1.069,-20.555
 schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,181.76225,0.878,0.000,-1.316,0.000,0.081,-13.910,0.878,0.000,-1.316,0.000,0.081,-13.910
 schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.2882902,0.322,0.000,-0.738,0.000,-1.293,-5.021,0.322,0.000,-0.738,0.000,-1.293,-5.021
-schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,93.204007,1.348,0.000,-1.635,0.000,2.995,-16.688,1.348,0.000,-1.635,0.000,2.995,-16.688
-schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,182.93778,1.061,0.000,-1.358,0.000,2.074,-13.064,1.061,0.000,-1.358,0.000,2.074,-13.064
-schematics/amps/Fender Princeton Reverb AA1164.livewdf,amp,0.87059607,118.62276,0.417,0.000,-0.901,0.000,1.188,-13.704,0.417,0.000,-0.901,0.000,1.188,-13.704
-schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf,amp,0.87059607,41.741016,1.227,0.000,-1.603,0.000,1.489,-16.546,1.227,0.000,-1.603,0.000,1.489,-16.546
-schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,147.09868,2.145,0.000,-2.162,0.000,2.183,-17.856,2.145,0.000,-2.162,0.000,2.183,-17.856
-schematics/amps/Fender Twin Reverb AB763.livewdf,amp,0.87059607,117.77612,0.010,0.000,-0.443,0.000,0.509,-12.092,0.010,0.000,-0.443,0.000,0.509,-12.092
-schematics/amps/Hiwatt DR103.livewdf,amp,0.87059607,433.29661,0.855,0.000,-1.195,0.000,0.425,-14.490,0.855,0.000,-1.195,0.000,0.425,-14.490
-schematics/amps/Laney GH100L - Drive.livewdf,amp,0.87059607,329.12538,2.310,0.000,-2.441,0.000,2.490,-18.886,2.310,0.000,-2.441,0.000,2.490,-18.886
-schematics/amps/Marshall 1959 Super Lead JCM800 era - Jumped.livewdf,amp,0.87059607,555.15622,2.524,0.000,-2.650,0.000,0.673,-21.427,2.524,0.000,-2.650,0.000,0.673,-21.427
-schematics/amps/Marshall 1959 Super Lead Plexi 1970 - Jumped.livewdf,amp,0.87059607,925.9932,2.311,0.000,-2.317,0.000,1.946,-19.893,2.311,0.000,-2.317,0.000,1.946,-19.893
-schematics/amps/Marshall 2555 Silver Jubilee - Lead.livewdf,amp,0.87059607,47.03916,-0.307,0.172,0.000,0.000,-0.631,-7.009,-0.307,0.172,0.000,0.000,-0.631,-7.009
-schematics/amps/Marshall JCM800 2203 - High Input.livewdf,amp,0.87059607,366.38523,1.725,0.000,-1.959,0.000,2.295,-10.300,1.725,0.000,-1.959,0.000,2.295,-10.300
-schematics/amps/Mesa Boogie Mark IIC+ - Lead.livewdf,amp,0.87059607,685.40388,2.536,0.000,-2.632,0.000,1.284,-20.781,2.536,0.000,-2.632,0.000,1.284,-20.781
-schematics/amps/Orange OR120 Graphic MkII.livewdf,amp,0.87059607,918.66474,2.533,0.000,-2.567,0.000,1.240,-20.433,2.533,0.000,-2.567,0.000,1.240,-20.433
-schematics/amps/Peavey 5150 - Lead.livewdf,amp,0.22466995,290.26627,1.707,0.000,-2.076,0.000,1.282,-16.543,1.707,0.000,-2.076,0.000,1.282,-16.543
+schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,100.06624,1.213,0.000,-1.521,0.000,2.708,-16.061,1.213,0.000,-1.521,0.000,2.708,-16.061
+schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,182.26052,1.065,0.000,-1.363,0.000,2.119,-12.777,1.065,0.000,-1.363,0.000,2.119,-12.777
+schematics/amps/Fender Princeton Reverb AA1164.livewdf,amp,0.87059607,118.2703,0.416,0.000,-0.903,0.000,1.191,-13.689,0.416,0.000,-0.903,0.000,1.191,-13.689
+schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf,amp,0.87059607,42.29751,1.201,0.000,-1.566,0.000,1.420,-16.184,1.201,0.000,-1.566,0.000,1.420,-16.184
+schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,147.48779,2.137,0.000,-2.151,0.000,2.163,-17.788,2.137,0.000,-2.151,0.000,2.163,-17.788
+schematics/amps/Fender Twin Reverb AB763.livewdf,amp,0.87059607,119.17576,0.000,0.057,-0.326,0.000,0.689,-11.804,0.000,0.057,-0.326,0.000,0.689,-11.804
+schematics/amps/Hiwatt DR103.livewdf,amp,0.87059607,434.0205,0.841,0.000,-1.181,0.000,0.545,-14.201,0.841,0.000,-1.181,0.000,0.545,-14.201
+schematics/amps/Laney GH100L - Drive.livewdf,amp,0.87059607,352.50147,2.242,0.000,-2.381,0.000,2.301,-19.111,2.242,0.000,-2.381,0.000,2.301,-19.111
+schematics/amps/Marshall 1959 Super Lead JCM800 era - Jumped.livewdf,amp,0.87059607,554.77615,2.525,0.000,-2.651,0.000,0.673,-21.390,2.525,0.000,-2.651,0.000,0.673,-21.390
+schematics/amps/Marshall 1959 Super Lead Plexi 1970 - Jumped.livewdf,amp,0.87059607,925.61955,2.312,0.000,-2.317,0.000,1.945,-19.856,2.312,0.000,-2.317,0.000,1.945,-19.856
+schematics/amps/Marshall 2555 Silver Jubilee - Lead.livewdf,amp,0.87059607,47.524202,-0.343,0.154,0.000,0.000,-0.601,-6.646,-0.343,0.154,0.000,0.000,-0.601,-6.646
+schematics/amps/Marshall JCM800 2203 - High Input.livewdf,amp,0.87059607,366.32514,1.725,0.000,-1.959,0.000,2.297,-10.244,1.725,0.000,-1.959,0.000,2.297,-10.244
+schematics/amps/Mesa Boogie Mark IIC+ - Lead.livewdf,amp,0.87059607,699.24446,2.543,0.000,-2.640,0.000,1.317,-22.988,2.543,0.000,-2.640,0.000,1.317,-22.988
+schematics/amps/Orange OR120 Graphic MkII.livewdf,amp,0.87059607,928.66958,2.531,0.000,-2.565,0.000,1.244,-20.473,2.531,0.000,-2.565,0.000,1.244,-20.473
+schematics/amps/Peavey 5150 - Lead.livewdf,amp,0.22466995,299.56167,1.615,0.000,-1.962,0.000,1.350,-15.986,1.615,0.000,-1.962,0.000,1.350,-15.986
 schematics/amps/Roland JC-120.livewdf,amp,0.27530665,65.270291,0.000,0.000,-0.025,0.000,-0.622,-6.364,0.000,0.000,-0.025,0.000,-0.622,-6.364
-schematics/amps/Soldano SLO-100 - Overdrive.livewdf,amp,0.87059607,299.34019,2.118,0.000,-2.199,0.000,1.987,-17.262,2.118,0.000,-2.199,0.000,1.987,-17.262
-schematics/amps/Vox AC15 No. 3 - EF86 Normal.livewdf,amp,0.87059607,207.47846,2.312,0.000,-2.452,0.000,1.402,-19.684,2.312,0.000,-2.452,0.000,1.402,-19.684
-schematics/amps/Vox AC30 - Top Boost.livewdf,amp,0.87059607,422.69184,2.327,0.000,-2.362,0.000,1.408,-19.367,2.327,0.018,-2.363,0.018,1.409,-19.364
+schematics/amps/Soldano SLO-100 - Overdrive.livewdf,amp,0.87059607,325.67518,2.078,0.000,-2.213,0.000,1.885,-19.235,2.078,0.000,-2.213,0.000,1.885,-19.235
+schematics/amps/Vox AC15 No. 3 - EF86 Normal.livewdf,amp,0.87059607,205.35285,2.297,0.000,-2.444,0.000,1.259,-20.749,2.297,0.000,-2.444,0.000,1.259,-20.749
+schematics/amps/Vox AC30 - Top Boost.livewdf,amp,0.87059607,420.6855,2.296,0.000,-2.360,0.000,1.358,-20.581,2.296,0.000,-2.360,0.000,1.358,-20.581
 schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,palm,0.87059607,2.3515832,1.827,0.000,-1.921,0.000,-0.672,-19.528,1.827,0.000,-1.921,0.000,-0.672,-19.528
-schematics/pedals_fx/Boss BF-2 Flanger.livewdf,chord,0.87059607,1.0437616,0.015,-0.012,0.000,0.000,-0.220,-5.575,0.015,-0.012,0.000,0.000,-0.219,-5.576
-schematics/pedals_fx/Boss CE-2 Chorus.livewdf,chord,0.87059607,1.0171396,0.000,0.014,-0.012,0.000,0.122,-7.296,0.000,0.014,-0.012,0.000,0.122,-7.296
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,chord,0.87059607,1.0447313,0.014,-0.012,0.000,0.000,-0.218,-5.576,0.014,-0.012,0.000,0.000,-0.218,-5.576
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,chord,0.87059607,1.0173884,0.000,0.015,-0.009,0.000,0.120,-7.293,0.000,0.015,-0.009,0.000,0.120,-7.293
 schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,picked,0.87059607,0.74002938,2.821,0.000,-2.837,0.000,1.803,-8.069,2.821,0.000,-2.837,0.000,1.803,-8.069
-schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,chord,0.87059607,0.97937518,0.025,0.000,-0.043,0.000,0.065,-7.368,0.025,0.000,-0.043,0.000,0.065,-7.368
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,chord,0.87059607,0.9805028,0.027,0.000,-0.043,0.000,0.069,-7.409,0.027,0.000,-0.043,0.000,0.069,-7.409
 schematics/pedals_fx/Boss DS-1A Distortion.livewdf,palm,0.87059607,1.5996472,1.862,0.000,-2.003,0.000,-0.386,-17.598,1.862,0.000,-2.003,0.000,-0.386,-17.598
 schematics/pedals_fx/Boss DS-2 Turbo Distortion.livewdf,palm,0.87059607,3.0869722,2.220,0.000,-2.318,0.000,-0.688,-20.565,2.220,0.000,-2.318,0.000,-0.688,-20.565
 schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,chord,0.87059607,0.82169517,0.000,0.000,0.000,0.000,0.003,-6.093,0.000,0.000,0.000,0.000,0.003,-6.093
@@ -45,18 +45,18 @@ schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,picked,0.87059607,0.7
 schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,picked,0.87059607,1.0808316,1.277,0.000,-1.842,0.000,0.520,-9.254,1.277,0.000,-1.842,0.000,0.520,-9.254
 schematics/pedals_fx/Dunlop Cry Baby GCB-95.livewdf,chord,0.87059607,2.5296412,-0.001,0.000,0.001,0.000,1.363,-8.187,-0.001,0.000,0.001,0.000,1.363,-8.187
 schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,bend,0.87059607,1.4634045,2.425,0.000,-2.501,0.000,0.981,-13.659,2.425,0.000,-2.501,0.000,0.981,-13.659
-schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,chord,0.87059607,0.7397179,0.087,0.000,-0.098,0.000,0.301,-5.653,0.087,0.000,-0.098,0.000,0.301,-5.653
-schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,chord,0.87059607,0.25688993,-0.604,0.000,0.880,0.000,-0.263,-5.475,-0.604,0.000,0.880,0.000,-0.264,-5.475
-schematics/pedals_fx/EHX Small Clone MN3007.livewdf,chord,0.87059607,0.81226984,0.000,0.007,-0.195,0.000,0.443,-7.263,0.000,0.007,-0.195,0.000,0.443,-7.263
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,chord,0.87059607,0.73586038,0.088,0.000,-0.095,0.000,0.298,-5.694,0.088,0.000,-0.095,0.000,0.298,-5.694
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,chord,0.87059607,0.25721844,-0.608,0.000,0.880,0.000,-0.263,-5.505,-0.608,0.000,0.880,0.000,-0.263,-5.505
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,chord,0.87059607,0.81271225,0.000,0.008,-0.194,0.000,0.446,-7.269,0.000,0.008,-0.194,0.000,0.446,-7.269
 schematics/pedals_fx/EHX Small Stone Issue J.livewdf,chord,0.87059607,0.65272205,-0.292,0.000,0.109,0.000,0.517,-6.195,-0.292,0.000,0.109,0.000,0.517,-6.195
 schematics/pedals_fx/Fuzz Face.livewdf,bend,0.87059607,0.45693889,1.942,0.000,-2.363,0.000,1.384,-13.183,1.942,0.000,-2.363,0.000,1.384,-13.183
 schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,palm,0.87059607,0.86691954,-0.012,0.000,0.003,0.000,-0.001,-5.979,-0.012,0.000,0.003,0.000,-0.001,-5.979
 schematics/pedals_fx/Ibanez TS_808.livewdf,palm,0.87059607,0.99653503,1.614,0.000,-1.657,0.000,-0.430,-12.953,1.614,0.000,-1.657,0.000,-0.430,-12.953
 schematics/pedals_fx/Klon Centaur.livewdf,chord,0.87059607,3.9494942,1.320,0.000,-1.504,0.000,0.268,-13.386,1.320,0.000,-1.504,0.000,0.268,-13.386
-schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,chord,0.87059607,0.91908143,0.001,0.000,-0.001,0.000,0.027,-6.108,0.001,0.000,-0.001,0.000,0.027,-6.108
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,chord,0.87059607,0.91905285,0.001,0.000,-0.001,0.000,0.018,-6.108,0.001,0.000,-0.001,0.000,0.018,-6.108
 schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,picked,0.87059607,0.85700161,2.404,0.000,-2.638,0.000,0.544,-8.597,2.404,0.000,-2.638,0.000,0.544,-8.597
 schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,chord,0.87059607,0.86843195,0.000,0.000,0.000,0.000,0.007,-6.023,0.000,0.000,0.000,0.000,0.007,-6.023
-schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,chord,0.87059607,0.43657063,-0.144,0.000,0.087,0.000,-0.205,-6.536,-0.144,0.000,0.110,0.000,0.056,-6.536
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,chord,0.87059607,0.43674913,-0.144,0.000,0.110,0.000,0.053,-6.536,-0.144,0.000,0.110,0.000,0.053,-6.536
 schematics/pedals_fx/MXR Micro Amp.livewdf,chord,0.87059607,1.843695,0.000,0.000,0.000,0.000,0.000,-6.015,0.000,0.000,0.000,0.000,0.000,-6.015
 schematics/pedals_fx/MXR Phase 90 Script.livewdf,chord,0.87059607,1.1151344,-0.001,0.000,0.174,0.000,-0.321,-5.303,-0.001,0.000,0.174,0.000,-0.321,-5.303
 schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,bend,1.1233498,0.55676153,2.528,0.000,-2.624,0.000,4.672,-9.589,2.528,0.000,-2.624,0.000,4.672,-9.589
