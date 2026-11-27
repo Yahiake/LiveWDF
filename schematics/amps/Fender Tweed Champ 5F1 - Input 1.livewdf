@@ -497,7 +497,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 42.28447
+        "fullScaleVolts": 42.895756
       },
       "properties": {},
       "visual": {
