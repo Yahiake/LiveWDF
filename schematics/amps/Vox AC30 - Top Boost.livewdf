@@ -1054,11 +1054,11 @@
       "id": "Cut",
       "properties": {
         "powerAmp": "1",
-        "taper": "Log"
+        "taper": "RevLog"
       },
       "type": "pot",
       "values": {
-        "pos": 0.5888317255942072,
+        "pos": 0.1475,
         "totalR": 250000.0
       },
       "visual": {
@@ -1137,7 +1137,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 422.69149
+        "fullScaleVolts": 422.69184
       },
       "visual": {
         "flipped": false,
