@@ -488,7 +488,6 @@ inline constexpr DiodeEntry kDiodeTable[] = {
     {"1N4003", 76.9e-12, 1.45, 0.042, 0.0, 200.0, 5.0e-6},
     {"1N34A",  1.0e-6, 1.0, 5.0, 1e6},
     {"1N5819", 1.0e-6, 1.0, 0.05, 1e6},
-    {"GZ34",   2.52e-9, 1.0, 15.0, 1e6},
     // ROHM 1SS133 in LTspice standard.dio. Only the static junction law is
     // represented here (IS, N, RS); junction capacitance is not modelled.
     {"1SS133", 1.0e-10, 1.5, 0.4, 1e6},
@@ -517,6 +516,9 @@ inline constexpr DiodeEntry kDiodeTable[] = {
     // RCA 5U4-GB (1954), p. 2, one plate, filament at 5 V. Fit to the 20–110 V curve.
     // https://frank.pocnet.net/sheets/049/5/5U4GB.pdf
     {"5U4GB", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00079},
+    // Philips GZ34 (1958), p. 6, one anode. Fit to the 100–600 mA curve.
+    // https://frank.pocnet.net/sheets/030/g/GZ34.pdf
+    {"GZ34", 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.00396},
 };
 
 inline constexpr int kNumDiodes = static_cast<int>(sizeof(kDiodeTable) / sizeof(kDiodeTable[0]));

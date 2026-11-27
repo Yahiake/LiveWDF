@@ -90,6 +90,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addCap(getPin("a"), getPin("b"), getVal("value", 1e-6), comp.id,
                          initial != comp.values.end() ? std::optional<double>(initial->second)
                                                       : std::nullopt);
+                c.cap.back().holdsDc = c.cap.back().initialVolts && hasAcPowerSupply();
             } else if (comp.type == "ind") {
                 c.addInd(getPin("a"), getPin("b"), getVal("value", 1e-3), comp.id);
             } else if (comp.type == "pot") {

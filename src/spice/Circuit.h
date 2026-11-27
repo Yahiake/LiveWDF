@@ -218,6 +218,8 @@ struct Cap {
     /// Optional reset seed for self-starting oscillators and other charged
     /// capacitors. Voltage is measured from a to b.
     std::optional<double> initialVolts = std::nullopt;
+    /// A mains supply's capacitor: the DC operating point holds it at initialVolts, so the circuit starts powered.
+    bool holdsDc = false;
 };
 
 /// An inductor (LiveWDF phase-1 addition). In the time domain it becomes a
