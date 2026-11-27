@@ -42,11 +42,16 @@ void Engine::rescaleWaves(const std::vector<double>& node, const std::vector<dou
 
 void Engine::substep(const double* sources, size_t count, int maxIter, double tol) {
     Engine& half = *half_;
-    const auto samePosition = [](const auto& a, const auto& b) { return a.position == b.position; };
+    // Until a settled transfer brings sub-engines for the current controls, hold as before.
+    const auto same = [](const auto& mine, const auto& theirs, auto field) {
+        return std::equal(mine.begin(), mine.end(), theirs.begin(), theirs.end(),
+                          [&](const auto& a, const auto& b) { return a.*field == b.*field; });
+    };
     if (count > lastSources_.size() || powerSagEnabled_ || hasAdjustedLiveTransfer() ||
-        !std::equal(circuit_.pots.begin(), circuit_.pots.end(), half.circuit_.pots.begin(), samePosition) ||
-        !std::equal(circuit_.varRes.begin(), circuit_.varRes.end(), half.circuit_.varRes.begin(), samePosition)) {
-        ++failedSubsteps_;
+        !same(circuit_.pots, half.circuit_.pots, &Pot::position) ||
+        !same(circuit_.varRes, half.circuit_.varRes, &VarRes::position) ||
+        !same(circuit_.res, half.circuit_.res, &Res::value)) {
+        ++staleSubsteps_;
         return;
     }
     // The held state is the previous sample's; give it to the half-rate engine.

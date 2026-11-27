@@ -29,6 +29,7 @@ bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly) c
     }
     setup.rate_ = fs_;
     setup.gridCurrent_ = gridCurrent_;
+    setup.substeps_ = half_ != nullptr;
     setup.linearRevision_ = linearRebuilds();
     setup.controlRevision_ = liveControlRevision();
     return true;
@@ -44,6 +45,8 @@ Engine::LiveTransferSetup Engine::LiveTransferSetup::makePeer() {
 
 void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
     prepared_ = std::make_unique<Engine>(circuit_, rate_, gridCurrent_);
+    if (substeps_)
+        prepared_->prepareSubsteps();
     if (!planOnly_)
         prepared_->prepareLiveControls();
     if (planOnly_ || prepareAffine)
@@ -154,6 +157,8 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             swapLoadedJunctionPreview(preparedEngine);
         }
     };
+    if (preparedEngine.half_)
+        half_.swap(preparedEngine.half_);
     if (setup.planOnly_) {
         circuitPlanRevision_ = linearRebuilds();
         installPreview();

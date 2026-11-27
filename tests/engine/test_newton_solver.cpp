@@ -488,7 +488,8 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
     CHECK(preview.stateRejectCount() == before);
 }
 
-TEST_CASE("A missed Accurate sample taken in half steps follows the oversampled render", "[newton][substep]") {
+TEST_CASE("A missed sample after a knob move is taken in half steps and follows the oversampled render",
+          "[newton][substep]") {
     wdf::LiveWDFDocument document;
     std::string error;
     REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
@@ -499,31 +500,44 @@ TEST_CASE("A missed Accurate sample taken in half steps follows the oversampled 
     const auto drive = [&](double n) {
         return source->dc + 10. * n / 24000. * document.inputVoltsPerFullScale() * std::sin(2. * kPi * 110. * n / kFs);
     };
-    const auto render = [&](wdf::Engine& engine, int factor, int samples) {
+    int event = -1;
+    const auto render = [&](wdf::Engine& engine, int factor) {
         const auto output = static_cast<size_t>(engine.nodeIndex(document.outputNet()));
         auto sources = engine.dcValues();
         std::vector<double> out;
-        for (int n = 0; n < samples * factor; ++n) {
+        for (int n = 0; n < 9000 * factor; ++n) {
             sources[input] = drive((n + 1. - factor) / factor);
             const double v = engine.step(sources)[output];
             if (n % factor == factor - 1) out.push_back(v);
+            if (event < 0 && engine.stateRejectCount() > 0) event = n / factor;
         }
         return out;
     };
 
+    const double knob = circuit.pots[0].position + 1e-3;
     wdf::Engine held(circuit, kFs), halved(circuit, kFs), reference(circuit, 4. * kFs);
+    REQUIRE(held.setPotPosition(0, knob));
+    REQUIRE(reference.setPotPosition(0, knob));
     halved.prepareSubsteps();
-    const auto heldOut = render(held, 1, 8200);
-    REQUIRE(held.stateRejectCount() > 0);
-    const auto halvedOut = render(halved, 1, 8200), referenceOut = render(reference, 4, 8200);
+    halved.prepareLiveControls();
+    REQUIRE(halved.setLiveControls({{0, knob}}, {}));
+    wdf::Engine::LiveTransferSetup settled(circuit);
+    REQUIRE(halved.captureLiveTransferSetup(settled));
+    settled.build(input, false);
+    REQUIRE(halved.installLiveTransferSetup(settled));
+
+    const auto heldOut = render(held, 1);
+    REQUIRE((event > 500 && event < 8800));
+    const auto halvedOut = render(halved, 1), referenceOut = render(reference, 4);
     CHECK(halved.stateRejectCount() == 0);
+    CHECK(halved.staleSubsteps() == 0);
     REQUIRE(halved.substeppedSamples() > 0);
     const auto worst = [&](int from, int to) {
         double e = 0.;
         for (int n = from; n < to; ++n) e = std::max(e, std::abs(halvedOut[n] - referenceOut[n]));
         return e;
     };
-    CHECK(worst(8000, 8200) < 2. * worst(7500, 8000));
+    CHECK(worst(event, event + 200) < 2. * worst(event - 500, event));
 }
 
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {

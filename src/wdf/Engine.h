@@ -72,6 +72,7 @@ public:
     void prepareSubsteps(int depth = 2);
     long long substeppedSamples() const noexcept { return substeps_; }
     long long failedSubsteps() const noexcept { return failedSubsteps_; }
+    long long staleSubsteps() const noexcept { return staleSubsteps_; }
 
     // A single-output approximation for static BJT/diode networks. Preparation
     // allocates and qualifies the fixed schematic away from the audio thread.
@@ -141,7 +142,7 @@ public:
         const Engine* owner_ = nullptr;
         Circuit circuit_;
         double rate_ = 0.0;
-        bool gridCurrent_ = true, planOnly_ = false, compiledPreview_ = false;
+        bool gridCurrent_ = true, planOnly_ = false, compiledPreview_ = false, substeps_ = false;
         std::array<unsigned, planLimit> affineMasks_{};
         size_t maskCount_ = 0;
         long long linearRevision_ = 0, controlRevision_ = 0, affineRevision_ = 0;
@@ -162,7 +163,7 @@ public:
 private:
     std::shared_ptr<Engine> half_;
     std::vector<double> lastSources_, lastEoff_, midSources_;
-    long long substeps_ = 0, failedSubsteps_ = 0;
+    long long substeps_ = 0, failedSubsteps_ = 0, staleSubsteps_ = 0;
     void substep(const double* sources, size_t count, int maxIter, double tol);
     void rescaleWaves(const std::vector<double>& node, const std::vector<double>& eoff, double capScale,
                       const std::vector<double>& caps, const std::vector<double>& inductors,
