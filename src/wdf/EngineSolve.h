@@ -123,10 +123,17 @@ public:
         if (blockCount_ == 2 && scalarBlockCount_ <= 1 && nBjt_ == 0 &&
             !hasAntiParallelBlock_ && !hasLinearReduction_)
             return false;
-        if (blockCount_ == 1)
-            return hasLinearReduction_ || hasAntiParallelBlock_ || hasMonotoneClassAB() ||
-                   solver::RootBlockSolve::hasDirectSingleton(
-                       newtonBlocks_.front(), rootDevices_, comp_, opAmps_, Z_, K_);
+        if (blockCount_ == 1) {
+            // Controlled resistors alone pay only through the reduced solver; otherwise their block Newton
+            // costs more than the joint one. Op-amp blocks keep the block route, it is faster for them in time.
+            const NewtonBlock& block = newtonBlocks_.front();
+            const bool reducible = block.linearReduction &&
+                (block.reducedPorts.empty() || block.reducedAntiParallel || block.reducedScalarDiode ||
+                 std::ranges::any_of(block.linearDevices, [&](int d) {
+                     return rootDevices_[static_cast<size_t>(d)].kind != DeviceKind::ControlledRes; }));
+            return reducible || hasAntiParallelBlock_ || hasMonotoneClassAB() ||
+                   solver::RootBlockSolve::hasDirectSingleton(block, rootDevices_, comp_, opAmps_, Z_, K_);
+        }
         return blockCount_ >= 2;
     }
 
