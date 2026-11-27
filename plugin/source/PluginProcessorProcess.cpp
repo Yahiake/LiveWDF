@@ -206,11 +206,14 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         leftEngine_->releaseBipolarPreview();
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
     }
+    const bool keepBlockAnswer = compiledPreview && !isNonRealtime() && previewKeepsBlockAnswer_.load(std::memory_order_relaxed);
     leftEngine_->useLoadedJunctionPreview(compiledPreview);
     leftEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+    leftEngine_->keepBlockAnswer(keepBlockAnswer);
     if (secondEngine) {
         rightEngine_->useLoadedJunctionPreview(compiledPreview);
         rightEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+        rightEngine_->keepBlockAnswer(keepBlockAnswer);
     }
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
@@ -224,7 +227,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
-    if (processStereo)
+    if (secondEngine)
         std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svRight_.begin());
     const double targetPad = compiledPreview && *apvts_.getRawParameterValue("preview_pad") > 0.5f
         ? previewPadScale_ : 1.;

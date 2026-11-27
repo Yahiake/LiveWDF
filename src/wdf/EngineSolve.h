@@ -192,6 +192,7 @@ protected:
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
     bool triodePreviewEnabled_ = false, slowLagEnabled_ = false;
+    bool keepBlockAnswer_ = false;
     std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
     std::vector<int> lagOrder_;
     std::vector<double> lagHeld_;
@@ -233,7 +234,8 @@ protected:
             staticMode_, K_, nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
             jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
-            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_
+            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_,
+            loadedJunctionEnabled_ && blockCount_ == 0
         };
     }
 
@@ -254,7 +256,7 @@ protected:
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_),
-            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_
+            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_, keepBlockAnswer_
         };
     }
 
