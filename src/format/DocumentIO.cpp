@@ -450,9 +450,23 @@ bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::strin
         error = "The preamp output pin is unavailable";
         return false;
     }
-    const auto tapPin = static_cast<int>(pin - pins.begin());
-    const auto inputPin = tap->type == "cap" ? 1 - tapPin : tapPin;
-    const auto position = livewdf::editor::pinAt(*tap, inputPin);
+    auto tapPin = static_cast<int>(pin - pins.begin());
+    const auto* handoff = tap;
+    if (tap->type != "cap" && tap->properties.contains("preampOnly")) {
+        // Without the preamp-only load the power stage sets the tap's DC, so hand
+        // off through the coupling capacitor that feeds it instead of clamping it.
+        const auto& net = tap->pins.at(*pin);
+        const auto coupling = std::ranges::find_if(components, [&](const auto& part) {
+            return part.type == "cap" && !isPowerAmpPart(part) && part.pins.size() == 2 &&
+                   std::ranges::any_of(part.pins, [&](const auto& p) { return p.second == net; });
+        });
+        if (coupling != components.end()) {
+            handoff = &*coupling;
+            tapPin = handoff->pins.at(livewdf::editor::findPart("cap")->pins[0]) == net ? 0 : 1;
+        }
+    }
+    const auto inputPin = handoff->type == "cap" ? 1 - tapPin : tapPin;
+    const auto position = livewdf::editor::pinAt(*handoff, inputPin);
     auto drawing = *this;
     auto& input = drawing.components[terminal("in") - components.data()];
     const auto inputPosition = livewdf::editor::pinAt(input, 0);
@@ -469,10 +483,10 @@ bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::strin
                                       std::pair{"powerAmpPreviewTrim", "previewTrim"}})
         if (const auto value = out.values.find(own); value != out.values.end())
             out.values[shared] = value->second;
-    if (tap->type == "cap") {
+    if (handoff->type == "cap") {
         // The preamp hand-off has already crossed this coupling capacitor. Keep
         // a transparent DC block so the input source does not clamp the PI bias.
-        auto& coupling = drawing.components[tap - components.data()];
+        auto& coupling = drawing.components[handoff - components.data()];
         coupling.values["value"] = std::max(coupling.values["value"], 1.e-3);
     }
 
@@ -531,8 +545,8 @@ bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::strin
             supplyParts.insert(part.id);
 
     std::erase_if(drawing.components, [&](const auto& part) {
-        return part.id != tap->id && !supplyParts.contains(part.id) && !controls.contains(part.id) &&
-               !isPowerAmpPart(part) &&
+        return part.id != tap->id && part.id != handoff->id && !supplyParts.contains(part.id) &&
+               !controls.contains(part.id) && !isPowerAmpPart(part) &&
                part.type != "in" && part.type != "out" && part.type != "gnd" && part.type != "rail";
     });
     LiveWDFDocument candidate;
@@ -547,7 +561,7 @@ bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::strin
         pruned = std::erase_if(candidate.components, [&](const auto& part) {
             const bool passive = part.type == "res" || part.type == "cap" || part.type == "ind" ||
                                  part.type == "pot" || part.type == "varres";
-            return part.id != tap->id && passive && std::ranges::any_of(part.pins, [&](const auto& pin) {
+            return part.id != tap->id && part.id != handoff->id && passive && std::ranges::any_of(part.pins, [&](const auto& pin) {
                 return pin.second != candidate.groundNode && connections[pin.second] == 1;
             });
         }) != 0;
