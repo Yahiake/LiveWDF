@@ -40,8 +40,9 @@ public:
         elements.reserve(static_cast<size_t>(eng.P_));
         for (int j = 0; j < eng.P_; ++j) {
             double g = eng.net_.eG[j];
+            // A precharged capacitor holds its voltage, so the rest of the circuit starts powered from it.
             if (eng.net_.capOf[j] >= 0)
-                g = 0.0;
+                g = eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])].initialVolts ? 1.0 : 0.0;
             else if (eng.net_.indOf[j] >= 0)
                 g = 1.0 / kIndDcR;
             elements.push_back({eng.net_.epA[j], eng.net_.epB[j], g});
@@ -140,9 +141,13 @@ public:
         }
 
         std::vector<double> eoff(eng.P_), roff(eng.K_);
-        for (int j = 0; j < eng.P_; ++j)
+        for (int j = 0; j < eng.P_; ++j) {
             eoff[static_cast<size_t>(j)] =
                 sourceScale * eng.net_.eoffAff[static_cast<size_t>(j)].eval(eng.dcValues_);
+            if (eng.net_.capOf[j] >= 0)
+                eoff[static_cast<size_t>(j)] -=
+                    sourceScale * eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])].initialVolts.value_or(0.0);
+        }
         for (int r = 0; r < eng.K_; ++r)
             roff[static_cast<size_t>(r)] =
                 sourceScale * eng.net_.roffAff[static_cast<size_t>(r)].eval(eng.dcValues_);
