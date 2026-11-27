@@ -716,6 +716,8 @@ wdf::SchematicComponent makeComponent(const std::string& type,
         comp.values["gain"] = model.gain;
         comp.values["outputOhms"] = model.outputOhms;
         comp.values["transferLoss"] = model.transferLoss;
+        comp.values["kneeWidth"] = model.kneeWidth;
+        comp.values["evenOrder"] = model.evenOrder;
     }
 
     if (type == "photores") {

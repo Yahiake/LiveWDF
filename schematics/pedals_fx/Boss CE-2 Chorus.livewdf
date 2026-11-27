@@ -569,7 +569,9 @@
         "inputSwing": 1.15,
         "outputOhms": 5200,
         "gain": 1.0,
-        "transferLoss": 3.4e-5
+        "transferLoss": 3.4e-5,
+        "kneeWidth": 0.077,
+        "evenOrder": 0.017
       },
       "properties": {},
       "visual": {

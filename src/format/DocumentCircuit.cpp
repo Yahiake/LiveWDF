@@ -377,6 +377,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                 model.gain = getVal("gain", model.gain);
                 model.outputOhms = getVal("outputOhms", model.outputOhms);
                 model.transferLoss = getVal("transferLoss", model.transferLoss);
+                model.kneeWidth = getVal("kneeWidth", model.kneeWidth);
+                model.evenOrder = getVal("evenOrder", model.evenOrder);
                 bucketBrigades.push_back({getPin("in"), getPin("out"), getPin("clock"),
                                           getPin("common"), comp.id, model});
             } else if (comp.type == "vcvs") {

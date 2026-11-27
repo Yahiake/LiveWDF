@@ -1005,7 +1005,9 @@
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
         "stages": 2048,
-        "transferLoss": 1.35e-4
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057
       },
       "visual": {
         "flipped": false,
@@ -1191,7 +1193,9 @@
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
         "stages": 2048,
-        "transferLoss": 1.35e-4
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057
       },
       "visual": {
         "flipped": false,
@@ -1377,7 +1381,9 @@
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
         "stages": 2048,
-        "transferLoss": 1.35e-4
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057
       },
       "visual": {
         "flipped": false,
@@ -1563,7 +1569,9 @@
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
         "stages": 2048,
-        "transferLoss": 1.35e-4
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057
       },
       "visual": {
         "flipped": false,

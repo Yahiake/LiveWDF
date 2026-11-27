@@ -25,6 +25,10 @@ struct BucketBrigadeModel {
     // Charge left behind per transfer, fitted to the MN3005 data sheet's Gi-fi
     // curve at fcp 40 kHz: -1.9 dB at 10 kHz, of which the held output is -0.9 dB.
     double transferLoss = 2.8e-5;
+    // The window's knee width and second-order term, both relative to the
+    // swing, fitted to the MN3005 data sheet's THD against input at 40 kHz.
+    double kneeWidth = 0.1;
+    double evenOrder = 0.014;
 
     bool valid() const noexcept {
         return stages >= 2 && stages <= 32768 && stages % 2 == 0 &&
@@ -34,7 +38,8 @@ struct BucketBrigadeModel {
                std::isfinite(inputSwing) && inputSwing > 0.0 &&
                std::isfinite(gain) && gain > 0.0 &&
                std::isfinite(outputOhms) && outputOhms > 0.0 &&
-               transferLoss >= 0.0 && stages * transferLoss <= 1.0;
+               transferLoss >= 0.0 && stages * transferLoss <= 1.0 &&
+               kneeWidth >= 0.0 && kneeWidth < 1.0 && std::abs(evenOrder) < 0.25;
     }
 
     double clockPeriod(double control) const noexcept {
@@ -43,7 +48,13 @@ struct BucketBrigadeModel {
     }
 
     double outputVoltage(double input) const noexcept {
-        return outputBias + gain * std::clamp(input - inputBias, -inputSwing, inputSwing);
+        const double x = std::clamp((input - inputBias) / inputSwing, -3.0, 3.0);
+        const double v = x + evenOrder * x * x;
+        return outputBias + gain * inputSwing * (v - beyond(v - 1.0) + beyond(-v - 1.0));
+    }
+
+    double beyond(double v) const noexcept {
+        return std::max(v, 0.0) + (kneeWidth > 0.0 ? kneeWidth * std::log1p(std::exp(-std::abs(v) / kneeWidth)) : 0.0);
     }
 
     double dcOutputCurrent(double input) const noexcept {

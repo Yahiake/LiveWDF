@@ -548,7 +548,9 @@
         "outputOhms": 5200,
         "periodMicrosecondsPerVolt": 2.4,
         "stages": 1024,
-        "transferLoss": 3.4e-5
+        "transferLoss": 3.4e-5,
+        "kneeWidth": 0.077,
+        "evenOrder": 0.017
       },
       "visual": {
         "flipped": false,

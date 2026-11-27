@@ -152,6 +152,8 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "inputSwing")     return "Input swing to clipping (V)";
     if (key == "outputOhms")     return "Output resistance (ohm)";
     if (key == "transferLoss")   return "Charge left per transfer";
+    if (key == "kneeWidth")      return "Clip knee width (of swing)";
+    if (key == "evenOrder")      return "Second-order term (of swing)";
     // The JFET/MOSFET parameter names are the engine's symbols, but they are
     // displayed to a person; the one-letter keys are capitalised so a column of
     // captions does not read as a list of variable names.
