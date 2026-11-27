@@ -491,55 +491,53 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
 
 TEST_CASE("A missed sample after a knob move is taken in half steps and follows the oversampled render",
           "[newton][substep]") {
-    wdf::LiveWDFDocument document;
-    std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
-    const auto circuit = wdf::circuitWithPortImpedances(document);
-    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
-    REQUIRE(source != circuit.src.end());
-    const auto input = static_cast<size_t>(source - circuit.src.begin());
-    const auto drive = [&](double n) {
-        return source->dc + 20. * n / 24000. * document.inputVoltsPerFullScale() * std::sin(2. * kPi * 110. * n / kFs);
-    };
-    int event = -1;
-    const auto render = [&](wdf::Engine& engine, int factor) {
-        const auto output = static_cast<size_t>(engine.nodeIndex(document.outputNet()));
-        auto sources = engine.dcValues();
-        std::vector<double> out;
-        for (int n = 0; n < 9000 * factor; ++n) {
-            sources[input] = drive((n + 1. - factor) / factor);
-            const double v = engine.step(sources)[output];
-            if (n % factor == factor - 1) out.push_back(v);
-            if (event < 0 && engine.stateRejectCount() > 0) event = n / factor;
-        }
-        return out;
-    };
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 0.0);
+    circuit.addSrc("bplus", "0", 350.0);
+    circuit.addSrc("vscreen", "0", 300.0);
+    circuit.addPot("in", "w", "0", 10e3, .5, wdf::PotTaper::Linear, "P1");
+    circuit.addCap("w", "g", 47e-9);
+    circuit.addRes("g", "0", 220e3);
+    circuit.addRes("k", "0", 250.0);
+    circuit.addCap("k", "0", 100e-6);
+    circuit.addRes("vscreen", "s", 1e3);
+    circuit.addCap("s", "0", 22e-6);
+    circuit.addRes("bplus", "p", 2.5e3);
+    circuit.addPentode("p", "s", "g", "k", wdf::kEL34, "XP1");
+    // Three iterations miss the hot samples at the host rate, not at twice it.
+    constexpr int iterations = 3;
 
-    constexpr int pot = 3;
-    const double knob = circuit.pots[pot].position + 1e-3;
     wdf::Engine held(circuit, kFs), halved(circuit, kFs), reference(circuit, 4. * kFs);
-    REQUIRE(held.setPotPosition(pot, knob));
-    REQUIRE(reference.setPotPosition(pot, knob));
+    for (auto* engine : {&held, &reference})
+        REQUIRE(engine->setPotPosition(0, .6));
     halved.prepareSubsteps();
     halved.prepareLiveControls();
-    REQUIRE(halved.setLiveControls({{pot, knob}}, {}));
+    REQUIRE(halved.setLiveControls({{0, .6}}, {}));
     wdf::Engine::LiveTransferSetup settled(circuit);
     REQUIRE(halved.captureLiveTransferSetup(settled));
-    settled.build(input, false);
+    settled.build(0, false);
     REQUIRE(halved.installLiveTransferSetup(settled));
 
-    const auto heldOut = render(held, 1);
-    REQUIRE((event > 500 && event < 8800));
-    const auto halvedOut = render(halved, 1), referenceOut = render(reference, 4);
-    CHECK(halved.stateRejectCount() == 0);
+    const auto output = static_cast<size_t>(held.nodeIndex("p"));
+    const auto drive = [](double n) { return 30. * std::sin(2. * kPi * 440. * n / kFs); };
+    auto sources = held.dcValues();
+    double worst = 0., peak = 0.;
+    for (int n = 0; n < 2000; ++n) {
+        sources[0] = drive(n);
+        held.step(sources, iterations, 1e-9);
+        const double value = halved.step(sources, iterations, 1e-9)[output];
+        double expected = 0.;
+        for (int k = 1; k <= 4; ++k) {
+            sources[0] = drive(n - 1 + k / 4.);
+            expected = reference.step(sources)[output];
+        }
+        worst = std::max(worst, std::abs(value - expected));
+        peak = std::max(peak, std::abs(expected - 350.));
+    }
+    REQUIRE(held.stateRejectCount() > 0);
     CHECK(halved.staleSubsteps() == 0);
-    REQUIRE(halved.substeppedSamples() > 0);
-    const auto worst = [&](int from, int to) {
-        double e = 0.;
-        for (int n = from; n < to; ++n) e = std::max(e, std::abs(halvedOut[n] - referenceOut[n]));
-        return e;
-    };
-    CHECK(worst(event, event + 20) < std::max(worst(event - 500, event), worst(event + 20, event + 520)));
+    CHECK(halved.stateRejectCount() == 0);
+    CHECK(worst < 1e-3 * peak);
 }
 
 TEST_CASE("Powered amp Preview follows Fast on pickup hum", "[newton][preview][pentode]") {
