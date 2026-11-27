@@ -1361,7 +1361,8 @@
       "values": {
         "fullScaleVolts": 271.06202,
         "fastTrim": 1.0091325,
-        "previewTrim": 1.0616646
+        "previewTrim": 1.0616646,
+        "previewBlockAnswer": 1
       },
       "visual": {
         "flipped": false,

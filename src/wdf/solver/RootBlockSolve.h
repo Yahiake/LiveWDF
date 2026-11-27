@@ -95,6 +95,7 @@ struct BlockSolveContext {
     long long& mixedAttempts;
     long long& mixedAccepted;
     double modeTol;
+    bool keepBlockAnswer = false;
     bool reductions = true;
 };
 
@@ -277,6 +278,17 @@ public:
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
         const int localMax = std::min(maxIter, Reduced ? 10 : 24);
+        alignas(32) double bestV[64], bestI[64];
+        double bestF = std::numeric_limits<double>::infinity();
+        const auto keepBest = [&] {
+            if (!ctx.keepBlockAnswer || !(maxF < bestF) || n > 64)
+                return;
+            bestF = maxF;
+            for (int j = 0; j < n; ++j) {
+                bestV[j] = ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                bestI[j] = ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+            }
+        };
         for (int it = 0; it < localMax; ++it) {
             ++ctx.newtonIters;
             if (!curValid) {
@@ -291,6 +303,7 @@ public:
                     tock(ctx.prof->device);
 
                 maxF = blockResidual<Reduced>(block, ctx, n);
+                keepBest();
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 if (maxF < landTol) {
@@ -646,6 +659,7 @@ public:
                 }
                 prevF = baseF;
                 maxF = ftNorm;
+                keepBest();
                 if (maxF < landTol) {
                     converged = true;
                     break;
@@ -660,10 +674,18 @@ public:
                 curValid = true;
             }
         }
-        if (!converged && !landing)
-            return false;
-        if constexpr (Reduced)
-            return true; // Caller reconstructs and certifies the original block.
+        if constexpr (Reduced) {
+            return converged || landing; // Caller reconstructs and certifies the original block.
+        } else if (!converged && !landing) {
+            // A kept block answer takes a stalled block's best iterate; the full-residual guard still sends a gross miss to the joint solve.
+            if (!ctx.keepBlockAnswer || !std::isfinite(bestF))
+                return false;
+            for (int j = 0; j < n; ++j) {
+                ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestV[j];
+                ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestI[j];
+            }
+            ctx.keptBest = true;
+        }
 
 
         for (int di : devices) {
@@ -1296,7 +1318,7 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && ctx.lastBlockResidual <= effTol && !pinChanged) {
+        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol || (ctx.keepBlockAnswer && withinSwing(ctx)))) {
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
@@ -1311,6 +1333,19 @@ public:
             RootNewton::solveRootsNewton(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
         else
             RootNewton::solveRootsNewtonSeeded(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
+    }
+
+    /// A circuit that opts in keeps a block answer whose full residual misses by a fraction of each
+    /// port's swing: that error is a lagged stage coupling, and a joint redo of
+    /// only some samples switches between two answers, which is heard as noise.
+    static inline bool withinSwing(const BlockSolveContext& ctx) noexcept
+    {
+        for (int r = 0; r < ctx.K; ++r) {
+            const size_t i = static_cast<size_t>(r);
+            if (!(std::abs(ctx.F[i]) <= 0.25 * (std::abs(ctx.vv[i]) + std::abs(ctx.vOc[i]))))
+                return false;
+        }
+        return true;
     }
 
     /// Move the lagged couplings of `view` into (sign -1) or back out of (+1)
