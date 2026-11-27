@@ -11,6 +11,15 @@
 #if defined(__x86_64__) || defined(_M_X64) || defined(__i386__)
 #include <immintrin.h>
 #endif
+#if defined(__APPLE__)
+#include <Availability.h>
+#endif
+// std::atomic wait/notify needs macOS 11; a build that targets an older macOS runs without the worker.
+#if defined(__APPLE__) && __MAC_OS_X_VERSION_MIN_REQUIRED < 110000
+#define LIVEWDF_BLOCK_WORKER 0
+#else
+#define LIVEWDF_BLOCK_WORKER 1
+#endif
 
 namespace livewdf {
 
@@ -31,15 +40,17 @@ public:
     ~BlockWorker() {
         if (!thread_.joinable()) return;
         state_.store(stopping, std::memory_order_release);
-        state_.notify_one();
+        wake();
         thread_.join();
     }
 
     // Message thread only.
     void start() {
+#if LIVEWDF_BLOCK_WORKER
         if (started_.load(std::memory_order_relaxed)) return;
         thread_ = std::thread([this] { loop(); });
         started_.store(true, std::memory_order_release);
+#endif
     }
 
     template <class Mine, class Theirs>
@@ -67,7 +78,7 @@ public:
         job_ = [](void* context) { (*static_cast<Job*>(context))(); };
         context_ = &job;
         state_.store(posted, std::memory_order_release);
-        state_.notify_one();
+        wake();
         return true;
     }
 
@@ -82,7 +93,7 @@ public:
     void join() noexcept {
         int state;
         while ((state = state_.load(std::memory_order_acquire)) == running)
-            state_.wait(running, std::memory_order_acquire);
+            sleepWhile(running);
         state_.store(idle, std::memory_order_relaxed);
     }
 
@@ -108,6 +119,17 @@ private:
         return false;
     }
 
+    void wake() noexcept {
+#if LIVEWDF_BLOCK_WORKER
+        state_.notify_one();
+#endif
+    }
+    void sleepWhile([[maybe_unused]] int state) noexcept {
+#if LIVEWDF_BLOCK_WORKER
+        state_.wait(state, std::memory_order_acquire);
+#endif
+    }
+
     void loop() noexcept {
         juce::ScopedNoDenormals noDenormals;
         for (int state = state_.load(std::memory_order_acquire); state != stopping;
@@ -115,9 +137,9 @@ private:
             if (state == posted && state_.compare_exchange_strong(state, running, std::memory_order_acquire)) {
                 job_(context_);
                 state_.store(done, std::memory_order_release);
-                state_.notify_one();
+                wake();
             } else {
-                state_.wait(state, std::memory_order_acquire);
+                sleepWhile(state);
             }
         }
     }
