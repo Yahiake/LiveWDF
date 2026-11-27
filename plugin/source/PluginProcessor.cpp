@@ -744,6 +744,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     const auto build = [&](wdf::Circuit& circuit) {
         left = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
         right = std::make_unique<wdf::Engine>(circuit, fs, attemptedGridCurrent_);
+        left->prepareSubsteps();
+        right->prepareSubsteps();
 
         // Precharge a modeled mains supply off the audio thread, ending at the first playback phase.
         outIdx = left->nodeIndex(doc.outputNet());

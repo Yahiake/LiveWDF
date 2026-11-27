@@ -488,6 +488,44 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
     CHECK(preview.stateRejectCount() == before);
 }
 
+TEST_CASE("A missed Accurate sample taken in half steps follows the oversampled render", "[newton][substep]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
+    REQUIRE(source != circuit.src.end());
+    const auto input = static_cast<size_t>(source - circuit.src.begin());
+    const auto drive = [&](double n) {
+        return source->dc + 10. * n / 24000. * document.inputVoltsPerFullScale() * std::sin(2. * kPi * 110. * n / kFs);
+    };
+    const auto render = [&](wdf::Engine& engine, int factor, int samples) {
+        const auto output = static_cast<size_t>(engine.nodeIndex(document.outputNet()));
+        auto sources = engine.dcValues();
+        std::vector<double> out;
+        for (int n = 0; n < samples * factor; ++n) {
+            sources[input] = drive((n + 1. - factor) / factor);
+            const double v = engine.step(sources)[output];
+            if (n % factor == factor - 1) out.push_back(v);
+        }
+        return out;
+    };
+
+    wdf::Engine held(circuit, kFs), halved(circuit, kFs), reference(circuit, 4. * kFs);
+    halved.prepareSubsteps();
+    const auto heldOut = render(held, 1, 8200);
+    REQUIRE(held.stateRejectCount() > 0);
+    const auto halvedOut = render(halved, 1, 8200), referenceOut = render(reference, 4, 8200);
+    CHECK(halved.stateRejectCount() == 0);
+    REQUIRE(halved.substeppedSamples() > 0);
+    const auto worst = [&](int from, int to) {
+        double e = 0.;
+        for (int n = from; n < to; ++n) e = std::max(e, std::abs(halvedOut[n] - referenceOut[n]));
+        return e;
+    };
+    CHECK(worst(8000, 8200) < 2. * worst(7500, 8000));
+}
+
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
     constexpr int rows = 35, cols = 12, groups = 4;
     std::vector<double> z(rows * cols), v(rows), open(rows), current(rows), actual(rows);

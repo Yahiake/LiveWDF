@@ -56,8 +56,22 @@ public:
     const std::vector<double>& step(const double* sources, size_t count,
                                     int maxIter = kDefaultMaxIterations, double tol = kDefaultTolerance) {
         if (bipolarPreview_) releaseBipolarPreview();
-        return EngineStep::step(sources, count, maxIter, tol);
+        if (!half_)
+            return EngineStep::step(sources, count, maxIter, tol);
+        std::copy(eoff_.begin(), eoff_.end(), lastEoff_.begin());
+        EngineStep::step(sources, count, maxIter, tol);
+        if (lastStateRejected_ && !triodePreviewEnabled_)
+            substep(sources, count, maxIter, tol);
+        std::copy_n(sources, std::min(count, lastSources_.size()), lastSources_.begin());
+        return node_;
     }
+
+    /// Off the audio thread: build engines at two and four times the rate. A
+    /// sample Fast or Accurate does not converge is then taken in two half
+    /// steps (a missed half step in two quarter steps) instead of being held.
+    void prepareSubsteps(int depth = 2);
+    long long substeppedSamples() const noexcept { return substeps_; }
+    long long failedSubsteps() const noexcept { return failedSubsteps_; }
 
     // A single-output approximation for static BJT/diode networks. Preparation
     // allocates and qualifies the fixed schematic away from the audio thread.
@@ -146,6 +160,13 @@ public:
     bool installLiveTransferSetup(LiveTransferSetup& setup) noexcept;
 
 private:
+    std::shared_ptr<Engine> half_;
+    std::vector<double> lastSources_, lastEoff_, midSources_;
+    long long substeps_ = 0, failedSubsteps_ = 0;
+    void substep(const double* sources, size_t count, int maxIter, double tol);
+    void rescaleWaves(const std::vector<double>& node, const std::vector<double>& eoff, double capScale,
+                      const std::vector<double>& caps, const std::vector<double>& inductors,
+                      std::vector<double>& capsOut, std::vector<double>& inductorsOut) const;
     long long mixedAffineRevision_ = 0;
     bool gridCurrent_;
     void qualifyBipolarControlMotion(size_t inputSource, int outputNode);
