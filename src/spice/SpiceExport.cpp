@@ -296,7 +296,11 @@ SpiceExportResult spiceExport(const Circuit& c,
         const std::string base = o.name.empty() ? ("OA" + std::to_string(i)) : o.name;
         const auto& m = o.model;
         const std::string mid = spiceUnique("x_" + spiceSafe(base) + "_out", usedNodes);
-        const std::string raw = spiceNum(m.openLoopGain) + "*V(" + o.pos + "," + o.neg + ")";
+        // ngspice cannot leave a hard clamp whose linear region misses its zero
+        // initial guess, so a single-supply op-amp gets a sub-millivolt input offset.
+        const bool zeroOutsideRails = m.railLow() > 0.0 || m.railHigh() < 0.0;
+        const std::string raw = (zeroOutsideRails ? spiceNum(0.5 * (m.railLow() + m.railHigh())) + "+" : "") +
+                                spiceNum(m.openLoopGain) + "*V(" + o.pos + "," + o.neg + ")";
         std::string railLimited = "min(max(" + raw + "," + spiceNum(m.railLow()) +
                                   ")," + spiceNum(m.railHigh()) + ")";
         if (m.softRails) {
