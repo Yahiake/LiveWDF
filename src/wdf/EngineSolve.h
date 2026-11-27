@@ -189,7 +189,6 @@ protected:
     std::vector<int> lagOrder_;
     std::vector<double> lagHeld_;
     int lagCount_ = 0;
-    int slowLagCooldown_ = 0;
     long long lagRevision_ = -1;
     double modeTol_ = 0.0;
 

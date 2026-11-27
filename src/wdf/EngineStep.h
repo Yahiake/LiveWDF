@@ -175,9 +175,8 @@ public:
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void prepareSlowLag();
-    bool slowLagReplacesBlocks() const noexcept { return blockRoots() && blockCount_ > 1; }
     bool slowLagActive() const noexcept {
-        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && explicitRootsAllowed_;
+        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1;
     }
     long long triodePreviewHits() const noexcept { return triodePreviewHits_; }
     bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
