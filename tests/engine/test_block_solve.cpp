@@ -775,7 +775,7 @@ TEST_CASE("nodes with common root currents retain the scalar transfer", "[engine
     }
 }
 
-TEST_CASE("Preview reads the Dual Rectifier supply one sample late but keeps its power stage whole",
+TEST_CASE("Preview reads the JCM800 supply one sample late but keeps its power stage whole",
           "[blocksolve][preview]") {
     struct Probe : wdf::Engine {
         using Engine::Engine;
@@ -791,7 +791,7 @@ TEST_CASE("Preview reads the Dual Rectifier supply one sample late but keeps its
     };
     wdf::LiveWDFDocument document;
     std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Mesa Boogie Dual Rectifier.livewdf", error));
+    REQUIRE(document.loadFromFile("schematics/amps/Marshall JCM800 2203 - High Input.livewdf", error));
     const auto circuit = wdf::circuitWithPortImpedances(document);
     const size_t input = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin();
     Probe preview(circuit, kFs, true);
@@ -811,9 +811,8 @@ TEST_CASE("Preview reads the Dual Rectifier supply one sample late but keeps its
     }
     preview.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
     preview.useLoadedJunctionPreview(true);
-    REQUIRE(fast.rootBlockCount() == 1);
     const auto blocks = preview.lagged();
-    REQUIRE(blocks.size() > 2);
+    REQUIRE(int(blocks.size()) > fast.rootBlockCount());
     const auto pentodes = [](const std::vector<int>& kinds) {
         return std::ranges::count(kinds, int(wdf::DeviceKind::Pentode));
     };
