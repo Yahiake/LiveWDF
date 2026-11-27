@@ -5,6 +5,7 @@
 #include "FastLiveCache.h"
 
 #include "format/AcSource.h"
+#include "format/MainsSupply.h"
 
 #include <algorithm>
 #include <atomic>
@@ -343,6 +344,11 @@ bool LiveWDFPluginProcessor::compiledPreviewRequested() const {
            && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
 }
 
+// The drawn mains supply with its ripple only in Accurate; Fast and Preview use its DC equivalent, which costs what fixed rails did.
+bool LiveWDFPluginProcessor::mainsHumRequested() const {
+    return shouldForceAccurate() || *apvts_.getRawParameterValue("solve_quality") <= 0.5f;
+}
+
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
     constexpr int polyphase4x = 2;
     return isNonRealtime() && *apvts_.getRawParameterValue("export_4x") > 0.5f
@@ -386,10 +392,11 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
     const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
     const bool pentodePairModeChanged = previewPentodePairs_ && compiledPreviewRequested() != *previewPentodePairs_;
+    const bool mainsHumChanged = mainsHum_ && mainsHumRequested() != *mainsHum_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
-        powerAmpChanged || pentodePairModeChanged || gatedSwitchChanged_.exchange(false)) {
+        powerAmpChanged || pentodePairModeChanged || mainsHumChanged || gatedSwitchChanged_.exchange(false)) {
         const juce::File circuitFile = currentFile_;
         if (!loadCircuitDocument(currentDoc_, false)) {
             if (portTopologyChanged)
@@ -665,6 +672,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     wdf::Circuit c;
     try {
         c = wdf::circuitWithPortImpedances(doc, &portPositions, &fixtureNames);
+        if (!mainsHumRequested())
+            wdf::replaceMainsSupplies(c, doc, fs);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -875,10 +884,13 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     powerAmpEnabled_ = hasPowerAmp ? std::optional(enablePowerAmp) : std::nullopt;
     previewPentodePairs_ = newPreviewPentodePairs;
+    mainsHum_ = playbackDoc.hasAcPowerSupply() ? std::optional(mainsHumRequested()) : std::nullopt;
     rejectedPortRequest_.reset();
     auto cacheKey = wdf::playbackCacheKey(playbackDoc, fixtureNames);
     if (previewPentodePairs_.value_or(false))
         cacheKey += "\npreview-pentode-pairs";
+    if (!mainsHum_.value_or(true))
+        cacheKey += "\nmains-dc-equivalent";
     cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for
@@ -908,6 +920,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_.store(playbackDoc.outputFullScaleVolts(), std::memory_order_relaxed);
+        outputFastTrim_.store(playbackDoc.outputTrim(false), std::memory_order_relaxed);
+        outputPreviewTrim_.store(playbackDoc.outputTrim(true), std::memory_order_relaxed);
         outputAtSpeakerLevel_.store(hasPowerAmp && enablePowerAmp, std::memory_order_relaxed);
         previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
             ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;

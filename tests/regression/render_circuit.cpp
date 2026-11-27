@@ -1,6 +1,7 @@
 #include "format/AcSource.h"
 #include "format/ControlGroups.h"
 #include "format/LiveWDFFile.h"
+#include "format/MainsSupply.h"
 #include "format/PortImpedance.h"
 #include "spice/SpiceExport.h"
 #include "wdf/Engine.h"
@@ -163,7 +164,9 @@ int main(int argc, char** argv) try {
     if (!document.loadFromFile(configuration["circuit"].asString(), error)) throw std::runtime_error(error);
     setDocumentControls(document, configuration["positions"], false);
     setDocumentControls(document, configuration["switches"], true);
-    const auto circuit = wdf::circuitWithPortImpedances(document);
+    auto circuit = wdf::circuitWithPortImpedances(document);
+    if (!accurate)
+        wdf::replaceMainsSupplies(circuit, document, sampleRate);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     if (source == circuit.src.end()) throw std::runtime_error("Circuit has no audio input");
     const auto input = static_cast<size_t>(source - circuit.src.begin());

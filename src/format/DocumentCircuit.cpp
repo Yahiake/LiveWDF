@@ -90,6 +90,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                 c.addCap(getPin("a"), getPin("b"), getVal("value", 1e-6), comp.id,
                          initial != comp.values.end() ? std::optional<double>(initial->second)
                                                       : std::nullopt);
+                c.cap.back().holdsDc = c.cap.back().initialVolts && hasAcPowerSupply();
             } else if (comp.type == "ind") {
                 c.addInd(getPin("a"), getPin("b"), getVal("value", 1e-3), comp.id);
             } else if (comp.type == "pot") {
@@ -133,6 +134,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                 photo.extinguishVolts = getVal("extinguishVolts", 0.0);
                 c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
                                    photo, comp.id);
+            } else if (comp.type == "ne570") {
+                opAmpsOnSupplyPins.push_back(c.opamp.size());
+                c.addNe570(getPin("rectIn"), getPin("rectCap"), getPin("cellIn"), getPin("invIn"),
+                           getPin("r3"), getPin("out"), getPin("vcc"), getPin("gnd"), comp.id);
             } else if (comp.type == "ca3080") {
                 c.addCa3080(getPin("out"), getPin("neg"), getPin("pos"), getPin("vcc"),
                            getPin("vee"), getPin("bias"), comp.id);

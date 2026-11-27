@@ -12,6 +12,7 @@
 #endif
 #include <math.h>
 
+#include "format/AcSource.h"
 #include "format/Document.h"
 #include "format/PortImpedance.h"
 #include "wdf/Engine.h"
@@ -505,7 +506,11 @@ TEST_CASE("Powered amp Preview follows Fast on pickup hum", "[newton][preview][p
         for (const auto& src : circuit.src)
             sources.push_back(src.dc);
         double error2 = 0.0, signal2 = 0.0;
+        const auto mains = document.sourceAcSettings(circuit);
         for (int sample = 0; sample < 2400; ++sample) {
+            for (size_t i = 0; i < mains.size(); ++i)
+                if (mains[i].ac != 0.0)
+                    sources[i] = wdf::sourceValueAt(circuit.src[i].dc, mains[i].ac, mains[i].freq, kFs, sample);
             sources[input] = circuit.src[input].dc + .003 * std::sin(2 * M_PI * 50 * sample / kFs);
             const double reference = fast.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
             const double value = preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];

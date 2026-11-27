@@ -162,7 +162,10 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() : chainVolts));
+    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+    const double modeTrim = compiledPreview ? outputPreviewTrim_.load(std::memory_order_relaxed)
+        : fastLive ? outputFastTrim_.load(std::memory_order_relaxed) : 1.0;
+    const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() * modeTrim : chainVolts));
     const float dryMix = (1.0f - wetMix) * dryScale;
 
     // Stereo needs a live right engine. Mono deliberately leaves it untouched,
@@ -178,7 +181,6 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     audioTransferRevision_.store(potsMoving_ || leftEngine_->hasAdjustedLiveTransfer()
         ? adjustedAudioTransfer : leftEngine_->linearRebuilds(), std::memory_order_relaxed);
     captureSettledTransferIfRequested();
-    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
     leftEngine_->useCompiledOptical(compiledPreview);
     if (processStereo) rightEngine_->useCompiledOptical(compiledPreview);
     const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_;
@@ -194,9 +196,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
+    leftEngine_->useFastPentodes(fastLive);
     if (processStereo) {
         rightEngine_->useMixedAffineReduction(fastLive);
         rightEngine_->useCircuitPlan(fastLive);
+        rightEngine_->useFastPentodes(fastLive);
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());

@@ -157,8 +157,9 @@ public:
         if (!haveDc) {
             // An oscillator has no stable DC point. Run it silently for two
             // seconds so its coupling capacitors start where the running circuit has them.
+            // Stop before a stalled settle re-anchors: without a DC point that re-anchor is this reset again.
             const std::vector<double> sources = dcValues_;
-            for (long n = static_cast<long>(2.0 / T_); n > 0; --n)
+            for (long n = static_cast<long>(2.0 / T_); n > 0 && consecutiveStateRejects_ < 8; --n)
                 step(sources);
         }
     }
@@ -180,6 +181,11 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void useFastPentodes(bool enabled) noexcept {
+        for (size_t i = 0; i < pentodes_.size(); ++i)
+            pentodes_[i].reefman.quadric = enabled ? fastQuadricFor(comp_.pent[i].model.reefman)
+                                                   : comp_.pent[i].model.reefman.quadric;
+    }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void prepareSlowLag();
     bool slowLagActive() const noexcept {
