@@ -40,8 +40,7 @@ TEST_CASE("named diode registry retains legacy presets and resolves 1SS133", "[d
 
     const auto* dgz34 = wdf::findDiodeByName("GZ34");
     REQUIRE(dgz34 != nullptr);
-    REQUIRE(dgz34->isat == Approx(2.52e-9));
-    REQUIRE(dgz34->rs == Approx(15.0));
+    REQUIRE(dgz34->perveance == Approx(0.00396));
 
     const auto* d1ss133 = wdf::findDiodeByName("1SS133");
     REQUIRE(d1ss133 != nullptr);
