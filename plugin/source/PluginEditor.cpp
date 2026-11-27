@@ -246,6 +246,14 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     };
     addAndMakeVisible(stereoBtn_);
     stereoAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "stereo", stereoBtn_);
+    twoCoresBtn_.setClickingTogglesState(true);
+    twoCoresBtn_.setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF1A212D));
+    twoCoresBtn_.setColour(juce::TextButton::buttonOnColourId, juce::Colour(0xFF103A3A));
+    twoCoresBtn_.setColour(juce::TextButton::textColourOffId, juce::Colour(0xFFE2E8F0));
+    twoCoresBtn_.setColour(juce::TextButton::textColourOnId, juce::Colour(0xFF00E5FF));
+    twoCoresBtn_.setTooltip("Preview, mono: solve the power tubes and the stages before them on two cores");
+    addAndMakeVisible(twoCoresBtn_);
+    twoCoresAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "two_cores", twoCoresBtn_);
 
     // 5. Shared editor canvas, read-only. Mouse and keyboard gestures are
     //    disabled because the plugin is a player: editing belongs in the
@@ -985,6 +993,7 @@ void LiveWDFPluginEditor::resized() {
     solveQualityCombo_.setBounds(qualityControls.removeFromTop(27));
     accurateExportBtn_.setBounds(qualityControls);
     stereoBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
+    twoCoresBtn_.setBounds(topBar.removeFromRight(88).reduced(6, 10));
     reloadBtn_.setBounds(topBar.removeFromRight(78).reduced(6, 10));
     loadFileBtn_.setBounds(topBar.removeFromRight(128).reduced(6, 10));
     titleLabel_.setBounds(16, 16, juce::jmin(240, juce::jmax(0, topBar.getWidth() - 22)), 20);

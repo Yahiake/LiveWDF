@@ -310,6 +310,8 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 #endif
     std::printf("\n");
     missed.print(wall.size());
+    if (const auto [unclaimed, late] = processor.twoCoreMisses(); unclaimed || late)
+        std::printf("two cores: %lld blocks not taken by the worker, %lld blocks it fell behind in\n", unclaimed, late);
     return 0;
 }
 

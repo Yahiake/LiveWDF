@@ -182,12 +182,60 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void usePreviewPentodes(bool enabled) noexcept {
+        for (size_t i = 0; i < pentodes_.size(); ++i) {
+            const auto& card = comp_.pent[i].model.reefman;
+            pentodes_[i].reefman.quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
+        }
+    }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
+    void keepBlockAnswer(bool enabled) noexcept { keepBlockAnswer_ = enabled; }
+    void useSlowLag(bool enabled) noexcept { slowLagEnabled_ = enabled; }
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
+    void foldLamp();
+    /// Make this clone stage 1 (the blocks before the first power-tube block) or
+    /// stage 2 (the rest) of a two-core Preview. False when the partition has no such cut.
+    bool preparePipelineStage(int stage);
+    bool pipelinePrepared() const noexcept {
+        return pipe_.stage && pipe_.revision == linearRebuilds() && pipe_.lagView == slowLagActive() && !lamp_.period;
+    }
+    bool pipelineReady() const noexcept { return pipelinePrepared() && !pipe_.paused; }
+    bool pipelinePaused() const noexcept { return pipe_.paused; }
+    /// Solve the whole circuit again; `resumePipeline` restarts from this clone's own state.
+    void pausePipeline() noexcept { pipe_.paused = true; }
+    void resumePipeline() noexcept {
+        const size_t n = pipe_.inPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            pipe_.input[k] = ii_[static_cast<size_t>(pipe_.inPorts[k])];
+            pipe_.input[n + k] = vv_[static_cast<size_t>(pipe_.inPorts[k])];
+        }
+        pipe_.paused = false;
+    }
+    void stopPipeline() noexcept { pipe_.stage = 0; }
+    /// The other stage's port currents, then its port voltages.
+    double* pipelineInput() noexcept { return pipe_.input.data(); }
+    size_t pipelineInputSize() const noexcept { return pipe_.input.size(); }
+    size_t pipelineOutputSize() const noexcept { return 2 * pipe_.ownPorts.size(); }
+    void pipelineOutput(double* out) const noexcept {
+        const size_t n = pipe_.ownPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            out[k] = ii_[static_cast<size_t>(pipe_.ownPorts[k])];
+            out[n + k] = vv_[static_cast<size_t>(pipe_.ownPorts[k])];
+        }
+    }
+    void copyStateFrom(const EngineStep& other) {
+        capState_ = other.capState_;
+        indState_ = other.indState_;
+        vv_ = other.vv_;
+        ii_ = other.ii_;
+        vvPrev_ = other.vvPrev_;
+        vvPrev2_ = other.vvPrev2_;
+        triodeDomainPin_ = other.triodeDomainPin_;
+    }
     bool slowLagActive() const noexcept {
-        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
+        return (loadedJunctionEnabled_ || slowLagEnabled_) && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
                !fineBlockSolver_;
     }
     long long triodePreviewHits() const noexcept { return triodePreviewHits_; }

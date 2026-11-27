@@ -74,52 +74,65 @@ struct Engine::BipolarPreview {
     static constexpr double movingPeak = .8;
     std::vector<Range> qualifiedControls;
     Rows branchVoltage;
-    std::array<int, 2> moving{};
-    std::array<double, 4> feedback{};
+    static constexpr int maxMoving = 8;
+    std::array<int, maxMoving> moving{};
+    std::array<double, maxMoving * maxMoving> feedback{};
+    Values movingStateLimit;
     int movingCount{};
     bool supportsMotion{};
 
     // Extra currents through the changed resistor legs close the small port loop
-    // around the *loaded* transistor tangent. The wave histories remain physical.
+    // around the *loaded* transistor tangent, one Woodbury solve over every moved leg.
     bool updateControlPorts(const Network& net, const Circuit& circuit) noexcept {
         movingCount = 0;
-        std::array<double, 2> delta{};
-        for (int n = 0; n < int(ports.size()); ++n) {
-            const auto& p = ports[n];
-            if (net.eG[p.element] == p.reference) continue;
-            const auto& range = qualifiedControls[p.control];
-            const double position = p.control < int(circuit.pots.size()) ? circuit.pots[p.control].position
-                : circuit.varRes[p.control - int(circuit.pots.size())].position;
-            if (!p.keepsBias || !(position >= range.low && position <= range.high) || movingCount == 2 ||
-                (movingCount && p.control != ports[moving[0]].control)) return false;
-            delta[movingCount] = (net.eG[p.element] - p.reference) / p.reference;
-            moving[movingCount++] = n;
+        std::array<double, maxMoving> delta{};
+        std::fill(movingStateLimit.begin(), movingStateLimit.end(), 0.);
+        for (int control = 0; control < int(qualifiedControls.size()); ++control) {
+            const auto moved = [&](const ControlPort& p) { return p.control == control && net.eG[p.element] != p.reference; };
+            if (std::none_of(ports.begin(), ports.end(), moved)) continue;
+            const auto& range = qualifiedControls[control];
+            const double position = control < int(circuit.pots.size()) ? circuit.pots[control].position
+                : circuit.varRes[control - int(circuit.pots.size())].position;
+            if (!(position >= range.low && position <= range.high) ||
+                std::any_of(ports.begin(), ports.end(), [&](const auto& p) { return moved(p) && !p.keepsBias; })) return false;
+            for (int n = 0; n < int(ports.size()); ++n) {
+                if (!moved(ports[n])) continue;
+                delta[movingCount] = (net.eG[ports[n].element] - ports[n].reference) / ports[n].reference;
+                moving[movingCount++] = n;
+            }
+            for (size_t r = 0; r < movingStateLimit.size(); ++r)
+                movingStateLimit[r] = std::max(movingStateLimit[r], range.stateLimit[r]);
         }
-        if (!movingCount) return true;
-        const int start = transition.width - int(ports.size());
-        const double a = 1. + delta[0] * branchVoltage[moving[0]][start + moving[0]];
-        if (movingCount == 1) {
-            feedback[0] = -delta[0] / a;
-            return std::isfinite(feedback[0]) && a > 1e-12;
+        const int k = movingCount, start = transition.width - int(ports.size());
+        std::array<double, maxMoving * maxMoving> m{};
+        std::array<int, maxMoving> pivots{};
+        for (int i = 0; i < k; ++i)
+            for (int j = 0; j < k; ++j)
+                m[i * k + j] = (i == j) + delta[i] * branchVoltage[moving[i]][start + moving[j]];
+        for (int i = 0; i < k; ++i)
+            if (!(m[i * k + i] > 0.)) return false;
+        if (k && !detail::factorLUData(m.data(), pivots.data(), k)) return false;
+        std::array<double, maxMoving> column{};
+        for (int j = 0; j < k; ++j) {
+            column.fill(0.);
+            column[j] = -delta[j];
+            detail::solveLUData(m.data(), pivots.data(), column.data(), k);
+            for (int i = 0; i < k; ++i) feedback[i * k + j] = column[i];
         }
-        const double b = delta[0] * branchVoltage[moving[0]][start + moving[1]];
-        const double c = delta[1] * branchVoltage[moving[1]][start + moving[0]];
-        const double d = 1. + delta[1] * branchVoltage[moving[1]][start + moving[1]];
-        const double det = a*d - b*c;
-        if (!(a > 0. && d > 0. && det > 1e-12 * (1. + std::abs(a*d) + std::abs(b*c)))) return false;
-        feedback = {-d*delta[0]/det, b*delta[1]/det, c*delta[0]/det, -a*delta[1]/det};
-        return std::all_of(feedback.begin(), feedback.end(), [](double v) { return std::isfinite(v); });
+        return std::all_of(feedback.begin(), feedback.begin() + k * k, [](double v) { return std::isfinite(v); });
     }
 
     void applyControlPorts(bool includeDefects) noexcept {
         const int start = transition.width - int(ports.size());
         const int count = includeDefects ? start : states + 2;
-        double drop[2]{};
+        std::array<double, maxMoving> drop{};
         for (int i = 0; i < movingCount; ++i)
             drop[i] = dot(branchVoltage[moving[i]], drive.data(), count);
-        drive[start + moving[0]] = feedback[0] * drop[0] + (movingCount == 2 ? feedback[1] * drop[1] : 0.);
-        if (movingCount == 2)
-            drive[start + moving[1]] = feedback[2] * drop[0] + feedback[3] * drop[1];
+        for (int i = 0; i < movingCount; ++i) {
+            double current = 0.;
+            for (int j = 0; j < movingCount; ++j) current += feedback[i * movingCount + j] * drop[j];
+            drive[start + moving[i]] = current;
+        }
     }
 };
 
@@ -318,6 +331,7 @@ bool Engine::prepareBipolarPreview(size_t inputSource, int outputNode, double re
         std::fill_n(candidate.drive.begin(), nx, 0.);
         candidate.defectLimit.assign(terms, std::numeric_limits<double>::infinity());
         candidate.stateLimit.assign(nx, std::numeric_limits<double>::infinity());
+        candidate.movingStateLimit.assign(nx, 0.);
         for (int i = 0; i < samples; ++i) {
             double output;
             if (!stepBipolarPreview(inputs[i], output)) return false;
@@ -713,7 +727,7 @@ bool Engine::stepBipolarPreview(double inputVolts, double& outputVolts) noexcept
         }
     }
     if (p.movingCount) p.applyControlPorts(true);
-    const auto& stateLimit = p.movingCount ? p.qualifiedControls[p.ports[p.moving[0]].control].stateLimit : p.stateLimit;
+    const auto& stateLimit = p.movingCount ? p.movingStateLimit : p.stateLimit;
     for (int r = 0; r < nx; ++r) {
         p.next[r] = dot(p.transition[r], p.drive.data(), sampleColumns);
         if (!(std::abs(p.next[r]) <= stateLimit[r])) return reject();
