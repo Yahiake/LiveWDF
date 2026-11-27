@@ -89,6 +89,7 @@ struct NewtonContext {
     double& lastResidual;
     bool skipIdenticalRetry = false;
     bool pentodePreview = false;
+    double modeTol = 0.0;
 };
 
 class RootNewton {
@@ -345,7 +346,10 @@ public:
                 ctx.bestI = ctx.ii;
                 lastImprovement = it;
             }
-            if (base < tol) {
+            // An iterate inside the loose Preview tolerance still carries an error that jumps from sample to
+            // sample. Land it with the Newton step its own residual and Jacobian define instead.
+            const bool landing = poweredPreview && base < tol && base >= ctx.modeTol;
+            if (base < tol && !landing) {
                 reached = true;
                 break;
             }
@@ -410,6 +414,16 @@ public:
                 for (int r = 0; r < ctx.K; ++r)
                     ctx.dv[static_cast<size_t>(r)] *= scale;
             }
+            if (landing) {
+                for (const auto& dev : ctx.rootDevices)
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                        for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
+                            ctx.ii[static_cast<size_t>(r)] += ctx.J[static_cast<size_t>(r) * ctx.K + q] * ctx.dv[static_cast<size_t>(q)];
+                for (int r = 0; r < ctx.K; ++r)
+                    ctx.vv[static_cast<size_t>(r)] += ctx.dv[static_cast<size_t>(r)];
+                reached = true;
+                break;
+            }
 
             double stepSize = 1.0;
             tPhase = tick();
@@ -466,7 +480,7 @@ public:
                 lastImprovement = it;
             }
 
-            if (base < tol) {
+            if (base < tol && !(poweredPreview && base >= ctx.modeTol)) {
                 reached = true;
                 break;
             }
