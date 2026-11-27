@@ -153,6 +153,7 @@ public:
     /// the editor's scope must use for its timebase.
     double getHostSampleRate() const noexcept { return sampleRate_; }
     double getCircuitOutputFullScaleVolts() const noexcept { return outputFullScaleVolts_.load(std::memory_order_relaxed); }
+    bool outputAtSpeakerLevel() const noexcept { return outputAtSpeakerLevel_.load(std::memory_order_relaxed); }
 
     const ScopeAudioBuffer& getInputScopeBuffer() const noexcept { return inputScopeBuffer_; }
     const ScopeAudioBuffer& getOutputScopeBuffer() const noexcept { return outputScopeBuffer_; }
@@ -293,6 +294,7 @@ private:
     ///
     /// 1 when the document has not said, which scales nothing.
     std::atomic<double> outputFullScaleVolts_{1.0};
+    std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     double previewPadScale_ = 1.;
     double previewPadOutputBias_ = 0.;

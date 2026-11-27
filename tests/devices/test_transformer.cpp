@@ -290,3 +290,35 @@ TEST_CASE("A centre-tapped transformer drawing converts to the three-winding dev
     CHECK(c.mutual[0].L.empty() == false);
     REQUIRE(c.mutual[0].L.size() == 3);
 }
+
+TEST_CASE("Auto output transformer keeps plate cutoff near the supply", "[transformer][pentode]") {
+    // A square drive cuts each EL34 off abruptly; the Auto card's leakage
+    // must not ring the windings to many times the supply.
+    constexpr double kFs = 48000.0, kSupply = 450.0, kBias = -40.0;
+    wdf::Circuit c;
+    c.addSrc("bplus", "0", kSupply);
+    c.addSrc("d1", "0", kBias);
+    c.addSrc("d2", "0", kBias);
+    c.addRes("d1", "g1", 5600.0);
+    c.addRes("d2", "g2", 5600.0);
+    c.addPentode("p1", "bplus", "g1", "0", wdf::kEL34, "A");
+    c.addPentode("p2", "bplus", "g2", "0", wdf::kEL34, "B");
+    wdf::TransformerSpec ot;
+    ot.turnsPrimary = std::sqrt(1700.0 / 8.0);
+    ot.model = "Real — Auto";
+    c.addCenterTapTransformerElement("p1", "bplus", "p2", "out", "0", ot, "OT");
+    c.addRes("out", "0", 8.0);
+
+    wdf::Engine engine(c, kFs);
+    std::vector<double> sources = {kSupply, kBias, kBias};
+    double peak = 0.0;
+    for (int n = 0; n < 4800; ++n) {
+        const double drive = std::sin(2.0 * M_PI * 1000.0 * n / kFs) > 0.0 ? 40.0 : -40.0;
+        sources[1] = kBias + drive;
+        sources[2] = kBias - drive;
+        engine.step(sources);
+        peak = std::max(peak, engine.lastMaxNodeVolts());
+    }
+    CHECK(peak < 3.0 * kSupply);
+    CHECK(engine.stateRejectCount() == 0);
+}

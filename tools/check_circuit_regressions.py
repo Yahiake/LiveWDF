@@ -33,6 +33,8 @@ CONTROL_CASES = (
     ('UREI-1176LN-Rev-D', 'Input', 'dynamics'),
     ('Boss CS-3 Compression Sustainer (August 1986)', 'Sustain', 'dynamics'),
     ('Boss DM-2 Analog Delay', 'Echo', 'delay'),
+    ('Marshall 1959 Super Lead - Jumped', 'Presence', 'tone'),
+    ('Marshall 1959 Super Lead - Jumped', 'Treble', 'tone', {'JCM800 era': 1}),
 )
 
 
@@ -101,12 +103,12 @@ def cases(root, suite):
         for name, path in documents.items():
             yield {'name': name, 'circuit': path, 'samples': 2048, 'positions': {}, 'moves': []}
         return
-    for title, control, behavior in CONTROL_CASES:
+    for title, control, behavior, *switch in CONTROL_CASES:
         path = documents.get(title)
         if path is None:
             raise RuntimeError(f'Control fixture circuit is missing: {title}')
         count = 49152 if behavior == 'delay' else 8192
-        switches = {'Bass 330 Hz': 1} if title == 'Neve 1081 Gold Label Equalizer' else {}
+        switches = switch[0] if switch else {'Bass 330 Hz': 1} if title == 'Neve 1081 Gold Label Equalizer' else {}
         for position in (.2, .5, .8):
             yield {'name': f'{title}/{control}/{position}', 'circuit': path, 'samples': count,
                    'positions': {control: position}, 'moves': [], 'behavior': behavior,

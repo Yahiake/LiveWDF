@@ -386,7 +386,9 @@ inline TransformerSpec resolveTransformerSpec(TransformerSpec spec) {
     const double ratio = spec.turnsPrimary / spec.turnsSecondary;
     const double referenceOhms = 8.0;
     const double bassCorner = 30.0;
-    const double leakageDenominator = 300.0;
+    // Guitar output transformer sheets (Hammond 1750 series) put leakage at
+    // 1/7700 to 1/1000 of the primary inductance.
+    const double leakageDenominator = 2400.0;
     const double dcrDenominator = 40.0;
     const double autoLm = (ratio * ratio * referenceOhms) /
                           (2.0 * kPi * bassCorner);
