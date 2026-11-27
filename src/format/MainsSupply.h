@@ -6,16 +6,18 @@
 // A rectifier fed DC would conduct all the time and be stiffer than the pulsed
 // real one, so the source and resistance come from running the drawn winding,
 // rectifier and reservoir alone into a load: once at the idle voltage the
-// circuit is precharged to, once at four times that current, which is where
-// the line through the two points lands on the drawn amps' full-power rail.
+// circuit is precharged to, once at the current the amp draws at full drive.
 // Everything after the reservoir stays as drawn.
 
 #include "format/AcSource.h"
 #include "format/Document.h"
+#include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 
 #include <cmath>
 #include <map>
+#include <mutex>
+#include <numbers>
 #include <set>
 #include <string>
 #include <vector>
@@ -105,11 +107,18 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
 
     std::set<std::string> mainsNames;
     for (size_t i : mains) mainsNames.insert(c.src[i].name);
-    const auto removeWinding = [&] {
-        std::erase_if(c.src, [&](const Src& s) { return mainsNames.count(s.name) != 0; });
-        std::erase_if(c.res, [&](const Res& r) { return (onWinding(r.a) && onWinding(r.b)) || winding.count(r.a) || winding.count(r.b); });
-        std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
-        std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
+    const auto removeWinding = [&](Circuit& x) {
+        std::erase_if(x.src, [&](const Src& s) { return mainsNames.count(s.name) != 0; });
+        std::erase_if(x.res, [&](const Res& r) { return (onWinding(r.a) && onWinding(r.b)) || winding.count(r.a) || winding.count(r.b); });
+        std::erase_if(x.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
+        std::erase_if(x.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
+    };
+    const auto addSupply = [&](Circuit& x, const std::vector<std::pair<double, double>>& fitted) {
+        removeWinding(x);
+        for (size_t k = 0; k < out.size(); ++k) {
+            x.addSrc("$mains " + out[k], ground, fitted[k].first, 0.0, {}, "$mains source " + out[k]);
+            x.addRes("$mains " + out[k], out[k], fitted[k].second, "$mains resistance " + out[k]);
+        }
     };
 
     // The drawn supply alone, loaded by one resistor per output.
@@ -140,24 +149,66 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         }
         return sum;
     };
-    std::vector<double> idleLoad(out.size(), 0.0);
-    for (size_t k = 0; k < out.size(); ++k) idleLoad[k] = 1e4 * std::abs(held[out[k]]) / 400.0;
-    for (int pass = 0; pass < 6; ++pass) {
-        const auto v = average(idleLoad);
-        for (size_t k = 0; k < out.size(); ++k)
-            idleLoad[k] *= std::pow(std::abs(held[out[k]] / v[k]), 4.0);
-    }
-    auto fullLoad = idleLoad;
-    for (auto& r : fullLoad) r /= 4.0;
-    const auto vIdle = average(idleLoad), vFull = average(fullLoad);
 
-    removeWinding();
-    for (size_t k = 0; k < out.size(); ++k) {
-        const double iIdle = vIdle[k] / idleLoad[k], iFull = vFull[k] / fullLoad[k];
-        const double r = (vIdle[k] - vFull[k]) / (iFull - iIdle);
-        c.addSrc("$mains " + out[k], ground, vIdle[k] + r * iIdle, 0.0, {}, "$mains source " + out[k]);
-        c.addRes("$mains " + out[k], out[k], r, "$mains resistance " + out[k]);
+    // Fitted once per supply drawing and rate, since the drive burst below costs a whole-amp run.
+    static std::mutex cacheMutex;
+    static std::map<std::string, std::vector<std::pair<double, double>>> cache;
+    std::string key = std::to_string(fs);
+    for (size_t i : mains) key += "\n" + c.src[i].name + " " + std::to_string(c.src[i].dc) + " " + std::to_string(settings[i].ac);
+    for (const auto& r : test.res) key += "\n" + r.name + " " + r.a + " " + r.b + " " + std::to_string(r.value);
+    for (const auto& x : test.cap) key += "\n" + x.name + " " + x.a + " " + x.b + " " + std::to_string(x.value);
+    for (const auto& d : test.diode) key += "\n" + d.name + " " + d.a + " " + d.b;
+    const std::lock_guard lock(cacheMutex);
+    auto& fitted = cache[key];
+    if (fitted.empty()) {
+        std::vector<double> idleLoad(out.size(), 0.0);
+        for (size_t k = 0; k < out.size(); ++k) idleLoad[k] = 1e4 * std::abs(held[out[k]]) / 400.0;
+        for (int pass = 0; pass < 6; ++pass) {
+            const auto v = average(idleLoad);
+            for (size_t k = 0; k < out.size(); ++k)
+                idleLoad[k] *= std::pow(std::abs(held[out[k]] / v[k]), 4.0);
+        }
+        const auto vIdle = average(idleLoad);
+        const auto line = [&](const std::vector<double>& fullLoad) {
+            const auto vFull = average(fullLoad);
+            std::vector<std::pair<double, double>> fit;
+            for (size_t k = 0; k < out.size(); ++k) {
+                const double iIdle = vIdle[k] / idleLoad[k], iFull = vFull[k] / fullLoad[k];
+                const double r = (vIdle[k] - vFull[k]) / (iFull - iIdle);
+                fit.emplace_back(vIdle[k] + r * iIdle, r);
+            }
+            return fit;
+        };
+        auto fullLoad = idleLoad;
+        for (auto& r : fullLoad) r /= 4.0;
+        const auto first = line(fullLoad);
+
+        // Refit through the mean current the amp itself draws on a full-scale 110 Hz burst, so the line is exact where
+        // the rail sits when played hard, whatever the rectifier's curve. The amp runs at the document's control
+        // positions, the ones the level trims are fitted at, so the cached fit does not depend on the knobs at load.
+        auto amp = circuitWithPortImpedances(doc);
+        addSupply(amp, first);
+        Engine engine(amp, fs);
+        auto values = engine.dcValues();
+        for (const auto& s : amp.isrc) values.push_back(s.dc);
+        const auto input = size_t(std::ranges::find(amp.src, doc.inputId(), &Src::name) - amp.src.begin());
+        const long settle = long(0.01 * fs), span = long(0.02 * fs);
+        std::vector<double> current(out.size());
+        for (long n = 0; n < settle + span; ++n) {
+            if (input < amp.src.size())
+                values[input] = amp.src[input].dc + doc.inputVoltsPerFullScale() * std::sin(2.0 * std::numbers::pi * 110.0 * double(n) / fs);
+            const auto& nodes = engine.step(values);
+            if (n >= settle)
+                for (size_t k = 0; k < out.size(); ++k)
+                    current[k] += (first[k].first - nodes[size_t(engine.nodeIndex(out[k]))]) / first[k].second / double(span);
+        }
+        for (size_t k = 0; k < out.size(); ++k) {
+            const double iIdle = vIdle[k] / idleLoad[k], i = std::max(current[k] / iIdle, 2.0) * iIdle;
+            if (const double load = (first[k].first - first[k].second * i) / i; load > 0.0) fullLoad[k] = load;
+        }
+        fitted = line(fullLoad);
     }
+    addSupply(c, fitted);
 
     // Stiff: each reservoir and filter capacitor becomes a source at its precharge that the engine steps from the
     // current drawn in the previous sample (Src::heldFarads), so the rails sag but the stages do not couple through
