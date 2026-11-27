@@ -1331,7 +1331,7 @@
       },
       "type": "src",
       "values": {
-        "ac": 261.8416410733786,
+        "ac": 249.8915364713259,
         "freq": 50
       },
       "visual": {
@@ -1348,7 +1348,7 @@
       },
       "type": "res",
       "values": {
-        "value": 16.29
+        "value": 11.4
       },
       "visual": {
         "flipped": false,
@@ -1366,7 +1366,7 @@
       },
       "type": "src",
       "values": {
-        "ac": -261.8416410733786,
+        "ac": -249.8915364713259,
         "freq": 50
       },
       "visual": {
@@ -1383,7 +1383,7 @@
       },
       "type": "res",
       "values": {
-        "value": 16.29
+        "value": 11.4
       },
       "visual": {
         "flipped": false,
@@ -1460,7 +1460,7 @@
       "type": "cap",
       "values": {
         "value": 0.0001,
-        "initialVolts": 241
+        "initialVolts": 234.9
       },
       "visual": {
         "flipped": false,
@@ -1477,7 +1477,7 @@
       "type": "cap",
       "values": {
         "value": 0.0001,
-        "initialVolts": 241
+        "initialVolts": 234.9
       },
       "visual": {
         "flipped": false,
@@ -1526,7 +1526,7 @@
       "type": "cap",
       "values": {
         "value": 0.0001,
-        "initialVolts": 240
+        "initialVolts": 233.4
       },
       "visual": {
         "flipped": false,
@@ -1543,7 +1543,7 @@
       "type": "cap",
       "values": {
         "value": 0.0001,
-        "initialVolts": 240
+        "initialVolts": 233.4
       },
       "visual": {
         "flipped": false,
@@ -1624,7 +1624,7 @@
       "type": "cap",
       "values": {
         "value": 0.0001,
-        "initialVolts": 339
+        "initialVolts": 336.1
       },
       "visual": {
         "flipped": false,
@@ -1657,7 +1657,7 @@
       "type": "cap",
       "values": {
         "value": 5e-05,
-        "initialVolts": 297
+        "initialVolts": 296.6
       },
       "visual": {
         "flipped": false,
