@@ -1013,7 +1013,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.0230217
+        "fullScaleVolts": 1.0171396
       },
       "properties": {},
       "visual": {
