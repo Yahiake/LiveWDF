@@ -883,7 +883,11 @@
         "outputBias": 1.2,
         "outputOhms": 2600.0,
         "periodMicrosecondsPerVolt": 6.7,
-        "stages": 1024
+        "stages": 1024,
+        "transferLoss": 1.57e-4,
+        "kneeWidth": 0.19,
+        "evenOrder": 0.012,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1873,7 +1877,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 0.43011624
+        "fullScaleVolts": 0.43657064
       },
       "visual": {
         "flipped": false,
