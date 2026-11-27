@@ -3,6 +3,7 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <mutex>
 
@@ -125,8 +126,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int latency = processingLatencySamples_.load(std::memory_order_relaxed);
     auto* activeOversampler = lock.owns_lock() ? activePolyphaseOversampler() : nullptr;
     juce::dsp::AudioBlock<float> block(buffer);
+    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+    // A heavy circuit's full solver can run several times slower than real time,
+    // so once it misses the deadline Preview treats the wait for its first plan like a rebuild.
+    const bool previewLoading = lock.owns_lock() && leftEngine_ && compiledPreview && !isNonRealtime() &&
+        outputOnlyPreviewAllowed_ && !previewPrepared_ && previewLoadOverruns_ >= 4;
     const bool canProcess = lock.owns_lock() && leftEngine_ && outNodeIndex_ >= 0
-        && !(activeOversampler && numSamples > samplesPerBlock_);
+        && !(activeOversampler && numSamples > samplesPerBlock_) && !previewLoading;
 
     // Keep untrimmed separate channels in the history, including at Mix 100%.
     // Host bypass can then return the delayed original input immediately.
@@ -147,6 +153,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         conditionInput(block, inputGain, !wantStereo);
 
     inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
+    if (previewLoading) {
+        readLivePotTargets(numSamples);
+        for (int s = 0; s < numSamples; ++s)
+            advanceLivePots();
+        applySettledLiveTransfer(wantStereo && rightEngine_);
+        captureSettledTransferIfRequested();
+    }
     if (!canProcess) {
         // A voltage-chain return may have a large dry conversion (e.g. a mic preamp).
         // During a rebuild only pass the dry contribution the player actually requested.
@@ -158,11 +171,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
+    const auto solveStart = std::chrono::steady_clock::now();
     const double solveTolerance = fastLive
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
     const double modeTrim = compiledPreview ? outputPreviewTrim_.load(std::memory_order_relaxed)
         : fastLive ? outputFastTrim_.load(std::memory_order_relaxed) : 1.0;
     const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() * modeTrim : chainVolts));
@@ -188,17 +201,24 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         leftEngine_->releaseBipolarPreview();
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
     }
+    const bool keepBlockAnswer = compiledPreview && !isNonRealtime() && previewKeepsBlockAnswer_.load(std::memory_order_relaxed);
     leftEngine_->useLoadedJunctionPreview(compiledPreview);
     leftEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+    leftEngine_->keepBlockAnswer(keepBlockAnswer);
     if (processStereo) {
         rightEngine_->useLoadedJunctionPreview(compiledPreview);
         rightEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
+        rightEngine_->keepBlockAnswer(keepBlockAnswer);
     }
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
+    leftEngine_->useSlowLag(fastLive);
+    leftEngine_->usePreviewPentodes(compiledPreview);
     if (processStereo) {
         rightEngine_->useMixedAffineReduction(fastLive);
         rightEngine_->useCircuitPlan(fastLive);
+        rightEngine_->useSlowLag(fastLive);
+        rightEngine_->usePreviewPentodes(compiledPreview);
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
@@ -219,19 +239,25 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
     double paddedInputScale = inputScale * previewPadGain_.getCurrentValue();
     double makeup = 1. / previewPadGain_.getCurrentValue();
-    const auto advanceControls = [&]() {
-        advanceLivePots();
+    bool padSettled = false;
+    const auto advanceControls = [&](bool applyToEngines) {
+        const bool potsDue = advanceLivePots();
+        if (potsDue && applyToEngines)
+            applyLiveControlsToEngines(true, false);
+        padSettled = false;
         if (previewPadGain_.isSmoothing()) {
             const double gain = previewPadGain_.getNextValue();
             paddedInputScale = inputScale * gain;
             makeup = 1. / gain;
-            if (!previewPadGain_.isSmoothing() && targetPad < 1.)
+            padSettled = !previewPadGain_.isSmoothing() && targetPad < 1.;
+            if (padSettled && applyToEngines)
                 retryPaddedPreview();
         }
+        return potsDue;
     };
     // Only amplify the signal above the circuit's quiescent output voltage.
-    const auto compensate = [&](double volts) {
-        return makeup == 1. ? volts : previewPadOutputBias_ + (volts - previewPadOutputBias_) * makeup;
+    const auto compensate = [&](double volts, double gainMakeup) {
+        return gainMakeup == 1. ? volts : previewPadOutputBias_ + (volts - previewPadOutputBias_) * gainMakeup;
     };
     const int inIdx = inSourceIndex_;
     const int outIdx = outNodeIndex_;
@@ -239,8 +265,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         double volts;
         const std::vector<double>* nodes;
     };
-    const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double sample) -> OutputSample {
-        const double input = sample * paddedInputScale;
+    const auto solve = [&](wdf::Engine& engine, std::vector<double>& sources, double sample, double scale) -> OutputSample {
+        const double input = sample * scale;
         if (inIdx >= 0)
             sources[static_cast<size_t>(inIdx)] = input;
         double volts;
@@ -252,101 +278,102 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     OutputSample lastLeft{};
     float maxAbsOut = 0.0f;
 
-    if (useHalfBand_) {
-        float* leftData = buffer.getWritePointer(0);
-        float* rightData = (numChannels > 1) ? buffer.getWritePointer(1) : nullptr;
+    juce::dsp::AudioBlock<float> processed = block;
+    if (!useHalfBand_ && activeOversampler)
+        processed = activeOversampler->processSamplesUp(block);
+    float* leftData = processed.getChannelPointer(0);
+    float* rightData = (numChannels > 1) ? processed.getChannelPointer(1) : nullptr;
+    const int oversampling = !useHalfBand_ && activeOversampler ? currentOversamplingFactor_ : 1;
 
-        for (int s = 0; s < numSamples; ++s) {
-            advanceControls();
-            auto rightSample = acSampleCounter_;
-            const double inL = static_cast<double>(leftData[s]);
-            const double outL = halfBandOversamplerL_.process(inL, [&](double osIn) -> double {
-                std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
-                if (!acSources_.empty()) {
-                    for (const auto& ac : acSources_) {
-                        if (ac.index < 0 || ac.index >= static_cast<int>(svLeft_.size()))
-                            continue;
-                        svLeft_[static_cast<size_t>(ac.index)] = wdf::sourceValueAt(
-                            baseSourceValues_[static_cast<size_t>(ac.index)], ac.ac, ac.freq,
-                            acSampleRate_, acSampleCounter_);
-                    }
-                    ++acSampleCounter_;
-                }
-                lastLeft = solve(*leftEngine_, svLeft_, osIn);
-                return compensate(lastLeft.volts) * outputScale;
-            });
-            leftData[s] = static_cast<float>(outL);
-            maxAbsOut = std::max(maxAbsOut, std::abs(leftData[s]));
-
-            if (processStereo && rightData) {
-                const double inR = static_cast<double>(rightData[s]);
-                const double outR = halfBandOversamplerR_.process(inR, [&](double osIn) -> double {
-                    std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svRight_.begin());
-                    if (!acSources_.empty()) {
-                        for (const auto& ac : acSources_) {
-                            if (ac.index < 0 || ac.index >= static_cast<int>(svRight_.size()))
-                                continue;
-                            svRight_[static_cast<size_t>(ac.index)] = wdf::sourceValueAt(
-                                baseSourceValues_[static_cast<size_t>(ac.index)], ac.ac, ac.freq,
-                                acSampleRate_, rightSample);
-                        }
-                        ++rightSample;
-                    }
-                    return compensate(solve(*rightEngine_, svRight_, osIn).volts) * outputScale;
+    // One channel over host samples [from, to). `controls` runs before each host sample.
+    const auto runChannel = [&](wdf::Engine& engine, std::vector<double>& sources, wdf::HalfBandOversampler& halfBand,
+                                float* data, int from, int to, long long& acSample, OutputSample* last, auto&& controls) {
+        float peak = 0.0f;
+        double scale = paddedInputScale, gainMakeup = makeup;
+        const auto setAcSources = [&] {
+            for (const auto& ac : acSources_) {
+                if (ac.index < 0 || ac.index >= static_cast<int>(sources.size()))
+                    continue;
+                sources[static_cast<size_t>(ac.index)] = wdf::sourceValueAt(
+                    baseSourceValues_[static_cast<size_t>(ac.index)], ac.ac, ac.freq, acSampleRate_, acSample);
+            }
+            ++acSample;
+        };
+        if (useHalfBand_) {
+            for (int s = from; s < to; ++s) {
+                controls(s, scale, gainMakeup);
+                const double out = halfBand.process(static_cast<double>(data[s]), [&](double osIn) -> double {
+                    std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), sources.begin());
+                    if (!acSources_.empty())
+                        setAcSources();
+                    const auto result = solve(engine, sources, osIn, scale);
+                    if (last) *last = result;
+                    return compensate(result.volts, gainMakeup) * outputScale;
                 });
-                rightData[s] = static_cast<float>(outR);
-                maxAbsOut = std::max(maxAbsOut, std::abs(rightData[s]));
-            } else if (rightData) {
-                rightData[s] = leftData[s];
+                data[s] = static_cast<float>(out);
+                peak = std::max(peak, std::abs(data[s]));
             }
+            return peak;
         }
-    } else {
-        juce::dsp::AudioBlock<float> oversampledBlock = block;
-
-        if (activeOversampler) {
-            oversampledBlock = activeOversampler->processSamplesUp(block);
+        for (size_t s = static_cast<size_t>(from * oversampling); s < static_cast<size_t>(to * oversampling); ++s) {
+            if (s % static_cast<size_t>(oversampling) == 0)
+                controls(static_cast<int>(s) / oversampling, scale, gainMakeup);
+            if (!acSources_.empty())
+                setAcSources();
+            const auto result = solve(engine, sources, data[s], scale);
+            if (last) *last = result;
+            data[s] = static_cast<float>(compensate(result.volts, gainMakeup)) * outputScale;
+            peak = std::max(peak, std::abs(data[s]));
         }
+        return peak;
+    };
 
-        const size_t osSamples = oversampledBlock.getNumSamples();
-        float* leftData = oversampledBlock.getChannelPointer(0);
-        float* rightData = (numChannels > 1) ? oversampledBlock.getChannelPointer(1) : nullptr;
-
-        // Process sample by sample through WDF engine
-        const int oversampling = activeOversampler ? currentOversamplingFactor_ : 1;
-        int phase = 0;
-        for (size_t s = 0; s < osSamples; ++s) {
-            if (phase == 0)
-                advanceControls();
-            if (++phase == oversampling)
-                phase = 0;
-            if (!acSources_.empty()) {
-                for (const auto& ac : acSources_) {
-                    if (ac.index < 0 || ac.index >= static_cast<int>(svLeft_.size()))
-                        continue;
-                    const auto value = wdf::sourceValueAt(
-                        baseSourceValues_[static_cast<size_t>(ac.index)], ac.ac, ac.freq,
-                        acSampleRate_, acSampleCounter_);
-
-                    svLeft_[static_cast<size_t>(ac.index)] = value;
-                    if (processStereo)
-                        svRight_[static_cast<size_t>(ac.index)] = value;
-                }
-                ++acSampleCounter_;
+    if (!processStereo) {
+        maxAbsOut = runChannel(*leftEngine_, svLeft_, halfBandOversamplerL_, leftData, 0, numSamples, acSampleCounter_,
+                               &lastLeft, [&](int, double& scale, double& gainMakeup) {
+            advanceControls(true);
+            scale = paddedInputScale;
+            gainMakeup = makeup;
+        });
+        if (rightData)
+            std::copy(leftData, leftData + processed.getNumSamples(), rightData);
+    }
+    for (int from = 0; processStereo && from < numSamples; from += kControlChunk) {
+        const int to = std::min(numSamples, from + kControlChunk);
+        int potRows = 0;
+        for (int s = from; s < to; ++s) {
+            const int row = advanceControls(false) ? potRows++ : -1;
+            for (int g = 0; row >= 0 && g < potControlCount_; ++g)
+                potLog_[static_cast<size_t>(row)][static_cast<size_t>(g)] =
+                    potControls_[static_cast<size_t>(g)].position.getCurrentValue();
+            controlLog_[static_cast<size_t>(s - from)] = {paddedInputScale, makeup, padSettled, row};
+        }
+        const auto replay = [&](wdf::Engine& engine, std::vector<std::pair<int, double>>& pots,
+                                std::vector<std::pair<int, double>>& varRes, int s, double& scale, double& gainMakeup) {
+            const auto& step = controlLog_[static_cast<size_t>(s - from)];
+            if (step.potRow >= 0) {
+                pots.clear();
+                varRes.clear();
+                for (const auto& t : potTargets_)
+                    (t.varRes ? varRes : pots).emplace_back(t.index, potLog_[static_cast<size_t>(step.potRow)][static_cast<size_t>(t.group)]);
+                if (!engine.setLiveControls(pots, varRes))
+                    liveControlUpdateFailed_.store(true, std::memory_order_relaxed);
             }
-
-            lastLeft = solve(*leftEngine_, svLeft_, leftData[s]);
-            const float outL = static_cast<float>(compensate(lastLeft.volts)) * outputScale;
-            leftData[s] = outL;
-            maxAbsOut = std::max(maxAbsOut, std::abs(outL));
-
-            if (processStereo && rightData) {
-                const float outR = static_cast<float>(compensate(solve(*rightEngine_, svRight_, rightData[s]).volts)) * outputScale;
-                rightData[s] = outR;
-                maxAbsOut = std::max(maxAbsOut, std::abs(outR));
-            } else if (rightData) {
-                rightData[s] = outL;
-            }
-        }
+            if (step.retry)
+                engine.retryBipolarPreviewAfterAttenuation();
+            scale = step.scale;
+            gainMakeup = step.makeup;
+        };
+        long long rightAcSample = acSampleCounter_;
+        float leftPeak = 0.0f, rightPeak = 0.0f;
+        rightWorker_.runBeside([&] {
+            leftPeak = runChannel(*leftEngine_, svLeft_, halfBandOversamplerL_, leftData, from, to, acSampleCounter_, &lastLeft,
+                                  [&](int s, double& scale, double& gainMakeup) { replay(*leftEngine_, potMoves_, varResMoves_, s, scale, gainMakeup); });
+        }, [&] {
+            rightPeak = runChannel(*rightEngine_, svRight_, halfBandOversamplerR_, rightData, from, to, rightAcSample, nullptr,
+                                   [&](int s, double& scale, double& gainMakeup) { replay(*rightEngine_, rightPotMoves_, rightVarResMoves_, s, scale, gainMakeup); });
+        });
+        maxAbsOut = std::max({maxAbsOut, leftPeak, rightPeak});
     }
 
     // Read live node probe voltages for UI from the last processed sample.
@@ -366,6 +393,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     signalActivity_.store(std::min(1.0f, maxAbsOut * 0.5f), std::memory_order_relaxed);
+    if (compiledPreview && !previewPrepared_ && std::chrono::steady_clock::now() - solveStart >
+            std::chrono::duration<double>(numSamples / sampleRate_))
+        ++previewLoadOverruns_;
 
     // Downsample if oversampling was active
     if (activeOversampler) {
