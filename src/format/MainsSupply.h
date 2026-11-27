@@ -134,10 +134,14 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         const auto supplyCap = [&](const Cap& x) {
             return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
         };
-        std::set<std::pair<std::string, std::string>> rails;
+        // A capacitor whose nodes the rails already join (in parallel, or across a stack) adds no rail.
+        std::map<std::string, std::string> joined;
+        const auto root = [&](std::string n) { while (joined.count(n)) n = joined[n]; return n; };
         for (const auto& cap : c.cap)
-            if (supplyCap(cap) && rails.insert(std::minmax(cap.a, cap.b)).second)
+            if (supplyCap(cap) && root(cap.a) != root(cap.b)) {
+                joined[root(cap.a)] = root(cap.b);
                 c.addSrc(cap.a, cap.b, *cap.initialVolts, 0.0, {}, "$mains rail " + cap.name);
+            }
         std::erase_if(c.cap, supplyCap);
         return true;
     }
