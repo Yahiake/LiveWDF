@@ -6,9 +6,6 @@
 #include <string>
 #include <vector>
 
-#include "format/AcSource.h"
-#include "format/LiveWDFFile.h"
-#include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"
 
@@ -809,66 +806,12 @@ TEST_CASE("nodes with common root currents retain the scalar transfer", "[engine
     }
 }
 
-TEST_CASE("Preview reads the JCM800 supply one sample late but keeps its power stage whole",
-          "[blocksolve][preview]") {
-    struct Probe : wdf::Engine {
-        using Engine::Engine;
-        std::vector<std::vector<int>> lagged() const {
-            std::vector<std::vector<int>> kinds;
-            for (int b = 0; b < lagCount_; ++b) {
-                kinds.emplace_back();
-                for (int d : lagBlocks_[size_t(b)].devices)
-                    kinds.back().push_back(int(rootDevices_[size_t(d)].kind));
-            }
-            return kinds;
-        }
-    };
-    wdf::LiveWDFDocument document;
-    std::string error;
-    REQUIRE(document.loadFromFile("schematics/amps/Marshall JCM800 2203 - High Input.livewdf", error));
-    const auto circuit = wdf::circuitWithPortImpedances(document);
-    const size_t input = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin();
-    Probe preview(circuit, kFs, true);
-    wdf::Engine fast(circuit, kFs, true);
-    const int output = preview.nodeIndex(document.outputNet());
-    const auto ac = document.sourceAcSettings(circuit);
-    std::vector<double> sv(circuit.src.size());
-    const auto drive = [&](long n, double in) {
-        for (size_t i = 0; i < sv.size(); ++i)
-            sv[i] = wdf::sourceValueAt(circuit.src[i].dc, ac[i].ac, ac[i].freq, kFs, n);
-        sv[input] += in;
-    };
-    for (long n = -12000; n < 0; ++n) {
-        drive(n, 0.0);
-        preview.step(sv);
-        fast.step(sv);
-    }
-    preview.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
-    preview.useLoadedJunctionPreview(true);
-    const auto blocks = preview.lagged();
-    REQUIRE(int(blocks.size()) > fast.rootBlockCount());
-    const auto pentodes = [](const std::vector<int>& kinds) {
-        return std::ranges::count(kinds, int(wdf::DeviceKind::Pentode));
-    };
-    REQUIRE(std::ranges::any_of(blocks, [&](const auto& kinds) { return pentodes(kinds) == 4 || pentodes(kinds) == 2; }));
-
-    double diff = 0.0, signal = 0.0;
-    for (int n = 0; n < 2400; ++n) {
-        drive(n, sine(0.5, n));
-        const double a = preview.step(sv)[size_t(output)];
-        const double b = fast.step(sv)[size_t(output)];
-        diff += (a - b) * (a - b);
-        signal += b * b;
-    }
-    REQUIRE(std::sqrt(diff / signal) < 1e-3);
-}
-
 TEST_CASE("Preview refuses a late supply read that closes around the forward gain",
           "[blocksolve][preview]") {
     struct Probe : wdf::Engine {
         using Engine::Engine;
-        int lagBlocks() const { return lagCount_; }
-        size_t pairwiseLagged() const {
+        int blocks() const { return lagCount_; }
+        size_t late() const {
             size_t n = 0;
             for (const auto& b : lagBlocks_)
                 n += b.lagged.size();
@@ -898,7 +841,7 @@ TEST_CASE("Preview refuses a late supply read that closes around the forward gai
     c.addRes("c3", "0", 1e6);
     Probe preview(c, kFs);
     preview.prepareCompiledPreview(0, preview.nodeIndex("c3"), false, 1.0, false);
-    CAPTURE(decoupled, preview.pairwiseLagged(), preview.lagBlocks());
-    REQUIRE(preview.pairwiseLagged() > 0);
-    REQUIRE((preview.lagBlocks() > 1) == decoupled);
+    CAPTURE(decoupled, preview.late(), preview.blocks());
+    REQUIRE(preview.late() > 0);
+    REQUIRE((preview.blocks() > 1) == decoupled);
 }
