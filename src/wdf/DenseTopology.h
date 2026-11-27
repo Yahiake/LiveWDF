@@ -110,6 +110,7 @@ struct NewtonBlock {
     std::vector<std::vector<PredecessorPort>> predFold; ///< Per local device port: non-zero predecessor couplings
     std::vector<std::vector<PredecessorPort>> allFold;  ///< Per local device port: non-zero couplings from all other blocks
     std::vector<int> laterGrid;           ///< Grid columns of later blocks that `predFold` reads
+    std::vector<std::pair<int, PredecessorPort>> lagged; ///< (row, later column) couplings read one sample late
 
     // ---- General linear/nonlinear decomposition -------------------------
     //
@@ -194,6 +195,7 @@ struct BlockView {
     const std::vector<NewtonBlock>* blocks = nullptr;
     const std::vector<int>* order = nullptr;
     int count = 0;
+    double* held = nullptr;  ///< Previous-sample currents of the `lagged` columns
 };
 
 /// High-resolution diagnostic timestamps for the nonlinear solve.

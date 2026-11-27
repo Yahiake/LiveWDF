@@ -305,7 +305,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         else if (useRuntime)
             solveRootBlocksRuntime(maxIter, tol);
         else if (blockRoots() && blockFallbackCooldown_ == 0)
-            solveRootBlocks(maxIter, tol);
+            solveRootBlocks(maxIter, tol, slowLagActive());
         else
             solveRootsNewton(maxIter, tol);
     } else if (K_ == 0) {

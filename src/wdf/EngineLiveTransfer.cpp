@@ -1,6 +1,8 @@
 #include "wdf/Engine.h"
+#include "wdf/DenseSolve.h"
 
 #include <algorithm>
+#include <cmath>
 #include <tuple>
 
 namespace wdf {
@@ -102,6 +104,95 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     prepareLoadedJunctionPreview(inputSource);
     sharedNewtonColumns_.prepare(Zred_, K_, nRed_, rootDevices_);
     triodeDomainTransfer_.prepare(Z_, K_, rootDevices_);
+    prepareSlowLag();
+}
+
+void EngineStep::prepareSlowLag() {
+    // Steepest loaded slope |(I + J Zdd)^-1 J| of each device over a sweep of its port voltages.
+    std::vector<double> slope(size_t(K_) * K_, 0.0), v, i(K_), a, x(K_);
+    std::vector<int> pivots(K_);
+    auto newton = makeNewtonContext();
+    constexpr double sweep[] = {-50, -20, -5, -2, -1, -0.5, 0, 0.5, 1, 2, 5, 10, 20, 50, 200, 400};
+    const auto at = [&](int point) {
+        v = vv_;
+        for (const auto& d : rootDevices_)
+            for (int q = 0; q < std::min(d.numPorts, 3); ++q)
+                v[d.portBase + q] += sweep[(point >> (4 * q)) & 15];
+        solver::RootNewton::currentsInto(newton, v, i, J_);
+    };
+    for (int point = 0; point < 4096; ++point) {
+        at(point);
+        for (const auto& d : rootDevices_) {
+            const int m = d.numPorts, b = d.portBase;
+            a.assign(size_t(m) * m, 0.0);
+            for (int r = 0; r < m; ++r)
+                for (int c = 0; c < m; ++c) {
+                    a[r * m + c] = r == c;
+                    for (int k = 0; k < m; ++k)
+                        a[r * m + c] += J_[size_t(b + r) * K_ + b + k] * Z_[size_t(b + k) * K_ + b + c];
+                }
+            const bool factored = detail::factorLUData(a.data(), pivots.data(), m);
+            for (int c = 0; c < m; ++c) {
+                for (int r = 0; r < m; ++r)
+                    x[r] = J_[size_t(b + r) * K_ + b + c];
+                if (factored)
+                    detail::solveLUData(a.data(), pivots.data(), x.data(), m);
+                for (int r = 0; r < m; ++r) {
+                    double& s = slope[size_t(b + r) * K_ + b + c];
+                    s = factored && std::isfinite(x[r]) ? std::max(s, std::abs(x[r])) : HUGE_VAL;
+                }
+            }
+        }
+    }
+    std::vector<uint8_t> lag;
+    std::vector<int> owner;
+    bool closed = false, antiParallel = false;
+    int scalars = 0;
+    lagOrder_.resize(rootDevices_.size());
+    auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
+    if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
+        std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); }))
+        lagCount_ = 0;
+    for (int b = 0; b < lagCount_; ++b)
+        solver::RootLinearPlan::build(lagBlocks_[size_t(b)], rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
+                                      ctrlResValues_, fs_);
+    // The pairwise rule misses a long loop: a late column closing around the solved
+    // forward path. Refuse unless |J (I + Zs J)^-1 Zl| stays below 1/4 over the sweep.
+    std::vector<double> late(size_t(K_) * K_, 0.0), m(size_t(K_) * K_), t(K_);
+    for (int b = 0; b < lagCount_; ++b)
+        for (const auto& [r, d] : lagBlocks_[size_t(b)].lagged)
+            late[size_t(r) * K_ + d.col] = d.z;
+    for (int point = 0; point < 4096 && lagCount_ > 1; point += 29) {
+        at(point);
+        std::fill(m.begin(), m.end(), 0.0);
+        for (int r = 0; r < K_; ++r)
+            m[size_t(r) * K_ + r] = 1.0;
+        for (const auto& d : rootDevices_)
+            for (int r = 0; r < K_; ++r)
+                for (int c = d.portBase; c < d.portBase + d.numPorts; ++c)
+                    for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
+                        m[size_t(r) * K_ + c] += (Z_[size_t(r) * K_ + k] - late[size_t(r) * K_ + k]) * J_[size_t(k) * K_ + c];
+        bool ok = detail::factorLUData(m.data(), pivots.data(), K_);
+        std::fill(t.begin(), t.end(), 0.0);
+        for (int c = 0; c < K_ && ok; ++c) {
+            for (int r = 0; r < K_; ++r)
+                x[r] = late[size_t(r) * K_ + c];
+            if (std::none_of(x.begin(), x.end(), [](double z) { return z != 0.0; }))
+                continue;
+            detail::solveLUData(m.data(), pivots.data(), x.data(), K_);
+            for (const auto& d : rootDevices_)
+                for (int r = d.portBase; r < d.portBase + d.numPorts; ++r) {
+                    double di = 0.0;
+                    for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
+                        di += J_[size_t(r) * K_ + k] * x[k];
+                    t[r] += std::abs(di);
+                }
+        }
+        if (!ok || !(*std::max_element(t.begin(), t.end()) < 0.25))
+            lagCount_ = 0;
+    }
+    lagHeld_.assign(K_, 0.0);
+    lagRevision_ = linearRebuilds();
 }
 
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
@@ -147,6 +238,11 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
+            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
+            std::swap(lagOrder_, preparedEngine.lagOrder_);
+            std::swap(lagHeld_, preparedEngine.lagHeld_);
+            lagCount_ = preparedEngine.lagCount_;
+            lagRevision_ = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds() ? linearRebuilds() : -1;
             if (!packedDrive_.panels.empty())
                 packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);
