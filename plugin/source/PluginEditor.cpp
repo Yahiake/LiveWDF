@@ -830,8 +830,9 @@ void LiveWDFPluginEditor::filesDropped(const juce::StringArray& files, int x, in
 // -----------------------------------------------------------------------------
 void LiveWDFPluginEditor::refreshSolveQuality() {
     auto& parameters = processor_.getAPVTS();
-    const bool fast = parameters.getRawParameterValue("solve_quality")->load() > 0.5f;
-    const bool preview = parameters.getRawParameterValue("compiled_preview")->load() > 0.5f;
+    // Attachments are notified before the raw values update, so read the parameters.
+    const bool fast = parameters.getParameter("solve_quality")->getValue() > 0.5f;
+    const bool preview = parameters.getParameter("compiled_preview")->getValue() > 0.5f;
     solveQualityCombo_.setSelectedId(fast ? (preview ? 3 : 2) : 1, juce::dontSendNotification);
 }
 

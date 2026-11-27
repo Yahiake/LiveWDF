@@ -339,6 +339,7 @@ private:
     int samplesUntilPotUpdate_ = 0;
     bool potsMoving_ = false;
     std::atomic<bool> liveControlUpdateFailed_{false};
+    std::atomic<bool> gatedSwitchChanged_{false};
     std::vector<PotTarget> potTargets_;
     std::vector<SwitchTarget> switchTargets_;
     std::vector<std::pair<int, double>> potMoves_, varResMoves_, resistorMoves_;
