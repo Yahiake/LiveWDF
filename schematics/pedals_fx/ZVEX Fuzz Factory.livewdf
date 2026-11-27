@@ -96,11 +96,11 @@
       },
       "type": "bjt",
       "values": {
-        "bf": 85,
-        "br": 14.66,
-        "is": 2.066e-05,
-        "nf": 1.133,
-        "nr": 1.14
+        "bf": 1000,
+        "br": 3.76,
+        "is": 3.478e-05,
+        "nf": 1.04,
+        "nr": 1.07
       },
       "visual": {
         "flipped": true,
@@ -190,11 +190,11 @@
       },
       "type": "bjt",
       "values": {
-        "bf": 125,
-        "br": 14.66,
-        "is": 2.066e-05,
-        "nf": 1.133,
-        "nr": 1.14
+        "bf": 1000,
+        "br": 3.76,
+        "is": 5.709e-05,
+        "nf": 1.04,
+        "nr": 1.07
       },
       "visual": {
         "flipped": true,
@@ -318,7 +318,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 0.41882349
+        "fullScaleVolts": 0.39488869
       },
       "visual": {
         "flipped": false,

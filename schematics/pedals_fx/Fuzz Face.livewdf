@@ -185,7 +185,7 @@
         "externalDefaultOhms": 1000000,
         "externalMaxOhms": 1000000,
         "externalMinOhms": 5000,
-        "fullScaleVolts": 0.45693889
+        "fullScaleVolts": 0.43007431
       },
       "visual": {
         "flipped": true,
