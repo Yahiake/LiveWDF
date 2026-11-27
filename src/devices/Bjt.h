@@ -389,7 +389,7 @@ inline const BjtEntry kBjtTable[] = {
     {"2N2907",  makeEM(1e-14,    250.0,  3.0,   1.0,   1.0,   true)},
     // onsemi 2N4403 Figs. 14-16 typical gain and VBE(on); Early voltage from LTspice.
     {"2N4403", withForwardRolloff(withLowCurrentCorrections(
-                    makeEM(999.3e-15, 193.7, 3.578, 1.15, 1.0, true),
+                    makeEM(999.3e-15, 193.7, 3.578, 1.15, 1.15, true),
                     115.7, 9.486e-12, 1.887), 0.4952)},
     {"BC557B",  makeEM(3.83e-14, 344.4,  14.84, 1.008, 1.005, true)},
     {"2N5087",  makeEM(6.734e-15,254.1,  2.683, 1.0,   1.0,   true)},
