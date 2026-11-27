@@ -2052,7 +2052,7 @@
       "type": "cap",
       "values": {
         "value": 1.6e-05,
-        "initialVolts": 416
+        "initialVolts": 415.8
       },
       "visual": {
         "flipped": false,
@@ -2069,7 +2069,7 @@
       "type": "cap",
       "values": {
         "value": 1.6e-05,
-        "initialVolts": 416
+        "initialVolts": 415.8
       },
       "visual": {
         "flipped": false,
@@ -2118,7 +2118,7 @@
       "type": "cap",
       "values": {
         "value": 1.6e-05,
-        "initialVolts": 414
+        "initialVolts": 414.0
       },
       "visual": {
         "flipped": false,
@@ -2151,7 +2151,7 @@
       "type": "cap",
       "values": {
         "value": 1.6e-05,
-        "initialVolts": 336
+        "initialVolts": 335.7
       },
       "visual": {
         "flipped": false,
@@ -2184,7 +2184,7 @@
       "type": "cap",
       "values": {
         "value": 1.6e-05,
-        "initialVolts": 293
+        "initialVolts": 293.3
       },
       "visual": {
         "flipped": false,
@@ -2232,7 +2232,7 @@
       "type": "cap",
       "values": {
         "value": 2.5e-05,
-        "initialVolts": 59
+        "initialVolts": 58.7
       },
       "visual": {
         "flipped": false,
