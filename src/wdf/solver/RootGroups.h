@@ -490,7 +490,7 @@ public:
                 return false;
             const double back = gain(g, h), forward = gain(h, g);
             return (back <= forward || (useSignalFlow && flowReach[static_cast<size_t>(g) * nGroups + h])) &&
-                   back * forward < 1e-3 && reach(g, h) < 0.05;
+                   back * forward < 1e-4 && reach(g, h) < 0.05;
         };
 
         const auto coupled = [&](int g, int h) -> bool {
