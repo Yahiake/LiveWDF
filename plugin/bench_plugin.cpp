@@ -2657,11 +2657,21 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
         || !restored.loadCircuitFromFile(amp) || restored.outputImpulseId(false) != "air-orange-ppc412-sm57")
         return false;
 
-    return restored.outputImpulseId(true) == "spring-combo"
-        && restored.selectFactoryOutputImpulse(false, "air-v30-212-sm57")
-        && !restored.cabinetFollowsSuggestion()
-        && restored.loadCircuitFromFile(champ)
-        && restored.outputImpulseId(false) == "air-v30-212-sm57";
+    if (restored.outputImpulseId(true) != "spring-combo"
+        || !restored.selectFactoryOutputImpulse(false, "air-v30-212-sm57")
+        || restored.cabinetFollowsSuggestion()
+        || !restored.loadCircuitFromFile(champ)
+        || restored.outputImpulseId(false) != "air-v30-212-sm57")
+        return false;
+
+    juce::MemoryBlock retired;
+    restored.getStateInformation(retired);
+    auto xml = juce::AudioProcessor::getXmlFromBinary(retired.getData(), static_cast<int>(retired.getSize()));
+    xml->setAttribute("cabinet_ir_factory", "jensen-e606");
+    juce::AudioProcessor::copyXmlToBinary(*xml, retired);
+    livewdf::LiveWDFPluginProcessor upgraded;
+    upgraded.setStateInformation(retired.getData(), static_cast<int>(retired.getSize()));
+    return upgraded.outputImpulseId(false) == "air-champ-g8c-or57";
 }
 
 int main(int argc, char** argv) {
