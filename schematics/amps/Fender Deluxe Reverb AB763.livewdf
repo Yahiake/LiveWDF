@@ -1144,7 +1144,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 189.81696
+        "fullScaleVolts": 192.49411
       },
       "visual": {
         "flipped": true,

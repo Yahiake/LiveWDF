@@ -66,7 +66,8 @@ void moveControls(wdf::Engine& engine, const std::vector<wdf::LiveControlGroup>&
         for (const auto& member : group->members) {
             if (member.type == "pot") {
                 const int index = engine.potIndexByName(member.id);
-                if (index < 0) throw std::runtime_error("Missing live pot " + member.id);
+                // A member switched out by its enabledBy gate is not in the engine.
+                if (index < 0) continue;
                 pots.emplace_back(index, position.asDouble());
             } else {
                 const int index = engine.varResIndexByName(member.id);

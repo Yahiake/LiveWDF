@@ -70,6 +70,7 @@ enum class Asset {
     That2180,
     RmsDetector,
     Dbx200,
+    Ne570,
     count,
 };
 
@@ -112,6 +113,7 @@ const char* const assetNames[] = {
     "that2180",
     "rms-detector",
     "dbx200",
+    "ne570",
 };
 
 static_assert(std::size(assetNames) == static_cast<size_t>(assetCount),
@@ -142,6 +144,7 @@ int assetForType(const std::string& type) {
     if (type == "bbd")         return static_cast<int>(Asset::BucketBrigade);
     if (type == "vca")         return static_cast<int>(Asset::Vca);
     if (type == "dbx200")      return static_cast<int>(Asset::Dbx200);
+    if (type == "ne570")       return static_cast<int>(Asset::Ne570);
     if (type == "that2180")     return static_cast<int>(Asset::That2180);
     if (type == "transformer") return static_cast<int>(Asset::Transformer);
     if (type == "transformer_ct") return static_cast<int>(Asset::CenterTapTransformer);
@@ -551,7 +554,7 @@ std::vector<std::string> artworkTypes() {
                              "pot", "varres", "src", "isrc", "vcvs", "bbd", "rmsdet", "dbx209", "dbx200",
                              "transformer", "triode", "pentode", "ctrlres", "photores",
                              "switch_res", "bjt", "jfet", "mosfet",
-                             "in", "out", "opamp", "ca3080"})
+                             "in", "out", "opamp", "ca3080", "ne570"})
         if (hasArtwork(name))
             types.emplace_back(name);
 

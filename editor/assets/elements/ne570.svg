@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-45 -35 90 70" width="90" height="70" fill="none" stroke="black" stroke-width="1.2">
+  <rect x="-29" y="-26" width="58" height="52" rx="2"/>
+  <path d="M-40-20h11m-11 20h11m-11 20h11M29-20h11M29 0h11M-20 26v4M0-30v4M20 26v4"/>
+  <g fill="black" stroke="none" font-family="sans-serif" font-size="7">
+    <text x="-26" y="-17">RECT</text><text x="-26" y="3">G</text><text x="-26" y="23">INV</text>
+    <text x="26" y="-17" text-anchor="end">R3</text><text x="26" y="3" text-anchor="end">OUT</text>
+    <text x="-20" y="22" text-anchor="middle">CR</text>
+  </g>
+</svg>

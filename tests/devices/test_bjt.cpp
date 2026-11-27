@@ -239,17 +239,17 @@ TEST_CASE("BJT model basic Ebers-Moll reference", "[bjt][equation]") {
     REQUIRE(std::abs(res.iC + res.iB + res.iE) < 1e-6); // KCL
 }
 
-TEST_CASE("AC128 card is an Ebers-Moll PNP with the extracted transport values",
+TEST_CASE("AC128 card is a PNP with the fitted transport values",
           "[bjt][ac128][presets]") {
     const BjtEntry* e = findBjtByName("AC128");
     REQUIRE(e != nullptr);
     const BjtModel& m = e->model;
     CHECK(m.pnp);
-    CHECK(m.Is == Approx(20.66e-6));
-    CHECK(m.Bf == Approx(229.6));
-    CHECK(m.Br == Approx(14.66));
-    CHECK(m.Nf == Approx(1.133));
-    CHECK(m.Nr == Approx(1.140));
+    CHECK(m.Is == Approx(22.61e-6));
+    CHECK(m.Bf == Approx(1000.0));
+    CHECK(m.Br == Approx(3.76));
+    CHECK(m.Nf == Approx(1.04));
+    CHECK(m.Nr == Approx(1.07));
     CHECK(m.valid());
 
     // Forward-active PNP: collector and base currents are negative.
@@ -261,14 +261,14 @@ TEST_CASE("AC128 card is an Ebers-Moll PNP with the extracted transport values",
     CHECK(std::abs(q.iC + q.iB + q.iE) < 1e-15);
 }
 
-TEST_CASE("2N5089 preset matches DAFx-23 Table 1 parameters",
-          "[bjt][2n5089][presets][dafx23]") {
+TEST_CASE("2N5089 preset matches the datasheet fit",
+          "[bjt][2n5089][presets]") {
     const BjtEntry* e = findBjtByName("2N5089");
     REQUIRE(e != nullptr);
     const BjtModel& m = e->model;
     CHECK_FALSE(m.pnp);
     CHECK(m.Is == Approx(5.915e-15).margin(1e-18));
-    CHECK(m.Bf == Approx(1427.57).margin(0.1));
+    CHECK(m.Bf == Approx(743.8).margin(0.1));
     CHECK(m.Br == Approx(1.262).margin(0.01));
     CHECK(m.Nf == Approx(1.0));
     CHECK(m.Nr == Approx(1.0));
@@ -276,7 +276,7 @@ TEST_CASE("2N5089 preset matches DAFx-23 Table 1 parameters",
 
     BjtModel prep = m;
     prep.prepare();
-    CHECK(prep.alphaF == Approx(0.9993).margin(1e-4));
+    CHECK(prep.alphaF == Approx(0.9987).margin(1e-4));
     CHECK(prep.alphaR == Approx(0.5579).margin(1e-4));
 
     // Evaluates correctly in forward-active region

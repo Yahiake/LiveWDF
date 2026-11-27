@@ -157,8 +157,9 @@ public:
         if (!haveDc) {
             // An oscillator has no stable DC point. Run it silently for two
             // seconds so its coupling capacitors start where the running circuit has them.
+            // Stop before a stalled settle re-anchors: without a DC point that re-anchor is this reset again.
             const std::vector<double> sources = dcValues_;
-            for (long n = static_cast<long>(2.0 / T_); n > 0; --n)
+            for (long n = static_cast<long>(2.0 / T_); n > 0 && consecutiveStateRejects_ < 8; --n)
                 step(sources);
         }
     }
