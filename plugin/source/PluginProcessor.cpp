@@ -361,6 +361,8 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     outputEffects_.reclaim();
+    if (*apvts_.getRawParameterValue("stereo") > 0.5f)
+        rightWorker_.start();
     if (!isNonRealtime())
         outputEffects_.applyReverbSize(reverbSize_->load(std::memory_order_relaxed) * 0.01f, false);
     const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
@@ -492,10 +494,11 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer(bool audioActive) {
     captureState_.store(CaptureState::idle, std::memory_order_release);
     try {
         settledTransferJob_ = std::async(std::launch::async,
-            [work = std::move(job), input, output, fastLive, allowOutputOnly, peak, allowPad]() mutable {
+            [work = std::move(job), input, output, fastLive, lag = fastLive && !capture_.wantPreview,
+             allowOutputOnly, peak, allowPad]() mutable {
                 const AffineWorkerSlot slot;
-                work.left.build(input, work.affine);
-                work.right.build(input, work.affine);
+                work.left.build(input, work.affine, lag);
+                work.right.build(input, work.affine, lag);
                 if (fastLive)
                     work.left.screenCircuitPlan(work.right, input, output);
                 if (work.compilePreview)
@@ -924,6 +927,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         outputFullScaleVolts_.store(playbackDoc.outputFullScaleVolts(), std::memory_order_relaxed);
         outputFastTrim_.store(playbackDoc.outputTrim(false), std::memory_order_relaxed);
         outputPreviewTrim_.store(playbackDoc.outputTrim(true), std::memory_order_relaxed);
+        previewKeepsBlockAnswer_.store(playbackDoc.previewKeepsBlockAnswer(), std::memory_order_relaxed);
         outputAtSpeakerLevel_.store(hasPowerAmp && enablePowerAmp, std::memory_order_relaxed);
         previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
             ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;
@@ -1275,9 +1279,9 @@ void LiveWDFPluginProcessor::readLivePotTargets(int rampSamples) {
     }
 }
 
-void LiveWDFPluginProcessor::advanceLivePots() {
+bool LiveWDFPluginProcessor::advanceLivePots() {
     if (!potsMoving_)
-        return;
+        return false;
 
     // Use a host-sample interval so oversampling and block boundaries have
     // no effect on the control curve. Batch ganged and simultaneous changes.
@@ -1290,13 +1294,13 @@ void LiveWDFPluginProcessor::advanceLivePots() {
     }
     if (potsMoving_ && samplesUntilPotUpdate_ > 0) {
         --samplesUntilPotUpdate_;
-        return;
+        return false;
     }
 
     samplesUntilPotUpdate_ = interval - 1;
-    applyLiveControlsToEngines(true, false);
     if (!potsMoving_)
         samplesUntilPotUpdate_ = 0;
+    return true;
 }
 
 void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches) {

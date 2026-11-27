@@ -182,12 +182,20 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void usePreviewPentodes(bool enabled) noexcept {
+        for (size_t i = 0; i < pentodes_.size(); ++i) {
+            const auto& card = comp_.pent[i].model.reefman;
+            pentodes_[i].reefman.quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
+        }
+    }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
+    void keepBlockAnswer(bool enabled) noexcept { keepBlockAnswer_ = enabled; }
+    void useSlowLag(bool enabled) noexcept { slowLagEnabled_ = enabled; }
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
     bool slowLagActive() const noexcept {
-        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
+        return (loadedJunctionEnabled_ || slowLagEnabled_) && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
                !fineBlockSolver_;
     }
     long long triodePreviewHits() const noexcept { return triodePreviewHits_; }
