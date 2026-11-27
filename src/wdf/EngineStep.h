@@ -194,6 +194,7 @@ public:
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
+    void foldLamp();
     /// Make this clone stage 1 (the blocks before the first power-tube block) or
     /// stage 2 (the rest) of a two-core Preview. False when the partition has no such cut.
     bool preparePipelineStage(int stage);
