@@ -218,6 +218,9 @@ public:
             tock(ctx.prof->predict);
 
         const double effTol = std::max(tol, Reduced ? 1e-12 : 1e-9);
+        // Under the loose Preview tolerance only a Newton step lands the block, like the joint solve.
+        const double landTol = Reduced ? effTol : std::max(std::min(tol, ctx.modeTol), 1e-9);
+        bool landing = false;
         // An op-amp carries a one-sample internal state (`opAmpVp`), so the
         // currents committed for the previous sample are not necessarily the
         // currents the device law produces for this sample.  The initial
@@ -252,7 +255,7 @@ public:
                 const double prev = ctx.ii[static_cast<size_t>(c)];
                 ctx.blockI[static_cast<size_t>(c)] = std::isfinite(prev) ? prev : 0.0;
             }
-            if (blockResidual<Reduced>(block, ctx, n) < effTol) {
+            if (blockResidual<Reduced>(block, ctx, n) < landTol) {
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -289,15 +292,16 @@ public:
                 maxF = blockResidual<Reduced>(block, ctx, n);
                 if (ctx.prof)
                     tock(ctx.prof->device);
-                if (maxF < effTol) {
+                if (maxF < landTol) {
                     converged = true;
                     break;
                 }
+                landing = maxF < effTol;
             }
             curValid = false;
 
             const double kappa = (prevF > 1e-15) ? (maxF / prevF) : 1.0;
-            const bool canReuse = (n >= 3) && (n <= 64) && luValid && (luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05);
+            const bool canReuse = (n >= 3) && (n <= 64) && luValid && (landing || ((luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05)));
 
             bool solveOk = false;
             if (canReuse) {
@@ -468,6 +472,18 @@ public:
                         ctx.blockDv[static_cast<size_t>(r)] *= scale;
                 }
             }
+            if (landing) {
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                        for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
+                            ctx.blockI[static_cast<size_t>(r)] += ctx.blockJ[static_cast<size_t>(r) * ctx.K + q] * ctx.blockDv[static_cast<size_t>(q)];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                        ctx.blockV[static_cast<size_t>(r)] += ctx.blockDv[static_cast<size_t>(r)];
+                }
+                converged = true;
+                break;
+            }
 
             if (n < 3) {
                 double maxStep = 0.0, maxV = 0.0;
@@ -629,10 +645,11 @@ public:
                 }
                 prevF = baseF;
                 maxF = ftNorm;
-                if (maxF < effTol) {
+                if (maxF < landTol) {
                     converged = true;
                     break;
                 }
+                landing = maxF < effTol;
                 if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV)) {
                     // Same rule as the small-block path: a stalled step above
                     // the gate is a failed solve, not a converged one.
@@ -642,7 +659,7 @@ public:
                 curValid = true;
             }
         }
-        if (!converged)
+        if (!converged && !landing)
             return false;
         if constexpr (Reduced)
             return true; // Caller reconstructs and certifies the original block.
