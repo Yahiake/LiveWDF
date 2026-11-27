@@ -185,6 +185,7 @@ protected:
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
     bool triodePreviewEnabled_ = false;
+    double modeTol_ = 0.0;
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
@@ -220,7 +221,7 @@ protected:
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_),
-            mixedAffineAttempts_, mixedAffineAccepted_
+            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_
         };
     }
 

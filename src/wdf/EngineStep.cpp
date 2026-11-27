@@ -61,6 +61,7 @@ bool EngineStep::tryTriodePreview() noexcept {
 
 const std::vector<double>& EngineStep::step(const double* sourceValues, std::size_t sourceCount,
                                             int maxIter, double tol) {
+    modeTol_ = tol;
     // Limit the error in the port voltages while evaluating all tube currents.
     if (triodePreviewEnabled_ && nPent_ > 0)
         tol = std::max(tol, 3e-3);
