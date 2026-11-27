@@ -344,7 +344,6 @@ public:
         bool curValid = false;
         bool reached = false;
         const bool poweredPreview = ctx.pentodePreview && !ctx.staticMode;
-        int lastImprovement = 0;
         ctx.bestFn = std::numeric_limits<double>::infinity();
         double base = 0.0;
         for (int it = 0; it < maxIter; ++it) {
@@ -362,7 +361,6 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
-                lastImprovement = it;
             }
             // An iterate inside the loose Preview tolerance still carries an error that jumps from sample to
             // sample. Land it with the Newton step its own residual and Jacobian define instead.
@@ -495,7 +493,6 @@ public:
                 ctx.bestFn = base;
                 ctx.bestV = ctx.vv;
                 ctx.bestI = ctx.ii;
-                lastImprovement = it;
             }
 
             if (base < tol && !(poweredPreview && base >= ctx.modeTol)) {
@@ -509,10 +506,6 @@ public:
                 reached = curValid && base < roundingFloor(ctx);
                 break;
             }
-            // Near plate cutoff a badly stalled pass can consume its entire
-            // budget before the retry gets to try the previous voltage seed.
-            if (poweredPreview && it >= 15 && it - lastImprovement >= 10 && ctx.bestFn > 10.0)
-                break;
         }
 
         if (!curValid) {
