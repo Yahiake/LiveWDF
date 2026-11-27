@@ -494,7 +494,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 101.72336
+        "fullScaleVolts": 102.7606
       },
       "visual": {
         "flipped": true,
@@ -895,13 +895,29 @@
       },
       "type": "rail",
       "values": {
-        "dc": 438.5
+        "dc": 420
       },
       "visual": {
         "flipped": true,
         "rotation": 0,
         "x": 52,
-        "y": 104
+        "y": 108
+      }
+    },
+    {
+      "id": "PA Screen Supply",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 402
+      },
+      "visual": {
+        "flipped": true,
+        "rotation": 0,
+        "x": 29,
+        "y": 72
       }
     },
     {
@@ -1015,82 +1031,6 @@
         "flipped": false,
         "rotation": 0,
         "x": 26,
-        "y": 84
-      }
-    },
-    {
-      "id": "PA Supply Resistance",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "res",
-      "values": {
-        "value": 245.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 52,
-        "y": 106
-      }
-    },
-    {
-      "id": "PA Reservoir",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "cap",
-      "values": {
-        "value": 2e-05
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 58,
-        "y": 114
-      }
-    },
-    {
-      "id": "PA Reservoir Ground",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 58,
-        "y": 118
-      }
-    },
-    {
-      "id": "PA Preamp Draw",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "res",
-      "values": {
-        "value": 22000.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 23,
-        "y": 80
-      }
-    },
-    {
-      "id": "PA Preamp Draw Ground",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 23,
         "y": 84
       }
     }
@@ -2439,58 +2379,6 @@
         },
         {
           "x": 29,
-          "y": 77
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 29,
-          "y": 72
-        },
-        {
-          "x": 29,
-          "y": 60
-        },
-        {
-          "x": 56,
-          "y": 60
-        },
-        {
-          "x": 56,
-          "y": 112
-        },
-        {
-          "x": 52,
-          "y": 112
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 58,
-          "y": 112
-        },
-        {
-          "x": 56,
-          "y": 112
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 23,
-          "y": 78
-        },
-        {
-          "x": 23,
-          "y": 77
-        },
-        {
-          "x": 26,
           "y": 77
         }
       ]
