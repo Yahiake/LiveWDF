@@ -154,6 +154,13 @@ public:
         }
         saveRecoveryState(haveDc && K_ > 0);
         resetSolverHistory();
+        if (!haveDc) {
+            // An oscillator has no stable DC point. Run it silently for two
+            // seconds so its coupling capacitors start where the running circuit has them.
+            const std::vector<double> sources = dcValues_;
+            for (long n = static_cast<long>(2.0 / T_); n > 0; --n)
+                step(sources);
+        }
     }
 
     static constexpr int kDefaultMaxIterations = 60;
