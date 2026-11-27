@@ -95,6 +95,7 @@ struct BlockSolveContext {
     long long& mixedAttempts;
     long long& mixedAccepted;
     double modeTol;
+    bool reductions = true;
 };
 
 class RootBlockSolve {
@@ -1168,7 +1169,7 @@ public:
         if (ctx.mixedEnabled && !block.alternateLinearSlopes.empty() &&
             solveMixedReducedBlock(view, b, s, maxIter, tol, relaxed, ctx))
             return true;
-        if (block.linearReduction)
+        if (block.linearReduction && ctx.reductions)
             return solveReducedBlock(view, b, s, tol, relaxed, ctx) ||
                    solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx, nullptr, acceptedDeviceCurrents);
         if (block.isAntiParallelDiodePair) {

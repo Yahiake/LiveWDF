@@ -447,7 +447,7 @@ protected:
     /// prediction. Both joint paths retry from the previous sample's root if
     /// their first pass does not converge. The fast path is an optimization only
     /// when the check passes; it is never allowed to define a different circuit.
-    void solveRootBlocks(int maxIter, double tol, bool slowLag = false) {
+    void solveRootBlocks(int maxIter, double tol, bool slowLag = false, bool adjusted = false) {
         if (hasMonotoneClassAB()) {
             lastBlockFallback_ = false;
             const auto result = solver::RootClosedForms::solveClassABOutput(
@@ -474,6 +474,9 @@ protected:
             return;
         }
         auto ctx = makeBlockSolveContext();
+        // A live transfer update refreshes only the gathered Z, not the affine reductions built from it.
+        ctx.mixedEnabled &= !adjusted;
+        ctx.reductions = !adjusted;
         auto newtonCtx = makeNewtonContext();
         solver::RootBlockSolve::solveRootBlocks(
             ctx, newtonCtx, slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView(),
@@ -706,6 +709,16 @@ protected:
                     block, rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
                     ctrlResValues_, fs_))
                 hasLinearReduction_ = true;
+        }
+    }
+
+    void refreshBlockZValues() {
+        solver::RootGroups::refreshBlockZValues(newtonBlocks_, blockCount_, rootDevices_.data(), Z_.data(), K_);
+        solver::RootGroups::refreshBlockZValues(lagBlocks_, lagCount_, rootDevices_.data(), Z_.data(), K_);
+        for (int q = 0; q < nD_ && static_cast<int>(grpDiode_.size()) == nD_; ++q) {
+            const RootDevice& dev = rootDevices_[static_cast<size_t>(nTri_ + q)];
+            const DiodeModel& m = comp_.diode[dev.compIndex].second;
+            grpDiode_[static_cast<size_t>(q)] = m.withSeriesResistance(Z_[static_cast<size_t>(dev.portBase) * K_ + dev.portBase] + m.rs);
         }
     }
 
