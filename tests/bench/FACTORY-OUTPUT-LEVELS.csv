@@ -1,5 +1,5 @@
 schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurate_minus12_error_dB,accurate_minus9_error_dB,accurate_minus6_error_dB,accurate_median_error_dB,accurate_holdout_error_dB,accurate_max_peak_dBFS,fast_live_minus12_error_dB,fast_live_minus9_error_dB,fast_live_minus6_error_dB,fast_live_median_error_dB,fast_live_holdout_error_dB,fast_live_max_peak_dBFS
-schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,273.44833,2.942,0.000,-2.967,0.000,0.160,-16.324,2.942,0.000,-2.967,0.000,0.160,-16.324
+schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,271.24772,2.942,0.000,-2.968,0.000,0.152,-16.328,2.942,0.000,-2.968,0.000,0.152,-16.328
 schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf,amp,0.87059607,6.5291355,1.831,0.000,-1.936,0.000,1.545,-12.841,1.831,0.000,-1.936,0.000,1.545,-12.841
 schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,446.21968,2.676,0.000,-2.787,0.000,0.155,-18.855,2.676,0.000,-2.787,0.000,0.155,-18.855
 schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,94.479767,0.227,0.000,-0.443,0.000,0.691,-10.662,0.227,0.000,-0.443,0.000,0.691,-10.662

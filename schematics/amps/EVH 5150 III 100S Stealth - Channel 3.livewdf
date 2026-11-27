@@ -1355,7 +1355,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 273.44833
+        "fullScaleVolts": 271.24772
       },
       "visual": {
         "flipped": false,
@@ -1909,17 +1909,13 @@
     {
       "id": "Power output transformer",
       "properties": {
-        "model": "Real — Manual",
+        "model": "Real — Auto",
         "powerAmp": "1"
       },
       "type": "transformer_ct",
       "values": {
-        "Lm": 8.846014,
-        "dcrPrimary": 31.92,
-        "dcrSecondary": 0.226,
-        "leakage": 0.003985898,
-        "turnsPrimary": 14.577379737113251,
-        "turnsSecondary": 1.0
+        "turnsPrimary": 14.57737974,
+        "turnsSecondary": 1
       },
       "visual": {
         "flipped": false,
