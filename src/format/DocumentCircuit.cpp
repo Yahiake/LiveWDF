@@ -75,10 +75,12 @@ Circuit LiveWDFDocument::toCircuit() const {
             if (getProp("preampOnly") == "1")
                 continue;
             // A part switched in by a footswitch is left out while it is off, so an idle
-            // effect costs no solver work.
-            if (const auto gate = getProp("enabledBy"); !gate.empty()) {
+            // effect costs no solver work. A leading `!` keeps the part only while off.
+            if (auto gate = getProp("enabledBy"); !gate.empty()) {
+                const bool whileOff = gate.front() == '!';
+                if (whileOff) gate.erase(0, 1);
                 const auto sw = std::ranges::find(components, gate, &SchematicComponent::id);
-                if (sw == components.end() || !switchResSelectsB(*sw))
+                if (sw == components.end() || switchResSelectsB(*sw) == whileOff)
                     continue;
             }
             if (comp.type == "res") {
