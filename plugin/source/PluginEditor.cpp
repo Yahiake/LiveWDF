@@ -146,9 +146,10 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     factoryBtn_.setTooltip("Load a circuit shipped with LiveWDF");
     addAndMakeVisible(factoryBtn_);
     factoryBtn_.toBack();
-    addChildComponent(powerAmpBtn_);
-    powerAmpBtn_.setTooltip("Include the power stage. Turn off to use the preamp output.");
-    powerAmpAttach_ = std::make_unique<ButtonAttachment>(processor_.getAPVTS(), "power_amp", powerAmpBtn_);
+    addChildComponent(powerAmpSelector_);
+    powerAmpSelector_.addItemList({"Preamp", "Power amp", "Both"}, 1);
+    powerAmpSelector_.setTooltip("Choose the preamp, power amp, or complete amp circuit.");
+    powerAmpAttach_ = std::make_unique<ComboBoxAttachment>(processor_.getAPVTS(), "power_amp", powerAmpSelector_);
     factoryHint_.setJustificationType(juce::Justification::centred);
     factoryHint_.setInterceptsMouseClicks(false, false);
     addAndMakeVisible(factoryHint_);
@@ -610,7 +611,7 @@ bool LiveWDFPluginEditor::loadCircuitFile(const juce::File& file) {
 void LiveWDFPluginEditor::refreshCircuitView(const juce::String& suffix) {
     const auto doc = processor_.getDocumentSnapshot();
     schematicCanvas_.setDocument(doc);
-    powerAmpBtn_.setVisible(doc.preampTap() != nullptr);
+    powerAmpSelector_.setVisible(doc.preampTap() != nullptr);
     syncSchematicLiveState();
     rebuildDynamicControls(doc);
     presetStepper_.setName(currentCircuitDescription(doc) + suffix);
@@ -868,7 +869,7 @@ void LiveWDFPluginEditor::timerCallback() {
     outputRoute_.setSelectedItemIndex(speakerLevel || processor_.getAPVTS().getParameter("match_output")->getValue() > 0.5f,
                                       juce::dontSendNotification);
     outputRoute_.setTooltip(speakerLevel
-        ? "The power amp drives a speaker, so the output is always level matched. Turn Power Amp off to send to the next LiveWDF."
+        ? "The power amp drives a speaker, so the output is always level matched. Choose Preamp to send to the next LiveWDF."
         : "Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
     updateScopeScales();
     previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
@@ -967,8 +968,8 @@ void LiveWDFPluginEditor::layoutSourceSelectors(juce::Rectangle<int> bounds) {
         return area;
     };
     auto circuit = row(circuitLabel_);
-    if (powerAmpBtn_.isVisible())
-        powerAmpBtn_.setBounds(circuit.removeFromRight(112).reduced(4, 2));
+    if (powerAmpSelector_.isVisible())
+        powerAmpSelector_.setBounds(circuit.removeFromRight(112).reduced(4, 2));
     factoryBtn_.setBounds(circuit);
     factoryHint_.setBounds(circuit.removeFromRight(65));
     presetStepper_.setBounds(circuit.reduced(5, 2));

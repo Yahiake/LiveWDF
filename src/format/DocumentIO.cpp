@@ -4,6 +4,10 @@
 
 #include <algorithm>
 #include <fstream>
+#include <iterator>
+#include <map>
+#include <queue>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -427,6 +431,125 @@ bool LiveWDFDocument::makePreampDocument(LiveWDFDocument& preamp, std::string& e
     }
     std::erase_if(drawing.components, isPowerAmpPart);
     return fromJson(drawing.toJson(), preamp, error);
+}
+
+bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::string& error) const {
+    const auto* tap = preampTap();
+    if (tap == nullptr) {
+        error = "The circuit has no preamp output";
+        return false;
+    }
+    const auto* spec = livewdf::editor::findPart(tap->type);
+    if (spec == nullptr) {
+        error = "The preamp output part is unavailable";
+        return false;
+    }
+    const auto& pins = spec->pins;
+    const auto pin = std::find(pins.begin(), pins.end(), tap->properties.at("preampTap"));
+    if (pin == pins.end()) {
+        error = "The preamp output pin is unavailable";
+        return false;
+    }
+    const auto tapPin = static_cast<int>(pin - pins.begin());
+    const auto inputPin = tap->type == "cap" ? 1 - tapPin : tapPin;
+    const auto position = livewdf::editor::pinAt(*tap, inputPin);
+    auto drawing = *this;
+    auto& input = drawing.components[terminal("in") - components.data()];
+    const auto inputPosition = livewdf::editor::pinAt(input, 0);
+    input.visual.x += static_cast<float>(position.x - inputPosition.x);
+    input.visual.y += static_cast<float>(position.y - inputPosition.y);
+    input.values.clear();
+    input.properties.clear();
+    const auto level = tap->values.find("preampFullScaleVolts");
+    if (level != tap->values.end())
+        input.values["referenceMillivoltsRms"] = level->second * kReferenceMillivolts;
+    if (tap->type == "cap") {
+        // The preamp hand-off has already crossed this coupling capacitor. Keep
+        // a transparent DC block so the input source does not clamp the PI bias.
+        auto& coupling = drawing.components[tap - components.data()];
+        coupling.values["value"] = std::max(coupling.values["value"], 1.e-3);
+    }
+
+    std::set<std::string> targetNets, railNets, supplyParts, controls;
+    for (const auto& part : components) {
+        if (isPowerAmpPart(part)) {
+            for (const auto& [_, net] : part.pins)
+                if (net != groundNode) targetNets.insert(net);
+            if (const auto gate = part.properties.find("enabledBy"); gate != part.properties.end())
+                controls.insert(gate->second.starts_with('!') ? gate->second.substr(1) : gate->second);
+        }
+        if (part.type == "rail")
+            for (const auto& [_, net] : part.pins)
+                if (net != groundNode) railNets.insert(net);
+    }
+    struct SupplyStep { std::string previous, part; };
+    std::map<std::string, SupplyStep> reached;
+    std::queue<std::string> pending;
+    for (const auto& net : railNets) {
+        reached.emplace(net, SupplyStep{});
+        pending.push(net);
+    }
+    const auto supplyEdge = [](const auto& part) {
+        return part.type == "res" || part.type == "cap" || part.type == "ind" || part.type == "diode";
+    };
+    while (!pending.empty()) {
+        const auto net = pending.front();
+        pending.pop();
+        for (const auto& part : components) {
+            if (isPowerAmpPart(part) || !supplyEdge(part) || part.pins.size() != 2)
+                continue;
+            const auto first = part.pins.begin();
+            const auto second = std::next(first);
+            if (first->second == groundNode || second->second == groundNode)
+                continue;
+            const auto* next = first->second == net ? &second->second : second->second == net ? &first->second : nullptr;
+            if (next != nullptr && reached.emplace(*next, SupplyStep{net, part.id}).second)
+                pending.push(*next);
+        }
+    }
+    std::set<std::string> supplyNets = railNets;
+    for (const auto& target : targetNets) {
+        auto step = reached.find(target);
+        while (step != reached.end() && !step->second.part.empty()) {
+            supplyNets.insert(step->first);
+            supplyParts.insert(step->second.part);
+            step = reached.find(step->second.previous);
+        }
+    }
+    for (const auto& part : components)
+        if (supplyEdge(part) && std::ranges::any_of(part.pins, [&](const auto& pin) {
+                return pin.second == groundNode;
+            }) && std::ranges::any_of(part.pins, [&](const auto& pin) {
+                return supplyNets.contains(pin.second);
+            }))
+            supplyParts.insert(part.id);
+
+    std::erase_if(drawing.components, [&](const auto& part) {
+        return part.id != tap->id && !supplyParts.contains(part.id) && !controls.contains(part.id) &&
+               !isPowerAmpPart(part) &&
+               part.type != "in" && part.type != "out" && part.type != "gnd" && part.type != "rail";
+    });
+    LiveWDFDocument candidate;
+    if (!fromJson(drawing.toJson(), candidate, error))
+        return false;
+    bool pruned;
+    do {
+        std::map<std::string, size_t> connections;
+        for (const auto& part : candidate.components)
+            for (const auto& [_, net] : part.pins)
+                if (!net.empty()) ++connections[net];
+        pruned = std::erase_if(candidate.components, [&](const auto& part) {
+            const bool passive = part.type == "res" || part.type == "cap" || part.type == "ind" ||
+                                 part.type == "pot" || part.type == "varres";
+            return part.id != tap->id && passive && std::ranges::any_of(part.pins, [&](const auto& pin) {
+                return pin.second != candidate.groundNode && connections[pin.second] == 1;
+            });
+        }) != 0;
+        if (pruned && !fromJson(candidate.toJson(), candidate, error))
+            return false;
+    } while (pruned);
+    powerAmp = std::move(candidate);
+    return true;
 }
 
 bool LiveWDFDocument::saveToFile(const std::string& filepath) const {

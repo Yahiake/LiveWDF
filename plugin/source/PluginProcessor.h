@@ -23,6 +23,8 @@ namespace livewdf {
 
 class LiveWDFPluginProcessor : public juce::AudioProcessor, private juce::Timer {
 public:
+    enum class AmpSection { preamp, powerAmp, both };
+
     /// Two cores: blocks the worker did not take in time, and blocks it fell behind in.
     std::pair<long long, long long> twoCoreMisses() const noexcept { return {pipeUnclaimed_, pipeTimeouts_}; }
     /// The APVTS layout is fixed when the processor is constructed, so this is
@@ -195,7 +197,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
-    std::optional<bool> powerAmpEnabled_;
+    std::optional<AmpSection> ampSection_;
     std::optional<bool> previewPentodePairs_;
     std::optional<MainsSupply> mainsSupply_;
     int currentOversamplingFactor_ = 1;
@@ -307,6 +309,7 @@ private:
     std::atomic<bool> previewKeepsBlockAnswer_{false};
     std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
+    std::atomic<double> previewPeakVolts_{2.0};
     double previewPadScale_ = 1.;
     double previewPadOutputBias_ = 0.;
     juce::SmoothedValue<double> previewPadGain_{1.};

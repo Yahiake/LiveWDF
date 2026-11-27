@@ -157,8 +157,9 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
         juce::ParameterID{"reverb_mix", 1}, "Reverb Level",
         juce::NormalisableRange<float>(0.0f, 100.0f, 0.5f), 0.0f,
         juce::AudioParameterFloatAttributes().withLabel("%")));
-    params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{"power_amp", 2}, "Power Amp", true));
+    params.push_back(std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"power_amp", 3}, "Power Amp",
+        juce::StringArray{"Preamp", "Power amp", "Both"}, 2));
 
     const auto addOutputControl = [&](const char* id, const char* label, float min, float max,
                                       float step, float start, const char* units) {
@@ -397,8 +398,9 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     }
     if (!portTopologyChanged) rejectedPortRequest_.reset();
     auto* powerAmp = apvts_.getParameter("power_amp");
-    const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
-    const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
+    const auto requestedSection = static_cast<AmpSection>(std::lround(
+        apvts_.getRawParameterValue("power_amp")->load(std::memory_order_relaxed)));
+    const bool powerAmpChanged = ampSection_ && requestedSection != *ampSection_;
     const bool mainsHumChanged = mainsSupply_ && mainsSupplyRequested() != *mainsSupply_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
@@ -408,8 +410,9 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
         if (!loadCircuitDocument(currentDoc_, false)) {
             if (portTopologyChanged)
                 rejectedPortRequest_ = requestedPorts;
-            if (powerAmpChanged && (powerAmp->getValue() > 0.5f) == requestedPowerAmp)
-                powerAmp->setValueNotifyingHost(*powerAmpEnabled_ ? 1.f : 0.f);
+            if (powerAmpChanged && requestedSection == static_cast<AmpSection>(std::lround(
+                    apvts_.getRawParameterValue("power_amp")->load(std::memory_order_relaxed))))
+                powerAmp->setValueNotifyingHost(powerAmp->convertTo0to1(static_cast<float>(*ampSection_)));
         }
         currentFile_ = circuitFile;
     }
@@ -421,7 +424,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
             !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer() && (!previewPrepared_ ||
                 previewLinearRevision_ != leftEngine_->linearRebuilds() ||
                 previewControlRevision_ != leftEngine_->liveControlRevision())) {
-            const double peak = currentDoc_.previewPeakVolts();
+            const double peak = previewPeakVolts_.load(std::memory_order_relaxed);
             for (auto* engine : {leftEngine_.get(), rightEngine_.get()})
                 engine->prepareCompiledPreview(static_cast<size_t>(inSourceIndex_), outNodeIndex_,
                                                outputOnlyPreviewAllowed_, peak, currentDoc_.allowPreviewInputPad);
@@ -491,7 +494,7 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer(bool audioActive) {
     const auto input = static_cast<size_t>(inSourceIndex_);
     const auto output = outNodeIndex_;
     const bool allowOutputOnly = outputOnlyPreviewAllowed_, allowPad = currentDoc_.allowPreviewInputPad;
-    const auto peak = currentDoc_.previewPeakVolts();
+    const auto peak = previewPeakVolts_.load(std::memory_order_relaxed);
     auto job = std::move(*capture_.work);
     capture_.work.reset();
     captureState_.store(CaptureState::idle, std::memory_order_release);
@@ -841,11 +844,15 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     liveControlUpdateFailed_.store(false, std::memory_order_relaxed);
 
     const bool hasPowerAmp = doc.preampTap() != nullptr;
-    const bool enablePowerAmp = !hasPowerAmp || *apvts_.getRawParameterValue("power_amp") > 0.5f;
-    wdf::LiveWDFDocument preamp;
-    if (!enablePowerAmp && !doc.makePreampDocument(preamp, lastError_))
+    const auto requestedSection = static_cast<AmpSection>(std::lround(
+        apvts_.getRawParameterValue("power_amp")->load(std::memory_order_relaxed)));
+    const auto section = hasPowerAmp ? requestedSection : AmpSection::both;
+    wdf::LiveWDFDocument sectionDoc;
+    if (section == AmpSection::preamp && !doc.makePreampDocument(sectionDoc, lastError_))
         return false;
-    const auto& playbackDoc = enablePowerAmp ? doc : preamp;
+    if (section == AmpSection::powerAmp && !doc.makePowerAmpDocument(sectionDoc, lastError_))
+        return false;
+    const auto& playbackDoc = section == AmpSection::both ? doc : sectionDoc;
 
     attemptedOversamplingChoice_ = effectiveOversamplingChoice();
     attemptedGridCurrent_ = *apvts_.getRawParameterValue("grid_current") > 0.5f;
@@ -879,8 +886,9 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     if (!newLeft || !newRight) {
         return false;
     }
-    if (!enablePowerAmp && outIdx < 0) {
-        lastError_ = "The preamp output is not connected";
+    if (section != AmpSection::both && outIdx < 0) {
+        lastError_ = section == AmpSection::preamp ? "The preamp output is not connected"
+                                                   : "The power amp output is not connected";
         return false;
     }
     // A document loaded from anywhere but a file has no file to reload. The
@@ -889,7 +897,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
     // restored from host state.
     currentFile_ = juce::File();
 
-    powerAmpEnabled_ = hasPowerAmp ? std::optional(enablePowerAmp) : std::nullopt;
+    ampSection_ = hasPowerAmp ? std::optional(section) : std::nullopt;
     previewPentodePairs_ = newPreviewPentodePairs;
     mainsSupply_ = playbackDoc.hasAcPowerSupply() ? std::optional(mainsSupplyRequested()) : std::nullopt;
     rejectedPortRequest_.reset();
@@ -931,9 +939,9 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         outputFastTrim_.store(playbackDoc.outputTrim(false), std::memory_order_relaxed);
         outputPreviewTrim_.store(playbackDoc.outputTrim(true), std::memory_order_relaxed);
         previewKeepsBlockAnswer_.store(playbackDoc.previewKeepsBlockAnswer(), std::memory_order_relaxed);
-        outputAtSpeakerLevel_.store(hasPowerAmp && enablePowerAmp, std::memory_order_relaxed);
-        previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
-            ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;
+        outputAtSpeakerLevel_.store(hasPowerAmp && section != AmpSection::preamp, std::memory_order_relaxed);
+        previewPadScale_ = playbackDoc.validPreviewPadDb(playbackDoc.previewPadDb)
+            ? juce::Decibels::decibelsToGain(-playbackDoc.previewPadDb) : 1.;
         previewPadOutputBias_ = outputBias;
         auto* pad = apvts_.getParameter("preview_pad");
         if ((initializePotParameters || previewPadScale_ == 1.) && pad->getValue() > 0.5f)
@@ -941,7 +949,8 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         previewPadGain_.reset(sampleRate_, .015);
         previewPadGain_.setCurrentAndTargetValue(compiledPreviewRequested() && pad->getValue() > 0.5f
                                                  ? previewPadScale_ : 1.);
-        inputVoltsPerFullScale_ = doc.inputVoltsPerFullScale();
+        inputVoltsPerFullScale_ = playbackDoc.inputVoltsPerFullScale();
+        previewPeakVolts_.store(playbackDoc.previewPeakVolts(), std::memory_order_relaxed);
         baseSourceValues_ = std::move(baseSources);
         svLeft_.assign(baseSourceValues_.size(), 0.0);
         svRight_.assign(baseSourceValues_.size(), 0.0);
@@ -1393,6 +1402,7 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
 void LiveWDFPluginProcessor::getStateInformation(juce::MemoryBlock& destData) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     auto state = apvts_.copyState();
+    state.setProperty("power_amp_selector", true, nullptr);
     outputEffects_.save(state);
     if (cabinetFollowsSuggestion_)
         state.setProperty("cabinet_follow_suggested", true, nullptr);
@@ -1420,7 +1430,12 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("chain_input", 0.0f);
         restoreMissing("match_output", 1.0f);
         restoreMissing("output_master", 0.0f);
-        restoreMissing("power_amp", 1.0f);
+        auto powerAmpState = state.getChildWithProperty("id", "power_amp");
+        if (!powerAmpState.isValid())
+            state.appendChild(juce::ValueTree{"PARAM", {{"id", "power_amp"}, {"value", 2.0f}}}, nullptr);
+        else if (!static_cast<bool>(state.getProperty("power_amp_selector", false)))
+            powerAmpState.setProperty("value", static_cast<float>(powerAmpState.getProperty("value")) > 0.5f ? 2.0f : 0.0f, nullptr);
+        state.setProperty("power_amp_selector", true, nullptr);
         restoreMissing("cab_enabled", 0.0f);
         restoreMissing("echo_mix", 0.0f);
         restoreMissing("echo_delay", 250.0f);
