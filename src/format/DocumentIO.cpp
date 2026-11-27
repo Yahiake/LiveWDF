@@ -337,10 +337,11 @@ bool LiveWDFDocument::fromJson(const std::string& jsonStr, LiveWDFDocument& doc,
                 continue;
             }
 
+            const auto& pins = livewdf::editor::partPins(c);
             const std::vector<int>& pinNets = nets.netOfPin[e];
-            for (std::size_t pi = 0; pi < spec->pins.size() && pi < pinNets.size(); ++pi)
+            for (std::size_t pi = 0; pi < pins.size() && pi < pinNets.size(); ++pi)
                 if (pinNets[pi] >= 0)
-                    c.pins[spec->pins[pi]] = nets.netNames[static_cast<std::size_t>(pinNets[pi])];
+                    c.pins[pins[pi]] = nets.netNames[static_cast<std::size_t>(pinNets[pi])];
         }
 
         for (std::size_t w = 0; w < doc.wires.size() && w < nets.netOfWire.size(); ++w)
@@ -403,7 +404,7 @@ bool LiveWDFDocument::makePreampDocument(LiveWDFDocument& preamp, std::string& e
         error = "The preamp output part is unavailable";
         return false;
     }
-    const auto& pins = spec->pins;
+    const auto& pins = livewdf::editor::partPins(*tap);
     const auto pin = std::find(pins.begin(), pins.end(), tap->properties.at("preampTap"));
     if (pin == pins.end()) {
         error = "The preamp output pin is unavailable";

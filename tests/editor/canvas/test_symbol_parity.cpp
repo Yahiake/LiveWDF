@@ -78,6 +78,7 @@ TEST_CASE("Every part we place that Céline draws is held to Céline's geometry"
         "opamp",   // our addition: Celine has no op-amp symbol
         "idealopamp", // its own three-pin frame, for the same reason
         "scope",   // our own addition
+        "net_label", // our own one-pin terminal
         "rail",    // our own addition
         "in",      // circular port, not Céline's flag
         "out",     // circular port, not Céline's flag

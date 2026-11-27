@@ -657,7 +657,7 @@ TEST_CASE("Bipolar Preview follows a qualified control and preserves state on fa
         const double expected = physical.step(sources)[output];
         double voltage = 0.;
         const bool active = preview.stepBipolarPreview(sources[0], voltage);
-        REQUIRE(active == (i < 256 || (i >= 320 && i < 384) || (i >= 448 && i < 512)));
+        REQUIRE(active == (i < 384 || (i >= 448 && i < 512)));
         if (!active) voltage = preview.step(sources)[output];
         REQUIRE(voltage == Approx(expected).margin(50e-6));
     }

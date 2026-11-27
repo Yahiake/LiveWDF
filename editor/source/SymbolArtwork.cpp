@@ -152,6 +152,7 @@ int assetForType(const std::string& type) {
     if (type == "pentode")     return static_cast<int>(Asset::Pentode);
     if (type == "in")          return static_cast<int>(Asset::Input);
     if (type == "out")         return static_cast<int>(Asset::Output);
+    if (type == "net_label")   return static_cast<int>(Asset::Output);
     if (type == "gnd")         return static_cast<int>(Asset::Ground);
     if (type == "ctrlres")     return static_cast<int>(Asset::ControlledResistor);
     if (type == "photores")    return static_cast<int>(Asset::Photoresistor);
@@ -472,9 +473,12 @@ const SymbolArtwork* artworkForType(const std::string& type) {
 }
 
 const SymbolArtwork* artworkForPart(const wdf::SchematicComponent& part) {
-    if (part.type == "switch_res")
+    if (part.type == "switch_res" && wdf::switchResThrowCount(part) == 2)
         return &cached(wdf::switchResSelectsB(part) ? static_cast<int>(Asset::SpdtB)
                                                     : static_cast<int>(Asset::SpdtA));
+
+    if (part.type == "switch_res")
+        return nullptr;
 
     if (part.type == "bjt") {
         const bool pnp = wdf::transistorPolarity(part) ==

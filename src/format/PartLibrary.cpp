@@ -8,6 +8,7 @@
 #include "spice/Circuit.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 #include <map>
@@ -184,6 +185,7 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // The pin is at the *top* of the symbol, at grid (0,-2), because the
         // ground symbol hangs below the wire that comes into it.
         {"gnd",        "Ground",       "GND", {"sig"},                {2},         {{0, -2}},                 0.0,        "",           "G", 0, false, "Measurement/Ground"},
+        {"net_label",  "Net Label",    "NET", {"sig"},                {0},         {{-2, 0}},                 0.0,        "",           "", 0, false, "Measurement/Terminals"},
 
         // The DC rail's electrical connection is the **centre of the line**,
         // not a lead at one end. The pin used to be at (2,0), two grids right of
@@ -192,11 +194,8 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // passive neighbours carried. `rail.svg` draws the line centred on 0.
         {"rail",       "DC Rail",     "VDC", {"pos"},                {1},         {{0, 0}},                  0.0,        "dc",         "H", 0, false, "Sources/Supply"},
 
-        // A changeover (SPDT) switch: common connects to one throw or the other,
-        // never both. Three pins: `in` is the common, `outA` and `outB` route to
-        // external resistors (or anything else). A single `select` property holds
-        // "0" or "1" -- which throw is closed. No numeric value is exposed; the
-        // part is just a switch, like the hardware it models.
+        // A changeover switch defaults to SPDT; `throws` extends its dynamic pin
+        // frame and `select` is the zero-based closed throw.
         //
         // The pin frame is Celine's SPDT frame from `Element.h`: common at
         // (0,2), the two throws at (-1,-2) and (1,-2). The artwork is authored
@@ -585,8 +584,44 @@ const std::vector<PinOffsetSpec>& pinFrame(const std::string& type) {
     return it == kFrames.end() ? kUnknown : it->second;
 }
 
+const std::vector<std::string>& partPins(const wdf::SchematicComponent& part) {
+    const auto* spec = findPart(part.type);
+    static const std::vector<std::string> kUnknown;
+    if (spec == nullptr)
+        return kUnknown;
+    if (part.type != "switch_res")
+        return spec->pins;
+
+    static const auto kPins = [] {
+        std::array<std::vector<std::string>, wdf::kMaxSwitchThrows + 1> pins;
+        for (int count = wdf::kMinSwitchThrows; count <= wdf::kMaxSwitchThrows; ++count) {
+            pins[count].push_back("in");
+            for (int i = 0; i < count; ++i)
+                pins[count].push_back(wdf::switchResThrowPin(i));
+        }
+        return pins;
+    }();
+    return kPins[static_cast<size_t>(wdf::switchResThrowCount(part))];
+}
+
+const std::vector<PinOffsetSpec>& pinFrame(const wdf::SchematicComponent& part) {
+    if (part.type != "switch_res")
+        return pinFrame(part.type);
+
+    static const auto kFrames = [] {
+        std::array<std::vector<PinOffsetSpec>, wdf::kMaxSwitchThrows + 1> frames;
+        for (int count = wdf::kMinSwitchThrows; count <= wdf::kMaxSwitchThrows; ++count) {
+            frames[count].push_back({0, 2});
+            for (int i = 0; i < count; ++i)
+                frames[count].push_back({2 * i - (count - 1), -2});
+        }
+        return frames;
+    }();
+    return kFrames[static_cast<size_t>(wdf::switchResThrowCount(part))];
+}
+
 PinOffsetSpec pinAt(const wdf::SchematicComponent& part, int pinIndex) {
-    const auto& frame = pinFrame(part.type);
+    const auto& frame = pinFrame(part);
     if (pinIndex < 0 || pinIndex >= static_cast<int>(frame.size()))
         return {};
 
@@ -668,6 +703,9 @@ wdf::SchematicComponent makeComponent(const std::string& type,
     // part on ground, which is what a ground symbol in a schematic means.
     if (type == "gnd")
         comp.pins["sig"] = "0";
+
+    if (type == "net_label")
+        comp.properties["name"] = "";
 
     // **A rail names nothing** (see `format/SchematicNets.h`): it drives
     // whatever net it is drawn onto. LiveSPICE's `Rail` puts its own name into

@@ -94,7 +94,7 @@ public:
         Circuit circuit_;
         double rate_ = 0.0;
         size_t input_ = 0;
-        bool gridCurrent_ = true;
+        bool gridCurrent_ = true, holds_ = false;
         long long revision_ = 0;
         std::vector<double> transfer_;
         std::vector<NewtonBlock> plans_;
@@ -113,7 +113,7 @@ public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
         /// Create the other channel's snapshot from this same base circuit.
         LiveTransferSetup makePeer();
-        void build(size_t inputSource, bool prepareAffine);
+        void build(size_t inputSource, bool prepareAffine, bool prepareLag = false);
         void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
                                     double requestedPeak = 1.2, bool allowPad = false);
         /// Prepare both channels. True means they share a qualification and own separate playback state.
@@ -157,7 +157,9 @@ private:
     int mixedAffineBlock() const noexcept;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);
-    std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
+    std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts,
+                                                            double tol = kDefaultTolerance,
+                                                            long long* evaluations = nullptr);
 };
 
 }  // namespace wdf

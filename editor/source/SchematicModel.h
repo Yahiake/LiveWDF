@@ -54,7 +54,7 @@ namespace livewdf::editor {
 /// Most pins any part in the palette has. `netOfPart` rows are sized per part
 /// rather than to this bound, so the number is only a safety margin for a caller
 /// that indexes pins by a fixed limit -- the tests, and nothing in the app.
-inline constexpr int kMaxPins = 8;
+inline constexpr int kMaxPins = wdf::kMaxSwitchThrows + 1;
 
 /// A pin's position relative to its part's centre, in grid units, before the
 /// part's own rotation and mirror are applied.
@@ -178,6 +178,7 @@ public:
     /// Centre pin offsets of a part's type, in the order its pins are listed.
     /// Empty for a type the palette does not know.
     static std::vector<PinOffset> pinOffsets(const std::string& type);
+    static std::vector<PinOffset> pinOffsets(const wdf::SchematicComponent& part);
 
     /// Where pin `pinIndex` of `part` sits, in grid units, with the part's
     /// rotation and mirror applied. This is the one function the symbol, the

@@ -122,6 +122,10 @@ def cases(root, suite):
         yield {'name': f'{title}/{control}/moving', 'circuit': path, 'samples': count,
                'positions': {control: .5}, 'moves': moves, 'behavior': behavior, 'control': control,
                'switches': switches}
+    path = root / 'tests/fixtures/multi_throw_switch.livewdf'
+    for position in range(3):
+        yield {'name': f'Multi Throw Switch/Route/{position}', 'circuit': path, 'samples': 2048,
+               'positions': {}, 'moves': [], 'switches': {'Route': position}, 'behavior': 'selector'}
 
 
 def case_key(name):
