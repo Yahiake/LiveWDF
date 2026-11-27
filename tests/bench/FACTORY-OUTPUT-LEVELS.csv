@@ -2,15 +2,15 @@ schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurat
 schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,271.06202,2.995,0.000,-2.987,0.000,0.261,-15.813,3.000,0.010,-2.977,0.010,0.283,-15.905
 schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf,amp,0.87059607,6.5291355,1.831,0.000,-1.936,0.000,1.545,-12.841,1.831,0.000,-1.936,0.000,1.545,-12.841
 schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,551.37944,2.480,0.000,-2.684,0.000,0.502,-21.157,2.485,-0.002,-2.694,-0.002,0.507,-21.129
-schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,94.662306,0.213,0.000,-0.377,0.000,0.734,-10.449,0.213,0.000,-0.377,0.000,0.734,-10.449
-schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,301.4031,2.330,0.000,-2.431,0.000,1.085,-19.993,2.330,0.000,-2.431,0.000,1.085,-19.993
+schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,107.89611,0.291,-0.000,-0.508,-0.000,0.768,-11.309,0.291,-0.000,-0.508,-0.000,0.768,-11.309
+schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,336.63398,2.363,-0.000,-2.460,-0.000,1.069,-20.534,2.363,-0.000,-2.460,-0.000,1.069,-20.534
 schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,188.36475,0.826,-0.000,-1.258,-0.000,0.009,-13.940,0.826,-0.000,-1.258,-0.000,0.009,-13.940
 schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.2882902,0.322,0.000,-0.738,0.000,-1.293,-5.021,0.322,0.000,-0.738,0.000,-1.293,-5.021
 schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,110.15979,1.076,-0.000,-1.395,-0.000,2.621,-16.478,1.076,-0.000,-1.395,-0.000,2.621,-16.478
-schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,197.29941,1.282,0.000,-1.574,0.000,2.114,-12.974,1.282,0.000,-1.574,0.000,2.114,-12.974
-schematics/amps/Fender Princeton Reverb AA1164.livewdf,amp,0.87059607,118.99361,0.354,0.000,-0.909,0.000,1.118,-13.778,0.354,0.000,-0.909,0.000,1.118,-13.778
-schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf,amp,0.87059607,42.895756,1.194,-0.000,-1.553,-0.000,1.375,-15.935,1.194,-0.000,-1.553,-0.000,1.375,-15.935
-schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,156.63857,2.158,0.000,-2.141,0.000,2.203,-18.286,2.158,0.000,-2.141,0.000,2.203,-18.286
+schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,208.08708,1.294,-0.000,-1.619,-0.000,1.955,-13.169,1.293,-0.000,-1.621,-0.000,1.949,-13.207
+schematics/amps/Fender Princeton Reverb AA1164.livewdf,amp,0.87059607,130.19292,0.504,0.000,-0.985,0.000,1.131,-14.495,0.504,0.000,-0.985,0.000,1.131,-14.495
+schematics/amps/Fender Tweed Champ 5F1 - Input 1.livewdf,amp,0.87059607,43.004943,1.196,-0.000,-1.556,-0.000,1.383,-16.010,1.196,-0.000,-1.556,-0.000,1.383,-16.010
+schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,160.91061,2.166,0.000,-2.148,0.000,2.217,-18.476,2.166,0.000,-2.148,0.000,2.217,-18.476
 schematics/amps/Fender Twin Reverb AB763.livewdf,amp,0.87059607,124.22298,-0.172,0.064,0.000,0.000,0.914,-11.116,-0.172,0.064,0.000,0.000,0.914,-11.116
 schematics/amps/Hiwatt DR103.livewdf,amp,0.87059607,442.89721,0.852,-0.000,-1.187,-0.000,0.572,-14.248,0.852,-0.000,-1.187,-0.000,0.572,-14.248
 schematics/amps/Laney GH100L - Drive.livewdf,amp,0.87059607,366.26929,2.259,-0.000,-2.396,-0.000,2.248,-19.182,2.259,-0.000,-2.396,-0.000,2.248,-19.182
@@ -76,8 +76,8 @@ schematics/studio/dynamics/Altec-436C.livewdf,bus,2.7530665,23.114083,0.431,0.00
 schematics/studio/dynamics/Drawmer-DS201.livewdf,bus,13.797993,13.248938,-0.093,0.000,0.000,0.000,0.033,-6.987,-0.093,0.000,0.000,0.000,0.033,-6.987
 schematics/studio/dynamics/EMI-RS124.livewdf,bus,13.797993,9.0349718,2.622,0.000,-2.647,0.000,-1.404,-6.913,2.622,0.000,-2.647,0.000,-1.404,-6.913
 schematics/studio/dynamics/Empirical Labs FATSO EL7.livewdf,bus,13.797993,7.01196,1.096,0.000,-1.143,0.000,-0.632,-7.323,1.096,0.000,-1.143,0.000,-0.632,-7.323
-schematics/studio/dynamics/Fairchild-660.livewdf,bus,13.797993,16.689105,1.467,0.000,-1.550,0.000,-1.298,-3.856,1.467,0.000,-1.550,0.000,-1.298,-3.856
-schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,bus,13.797993,12.472478,1.390,0.000,-2.149,0.000,-1.727,-9.183,1.390,0.000,-2.149,0.000,-1.727,-9.183
+schematics/studio/dynamics/Fairchild-660.livewdf,bus,13.797993,15.046132,1.689,-0.000,-1.544,-0.000,-1.743,-3.086,1.689,-0.000,-1.544,-0.000,-1.743,-3.086
+schematics/studio/dynamics/Gates-Sta-Level-M5167.livewdf,bus,13.797993,12.404317,1.401,-0.000,-2.136,-0.000,-1.716,-9.134,1.401,-0.000,-2.136,-0.000,-1.716,-9.134
 schematics/studio/dynamics/Manley-Variable-Mu.livewdf,bus,13.797993,12.504948,0.508,0.000,-1.064,0.000,-0.400,-5.807,0.508,0.000,-1.064,0.000,-0.400,-5.807
 schematics/studio/dynamics/Neve-33609J.livewdf,bus,8.7059607,7.949999,0.557,0.000,-1.207,0.000,-0.514,-6.754,0.557,0.000,-1.207,0.000,-0.514,-6.754
 schematics/studio/dynamics/Pye-4060.livewdf,bus,8.7059607,6.2010636,1.763,0.000,-2.039,0.000,-0.904,-8.578,1.763,0.000,-2.039,0.000,-0.904,-8.578
