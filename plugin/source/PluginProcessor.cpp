@@ -1226,7 +1226,7 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
         if (changed && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
                 const auto gate = comp.properties.find("enabledBy");
-                return gate != comp.properties.end() && gate->second == member.id;
+                return gate != comp.properties.end() && (gate->second == member.id || gate->second == "!" + member.id);
             }))
             gatedSwitchChanged_.store(true, std::memory_order_relaxed);
     }
@@ -1360,7 +1360,12 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
         restoreMissing("reverb_size", 100.0f);
         restoreMissing("reverb_predelay", 0.0f);
         for (const auto id : portParameterIds) restoreMissing(id, 0.f);
-        cabinetFollowsSuggestion_ = static_cast<bool>(state.getProperty("cabinet_follow_suggested", false));
+        // A retired factory cabinet id follows the circuit's suggestion instead.
+        const auto storedCabinet = state.getProperty("cabinet_ir_factory").toString();
+        const auto cabinets = OutputEffects::factoryImpulses(false);
+        const bool retiredCabinet = storedCabinet.isNotEmpty() && std::none_of(cabinets.begin(), cabinets.end(),
+            [&](const auto& cabinet) { return storedCabinet == cabinet.id; });
+        cabinetFollowsSuggestion_ = retiredCabinet || static_cast<bool>(state.getProperty("cabinet_follow_suggested", false));
         state.removeProperty("cabinet_follow_suggested", nullptr);
         outputEffects_.restore(state);
         apvts_.replaceState(state);
@@ -1378,6 +1383,8 @@ void LiveWDFPluginProcessor::setStateInformation(const void* data, int sizeInByt
                     restoredDocumentRevision_.fetch_add(1, std::memory_order_release);
             }
         }
+        if (retiredCabinet)
+            selectSuggestedCabinet();
         updateReportedLatency();
     }
 }

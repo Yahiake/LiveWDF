@@ -51,8 +51,6 @@ endif()
 
 file(GLOB factory_impulse_files CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.wav"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.md"
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/cabinet/*.txt"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/reverb/*.flac"
     "${CMAKE_CURRENT_SOURCE_DIR}/assets/ir/reverb/*.md")
 juce_add_binary_data(LiveWDF_FactoryImpulseData
