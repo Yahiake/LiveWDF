@@ -61,7 +61,7 @@ public:
         if (clamped == pot.position)
             return true;
         pot.position = clamped;
-        auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper);
+        auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper, pot.taperMid);
         const int idx1 = ctx.potResA[static_cast<size_t>(potIdx)];
         const int idx2 = ctx.potResB[static_cast<size_t>(potIdx)];
         if (idx1 < 0 || idx2 < 0)
@@ -81,7 +81,7 @@ public:
         if (clamped == vr.position)
             return true;
         vr.position = clamped;
-        const double ohms = VarRes::resistance(vr.maxResistance, vr.position, vr.taper);
+        const double ohms = VarRes::resistance(vr.maxResistance, vr.position, vr.taper, vr.taperMid);
         const int idx = ctx.varResResIndex[static_cast<size_t>(vrIdx)];
         if (idx < 0)
             return false;
@@ -120,7 +120,7 @@ public:
             if (clamped == pot.position)
                 continue;
             pot.position = clamped;
-            auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper);
+            auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper, pot.taperMid);
             const int idx1 = ctx.potResA[static_cast<size_t>(idx)];
             const int idx2 = ctx.potResB[static_cast<size_t>(idx)];
             setResistorValue(ctx, idx1, r1);
@@ -133,7 +133,7 @@ public:
             if (clamped == vr.position)
                 continue;
             vr.position = clamped;
-            const double ohms = VarRes::resistance(vr.maxResistance, vr.position, vr.taper);
+            const double ohms = VarRes::resistance(vr.maxResistance, vr.position, vr.taper, vr.taperMid);
             const int resIdx = ctx.varResResIndex[static_cast<size_t>(idx)];
             setResistorValue(ctx, resIdx, ohms);
             any = true;

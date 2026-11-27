@@ -45,6 +45,11 @@ enum class PotTaper {
     RevLog,
 };
 
+/// A maker's audio taper: two straight segments meeting at `mid` of the track at half rotation.
+inline double twoSegmentTaper(double p, double mid) noexcept {
+    return p < 0.5 ? 2.0 * mid * p : mid + (1.0 - mid) * (2.0 * p - 1.0);
+}
+
 /// 3-terminal potentiometer (LiveWDF Phase 1e addition).
 ///
 /// In the netlist and engine, a pot expands into two series resistors meeting at
@@ -59,10 +64,12 @@ struct Pot {
     double position = 0.5;
     PotTaper taper = PotTaper::Linear;
     std::string name;
+    double taperMid = 0.0;  // fraction at half rotation of a Log/RevLog track; 0 keeps (10^p - 1)/9
 
     /// Calculate the two resistance values (r1 between n1 and wiper, r2 between wiper and n2)
     /// for a given position and taper, with epsilon clamping to keep conductances finite.
-    static std::pair<double, double> resistances(double totalR, double pos, PotTaper t) noexcept {
+    static std::pair<double, double> resistances(double totalR, double pos, PotTaper t,
+                                                 double mid = 0.0) noexcept {
         double p = std::clamp(pos, 0.0, 1.0);
         double r = p;
         switch (t) {
@@ -70,10 +77,10 @@ struct Pot {
                 r = p;
                 break;
             case PotTaper::Log:
-                r = (std::pow(10.0, p) - 1.0) / 9.0;
+                r = mid > 0.0 ? twoSegmentTaper(p, mid) : (std::pow(10.0, p) - 1.0) / 9.0;
                 break;
             case PotTaper::RevLog:
-                r = 1.0 - (std::pow(10.0, 1.0 - p) - 1.0) / 9.0;
+                r = 1.0 - (mid > 0.0 ? twoSegmentTaper(1.0 - p, mid) : (std::pow(10.0, 1.0 - p) - 1.0) / 9.0);
                 break;
         }
         r = std::clamp(r, kEps, 1.0 - kEps);
@@ -91,8 +98,9 @@ struct VarRes {
     double position = 0.5;
     PotTaper taper = PotTaper::Linear;
     std::string name;
+    double taperMid = 0.0;
 
-    static double resistance(double maxR, double pos, PotTaper taper) {
+    static double resistance(double maxR, double pos, PotTaper taper, double mid = 0.0) {
         double p = std::clamp(pos, 0.0, 1.0);
         double r = p;
         switch (taper) {
@@ -100,10 +108,10 @@ struct VarRes {
                 r = p;
                 break;
             case PotTaper::Log:
-                r = (std::pow(10.0, p) - 1.0) / 9.0;
+                r = mid > 0.0 ? twoSegmentTaper(p, mid) : (std::pow(10.0, p) - 1.0) / 9.0;
                 break;
             case PotTaper::RevLog:
-                r = 1.0 - (std::pow(10.0, 1.0 - p) - 1.0) / 9.0;
+                r = 1.0 - (mid > 0.0 ? twoSegmentTaper(1.0 - p, mid) : (std::pow(10.0, 1.0 - p) - 1.0) / 9.0);
                 break;
         }
         r = std::clamp(r, kEps, 1.0);
@@ -562,10 +570,10 @@ struct Circuit {
     }
     void addPot(const std::string& n1, const std::string& wiper, const std::string& n2,
                 double totalR, double pos = 0.5, PotTaper taper = PotTaper::Linear,
-                const std::string& name = {}) {
+                const std::string& name = {}, double taperMid = 0.0) {
         std::string potName = name.empty() ? ("P" + std::to_string(pots.size() + 1)) : name;
-        pots.push_back({n1, wiper, n2, totalR, pos, taper, potName});
-        auto [r1, r2] = Pot::resistances(totalR, pos, taper);
+        pots.push_back({n1, wiper, n2, totalR, pos, taper, potName, taperMid});
+        auto [r1, r2] = Pot::resistances(totalR, pos, taper, taperMid);
         addRes(n1, wiper, r1, potName + "_1");
         addRes(wiper, n2, r2, potName + "_2");
     }
@@ -575,10 +583,10 @@ struct Circuit {
 
     void addVarRes(const std::string& a, const std::string& b, double maxR,
                    double pos = 0.5, PotTaper taper = PotTaper::Linear,
-                   const std::string& name = {}) {
+                   const std::string& name = {}, double taperMid = 0.0) {
         std::string vrName = name.empty() ? ("VR" + std::to_string(varRes.size() + 1)) : name;
-        varRes.push_back({a, b, maxR, pos, taper, vrName});
-        addRes(a, b, VarRes::resistance(maxR, pos, taper), vrName);
+        varRes.push_back({a, b, maxR, pos, taper, vrName, taperMid});
+        addRes(a, b, VarRes::resistance(maxR, pos, taper, taperMid), vrName);
     }
 
     void addControlledRes(const std::string& a, const std::string& b, double initialOhms = 1e3,
