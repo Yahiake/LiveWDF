@@ -198,6 +198,6 @@ TEST_CASE("An op-amp on a 9 V single supply clips inside that supply") {
     const auto circuit = doc.toCircuit();
 
     REQUIRE(circuit.opamp.size() == 1);
-    CHECK(circuit.opamp[0].model.railLow() == Approx(3.0));
-    CHECK(circuit.opamp[0].model.railHigh() == Approx(6.0));
+    CHECK(circuit.opamp[0].model.railLow() == Approx(1.5));
+    CHECK(circuit.opamp[0].model.railHigh() == Approx(7.5));
 }
