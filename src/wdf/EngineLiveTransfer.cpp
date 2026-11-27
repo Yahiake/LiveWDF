@@ -46,12 +46,14 @@ Engine::LiveTransferSetup Engine::LiveTransferSetup::makePeer() {
     return peer;
 }
 
-void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
+void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine, bool prepareLag) {
     prepared_ = std::make_unique<Engine>(circuit_, rate_, gridCurrent_);
     if (!planOnly_)
         prepared_->prepareLiveControls();
     if (planOnly_ || prepareAffine)
         prepared_->prepareCircuitPlan();
+    if (prepareLag)
+        prepared_->prepareSlowLag();
     if (prepareAffine)
         prepared_->prepareMixedAffineReduction(inputSource);
     else if (maskCount_ && prepared_->canPrepareMixedAffineReduction(inputSource))
@@ -349,16 +351,19 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     circuitPlanCooldown_ = 0;
     circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
     const auto installPreview = [&] {
+        const bool lagPrepared = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds();
+        if (setup.compiledPreview_ || lagPrepared) {
+            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
+            std::swap(lagOrder_, preparedEngine.lagOrder_);
+            std::swap(lagHeld_, preparedEngine.lagHeld_);
+            lagCount_ = preparedEngine.lagCount_;
+            lagRevision_ = lagPrepared ? linearRebuilds() : -1;
+        }
         if (setup.compiledPreview_) {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
-            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
-            std::swap(lagOrder_, preparedEngine.lagOrder_);
-            std::swap(lagHeld_, preparedEngine.lagHeld_);
             std::swap(lamp_, preparedEngine.lamp_);
-            lagCount_ = preparedEngine.lagCount_;
-            lagRevision_ = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds() ? linearRebuilds() : -1;
             if (!packedDrive_.panels.empty())
                 packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);
