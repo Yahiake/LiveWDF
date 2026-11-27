@@ -36,7 +36,7 @@ enum class PentodeKneeType {
 /// The fits conduct a little at zero screen voltage, so E fades out below
 /// about screenFade volts instead of stepping to zero at Vsk = 0.
 struct QuadricEmission {
-    static constexpr double screenFade = 10.0;
+    static constexpr double screenFade = 4.0;
     double av[5], knot[5], coef[5];
     double beta, plate, lambda, rho, sigma;
 
