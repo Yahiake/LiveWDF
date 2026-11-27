@@ -618,68 +618,68 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 112230,
+      "evaluations": 112203,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 8012,
+      "newton": 7998,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01106876341105927,
-        "mean": -5.784833166450873e-05,
-        "peak": 0.039084049061112736,
-        "max_step": 0.011860018685982854,
-        "band_375": 0.005495688590600951,
-        "band_1500": 0.008113150431446274,
-        "band_6000": 0.0030594394594236794
+        "ac_rms": 0.010967567200704988,
+        "mean": -6.026389518941366e-05,
+        "peak": 0.038324372781733174,
+        "max_step": 0.011600606136764613,
+        "band_375": 0.00561725101629274,
+        "band_1500": 0.008070901049062048,
+        "band_6000": 0.00312365803965378
       },
       "wave_bounds": {
-        "ac_rms": 0.01106876341105927,
-        "mean": -5.784833166450873e-05,
-        "peak": 0.039084049061112736,
-        "max_step": 0.011860018685982854
+        "ac_rms": 0.010967567200704988,
+        "mean": -6.026389518941366e-05,
+        "peak": 0.038324372781733174,
+        "max_step": 0.011600606136764613
       },
-      "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
+      "circuit_sha256": "c8ebb840ca8fe00015be442a362748c635975600c9e5ef44680c0579e10cd4f2",
       "case": "Boss BF-2 Flanger",
-      "wave": "0622a9d84a9ec74703ab98b25b015b2766c9c8ba984d0bbc47898fa360074e7d.f32.gz",
-      "wave_sha256": "0622a9d84a9ec74703ab98b25b015b2766c9c8ba984d0bbc47898fa360074e7d",
+      "wave": "17ab812e85277c6056b66018753e936a4497d8afb2fb8d6f8cefe26ad38ac133.f32.gz",
+      "wave_sha256": "17ab812e85277c6056b66018753e936a4497d8afb2fb8d6f8cefe26ad38ac133",
       "reference_stride": 7
     },
     "Boss BF-2 Flanger/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 95610,
+      "evaluations": 95553,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
-      "newton": 6768,
+      "newton": 6767,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.011068765547593356,
-        "mean": -5.784771313272543e-05,
-        "peak": 0.039084071120965236,
-        "max_step": 0.011860041371744456,
-        "band_375": 0.005495688483994635,
-        "band_1500": 0.008113151236416032,
-        "band_6000": 0.0030594360366811885
+        "ac_rms": 0.01096756922651921,
+        "mean": -6.026325929554534e-05,
+        "peak": 0.03832438978603314,
+        "max_step": 0.011600624034389329,
+        "band_375": 0.005617250858639138,
+        "band_1500": 0.008070902265222769,
+        "band_6000": 0.003123654839284669
       },
       "wave_bounds": {
-        "ac_rms": 0.011068765547593356,
-        "mean": -5.784771313272543e-05,
-        "peak": 0.039084071120965236,
-        "max_step": 0.011860041371744456
+        "ac_rms": 0.01096756922651921,
+        "mean": -6.026325929554534e-05,
+        "peak": 0.03832438978603314,
+        "max_step": 0.011600624034389329
       },
-      "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
+      "circuit_sha256": "c8ebb840ca8fe00015be442a362748c635975600c9e5ef44680c0579e10cd4f2",
       "case": "Boss BF-2 Flanger",
-      "wave": "75beddd7cc435f2af50bf86d6f3ade78d8c4f3b630423877d808cc3e1df4017c.f32.gz",
-      "wave_sha256": "75beddd7cc435f2af50bf86d6f3ade78d8c4f3b630423877d808cc3e1df4017c",
+      "wave": "2b91bf5fd9c31d05f69183ecfff5f22c2f126671aba43c1cb82040da4e3d2dcc.f32.gz",
+      "wave_sha256": "2b91bf5fd9c31d05f69183ecfff5f22c2f126671aba43c1cb82040da4e3d2dcc",
       "reference_stride": 7
     },
     "Boss BF-2 Flanger/preview": {
@@ -696,126 +696,126 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.011071979628442424,
-        "mean": -5.704660324604556e-05,
-        "peak": 0.039085955640477676,
-        "max_step": 0.011859106356451043,
-        "band_375": 0.005498186839458573,
-        "band_1500": 0.008114141666444108,
-        "band_6000": 0.003060697676283627
+        "ac_rms": 0.010971141173631547,
+        "mean": -5.9415872860507234e-05,
+        "peak": 0.03832615413557239,
+        "max_step": 0.01160000211483303,
+        "band_375": 0.005620599892375644,
+        "band_1500": 0.008071835730420994,
+        "band_6000": 0.0031248788503032915
       },
       "wave_bounds": {
-        "ac_rms": 0.011071979628442424,
-        "mean": -5.704660324604556e-05,
-        "peak": 0.039085955640477676,
-        "max_step": 0.011859106356451043
+        "ac_rms": 0.010971141173631547,
+        "mean": -5.9415872860507234e-05,
+        "peak": 0.03832615413557239,
+        "max_step": 0.01160000211483303
       },
-      "circuit_sha256": "ac465084fb62623fb82b7b3cadf28b34207dbffefa5f6ad046de8e9fca5657f9",
+      "circuit_sha256": "c8ebb840ca8fe00015be442a362748c635975600c9e5ef44680c0579e10cd4f2",
       "case": "Boss BF-2 Flanger",
-      "wave": "f17cc575916a1fc21e4bbf95595fe85f110aa4a967054cc50c669ed4ddcfebf5.f32.gz",
-      "wave_sha256": "f17cc575916a1fc21e4bbf95595fe85f110aa4a967054cc50c669ed4ddcfebf5",
+      "wave": "d7af9e363c836301c72a8a8b58b645d7b1991a8fd14617a5817823a7b158feb6.f32.gz",
+      "wave_sha256": "d7af9e363c836301c72a8a8b58b645d7b1991a8fd14617a5817823a7b158feb6",
       "reference_stride": 7
     },
     "Boss CE-2 Chorus/accurate": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 61392,
+      "evaluations": 61304,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 5595,
+      "newton": 5584,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.009793502724423328,
-        "mean": -5.5392535245228484e-05,
-        "peak": 0.03139368747536664,
-        "max_step": 0.007821698699785884,
-        "band_375": 0.005189536617773132,
-        "band_1500": 0.0031611326152475735,
-        "band_6000": 0.0038448391999752
+        "ac_rms": 0.009765493146955255,
+        "mean": -5.561430450524074e-05,
+        "peak": 0.03139368747704552,
+        "max_step": 0.007821698754572504,
+        "band_375": 0.005266317231155038,
+        "band_1500": 0.0032208486215616616,
+        "band_6000": 0.0038433495029738135
       },
       "wave_bounds": {
-        "ac_rms": 0.009793502724423328,
-        "mean": -5.5392535245228484e-05,
-        "peak": 0.03139368747536664,
-        "max_step": 0.007821698699785884
+        "ac_rms": 0.009765493146955255,
+        "mean": -5.561430450524074e-05,
+        "peak": 0.03139368747704552,
+        "max_step": 0.007821698754572504
       },
-      "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
+      "circuit_sha256": "0f274794dd57cd136abc112284eca825c76d3dd33abad8e2633c22f013806091",
       "case": "Boss CE-2 Chorus",
-      "wave": "d32b0969e356954e7797b4f2165ca017a58c9b139982068eeb0c50ed37ee18d5.f32.gz",
-      "wave_sha256": "d32b0969e356954e7797b4f2165ca017a58c9b139982068eeb0c50ed37ee18d5",
+      "wave": "2f5e25a8cefe3668632dcaea6908b4e56412f234b0269c5e68f0745df869106a.f32.gz",
+      "wave_sha256": "2f5e25a8cefe3668632dcaea6908b4e56412f234b0269c5e68f0745df869106a",
       "reference_stride": 7
     },
     "Boss CE-2 Chorus/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 34556,
+      "evaluations": 34536,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
-      "newton": 4543,
+      "newton": 4538,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.009793503906024565,
-        "mean": -5.539177732878436e-05,
-        "peak": 0.031393694285359874,
-        "max_step": 0.007821704520414974,
-        "band_375": 0.005189536940956617,
-        "band_1500": 0.0031611324624137337,
-        "band_6000": 0.003844840390888969
+        "ac_rms": 0.00976549429389215,
+        "mean": -5.5613486031476605e-05,
+        "peak": 0.03139369433420236,
+        "max_step": 0.007821704517509964,
+        "band_375": 0.005266317517169017,
+        "band_1500": 0.0032208485152632753,
+        "band_6000": 0.003843350738824696
       },
       "wave_bounds": {
-        "ac_rms": 0.009793503906024565,
-        "mean": -5.539177732878436e-05,
-        "peak": 0.031393694285359874,
-        "max_step": 0.007821704520414974
+        "ac_rms": 0.00976549429389215,
+        "mean": -5.5613486031476605e-05,
+        "peak": 0.03139369433420236,
+        "max_step": 0.007821704517509964
       },
-      "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
+      "circuit_sha256": "0f274794dd57cd136abc112284eca825c76d3dd33abad8e2633c22f013806091",
       "case": "Boss CE-2 Chorus",
-      "wave": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2.f32.gz",
-      "wave_sha256": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2",
+      "wave": "33b06009ca9eb64b12fad306519aff40c874a716f5c9a2ea177495c5a882f400.f32.gz",
+      "wave_sha256": "33b06009ca9eb64b12fad306519aff40c874a716f5c9a2ea177495c5a882f400",
       "reference_stride": 7
     },
     "Boss CE-2 Chorus/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 34556,
+      "evaluations": 34536,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
-      "newton": 4543,
+      "newton": 4538,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.009793503906024565,
-        "mean": -5.539177732878436e-05,
-        "peak": 0.031393694285359874,
-        "max_step": 0.007821704520414974,
-        "band_375": 0.005189536940956617,
-        "band_1500": 0.0031611324624137337,
-        "band_6000": 0.003844840390888969
+        "ac_rms": 0.00976549429389215,
+        "mean": -5.5613486031476605e-05,
+        "peak": 0.03139369433420236,
+        "max_step": 0.007821704517509964,
+        "band_375": 0.005266317517169017,
+        "band_1500": 0.0032208485152632753,
+        "band_6000": 0.003843350738824696
       },
       "wave_bounds": {
-        "ac_rms": 0.009793503906024565,
-        "mean": -5.539177732878436e-05,
-        "peak": 0.031393694285359874,
-        "max_step": 0.007821704520414974
+        "ac_rms": 0.00976549429389215,
+        "mean": -5.5613486031476605e-05,
+        "peak": 0.03139369433420236,
+        "max_step": 0.007821704517509964
       },
-      "circuit_sha256": "e88ca3e99d27b7b23ec23756f30be6333bf7b6d7dfdbd3da0ba5f7ebc7208847",
+      "circuit_sha256": "0f274794dd57cd136abc112284eca825c76d3dd33abad8e2633c22f013806091",
       "case": "Boss CE-2 Chorus",
-      "wave": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2.f32.gz",
-      "wave_sha256": "0a99c3e00c6668a1a1863799b1e53ace1ea038702c74303465185b329eaf3cf2",
+      "wave": "33b06009ca9eb64b12fad306519aff40c874a716f5c9a2ea177495c5a882f400.f32.gz",
+      "wave_sha256": "33b06009ca9eb64b12fad306519aff40c874a716f5c9a2ea177495c5a882f400",
       "reference_stride": 7
     },
     "Boss CS-3 Compression Sustainer (August 1986)/accurate": {
@@ -934,24 +934,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01026413172900838,
-        "mean": -0.00019974048120059636,
-        "peak": 0.03087124129947999,
-        "max_step": 0.007590431246758178,
-        "band_375": 0.009505100988004408,
-        "band_1500": 0.005672253568557415,
-        "band_6000": 0.0036886924268074075
+        "ac_rms": 0.010264131729614333,
+        "mean": -0.00019974052421744848,
+        "peak": 0.030871241415091677,
+        "max_step": 0.007590431147522114,
+        "band_375": 0.009505100985570322,
+        "band_1500": 0.0056722535675846385,
+        "band_6000": 0.003688692430839103
       },
       "wave_bounds": {
-        "ac_rms": 0.01026413172900838,
-        "mean": -0.00019974048120059636,
-        "peak": 0.03087124129947999,
-        "max_step": 0.007590431246758178
+        "ac_rms": 0.010264131729614333,
+        "mean": -0.00019974052421744848,
+        "peak": 0.030871241415091677,
+        "max_step": 0.007590431147522114
       },
-      "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
+      "circuit_sha256": "31a449078b54769cb52835fea31bfd0814349a2c2f126c62b251985ddb86c732",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "c544ee936533b6230ef4749032157539ecd2a0183908f965bb69357e41c7c1c5.f32.gz",
-      "wave_sha256": "c544ee936533b6230ef4749032157539ecd2a0183908f965bb69357e41c7c1c5",
+      "wave": "462c0a739e64c27fff02aedbae51f3731c8e820a2188b99ece8c3adeb272d702.f32.gz",
+      "wave_sha256": "462c0a739e64c27fff02aedbae51f3731c8e820a2188b99ece8c3adeb272d702",
       "reference_stride": 7
     },
     "Boss DM-2 Analog Delay/fast": {
@@ -968,24 +968,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.010264131951742462,
-        "mean": -0.00019974055124298925,
-        "peak": 0.030871242071555116,
-        "max_step": 0.007590431195819924,
-        "band_375": 0.009505100984690497,
-        "band_1500": 0.005672253654400656,
-        "band_6000": 0.003688693027429493
+        "ac_rms": 0.010264131950335697,
+        "mean": -0.00019974054906259832,
+        "peak": 0.030871242123478748,
+        "max_step": 0.007590431082054816,
+        "band_375": 0.009505100981311434,
+        "band_1500": 0.005672253651398298,
+        "band_6000": 0.0036886930312494156
       },
       "wave_bounds": {
-        "ac_rms": 0.010264131951742462,
-        "mean": -0.00019974055124298925,
-        "peak": 0.030871242071555116,
-        "max_step": 0.007590431195819924
+        "ac_rms": 0.010264131950335697,
+        "mean": -0.00019974054906259832,
+        "peak": 0.030871242123478748,
+        "max_step": 0.007590431082054816
       },
-      "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
+      "circuit_sha256": "31a449078b54769cb52835fea31bfd0814349a2c2f126c62b251985ddb86c732",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b.f32.gz",
-      "wave_sha256": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b",
+      "wave": "6a89043cf63208a370c64665d864f6686d5db61600998ba7d1ccdfd3e490c519.f32.gz",
+      "wave_sha256": "6a89043cf63208a370c64665d864f6686d5db61600998ba7d1ccdfd3e490c519",
       "reference_stride": 7
     },
     "Boss DM-2 Analog Delay/preview": {
@@ -1002,24 +1002,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.010264131951742462,
-        "mean": -0.00019974055124298925,
-        "peak": 0.030871242071555116,
-        "max_step": 0.007590431195819924,
-        "band_375": 0.009505100984690497,
-        "band_1500": 0.005672253654400656,
-        "band_6000": 0.003688693027429493
+        "ac_rms": 0.010264131950335697,
+        "mean": -0.00019974054906259832,
+        "peak": 0.030871242123478748,
+        "max_step": 0.007590431082054816,
+        "band_375": 0.009505100981311434,
+        "band_1500": 0.005672253651398298,
+        "band_6000": 0.0036886930312494156
       },
       "wave_bounds": {
-        "ac_rms": 0.010264131951742462,
-        "mean": -0.00019974055124298925,
-        "peak": 0.030871242071555116,
-        "max_step": 0.007590431195819924
+        "ac_rms": 0.010264131950335697,
+        "mean": -0.00019974054906259832,
+        "peak": 0.030871242123478748,
+        "max_step": 0.007590431082054816
       },
-      "circuit_sha256": "7e41fa2e94c9470a470e1d600277125402ae5972f7628b60a10b2f42c6770ded",
+      "circuit_sha256": "31a449078b54769cb52835fea31bfd0814349a2c2f126c62b251985ddb86c732",
       "case": "Boss DM-2 Analog Delay",
-      "wave": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b.f32.gz",
-      "wave_sha256": "b13f9c159ef03e1cde697775b4fbf6a8c32fd8cf7ce045a024977ba7bc324c6b",
+      "wave": "6a89043cf63208a370c64665d864f6686d5db61600998ba7d1ccdfd3e490c519.f32.gz",
+      "wave_sha256": "6a89043cf63208a370c64665d864f6686d5db61600998ba7d1ccdfd3e490c519",
       "reference_stride": 7
     },
     "Boss DS-1A Distortion/accurate": {
@@ -2566,24 +2566,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071,
-        "band_375": 0.005886351654558368,
-        "band_1500": 0.003534127630948228,
-        "band_6000": 0.002339558017587686
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215,
+        "band_375": 0.005886351643671011,
+        "band_1500": 0.0035341276295552324,
+        "band_6000": 0.002339558019832773
       },
       "wave_bounds": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215
       },
-      "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
+      "circuit_sha256": "521632e6f7abdc7defaa1a1c2fbfbc1ae0f05727aaec0ba4ddfc99db9e803086",
       "case": "EHX Deluxe Memory Man",
-      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
-      "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
+      "wave": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89.f32.gz",
+      "wave_sha256": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89",
       "reference_stride": 7
     },
     "EHX Deluxe Memory Man/fast": {
@@ -2600,24 +2600,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071,
-        "band_375": 0.005886351654558368,
-        "band_1500": 0.003534127630948228,
-        "band_6000": 0.002339558017587686
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215,
+        "band_375": 0.005886351643671011,
+        "band_1500": 0.0035341276295552324,
+        "band_6000": 0.002339558019832773
       },
       "wave_bounds": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215
       },
-      "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
+      "circuit_sha256": "521632e6f7abdc7defaa1a1c2fbfbc1ae0f05727aaec0ba4ddfc99db9e803086",
       "case": "EHX Deluxe Memory Man",
-      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
-      "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
+      "wave": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89.f32.gz",
+      "wave_sha256": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89",
       "reference_stride": 7
     },
     "EHX Deluxe Memory Man/preview": {
@@ -2634,24 +2634,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071,
-        "band_375": 0.005886351654558368,
-        "band_1500": 0.003534127630948228,
-        "band_6000": 0.002339558017587686
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215,
+        "band_375": 0.005886351643671011,
+        "band_1500": 0.0035341276295552324,
+        "band_6000": 0.002339558019832773
       },
       "wave_bounds": {
-        "ac_rms": 0.006375963627025751,
-        "mean": 2.823105613896621e-05,
-        "peak": 0.01930470229523429,
-        "max_step": 0.004694255700548071
+        "ac_rms": 0.006375963626206537,
+        "mean": 2.8231128042284113e-05,
+        "peak": 0.01930470245312503,
+        "max_step": 0.0046942556346575215
       },
-      "circuit_sha256": "52ca053d3e6b61230058fa9614bc7adc38994a29315a66ad02189510081dd2b9",
+      "circuit_sha256": "521632e6f7abdc7defaa1a1c2fbfbc1ae0f05727aaec0ba4ddfc99db9e803086",
       "case": "EHX Deluxe Memory Man",
-      "wave": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a.f32.gz",
-      "wave_sha256": "c675c529bf10ade7d9cf252028bd0103d11375b19439b15fd5efecb09a29b81a",
+      "wave": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89.f32.gz",
+      "wave_sha256": "525fe2e8c8e81e6841d99c1cc90052a230ef04832202703fda2de04ce9fc5d89",
       "reference_stride": 7
     },
     "EHX Electric Mistress 9V/accurate": {
@@ -2668,24 +2668,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295,
-        "band_375": 0.0033191366800106492,
-        "band_1500": 0.0014473772901009417,
-        "band_6000": 0.0008383069481776816
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015,
+        "band_375": 0.003315107431579469,
+        "band_1500": 0.0014758898455878744,
+        "band_6000": 0.000813247372880775
       },
       "wave_bounds": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015
       },
-      "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
+      "circuit_sha256": "5f31e0c5ea6938929863e1689851343b1ee0de1c72bbe610c5c60fe61581fd48",
       "case": "EHX Electric Mistress 9V",
-      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
-      "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
+      "wave": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6.f32.gz",
+      "wave_sha256": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6",
       "reference_stride": 7
     },
     "EHX Electric Mistress 9V/fast": {
@@ -2702,24 +2702,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295,
-        "band_375": 0.0033191366800106492,
-        "band_1500": 0.0014473772901009417,
-        "band_6000": 0.0008383069481776816
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015,
+        "band_375": 0.003315107431579469,
+        "band_1500": 0.0014758898455878744,
+        "band_6000": 0.000813247372880775
       },
       "wave_bounds": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015
       },
-      "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
+      "circuit_sha256": "5f31e0c5ea6938929863e1689851343b1ee0de1c72bbe610c5c60fe61581fd48",
       "case": "EHX Electric Mistress 9V",
-      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
-      "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
+      "wave": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6.f32.gz",
+      "wave_sha256": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6",
       "reference_stride": 7
     },
     "EHX Electric Mistress 9V/preview": {
@@ -2736,24 +2736,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295,
-        "band_375": 0.0033191366800106492,
-        "band_1500": 0.0014473772901009417,
-        "band_6000": 0.0008383069481776816
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015,
+        "band_375": 0.003315107431579469,
+        "band_1500": 0.0014758898455878744,
+        "band_6000": 0.000813247372880775
       },
       "wave_bounds": {
-        "ac_rms": 0.003444157699424513,
-        "mean": 1.4312396247230888e-06,
-        "peak": 0.010703488268854146,
-        "max_step": 0.0030841634640727295
+        "ac_rms": 0.003428776860733502,
+        "mean": 1.4937293069196698e-06,
+        "peak": 0.010571741209324977,
+        "max_step": 0.0029305051426827015
       },
-      "circuit_sha256": "708aa71b43ff2830680e53508b90fbd6a1e5b0ec5e99b176936b051803f565ad",
+      "circuit_sha256": "5f31e0c5ea6938929863e1689851343b1ee0de1c72bbe610c5c60fe61581fd48",
       "case": "EHX Electric Mistress 9V",
-      "wave": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63.f32.gz",
-      "wave_sha256": "dec9f42e692e0cfa08784da93fef95811855759b14c8f8c12c85dccd3a655d63",
+      "wave": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6.f32.gz",
+      "wave_sha256": "057f59350161844b19047ec8bb5381ce6da22792670adf0b347f2168993ef6c6",
       "reference_stride": 7
     },
     "EHX Small Clone MN3007/accurate": {
@@ -2770,24 +2770,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.010994166336899664,
-        "mean": 2.9812175511531136e-05,
-        "peak": 0.03466462913749102,
-        "max_step": 0.00665746778768006,
-        "band_375": 0.009957086873065145,
-        "band_1500": 0.007609424452961279,
-        "band_6000": 0.002410294945444868
+        "ac_rms": 0.01094986349482402,
+        "mean": 2.8527763396591363e-05,
+        "peak": 0.03450658145141472,
+        "max_step": 0.0066369256117086994,
+        "band_375": 0.009921104926391887,
+        "band_1500": 0.00756666068778381,
+        "band_6000": 0.002426424811342015
       },
       "wave_bounds": {
-        "ac_rms": 0.010994166336899664,
-        "mean": 2.9812175511531136e-05,
-        "peak": 0.03466462913749102,
-        "max_step": 0.00665746778768006
+        "ac_rms": 0.01094986349482402,
+        "mean": 2.8527763396591363e-05,
+        "peak": 0.03450658145141472,
+        "max_step": 0.0066369256117086994
       },
-      "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
+      "circuit_sha256": "b466d8628cee7a22034d727cf8a639b5185d72aead35a521f41bb7e1d3f5c044",
       "case": "EHX Small Clone MN3007",
-      "wave": "5e10adc13b0c20c532dd3c28fd3bc3c899be0f751c195c0510861b3b7dea2e27.f32.gz",
-      "wave_sha256": "5e10adc13b0c20c532dd3c28fd3bc3c899be0f751c195c0510861b3b7dea2e27",
+      "wave": "dac9d52c0b3d3582eec0d8adac84c47190c6158533fe40dbe8c06c918cf586b7.f32.gz",
+      "wave_sha256": "dac9d52c0b3d3582eec0d8adac84c47190c6158533fe40dbe8c06c918cf586b7",
       "reference_stride": 7
     },
     "EHX Small Clone MN3007/fast": {
@@ -2804,24 +2804,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01099416634647763,
-        "mean": 2.9810788625666195e-05,
-        "peak": 0.03466461912002772,
-        "max_step": 0.00665746715427229,
-        "band_375": 0.00995708702168608,
-        "band_1500": 0.007609424762574171,
-        "band_6000": 0.002410293859241625
+        "ac_rms": 0.010949863463287907,
+        "mean": 2.8526846607806935e-05,
+        "peak": 0.034506572347178244,
+        "max_step": 0.006636924850181414,
+        "band_375": 0.009921105028250445,
+        "band_1500": 0.007566661032717334,
+        "band_6000": 0.00242642366579715
       },
       "wave_bounds": {
-        "ac_rms": 0.01099416634647763,
-        "mean": 2.9810788625666195e-05,
-        "peak": 0.03466461912002772,
-        "max_step": 0.00665746715427229
+        "ac_rms": 0.010949863463287907,
+        "mean": 2.8526846607806935e-05,
+        "peak": 0.034506572347178244,
+        "max_step": 0.006636924850181414
       },
-      "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
+      "circuit_sha256": "b466d8628cee7a22034d727cf8a639b5185d72aead35a521f41bb7e1d3f5c044",
       "case": "EHX Small Clone MN3007",
-      "wave": "0eda098e15e050f60c95ca0f33a8d3e046c3472bb2ee86023044af9e41bbee02.f32.gz",
-      "wave_sha256": "0eda098e15e050f60c95ca0f33a8d3e046c3472bb2ee86023044af9e41bbee02",
+      "wave": "24f104ce0775cc3c16f994d45674126f07e188e1d1b48d01c6966d9101264f84.f32.gz",
+      "wave_sha256": "24f104ce0775cc3c16f994d45674126f07e188e1d1b48d01c6966d9101264f84",
       "reference_stride": 7
     },
     "EHX Small Clone MN3007/preview": {
@@ -2838,24 +2838,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01099416634648868,
-        "mean": 2.981078779746378e-05,
-        "peak": 0.034664619119165296,
-        "max_step": 0.006657467154282948,
-        "band_375": 0.009957087021686347,
-        "band_1500": 0.0076094247625841166,
-        "band_6000": 0.0024102938592354987
+        "ac_rms": 0.010949863463287907,
+        "mean": 2.8526846607806935e-05,
+        "peak": 0.034506572347178244,
+        "max_step": 0.006636924850181414,
+        "band_375": 0.009921105028250445,
+        "band_1500": 0.007566661032717334,
+        "band_6000": 0.00242642366579715
       },
       "wave_bounds": {
-        "ac_rms": 0.01099416634648868,
-        "mean": 2.981078779746378e-05,
-        "peak": 0.034664619119165296,
-        "max_step": 0.006657467154282948
+        "ac_rms": 0.010949863463287907,
+        "mean": 2.8526846607806935e-05,
+        "peak": 0.034506572347178244,
+        "max_step": 0.006636924850181414
       },
-      "circuit_sha256": "9458a68c78436fb5950a40a13b2302006c8cc0b11b43bbf121a444a389be9c83",
+      "circuit_sha256": "b466d8628cee7a22034d727cf8a639b5185d72aead35a521f41bb7e1d3f5c044",
       "case": "EHX Small Clone MN3007",
-      "wave": "b3134ebf86d2a2ff16a83afbe1cd3e4e869c2ed69692de176d843bfadeef896b.f32.gz",
-      "wave_sha256": "b3134ebf86d2a2ff16a83afbe1cd3e4e869c2ed69692de176d843bfadeef896b",
+      "wave": "24f104ce0775cc3c16f994d45674126f07e188e1d1b48d01c6966d9101264f84.f32.gz",
+      "wave_sha256": "24f104ce0775cc3c16f994d45674126f07e188e1d1b48d01c6966d9101264f84",
       "reference_stride": 7
     },
     "EHX Small Stone Issue J/accurate": {
@@ -3372,34 +3372,34 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 134273,
+      "evaluations": 134309,
       "line_trials": 52,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 5939,
+      "newton": 5942,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01142092427669434,
-        "mean": -0.00015299289605477982,
-        "peak": 0.034445475220784005,
-        "max_step": 0.008232062110832938,
-        "band_375": 0.010534709278240843,
-        "band_1500": 0.006324294611844831,
-        "band_6000": 0.00420622956322337
+        "ac_rms": 0.011420924497547336,
+        "mean": -0.0001529929868483794,
+        "peak": 0.03444547603989523,
+        "max_step": 0.00823206250758668,
+        "band_375": 0.010534709463550352,
+        "band_1500": 0.006324294740802104,
+        "band_6000": 0.004206229683527101
       },
       "wave_bounds": {
-        "ac_rms": 0.01142092427669434,
-        "mean": -0.00015299289605477982,
-        "peak": 0.034445475220784005,
-        "max_step": 0.008232062110832938
+        "ac_rms": 0.011420924497547336,
+        "mean": -0.0001529929868483794,
+        "peak": 0.03444547603989523,
+        "max_step": 0.00823206250758668
       },
-      "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
+      "circuit_sha256": "24527aa18078db49d9bc7be84e5936b4b9890f42769a68ec2a7beccf2fed22c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "e3012cbef43161dbc82157fa9178bde54ffc71188654d5e75750c39a8df381f4.f32.gz",
-      "wave_sha256": "e3012cbef43161dbc82157fa9178bde54ffc71188654d5e75750c39a8df381f4",
+      "wave": "98a5a921eb0c2cdd95c9cc52374df6ded2a5df3b6282b51cb7e23fc3615ba7c1.f32.gz",
+      "wave_sha256": "98a5a921eb0c2cdd95c9cc52374df6ded2a5df3b6282b51cb7e23fc3615ba7c1",
       "reference_stride": 7
     },
     "MXR Carbon Copy Analog Delay/fast": {
@@ -3416,24 +3416,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01142092466735151,
-        "mean": -0.0001529927611933048,
-        "peak": 0.03444547736066639,
-        "max_step": 0.0082320625587044,
-        "band_375": 0.010534709271017493,
-        "band_1500": 0.006324294996783248,
-        "band_6000": 0.004206230252726497
+        "ac_rms": 0.01142092488921256,
+        "mean": -0.00015299287297466057,
+        "peak": 0.03444547813380572,
+        "max_step": 0.008232062786066086,
+        "band_375": 0.010534709451794588,
+        "band_1500": 0.006324295120121577,
+        "band_6000": 0.004206230375338508
       },
       "wave_bounds": {
-        "ac_rms": 0.01142092466735151,
-        "mean": -0.0001529927611933048,
-        "peak": 0.03444547736066639,
-        "max_step": 0.0082320625587044
+        "ac_rms": 0.01142092488921256,
+        "mean": -0.00015299287297466057,
+        "peak": 0.03444547813380572,
+        "max_step": 0.008232062786066086
       },
-      "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
+      "circuit_sha256": "24527aa18078db49d9bc7be84e5936b4b9890f42769a68ec2a7beccf2fed22c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "e310acb0aca82cfdc077308d381ae24a7db780fc5fb9021a2f9f14cf5a44163f.f32.gz",
-      "wave_sha256": "e310acb0aca82cfdc077308d381ae24a7db780fc5fb9021a2f9f14cf5a44163f",
+      "wave": "a906f8186e9f76a5a7f3b8ee1048792c5693a17943230d0bcd3557781f3e8c4d.f32.gz",
+      "wave_sha256": "a906f8186e9f76a5a7f3b8ee1048792c5693a17943230d0bcd3557781f3e8c4d",
       "reference_stride": 7
     },
     "MXR Carbon Copy Analog Delay/preview": {
@@ -3450,24 +3450,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.01142092467035144,
-        "mean": -0.00015299275872787026,
-        "peak": 0.03444547729432357,
-        "max_step": 0.008232062364790349,
-        "band_375": 0.01053470927481087,
-        "band_1500": 0.006324294993797693,
-        "band_6000": 0.0042062302562752155
+        "ac_rms": 0.011420924890262953,
+        "mean": -0.00015299286406738341,
+        "peak": 0.03444547821024546,
+        "max_step": 0.00823206290146089,
+        "band_375": 0.0105347094574488,
+        "band_1500": 0.0063242951295395915,
+        "band_6000": 0.004206230379715717
       },
       "wave_bounds": {
-        "ac_rms": 0.01142092467035144,
-        "mean": -0.00015299275872787026,
-        "peak": 0.03444547729432357,
-        "max_step": 0.008232062364790349
+        "ac_rms": 0.011420924890262953,
+        "mean": -0.00015299286406738341,
+        "peak": 0.03444547821024546,
+        "max_step": 0.00823206290146089
       },
-      "circuit_sha256": "a0aed7f97465d2055ce98d4f8726fee689e6222e0fc2b8024964ba48e4be92c5",
+      "circuit_sha256": "24527aa18078db49d9bc7be84e5936b4b9890f42769a68ec2a7beccf2fed22c5",
       "case": "MXR Carbon Copy Analog Delay",
-      "wave": "07acbe26a150d41de232684cd4e03c5fd5245716e932599636c47dbb29addae9.f32.gz",
-      "wave_sha256": "07acbe26a150d41de232684cd4e03c5fd5245716e932599636c47dbb29addae9",
+      "wave": "f498dc1c626741f7b0a7b60bc47773b9679de3a7ba36e1de3e3345da3411cabb.f32.gz",
+      "wave_sha256": "f498dc1c626741f7b0a7b60bc47773b9679de3a7ba36e1de3e3345da3411cabb",
       "reference_stride": 7
     },
     "MXR Dyna Comp CA3080/accurate": {
@@ -3678,102 +3678,102 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 132756,
+      "evaluations": 132204,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 13903,
+      "newton": 13878,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.0064238332328840865,
-        "mean": 6.566559752090484e-05,
-        "peak": 0.01645697913384181,
-        "max_step": 0.00306897326868949,
-        "band_375": 0.006677895594813297,
-        "band_1500": 0.0019789347884230576,
-        "band_6000": 0.0007909306758547605
+        "ac_rms": 0.006422786886260897,
+        "mean": 6.571897915092309e-05,
+        "peak": 0.016417060034827458,
+        "max_step": 0.003029502804317463,
+        "band_375": 0.006686335075669452,
+        "band_1500": 0.0019916121187297663,
+        "band_6000": 0.0007702267959828162
       },
       "wave_bounds": {
-        "ac_rms": 0.0064238332328840865,
-        "mean": 6.566559752090484e-05,
-        "peak": 0.01645697913384181,
-        "max_step": 0.00306897326868949
+        "ac_rms": 0.006422786886260897,
+        "mean": 6.571897915092309e-05,
+        "peak": 0.016417060034827458,
+        "max_step": 0.003029502804317463
       },
-      "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
+      "circuit_sha256": "8c8564307e999b93246d802bc5dbab6f69fcfbb13132cd108110640085b992f5",
       "case": "MXR M234 Analog Chorus",
-      "wave": "4243936307c755501e81a08ea45d0cece17727fcdc3b690339c8a4bd4805b0ce.f32.gz",
-      "wave_sha256": "4243936307c755501e81a08ea45d0cece17727fcdc3b690339c8a4bd4805b0ce",
+      "wave": "9728aa5b59a74b105173af2103325f292acc763ff57bcb0711b9721cffd290a9.f32.gz",
+      "wave_sha256": "9728aa5b59a74b105173af2103325f292acc763ff57bcb0711b9721cffd290a9",
       "reference_stride": 7
     },
     "MXR M234 Analog Chorus/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 116820,
+      "evaluations": 116496,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
-      "newton": 12807,
+      "newton": 12780,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.006423833367004553,
-        "mean": 6.566522128337218e-05,
-        "peak": 0.01645698299769993,
-        "max_step": 0.0030689803609145194,
-        "band_375": 0.00667789564269358,
-        "band_1500": 0.0019789342895686914,
-        "band_6000": 0.0007909314033513424
+        "ac_rms": 0.006422786915528977,
+        "mean": 6.57192133347907e-05,
+        "peak": 0.016417063341625848,
+        "max_step": 0.00302950976876204,
+        "band_375": 0.006686334943173176,
+        "band_1500": 0.0019916116258269483,
+        "band_6000": 0.0007702275835312127
       },
       "wave_bounds": {
-        "ac_rms": 0.006423833367004553,
-        "mean": 6.566522128337218e-05,
-        "peak": 0.01645698299769993,
-        "max_step": 0.0030689803609145194
+        "ac_rms": 0.006422786915528977,
+        "mean": 6.57192133347907e-05,
+        "peak": 0.016417063341625848,
+        "max_step": 0.00302950976876204
       },
-      "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
+      "circuit_sha256": "8c8564307e999b93246d802bc5dbab6f69fcfbb13132cd108110640085b992f5",
       "case": "MXR M234 Analog Chorus",
-      "wave": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1.f32.gz",
-      "wave_sha256": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1",
+      "wave": "53df14c00861170d60b93fb0101ffa8383be64a26b8c183bc31e8ae3374080fb.f32.gz",
+      "wave_sha256": "53df14c00861170d60b93fb0101ffa8383be64a26b8c183bc31e8ae3374080fb",
       "reference_stride": 7
     },
     "MXR M234 Analog Chorus/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 116820,
+      "evaluations": 116496,
       "line_trials": 0,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
-      "newton": 12807,
+      "newton": 12780,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.006423833367004553,
-        "mean": 6.566522128337218e-05,
-        "peak": 0.01645698299769993,
-        "max_step": 0.0030689803609145194,
-        "band_375": 0.00667789564269358,
-        "band_1500": 0.0019789342895686914,
-        "band_6000": 0.0007909314033513424
+        "ac_rms": 0.006422786915528977,
+        "mean": 6.57192133347907e-05,
+        "peak": 0.016417063341625848,
+        "max_step": 0.00302950976876204,
+        "band_375": 0.006686334943173176,
+        "band_1500": 0.0019916116258269483,
+        "band_6000": 0.0007702275835312127
       },
       "wave_bounds": {
-        "ac_rms": 0.006423833367004553,
-        "mean": 6.566522128337218e-05,
-        "peak": 0.01645698299769993,
-        "max_step": 0.0030689803609145194
+        "ac_rms": 0.006422786915528977,
+        "mean": 6.57192133347907e-05,
+        "peak": 0.016417063341625848,
+        "max_step": 0.00302950976876204
       },
-      "circuit_sha256": "36dd68e587c1c766831e07560a9813451d58f590d81e41147c05bedd9c678aeb",
+      "circuit_sha256": "8c8564307e999b93246d802bc5dbab6f69fcfbb13132cd108110640085b992f5",
       "case": "MXR M234 Analog Chorus",
-      "wave": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1.f32.gz",
-      "wave_sha256": "47f815ecc0584c08b6d0e0637b86356e12e825effa12f3d734fdbe8642575ca1",
+      "wave": "53df14c00861170d60b93fb0101ffa8383be64a26b8c183bc31e8ae3374080fb.f32.gz",
+      "wave_sha256": "53df14c00861170d60b93fb0101ffa8383be64a26b8c183bc31e8ae3374080fb",
       "reference_stride": 7
     },
     "MXR Micro Amp/accurate": {
@@ -11428,8 +11428,8 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "f6d5f0c5d0f1f4e8d1e285121e9b532d9e2eb716",
-    "renderer_sha256": "e9136f23180788e8d4a15fbc50ee2f2804913551a63f986a96015f799e59b862",
+    "declared_core_revision": "c5e6212022a0230e27ac2b0a94104eb32cb411d2",
+    "renderer_sha256": "1f416c2a3aee08f1ffd38bae89c2c90bb02a152667bee9e461dbc0f9d1f3a648",
     "sample_rate": 48000,
     "block_size": 128,
     "oversampling": 1,
