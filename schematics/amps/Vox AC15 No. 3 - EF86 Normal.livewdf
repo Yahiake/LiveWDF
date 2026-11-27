@@ -883,7 +883,9 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 205.35285
+        "fullScaleVolts": 205.35285,
+        "fastTrim": 0.97655795,
+        "previewTrim": 0.97655795
       },
       "visual": {
         "flipped": false,

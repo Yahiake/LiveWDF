@@ -567,6 +567,16 @@ struct LiveWDFDocument {
         return std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
     }
 
+    /// Fast and Preview solve some devices with cheaper laws; their optional
+    /// trims scale the output divisor so every mode lands on the same level.
+    double outputTrim(bool preview) const {
+        const auto* out = terminal("out");
+        if (out == nullptr)
+            return 1.0;
+        const auto it = out->values.find(preview ? "previewTrim" : "fastTrim");
+        return it != out->values.end() && std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
+    }
+
     const SchematicComponent* preampTap() const;
     bool makePreampDocument(LiveWDFDocument& preamp, std::string& error) const;
 

@@ -316,7 +316,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 // Calibration uses mono native float32 streams at 48 kHz. Keep the host's
 // bypass as the digital reference, including the final short callback.
 int renderCalibration(const juce::File& file, const char* inPath, const char* outPath,
-                      bool fastLive, bool preampOnly, const juce::String& cabinet) {
+                      bool fastLive, bool livePreview, bool preampOnly, const juce::String& cabinet) {
     constexpr int blockSize = 128;
     std::ifstream source(inPath, std::ios::binary);
     std::ofstream dest(outPath, std::ios::binary);
@@ -335,6 +335,7 @@ int renderCalibration(const juce::File& file, const char* inPath, const char* ou
     set("accurate_export", 1);
     set("oversampling", 0);
     set("solve_quality", fastLive ? 1.f : 0.f);
+    set("compiled_preview", livePreview ? 1.f : 0.f);
     processor.setPlayConfigDetails(2, 2, kSampleRate, blockSize);
     processor.prepareToPlay(kSampleRate, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
@@ -2689,7 +2690,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2706,17 +2707,18 @@ int main(int argc, char** argv) {
         return livewdf::checkPowerAmp(file) ? 0 : 1;
 
     if (argc >= 5 && std::string(argv[2]) == "--calibration-render") {
-        bool fastLive = false;
+        bool fastLive = false, livePreview = false;
         bool preampOnly = false;
         juce::String cabinet;
         for (int i = 5; i < argc; ++i) {
             const std::string flag(argv[i]);
             if (flag == "--fast-live") fastLive = true;
+            else if (flag == "--live-preview") fastLive = livePreview = true;
             else if (flag == "--preamp-only") preampOnly = true;
             else if (flag == "--cabinet" && i + 1 < argc) cabinet = argv[++i];
             else return 1;
         }
-        return renderCalibration(file, argv[3], argv[4], fastLive, preampOnly, cabinet);
+        return renderCalibration(file, argv[3], argv[4], fastLive, livePreview, preampOnly, cabinet);
     }
 
     bool validate = false;
