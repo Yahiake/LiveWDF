@@ -162,11 +162,12 @@ int main(int argc, char** argv) try {
     wdf::LiveWDFDocument document;
     std::string error;
     if (!document.loadFromFile(configuration["circuit"].asString(), error)) throw std::runtime_error(error);
-    setDocumentControls(document, configuration["positions"], false);
     setDocumentControls(document, configuration["switches"], true);
+    const auto defaults = document;
+    setDocumentControls(document, configuration["positions"], false);
     auto circuit = wdf::circuitWithPortImpedances(document);
     if (!accurate)
-        wdf::replaceMainsSupplies(circuit, document, sampleRate, preview);
+        wdf::replaceMainsSupplies(circuit, defaults, sampleRate, preview);
     const auto source = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name);
     if (source == circuit.src.end()) throw std::runtime_error("Circuit has no audio input");
     const auto input = static_cast<size_t>(source - circuit.src.begin());
