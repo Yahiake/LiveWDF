@@ -1017,7 +1017,7 @@
         "flipped": false,
         "rotation": 270,
         "x": 195,
-        "y": 84
+        "y": 90
       }
     },
     {
@@ -1352,7 +1352,6 @@
     {
       "id": "OT1",
       "properties": {
-        "enabledBy": "!ERA",
         "model": "Real — Manual",
         "powerAmp": "1"
       },
@@ -1373,54 +1372,13 @@
       }
     },
     {
-      "id": "OT1 JCM800",
-      "properties": {
-        "enabledBy": "ERA",
-        "model": "Real — Manual",
-        "powerAmp": "1"
-      },
-      "type": "transformer_ct",
-      "values": {
-        "Lm": 12.8,
-        "dcrPrimary": 31.92,
-        "dcrSecondary": 0.16,
-        "leakage": 0.00398562,
-        "turnsPrimary": 20.615528128088304,
-        "turnsSecondary": 1.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 218,
-        "y": 43
-      }
-    },
-    {
       "id": "Speaker load",
       "properties": {
-        "enabledBy": "!ERA",
         "powerAmp": "1"
       },
       "type": "res",
       "values": {
         "value": 16
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 229,
-        "y": 48
-      }
-    },
-    {
-      "id": "Speaker load JCM800",
-      "properties": {
-        "enabledBy": "ERA",
-        "powerAmp": "1"
-      },
-      "type": "res",
-      "values": {
-        "value": 4
       },
       "visual": {
         "flipped": false,
@@ -1504,9 +1462,62 @@
         "x": 20,
         "y": 70
       }
+    },
+    {
+      "id": "OT1 4 ohm tap",
+      "properties": {
+        "enabledBy": "ERA",
+        "model": "Real — Manual",
+        "powerAmp": "1"
+      },
+      "type": "transformer",
+      "values": {
+        "Lm": 100.0,
+        "dcrPrimary": 0.0,
+        "dcrSecondary": 0.0,
+        "leakage": 0.0001,
+        "turnsPrimary": 2.0,
+        "turnsSecondary": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 226,
+        "y": 90
+      }
+    },
+    {
+      "id": "PA-G4 primary",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 223,
+        "y": 97
+      }
+    },
+    {
+      "id": "PA-G4 secondary",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 229,
+        "y": 97
+      }
     }
   ],
-  "description": "Marshall 1959 Super Lead from the July 1970 Unicord drawing. Split-cathode V1, 500 pF bright mix, bypassed V2a, 47 kΩ feedback from the 16 Ω tap with the 5 kΩ Presence, four EL34s on fixed rails and bias. JCM800 era switches to the 1981 Lead Series values and its 100 kΩ feedback from the 4 Ω tap with the 22 kΩ Presence.",
+  "description": "Marshall 1959 Super Lead from the July 1970 Unicord drawing. Split-cathode V1, 500 pF bright mix, bypassed V2a, 47 kΩ feedback from the 16 Ω tap with the 5 kΩ Presence, four EL34s on fixed rails and bias. JCM800 era switches to the 1981 Lead Series values and its 100 kΩ feedback from the 4 Ω tap of the same secondary with the 22 kΩ Presence.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -4342,6 +4353,86 @@
         {
           "x": 135,
           "y": 72
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 197,
+          "y": 90
+        },
+        {
+          "x": 198,
+          "y": 90
+        },
+        {
+          "x": 198,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 223,
+          "y": 87
+        },
+        {
+          "x": 222,
+          "y": 87
+        },
+        {
+          "x": 222,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 223,
+          "y": 93
+        },
+        {
+          "x": 223,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 229,
+          "y": 93
+        },
+        {
+          "x": 229,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 229,
+          "y": 87
+        },
+        {
+          "x": 231,
+          "y": 87
+        },
+        {
+          "x": 231,
+          "y": 101
+        },
+        {
+          "x": 193,
+          "y": 101
+        },
+        {
+          "x": 193,
+          "y": 90
         }
       ]
     }

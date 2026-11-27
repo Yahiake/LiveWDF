@@ -11250,7 +11250,7 @@
         "peak": 82.21236298105174,
         "max_step": 100.8679698256885
       },
-      "circuit_sha256": "d3c9ed18b723218bc1d3cec263b498c5fb296731ebf9aa75bc2cc256fd7678ed",
+      "circuit_sha256": "0138f2366d66be8a97484ed048462f573565c45a526ce63da16d677f63f0b650",
       "case": "Marshall 1959 Super Lead - Jumped",
       "wave": "4476af769e44e7da325b96edad78da94694475a5f2fd7fd1c1affe95aa00cb34.f32.gz",
       "wave_sha256": "4476af769e44e7da325b96edad78da94694475a5f2fd7fd1c1affe95aa00cb34",
@@ -11284,7 +11284,7 @@
         "peak": 82.21236148301364,
         "max_step": 100.86796983687807
       },
-      "circuit_sha256": "d3c9ed18b723218bc1d3cec263b498c5fb296731ebf9aa75bc2cc256fd7678ed",
+      "circuit_sha256": "0138f2366d66be8a97484ed048462f573565c45a526ce63da16d677f63f0b650",
       "case": "Marshall 1959 Super Lead - Jumped",
       "wave": "30cb79ed164848ceb89c5c6eda74937cba72ff856a543ab8f8c062beb32f05ea.f32.gz",
       "wave_sha256": "30cb79ed164848ceb89c5c6eda74937cba72ff856a543ab8f8c062beb32f05ea",
@@ -11318,7 +11318,7 @@
         "peak": 82.21236148301364,
         "max_step": 100.86796983687807
       },
-      "circuit_sha256": "d3c9ed18b723218bc1d3cec263b498c5fb296731ebf9aa75bc2cc256fd7678ed",
+      "circuit_sha256": "0138f2366d66be8a97484ed048462f573565c45a526ce63da16d677f63f0b650",
       "case": "Marshall 1959 Super Lead - Jumped",
       "wave": "30cb79ed164848ceb89c5c6eda74937cba72ff856a543ab8f8c062beb32f05ea.f32.gz",
       "wave_sha256": "30cb79ed164848ceb89c5c6eda74937cba72ff856a543ab8f8c062beb32f05ea",
@@ -11326,8 +11326,8 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "4262af4d80cdad49b266ff8c70cc6b08a8f2b1db",
-    "renderer_sha256": "255b56ca5e285a6064e8fe8d494b3146393995b70fcb33e0ca07405fe159fa03",
+    "declared_core_revision": "738b0aa92a10c052a9c50a43a764f36ec6315300",
+    "renderer_sha256": "c7e99d77837fa53e3b506fff9c3d668026e99b2a1da26b7882614fdf3ed1b393",
     "sample_rate": 48000,
     "block_size": 128,
     "oversampling": 1,
