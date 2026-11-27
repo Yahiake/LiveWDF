@@ -1131,19 +1131,35 @@
       }
     },
     {
+      "id": "Screen B+",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 468
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 256,
+        "y": 10
+      }
+    },
+    {
       "id": "Output B+",
       "properties": {
         "powerAmp": "1"
       },
       "type": "rail",
       "values": {
-        "dc": 488.0
+        "dc": 470
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 266,
-        "y": 3
+        "x": 262,
+        "y": 6
       }
     },
     {
@@ -1217,105 +1233,13 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 297.54261
+        "fullScaleVolts": 324.34539
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
         "x": 285,
         "y": 35
-      }
-    },
-    {
-      "id": "Supply resistance",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "res",
-      "values": {
-        "value": 110.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 266,
-        "y": 5
-      }
-    },
-    {
-      "id": "Reservoir",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "cap",
-      "values": {
-        "value": 5e-05
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 264,
-        "y": 11
-      }
-    },
-    {
-      "id": "Reservoir ground",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 264,
-        "y": 15
-      }
-    },
-    {
-      "id": "Screen choke",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "ind",
-      "values": {
-        "value": 5.0
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 256,
-        "y": 8
-      }
-    },
-    {
-      "id": "Screen filter",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "cap",
-      "values": {
-        "value": 5e-05
-      },
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 253,
-        "y": 12
-      }
-    },
-    {
-      "id": "Screen filter ground",
-      "properties": {
-        "powerAmp": "1"
-      },
-      "type": "gnd",
-      "values": {},
-      "visual": {
-        "flipped": false,
-        "rotation": 0,
-        "x": 253,
-        "y": 16
       }
     }
   ],
@@ -3169,6 +3093,18 @@
     {
       "points": [
         {
+          "x": 262,
+          "y": 6
+        },
+        {
+          "x": 262,
+          "y": 7
+        }
+      ]
+    },
+    {
+      "points": [
+        {
           "x": 261,
           "y": 38
         },
@@ -4063,62 +3999,6 @@
         {
           "x": 235,
           "y": 53
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 266,
-          "y": 7
-        },
-        {
-          "x": 262,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 264,
-          "y": 9
-        },
-        {
-          "x": 264,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 256,
-          "y": 6
-        },
-        {
-          "x": 256,
-          "y": 5
-        },
-        {
-          "x": 261,
-          "y": 5
-        },
-        {
-          "x": 261,
-          "y": 7
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 253,
-          "y": 10
-        },
-        {
-          "x": 256,
-          "y": 10
         }
       ]
     }
