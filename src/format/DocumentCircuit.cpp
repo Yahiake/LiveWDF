@@ -133,6 +133,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                 photo.extinguishVolts = getVal("extinguishVolts", 0.0);
                 c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
                                    photo, comp.id);
+            } else if (comp.type == "ne570") {
+                opAmpsOnSupplyPins.push_back(c.opamp.size());
+                c.addNe570(getPin("rectIn"), getPin("rectCap"), getPin("cellIn"), getPin("invIn"),
+                           getPin("r3"), getPin("out"), getPin("vcc"), getPin("gnd"), comp.id);
             } else if (comp.type == "ca3080") {
                 c.addCa3080(getPin("out"), getPin("neg"), getPin("pos"), getPin("vcc"),
                            getPin("vee"), getPin("bias"), comp.id);

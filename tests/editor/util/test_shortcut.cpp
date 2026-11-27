@@ -133,7 +133,7 @@ TEST_CASE("Every assigned part family shortcut arms a palette part", "[shortcut]
     // "A" arms the ideal op-amp. Real op-amps and these specialist devices
     // are placed from the palette without taking an editor shortcut.
     const std::set<std::string> keyboardless = {
-        "opamp", "photores", "dbx209", "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080"
+        "opamp", "photores", "dbx209", "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080", "ne570"
     };
     std::set<std::string> expected = allTypes;
     for (const auto& type : keyboardless) {

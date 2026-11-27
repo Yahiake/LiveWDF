@@ -1,6 +1,7 @@
 #include <catch2.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdlib>
@@ -501,4 +502,71 @@ TEST_CASE("LM358 sources load current from its positive supply and reaches its d
         }
         CHECK(engine.stateRejectCount() == 0);
     }
+}
+
+TEST_CASE("NE570 expander and compressor follow the data sheet's level laws and timing",
+          "[ne570][parts-validation]") {
+    // onsemi NE570/D figure 3 and AN174 figures 1-2 at VCC 15 V, CRECT 2.2 uF.
+    // 0 dBm = 775 mVrms; tracking error is specified +-0.2 dB typical, -0.5/+1.0 dB worst.
+    const auto build = [](bool expander) {
+        wdf::Circuit c;
+        c.addSrc("vcc", "0", 15.0);
+        c.addSrc("in", "0");
+        c.addNe570("rect", "crect", "cell", "inv", "r3", "out", "vcc", "0", "U1");
+        c.addCap("crect", "0", 2.2e-6);
+        const std::string drive = expander ? "in" : "out";
+        c.addCap(drive, "rect", 2.2e-6);
+        c.addCap(drive, "cell", 2.2e-6);
+        if (expander) {
+            c.addRes("r3", "out", 1.0);
+        } else {
+            c.addCap("in", "r3", 2.2e-6);
+            c.addRes("out", "dc", 20e3);
+            c.addRes("dc", "inv", 20e3);
+            c.addCap("dc", "0", 10e-6);
+        }
+        c.addRes("out", "load", 1.0);
+        c.addCap("load", "probe", 10e-6);
+        c.addRes("probe", "0", 100e3);
+        return c;
+    };
+    const auto run = [&](bool expander, double dbm, double seconds, std::vector<double>* trace = nullptr) {
+        const auto circuit = build(expander);
+        wdf::Engine engine(circuit, sampleRate);
+        const int probe = engine.nodeIndex("probe");
+        const double amplitude = 0.775 * std::sqrt(2.0) * std::pow(10.0, dbm / 20.0);
+        const int n = static_cast<int>(seconds * sampleRate), tail = static_cast<int>(sampleRate / 10);
+        double power = 0.0;
+        for (int i = 0; i < n; ++i) {
+            const std::array<double, 2> sources{15.0, amplitude * std::sin(2.0 * M_PI * 1000.0 * i / sampleRate)};
+            const double v = engine.step(sources.data(), sources.size())[probe];
+            if (trace) trace->push_back(v);
+            if (i >= n - tail) power += v * v;
+        }
+        return 20.0 * std::log10(std::sqrt(power / tail) / 0.775);
+    };
+    double worst = 0.0;
+    for (double level = 6.0; level >= -34.0; level -= 10.0) {
+        const double expanded = run(true, level, 1.0) - 2.0 * level;
+        const double compressed = run(false, level, 1.0) - 0.5 * level;
+        worst = std::max({worst, std::abs(expanded), std::abs(compressed)});
+        CHECK(expanded == Approx(0.0).margin(1.0));
+        CHECK(compressed == Approx(0.0).margin(1.0));
+    }
+    WARN("NE570 worst level-law error from +6 to -34 dBm: " << worst << " dB");
+
+    // Gain follows a step with tau = 10k x CRECT = 22 ms.
+    std::vector<double> trace;
+    run(true, 0.0, 0.3, &trace);
+    std::vector<double> envelope;
+    for (size_t start = 0; start + 48 <= trace.size(); start += 48)
+        envelope.push_back(*std::max_element(trace.begin() + start, trace.begin() + start + 48));
+    const double settled = envelope.back();
+    // The expander output is gain times input, so its envelope reaches
+    // 1 - 1/e of the final value one time constant after the step.
+    const auto rise = std::find_if(envelope.begin(), envelope.end(),
+                                   [&](double v) { return v >= (1.0 - std::exp(-1.0)) * settled; });
+    const double tau = (rise - envelope.begin()) * 1e-3;
+    WARN("NE570 expander attack time constant " << tau * 1e3 << " ms");
+    CHECK(tau == Approx(0.022).epsilon(0.2));
 }
