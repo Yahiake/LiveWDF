@@ -199,7 +199,11 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
                 c.src.back().heldFarads = cap.value;
             }
         }
-        std::erase_if(c.cap, supplyCap);
+        // A small capacitor across a rail adds to it too; left in the solve, its current through the held source runs away.
+        const auto acrossRail = [&](const Cap& x) { return rails.count(std::minmax(x.a, x.b)) != 0; };
+        for (const auto& cap : c.cap)
+            if (!supplyCap(cap) && acrossRail(cap)) c.src[rails[std::minmax(cap.a, cap.b)]].heldFarads += cap.value;
+        std::erase_if(c.cap, [&](const Cap& x) { return supplyCap(x) || acrossRail(x); });
     }
     return true;
 }
