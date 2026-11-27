@@ -98,13 +98,15 @@ Circuit LiveWDFDocument::toCircuit() const {
                 if (taperStr == "Log") taper = PotTaper::Log;
                 else if (taperStr == "RevLog") taper = PotTaper::RevLog;
                 c.addPot(getPin("high"), getPin("wiper"), getPin("low"),
-                         getVal("totalR", 100000.0), getVal("pos", 0.5), taper, comp.id);
+                         getVal("totalR", 100000.0), getVal("pos", 0.5), taper, comp.id,
+                         getVal("taperMid", 0.0));
             } else if (comp.type == "varres") {
                 const std::string taperStr = getProp("taper", "Linear");
                 PotTaper taper = PotTaper::Linear;
                 if (taperStr == "Log") taper = PotTaper::Log;
                 else if (taperStr == "RevLog") taper = PotTaper::RevLog;
-                c.addVarRes(getPin("a"), getPin("b"), getVal("maxR", 10000.0), getVal("pos", 0.5), taper, comp.id);
+                c.addVarRes(getPin("a"), getPin("b"), getVal("maxR", 10000.0), getVal("pos", 0.5), taper, comp.id,
+                            getVal("taperMid", 0.0));
             } else if (comp.type == "ctrlres") {
                 c.addControlledRes(getPin("a"), getPin("b"), getVal("initialOhms", 1000.0), comp.id);
             } else if (comp.type == "vca") {
