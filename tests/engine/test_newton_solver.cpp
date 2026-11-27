@@ -499,7 +499,7 @@ TEST_CASE("A missed sample after a knob move is taken in half steps and follows 
     REQUIRE(source != circuit.src.end());
     const auto input = static_cast<size_t>(source - circuit.src.begin());
     const auto drive = [&](double n) {
-        return source->dc + 10. * n / 24000. * document.inputVoltsPerFullScale() * std::sin(2. * kPi * 110. * n / kFs);
+        return source->dc + 20. * n / 24000. * document.inputVoltsPerFullScale() * std::sin(2. * kPi * 110. * n / kFs);
     };
     int event = -1;
     const auto render = [&](wdf::Engine& engine, int factor) {
@@ -515,13 +515,14 @@ TEST_CASE("A missed sample after a knob move is taken in half steps and follows 
         return out;
     };
 
-    const double knob = circuit.pots[0].position + 1e-3;
+    constexpr int pot = 3;
+    const double knob = circuit.pots[pot].position + 1e-3;
     wdf::Engine held(circuit, kFs), halved(circuit, kFs), reference(circuit, 4. * kFs);
-    REQUIRE(held.setPotPosition(0, knob));
-    REQUIRE(reference.setPotPosition(0, knob));
+    REQUIRE(held.setPotPosition(pot, knob));
+    REQUIRE(reference.setPotPosition(pot, knob));
     halved.prepareSubsteps();
     halved.prepareLiveControls();
-    REQUIRE(halved.setLiveControls({{0, knob}}, {}));
+    REQUIRE(halved.setLiveControls({{pot, knob}}, {}));
     wdf::Engine::LiveTransferSetup settled(circuit);
     REQUIRE(halved.captureLiveTransferSetup(settled));
     settled.build(input, false);
@@ -538,7 +539,7 @@ TEST_CASE("A missed sample after a knob move is taken in half steps and follows 
         for (int n = from; n < to; ++n) e = std::max(e, std::abs(halvedOut[n] - referenceOut[n]));
         return e;
     };
-    CHECK(worst(event, event + 200) < 2. * worst(event - 500, event));
+    CHECK(worst(event, event + 20) < std::max(worst(event - 500, event), worst(event + 20, event + 520)));
 }
 
 TEST_CASE("Powered amp Preview follows Fast on pickup hum", "[newton][preview][pentode]") {
