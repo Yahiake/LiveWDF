@@ -95,6 +95,10 @@ std::string displayLabel(const wdf::SchematicComponent& part) {
 }
 
 std::string partLabelText(const wdf::SchematicComponent& part) {
+    if (part.type == "net_label") {
+        const auto name = part.properties.find("name");
+        return name != part.properties.end() && !name->second.empty() ? name->second : part.id;
+    }
     const auto it = part.properties.find("label");
     if (it != part.properties.end() && !it->second.empty())
         return it->second;

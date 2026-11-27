@@ -300,21 +300,25 @@ void InspectorPanel::rebuild() {
     // legal and means "use the id"; the faint text is the id it will fall back
     // to, not a value written into the file.
     {
-        auto* lab = labels.add(new juce::Label({}, "Label:"));
+        const bool netLabel = comp.type == "net_label";
+        const char* key = netLabel ? "name" : "label";
+        auto* lab = labels.add(new juce::Label({}, netLabel ? "Name:" : "Label:"));
         lab->setColour(juce::Label::textColourId, glow::getColourTextSecondary());
         lab->setFont(Fonts::semiBold(11.5f));
         content_.addAndMakeVisible(lab);
 
         auto* ed = new juce::TextEditor();
         ed->setFont(Fonts::monoSemiBold(13.5f));
-        const auto labelIt = comp.properties.find("label");
+        const auto labelIt = comp.properties.find(key);
         ed->setText(labelIt != comp.properties.end() ? juce::String(labelIt->second)
                                                      : juce::String(),
                     false);
         ed->setTextToShowWhenEmpty(juce::String(comp.id),
                                    glow::getColourBorder());
         ed->setSelectAllWhenFocused(true);
-        ed->setTooltip("The name shown on the sheet. Blank uses the part id.");
+        ed->setTooltip(netLabel
+            ? "Case-sensitive net name. Ground, in, out, and n followed by digits are reserved."
+            : "The name shown on the sheet. Blank uses the part id.");
         ed->setColour(juce::TextEditor::backgroundColourId,
                       juce::Colour(0xFF161A22));
         ed->setColour(juce::TextEditor::textColourId, glow::getColourHighlight());
@@ -325,8 +329,8 @@ void InspectorPanel::rebuild() {
         content_.addAndMakeVisible(ed);
         editors.add(ed);
 
-        ed->onReturnKey = [this, ed] { commitEdit("label", ed->getText()); };
-        ed->onFocusLost = [this, ed] { commitEdit("label", ed->getText()); };
+        ed->onReturnKey = [this, ed, key] { commitEdit(key, ed->getText()); };
+        ed->onFocusLost = [this, ed, key] { commitEdit(key, ed->getText()); };
 
         ++row;
     }
@@ -370,7 +374,8 @@ void InspectorPanel::rebuild() {
     for (const std::string& key : propertyOrder) {
         const std::string& val = comp.properties.at(key);
         // The name has its own row above.
-        if (key == "label" || key == "powerAmp" || key == "preampOnly" || key == "preampTap")
+        if (key == "label" || (comp.type == "net_label" && key == "name") ||
+            key == "powerAmp" || key == "preampOnly" || key == "preampTap")
             continue;
 
         // The throw already has its own row above.

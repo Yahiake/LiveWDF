@@ -185,6 +185,7 @@ const std::vector<PartSpec>& basePaletteStorage() {
         // The pin is at the *top* of the symbol, at grid (0,-2), because the
         // ground symbol hangs below the wire that comes into it.
         {"gnd",        "Ground",       "GND", {"sig"},                {2},         {{0, -2}},                 0.0,        "",           "G", 0, false, "Measurement/Ground"},
+        {"net_label",  "Net Label",    "NET", {"sig"},                {0},         {{-2, 0}},                 0.0,        "",           "", 0, false, "Measurement/Terminals"},
 
         // The DC rail's electrical connection is the **centre of the line**,
         // not a lead at one end. The pin used to be at (2,0), two grids right of
@@ -702,6 +703,9 @@ wdf::SchematicComponent makeComponent(const std::string& type,
     // part on ground, which is what a ground symbol in a schematic means.
     if (type == "gnd")
         comp.pins["sig"] = "0";
+
+    if (type == "net_label")
+        comp.properties["name"] = "";
 
     // **A rail names nothing** (see `format/SchematicNets.h`): it drives
     // whatever net it is drawn onto. LiveSPICE's `Rail` puts its own name into
