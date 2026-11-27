@@ -555,7 +555,8 @@ protected:
                 const auto& [otherIndex, otherPort] = comp_.photoSensePorts[j];
                 const auto& other = *circuit_.ctrlRes[otherIndex].photo;
                 if (port.a == otherPort.a && port.b == otherPort.b && port.off == otherPort.off &&
-                    photo.referenceVolts == other.referenceVolts && photo.gamma == other.gamma) {
+                    photo.referenceVolts == other.referenceVolts && photo.gamma == other.gamma &&
+                    photo.strikeVolts == other.strikeVolts && photo.extinguishVolts == other.extinguishVolts) {
                     lamp = j;
                     sharedLamps_ = true;
                     break;
@@ -1123,6 +1124,7 @@ protected:
         double attack, release;
         size_t lamp;
         double dark, span, illumination = 0.0;
+        bool lit = false;
     };
     std::vector<PhotoresistorState> photoresistors_;
     bool sharedLamps_ = false, compiledOptical_ = false;

@@ -23,8 +23,8 @@ bool Engine::captureLiveTransferSetup(LiveTransferSetup& setup, bool planOnly) c
     setup.planOnly_ = planOnly;
     setup.maskCount_ = 0;
     setup.affineRevision_ = mixedAffineRevision();
-    if (planOnly && blockCount_ == 1) {
-        for (const auto& plan : newtonBlocks_.front().alternateLinearSlopes)
+    if (const int index = mixedAffineBlock(); planOnly && index >= 0) {
+        for (const auto& plan : newtonBlocks_[static_cast<size_t>(index)].alternateLinearSlopes)
             setup.affineMasks_[setup.maskCount_++] = plan.linearSlopeMask;
     }
     setup.rate_ = fs_;

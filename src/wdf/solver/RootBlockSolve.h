@@ -94,6 +94,7 @@ struct BlockSolveContext {
     bool mixedEnabled;
     long long& mixedAttempts;
     long long& mixedAccepted;
+    double modeTol;
 };
 
 class RootBlockSolve {
@@ -939,7 +940,7 @@ public:
         BlockSolveContext& ctx) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
-        if (ctx.staticMode || relaxed || view.count != 1 || block.alternateLinearSlopes.empty())
+        if (ctx.staticMode || relaxed || block.alternateLinearSlopes.empty())
             return false;
 
         unsigned slopeMask = 0;
@@ -971,7 +972,8 @@ public:
         for (int di : block.devices) {
             const auto& dev = ctx.rootDevices[static_cast<size_t>(di)];
             for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q) {
-                ctx.blockBase[static_cast<size_t>(q)] = ctx.vOc[static_cast<size_t>(q)];
+                ctx.blockBase[static_cast<size_t>(q)] = RootClosedForms::foldPort(
+                    view, q, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
                 ctx.blockV[static_cast<size_t>(q)] = ctx.vv[static_cast<size_t>(q)];
             }
         }
@@ -999,9 +1001,10 @@ public:
             for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
                 ctx.ii[static_cast<size_t>(q)] = ctx.blockI[static_cast<size_t>(q)];
         }
-        // This pilot is only entered for a single block: the assembled
-        // original-law residual above is the root acceptance residual.
-        ctx.lastBlockResidual = certifiedResidual;
+        // With one block the assembled original-law residual above is the root
+        // acceptance residual; with several the pass checks the whole root.
+        if (view.count == 1)
+            ctx.lastBlockResidual = certifiedResidual;
         ++ctx.mixedAccepted;
         return true;
     }
@@ -1140,6 +1143,9 @@ public:
         BlockSolveContext& ctx, bool* acceptedDeviceCurrents = nullptr) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        // Later stages amplify an error left in a block without a pentode, so only power tubes get the loose Preview tolerance.
+        if (std::ranges::none_of(block.devices, [&](int d) { return ctx.rootDevices[static_cast<size_t>(d)].kind == DeviceKind::Pentode; }))
+            tol = std::min(tol, ctx.modeTol);
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
         if (ctx.mixedEnabled && !block.alternateLinearSlopes.empty() &&
