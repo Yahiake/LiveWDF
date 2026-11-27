@@ -77,21 +77,30 @@ struct Engine::BipolarPreview {
     std::array<int, 2> moving{};
     std::array<double, 4> feedback{};
     int movingCount{};
+    int liveControl = -1;
     bool supportsMotion{};
 
     // Extra currents through the changed resistor legs close the small port loop
     // around the *loaded* transistor tangent. The wave histories remain physical.
+    // Only one control is live; others stay at the compiled position until the
+    // settled rebuild, so a second knob never drops Preview to the full solver.
     bool updateControlPorts(const Network& net, const Circuit& circuit) noexcept {
         movingCount = 0;
         std::array<double, 2> delta{};
+        const auto moved = [&](const ControlPort& p) { return net.eG[p.element] != p.reference; };
+        if (std::none_of(ports.begin(), ports.end(), [&](const auto& p) { return p.control == liveControl && moved(p); })) {
+            const auto first = std::find_if(ports.begin(), ports.end(), moved);
+            liveControl = first == ports.end() ? -1 : first->control;
+        }
         for (int n = 0; n < int(ports.size()); ++n) {
             const auto& p = ports[n];
-            if (net.eG[p.element] == p.reference) continue;
+            if (!moved(p)) continue;
+            if (!p.keepsBias) return false;
+            if (p.control != liveControl) continue;
             const auto& range = qualifiedControls[p.control];
             const double position = p.control < int(circuit.pots.size()) ? circuit.pots[p.control].position
                 : circuit.varRes[p.control - int(circuit.pots.size())].position;
-            if (!p.keepsBias || !(position >= range.low && position <= range.high) || movingCount == 2 ||
-                (movingCount && p.control != ports[moving[0]].control)) return false;
+            if (!(position >= range.low && position <= range.high) || movingCount == 2) return false;
             delta[movingCount] = (net.eG[p.element] - p.reference) / p.reference;
             moving[movingCount++] = n;
         }

@@ -538,6 +538,8 @@ void LiveWDFPluginProcessor::captureSettledTransferIfRequested() noexcept {
                     job.affine = capture_.fastLive && !planOnly;
                     job.compilePreview = needsPreview;
                     capture_.revision = revision;
+                } else {
+                    previewPrepared_ = true; // No worker can prepare it, so Preview stops waiting.
                 }
             }
             observedTransferRevision_ = revision;
@@ -912,6 +914,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         leftEngine_.swap(newLeft);
         rightEngine_.swap(newRight);
         previewPrepared_ = false;
+        previewLoadOverruns_ = 0;
         outputOnlyPreviewAllowed_ = acSources.empty() &&
             std::all_of(probeNodes.begin(), probeNodes.end(), [&](const auto& probe) { return probe.second == outIdx; });
         ++engineGeneration_;

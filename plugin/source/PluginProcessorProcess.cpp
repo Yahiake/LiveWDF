@@ -3,6 +3,7 @@
 #include "format/AcSource.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <mutex>
 
@@ -125,8 +126,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const int latency = processingLatencySamples_.load(std::memory_order_relaxed);
     auto* activeOversampler = lock.owns_lock() ? activePolyphaseOversampler() : nullptr;
     juce::dsp::AudioBlock<float> block(buffer);
+    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
+    // A heavy circuit's full solver can run several times slower than real time,
+    // so once it misses the deadline Preview treats the wait for its first plan like a rebuild.
+    const bool previewLoading = lock.owns_lock() && leftEngine_ && compiledPreview && !isNonRealtime() &&
+        outputOnlyPreviewAllowed_ && !previewPrepared_ && previewLoadOverruns_ >= 4;
     const bool canProcess = lock.owns_lock() && leftEngine_ && outNodeIndex_ >= 0
-        && !(activeOversampler && numSamples > samplesPerBlock_);
+        && !(activeOversampler && numSamples > samplesPerBlock_) && !previewLoading;
 
     // Keep untrimmed separate channels in the history, including at Mix 100%.
     // Host bypass can then return the delayed original input immediately.
@@ -147,6 +153,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         conditionInput(block, inputGain, !wantStereo);
 
     inputScopeBuffer_.pushBlock(buffer.getReadPointer(0), static_cast<size_t>(numSamples));
+    if (previewLoading) {
+        readLivePotTargets(numSamples);
+        for (int s = 0; s < numSamples; ++s)
+            advanceLivePots();
+        applySettledLiveTransfer(wantStereo && rightEngine_);
+        captureSettledTransferIfRequested();
+    }
     if (!canProcess) {
         // A voltage-chain return may have a large dry conversion (e.g. a mic preamp).
         // During a rebuild only pass the dry contribution the player actually requested.
@@ -158,11 +171,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return;
     }
 
+    const auto solveStart = std::chrono::steady_clock::now();
     const double solveTolerance = fastLive
         ? wdf::Engine::kFastLiveTolerance : wdf::Engine::kDefaultTolerance;
     constexpr int maxIterations = wdf::Engine::kDefaultMaxIterations;
 
-    const bool compiledPreview = fastLive && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
     const double modeTrim = compiledPreview ? outputPreviewTrim_.load(std::memory_order_relaxed)
         : fastLive ? outputFastTrim_.load(std::memory_order_relaxed) : 1.0;
     const float outputScale = static_cast<float>(1.0 / (matchOutput ? getCircuitOutputFullScaleVolts() * modeTrim : chainVolts));
@@ -368,6 +381,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     signalActivity_.store(std::min(1.0f, maxAbsOut * 0.5f), std::memory_order_relaxed);
+    if (compiledPreview && !previewPrepared_ && std::chrono::steady_clock::now() - solveStart >
+            std::chrono::duration<double>(numSamples / sampleRate_))
+        ++previewLoadOverruns_;
 
     // Downsample if oversampling was active
     if (activeOversampler) {
