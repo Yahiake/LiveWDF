@@ -497,9 +497,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 42.28447,
-        "fastTrim": 1.0144565,
-        "previewTrim": 1.0144565
+        "fullScaleVolts": 42.895756
       },
       "properties": {},
       "visual": {
