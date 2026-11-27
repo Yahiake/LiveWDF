@@ -113,7 +113,7 @@ public:
         explicit LiveTransferSetup(const Circuit& circuit) : circuit_(circuit) {}
         /// Create the other channel's snapshot from this same base circuit.
         LiveTransferSetup makePeer();
-        void build(size_t inputSource, bool prepareAffine);
+        void build(size_t inputSource, bool prepareAffine, bool prepareLag = false);
         void prepareCompiledPreview(size_t inputSource, int outputNode, bool allowOutputOnly,
                                     double requestedPeak = 1.2, bool allowPad = false);
         /// Prepare both channels. True means they share a qualification and own separate playback state.
