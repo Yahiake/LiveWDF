@@ -9798,34 +9798,34 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 22347,
-      "line_trials": 5387,
+      "evaluations": 22353,
+      "line_trials": 5389,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 5350,
+      "newton": 5352,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.7248197056763903,
-        "mean": 0.0028030530946604204,
-        "peak": 2.3386064484427074,
-        "max_step": 0.5250227966595755,
-        "band_375": 0.6699058269459743,
-        "band_1500": 0.401157780610429,
-        "band_6000": 0.267282020740828
+        "ac_rms": 0.7250151989840911,
+        "mean": 0.0014613546914541784,
+        "peak": 2.267148885993146,
+        "max_step": 0.5280633047127274,
+        "band_375": 0.6700444690780016,
+        "band_1500": 0.4015385429305498,
+        "band_6000": 0.26751125443222284
       },
       "wave_bounds": {
-        "ac_rms": 0.7248197056763903,
-        "mean": 0.0028030530946604204,
-        "peak": 2.3386064484427074,
-        "max_step": 0.5250227966595755
+        "ac_rms": 0.7250151989840911,
+        "mean": 0.0014613546914541784,
+        "peak": 2.267148885993146,
+        "max_step": 0.5280633047127274
       },
-      "circuit_sha256": "aa10e1be98b243602b71dbdd150df9cfa2282757c698b963bc4c1d8d5a79e76d",
+      "circuit_sha256": "2a509659033e04a03c11e9b96aae663b2106c58dc6afe6053e56588693911829",
       "case": "Fender Tweed Champ 5F1 - Input 1",
-      "wave": "e5c607313b84bf3e131c6ba2af505396b8f6cbd67892e2b0dff47359aca30a1d.f32.gz",
-      "wave_sha256": "e5c607313b84bf3e131c6ba2af505396b8f6cbd67892e2b0dff47359aca30a1d",
+      "wave": "373a9895c9ab42ac8e2928fe767dbe8da3e333cb29181661b5f802edbe1c6c82.f32.gz",
+      "wave_sha256": "373a9895c9ab42ac8e2928fe767dbe8da3e333cb29181661b5f802edbe1c6c82",
       "reference_stride": 7
     },
     "Fender Tweed Champ 5F1 - Input 1/fast": {
@@ -9842,24 +9842,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.7248197057078575,
-        "mean": 0.0028030530908468958,
-        "peak": 2.338606448455492,
-        "max_step": 0.5250227967068417,
-        "band_375": 0.6699058269664361,
-        "band_1500": 0.40115778062687835,
-        "band_6000": 0.2672820207553834
+        "ac_rms": 0.7250151990126664,
+        "mean": 0.0014613546909050842,
+        "peak": 2.2671488859573667,
+        "max_step": 0.5280633047595558,
+        "band_375": 0.6700444691036369,
+        "band_1500": 0.4015385429400457,
+        "band_6000": 0.26751125444993606
       },
       "wave_bounds": {
-        "ac_rms": 0.7248197057078575,
-        "mean": 0.0028030530908468958,
-        "peak": 2.338606448455492,
-        "max_step": 0.5250227967068417
+        "ac_rms": 0.7250151990126664,
+        "mean": 0.0014613546909050842,
+        "peak": 2.2671488859573667,
+        "max_step": 0.5280633047595558
       },
-      "circuit_sha256": "aa10e1be98b243602b71dbdd150df9cfa2282757c698b963bc4c1d8d5a79e76d",
+      "circuit_sha256": "2a509659033e04a03c11e9b96aae663b2106c58dc6afe6053e56588693911829",
       "case": "Fender Tweed Champ 5F1 - Input 1",
-      "wave": "49a8ec9ebe0c037d6aef483f971c0a1f46d778af44828fc68d42c1548f161d48.f32.gz",
-      "wave_sha256": "49a8ec9ebe0c037d6aef483f971c0a1f46d778af44828fc68d42c1548f161d48",
+      "wave": "9860e4b922b6bf5c089c82142dcfd25c129d72c92b98a1811c36c14e4beaae2d.f32.gz",
+      "wave_sha256": "9860e4b922b6bf5c089c82142dcfd25c129d72c92b98a1811c36c14e4beaae2d",
       "reference_stride": 7
     },
     "Fender Tweed Champ 5F1 - Input 1/preview": {
@@ -9876,24 +9876,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.7248197057078575,
-        "mean": 0.0028030530908468958,
-        "peak": 2.338606448455492,
-        "max_step": 0.5250227967068417,
-        "band_375": 0.6699058269664361,
-        "band_1500": 0.40115778062687835,
-        "band_6000": 0.2672820207553834
+        "ac_rms": 0.7250151990126664,
+        "mean": 0.0014613546909050842,
+        "peak": 2.2671488859573667,
+        "max_step": 0.5280633047595558,
+        "band_375": 0.6700444691036369,
+        "band_1500": 0.4015385429400457,
+        "band_6000": 0.26751125444993606
       },
       "wave_bounds": {
-        "ac_rms": 0.7248197057078575,
-        "mean": 0.0028030530908468958,
-        "peak": 2.338606448455492,
-        "max_step": 0.5250227967068417
+        "ac_rms": 0.7250151990126664,
+        "mean": 0.0014613546909050842,
+        "peak": 2.2671488859573667,
+        "max_step": 0.5280633047595558
       },
-      "circuit_sha256": "aa10e1be98b243602b71dbdd150df9cfa2282757c698b963bc4c1d8d5a79e76d",
+      "circuit_sha256": "2a509659033e04a03c11e9b96aae663b2106c58dc6afe6053e56588693911829",
       "case": "Fender Tweed Champ 5F1 - Input 1",
-      "wave": "49a8ec9ebe0c037d6aef483f971c0a1f46d778af44828fc68d42c1548f161d48.f32.gz",
-      "wave_sha256": "49a8ec9ebe0c037d6aef483f971c0a1f46d778af44828fc68d42c1548f161d48",
+      "wave": "9860e4b922b6bf5c089c82142dcfd25c129d72c92b98a1811c36c14e4beaae2d.f32.gz",
+      "wave_sha256": "9860e4b922b6bf5c089c82142dcfd25c129d72c92b98a1811c36c14e4beaae2d",
       "reference_stride": 7
     },
     "Fender Tweed Deluxe 5E3 - Instrument/accurate": {
@@ -11428,7 +11428,7 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "df120906cfd16eb312313901fb2db39afcf3aedf",
+    "declared_core_revision": "9fc0ebcdae7e26d36e0e19ffc882418b33be690c",
     "renderer_sha256": "54893a3db9cfc9aaf208d82c27f94a03854b7930b894f717cbae435994e153fd",
     "sample_rate": 48000,
     "block_size": 128,
