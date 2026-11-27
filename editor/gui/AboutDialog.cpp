@@ -132,7 +132,7 @@ void AboutDialog::paint(juce::Graphics& g) {
             {"part letter", "arm that part from the palette"},
             {"digits + Enter", "set the selected part's value"},
             {"Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y", "undo · redo"},
-            {"Ctrl+D / Ctrl+R / Ctrl+F", "duplicate · rotate · flip"},
+            {"Ctrl+D / Ctrl+R / Ctrl+F", "duplicate · rotate (Space) · flip"},
             {"Ctrl+C / Ctrl+X / Ctrl+V", "copy · cut · paste"},
             {"middle-click", "clone what is under the pointer"},
             {"right-click while placing", "cancel, back to select"},

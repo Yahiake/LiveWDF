@@ -80,6 +80,12 @@ bool SchematicEditor::keyPressed(const juce::KeyPress& key) {
     if (key.getModifiers().isCommandDown())
         return commandKeyPressed(key);
 
+    if (key == juce::KeyPress::spaceKey
+        && ((tool_ == Tool::Place && !pendingType_.empty()) || !selectedIds_.empty())) {
+        rotate();
+        return true;
+    }
+
     if (keyIs(key, 's')) { setTool(Tool::Select); pendingValue_.clear(); return true; }
     if (keyIs(key, 'w')) { setTool(Tool::Wire); pendingValue_.clear(); return true; }
     if (keyIs(key, 'x')) { setTool(Tool::Delete); pendingValue_.clear(); return true; }
