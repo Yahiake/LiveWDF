@@ -46,12 +46,14 @@ Engine::LiveTransferSetup Engine::LiveTransferSetup::makePeer() {
     return peer;
 }
 
-void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine) {
+void Engine::LiveTransferSetup::build(size_t inputSource, bool prepareAffine, bool prepareLag) {
     prepared_ = std::make_unique<Engine>(circuit_, rate_, gridCurrent_);
     if (!planOnly_)
         prepared_->prepareLiveControls();
     if (planOnly_ || prepareAffine)
         prepared_->prepareCircuitPlan();
+    if (prepareLag)
+        prepared_->prepareSlowLag();
     if (prepareAffine)
         prepared_->prepareMixedAffineReduction(inputSource);
     else if (maskCount_ && prepared_->canPrepareMixedAffineReduction(inputSource))
@@ -389,6 +391,65 @@ void EngineStep::prepareSlowLag() {
     lagRevision_ = linearRebuilds();
 }
 
+bool EngineStep::preparePipelineStage(int stage) {
+    pipe_.stage = 0;
+    const bool lagView = slowLagActive();
+    const auto& blocks = lagView ? lagBlocks_ : newtonBlocks_;
+    const auto& order = lagView ? lagOrder_ : groupOrder_;
+    const int nb = lagView ? lagCount_ : blockCount_;
+    int cut = 0;
+    while (cut < nb && std::ranges::none_of(blocks[size_t(order[size_t(cut)])].devices, [&](int d) {
+               return rootDevices_[size_t(d)].kind == DeviceKind::Pentode; }))
+        ++cut;
+    if (lamp_.length || cut == 0 || cut >= nb)
+        return false;
+    const size_t groups = rootDevices_.size();
+    std::vector<int> deviceOf(size_t(K_), 0);
+    for (size_t d = 0; d < groups; ++d)
+        for (int r = rootDevices_[d].portBase; r < rootDevices_[d].portBase + rootDevices_[d].numPorts; ++r)
+            deviceOf[size_t(r)] = int(d);
+    std::vector<unsigned char> early(groups, 0);
+    std::vector<uint8_t> lag(groups * groups, 0);
+    pipe_.order.clear();
+    pipe_.ownPorts.clear();
+    pipe_.inPorts.clear();
+    pipe_.frozen.assign(size_t(K_), 0);
+    for (int s = 0; s < nb; ++s) {
+        const auto& block = blocks[size_t(order[size_t(s)])];
+        const bool own = (s < cut) == (stage == 1);
+        if (own)
+            pipe_.order.push_back(order[size_t(s)]);
+        for (int d : block.devices) {
+            early[size_t(d)] = s < cut;
+            for (int p = rootDevices_[size_t(d)].portBase; p < rootDevices_[size_t(d)].portBase + rootDevices_[size_t(d)].numPorts; ++p) {
+                (own ? pipe_.ownPorts : pipe_.inPorts).push_back(p);
+                pipe_.frozen[size_t(p)] = !own;
+            }
+        }
+        for (const auto& [r, d] : block.lagged)
+            lag[size_t(deviceOf[size_t(r)]) * groups + size_t(deviceOf[size_t(d.col)])] = 1;
+    }
+    if (stage == 1) {
+        for (size_t a = 0; a < groups; ++a)
+            for (size_t b = 0; b < groups; ++b)
+                lag[a * groups + b] |= early[a] && !early[b];
+        pipe_.blocks = blocks;
+        solver::RootGroups::compileBlockZAndPredFold(pipe_.blocks, order.data(), nb, rootDevices_.data(), Z_.data(), K_,
+                                                     lag.data(), int(groups));
+    }
+    pipe_.held.assign(size_t(K_), 0.0);
+    const size_t n = pipe_.inPorts.size();
+    pipe_.input.resize(2 * n);
+    for (size_t k = 0; k < n; ++k) {
+        pipe_.input[k] = ii_[size_t(pipe_.inPorts[k])];
+        pipe_.input[n + k] = vv_[size_t(pipe_.inPorts[k])];
+    }
+    pipe_.lagView = lagView;
+    pipe_.revision = linearRebuilds();
+    pipe_.stage = stage;
+    return true;
+}
+
 bool Engine::canInstallLiveTransferSetup(const LiveTransferSetup& setup) const noexcept {
     const auto& prepared = setup.prepared_;
     return setup.owner_ == this && prepared && (hasAdjustedLiveTransfer() != setup.planOnly_) &&
@@ -428,16 +489,19 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
     circuitPlanCooldown_ = 0;
     circuitPlanRetry_ = preparedEngine.circuitPlanRetry_;
     const auto installPreview = [&] {
+        const bool lagPrepared = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds();
+        if (setup.compiledPreview_ || lagPrepared) {
+            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
+            std::swap(lagOrder_, preparedEngine.lagOrder_);
+            std::swap(lagHeld_, preparedEngine.lagHeld_);
+            lagCount_ = preparedEngine.lagCount_;
+            lagRevision_ = lagPrepared ? linearRebuilds() : -1;
+        }
         if (setup.compiledPreview_) {
             std::swap(sharedNewtonColumns_, preparedEngine.sharedNewtonColumns_);
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
-            std::swap(lagBlocks_, preparedEngine.lagBlocks_);
-            std::swap(lagOrder_, preparedEngine.lagOrder_);
-            std::swap(lagHeld_, preparedEngine.lagHeld_);
             std::swap(lamp_, preparedEngine.lamp_);
-            lagCount_ = preparedEngine.lagCount_;
-            lagRevision_ = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds() ? linearRebuilds() : -1;
             if (!packedDrive_.panels.empty())
                 packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);

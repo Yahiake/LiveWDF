@@ -81,6 +81,7 @@ private:
     /// copy. The button is an APVTS parameter so the choice survives a session
     /// and can be automated by the host.
     juce::TextButton stereoBtn_ { "MONO" };
+    juce::TextButton twoCoresBtn_ { "2 CORES" };
 
     /// What the plugin is playing, and what happened last: the file's name, or
     /// "Reloaded", or "Reload failed".
@@ -150,7 +151,7 @@ private:
     std::unique_ptr<juce::ParameterAttachment> solveQualityAttach_;
     std::unique_ptr<juce::ParameterAttachment> compiledPreviewAttach_;
     std::unique_ptr<ButtonAttachment> accurateExportAttach_;
-    std::unique_ptr<ButtonAttachment> stereoAttach_;
+    std::unique_ptr<ButtonAttachment> stereoAttach_, twoCoresAttach_;
     std::vector<std::unique_ptr<SliderAttachment>> dynamicPotAttachments_;
 
     std::unique_ptr<juce::FileChooser> fileChooser_;

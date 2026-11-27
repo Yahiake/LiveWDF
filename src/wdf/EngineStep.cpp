@@ -280,14 +280,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     }
 
     const long long fallbacksBefore = blockFallbacks_;
-    const bool loadedRoot = !folded && loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
-    const bool movingAffine = !folded && !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
+    const bool pipeline = pipelineReady();
+    const bool loadedRoot = !pipeline && !folded && loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
+    const bool movingAffine = !pipeline && !folded && !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
                               affineNodes_.revision == linearRebuilds() && tryAffineMotion(tol);
-    const bool compiledRoot = movingAffine || (!folded && !loadedRoot && compiled && maxIter >= 4 &&
+    const bool compiledRoot = movingAffine || (!pipeline && !folded && !loadedRoot && compiled && maxIter >= 4 &&
                               (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol));
     bool triodePreview = false;
-    if (!folded && !loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
+    if (!pipeline && !folded && !loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
         nTri_ > 2 && static_cast<size_t>(nTri_) == rootDevices_.size()) {
         if (triodePreviewCooldown_ == 0) {
             triodePreview = tryTriodePreview();
@@ -324,6 +325,8 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
 
         if (folded)
             solveRootsNewton(maxIter, tol);
+        else if (pipeline && blockFallbackCooldown_ == 0)
+            solvePipelineStage(maxIter, tol, adjustedTransfer);
         else if (explicitRootsActive_ && !adjustedTransfer)
             solveRootGroups(maxIter, tol);
         else if (useRuntime)

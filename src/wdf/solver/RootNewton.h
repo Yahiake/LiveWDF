@@ -90,6 +90,7 @@ struct NewtonContext {
     bool skipIdenticalRetry = false;
     bool pentodePreview = false;
     double modeTol = 0.0;
+    bool acceptFirstStep = false;
     const unsigned char* frozen = nullptr;  ///< Replayed ports: their residual is not the solve's
 };
 
@@ -372,6 +373,7 @@ public:
                 break;
             }
 
+            const double firstBase = base;
             tPhase = tick();
             const bool compact = ctx.sharedColumns && ctx.sharedColumns->available();
             const auto assembleFull = [&] {
@@ -498,6 +500,12 @@ public:
             }
 
             if (base < tol && !(poweredPreview && base >= ctx.modeTol)) {
+                reached = true;
+                break;
+            }
+            // Preview with no root partition: keep a full first step that cut the residual a
+            // hundredfold, a second joint step costs a whole LU for polish only.
+            if (ctx.acceptFirstStep && it == 0 && h == 0 && scale == 1.0 && base <= 0.01 * firstBase) {
                 reached = true;
                 break;
             }

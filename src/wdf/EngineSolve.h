@@ -191,7 +191,8 @@ protected:
     /// Each level only forwards construction down the chain; the work happens in
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
-    bool triodePreviewEnabled_ = false;
+    bool triodePreviewEnabled_ = false, slowLagEnabled_ = false;
+    bool keepBlockAnswer_ = false;
     std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
     std::vector<int> lagOrder_;
     std::vector<double> lagHeld_;
@@ -212,6 +213,18 @@ protected:
         int watch = -1, port = -1, nRed = 0, length = 0, period = 0, previous = 0, base = 0, phase = 0;
         double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0, span = 0.0, held = 0.0, drive = 0.0;
     } lamp_;
+    /// Two-core Preview: this clone solves one side of the first power-tube block; the
+    /// other side's port currents come in from the other clone. Stage 1 reads them as
+    /// lagged couplings, stage 2 folds them in as solved predecessors.
+    struct PipelineStage {
+        int stage = 0;
+        bool lagView = false;
+        long long revision = -1;
+        std::vector<NewtonBlock> blocks;
+        std::vector<int> order, ownPorts, inPorts;
+        std::vector<unsigned char> frozen;
+        std::vector<double> held, input;
+    } pipe_;
 
     bool lampFolded() const noexcept { return lamp_.held > 0.0 && !lamp_.Z.empty() && loadedJunctionEnabled_; }
 
@@ -229,6 +242,7 @@ protected:
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
             jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
             loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_,
+            loadedJunctionEnabled_ && blockCount_ == 0,
             lampFolded() ? lamp_.frozen.data() : nullptr
         };
     }
@@ -250,7 +264,7 @@ protected:
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_),
-            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_
+            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_, keepBlockAnswer_
         };
     }
 
@@ -511,6 +525,23 @@ protected:
                     lamp_.order.push_back(b);
             view = {view.blocks, &lamp_.order, static_cast<int>(lamp_.order.size()), view.held, skip.data()};
         }
+        solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
+    }
+
+    void solvePipelineStage(int maxIter, double tol, bool adjusted) {
+        const size_t n = pipe_.inPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            ii_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[k];
+            vv_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[n + k];
+        }
+        auto ctx = makeBlockSolveContext();
+        ctx.mixedEnabled &= !adjusted;
+        ctx.reductions = !adjusted;
+        auto newtonCtx = makeNewtonContext();
+        const bool first = pipe_.stage == 1;
+        const BlockView view{first ? &pipe_.blocks : pipe_.lagView ? &lagBlocks_ : &newtonBlocks_, &pipe_.order,
+                             static_cast<int>(pipe_.order.size()),
+                             first ? pipe_.held.data() : pipe_.lagView ? lagHeld_.data() : nullptr, pipe_.frozen.data()};
         solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 

@@ -5,6 +5,7 @@
 #include "wdf/Engine.h"
 #include "dsp/HalfBandOversampler.h"
 #include "OutputEffects.h"
+#include "BlockWorker.h"
 #include "format/LiveWDFFile.h"
 #include "format/ControlGroups.h"
 #include "format/PortImpedance.h"
@@ -245,6 +246,7 @@ private:
     bool settledTransferPublished_ = false;
     bool initialTransferPending_ = false;
     bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
+    int previewLoadOverruns_ = 0;
     long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
     bool outputOnlyPreviewAllowed_ = false;
     // The timer can service an idle engine directly. During playback the
@@ -297,6 +299,7 @@ private:
     ///
     /// 1 when the document has not said, which scales nothing.
     std::atomic<double> outputFullScaleVolts_{1.0}, outputFastTrim_{1.0}, outputPreviewTrim_{1.0};
+    std::atomic<bool> previewKeepsBlockAnswer_{false};
     std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     double previewPadScale_ = 1.;
@@ -349,6 +352,23 @@ private:
     std::vector<SwitchTarget> switchTargets_;
     std::vector<std::pair<int, double>> potMoves_, varResMoves_, resistorMoves_;
 
+    /// Stereo runs the right engine on `rightWorker_`; both engines replay the
+    /// same control steps, logged before the block, at the same sample index.
+    struct ControlStep { double scale, makeup; bool retry; int potRow; };
+    static constexpr int kControlChunk = 1024;
+    std::array<ControlStep, kControlChunk> controlLog_;
+    std::array<std::array<double, kMaxPotKnobs + numPorts>, kControlChunk / 8 + 2> potLog_;
+    std::vector<std::pair<int, double>> rightPotMoves_, rightVarResMoves_;
+    BlockWorker rightWorker_;
+    /// Two-core Preview of one amp: the right engine is stage 1 (before the power
+    /// tubes) on the worker, the left engine stage 2. Each publishes its port
+    /// currents per engine step; stage 1 reads stage 2's from two steps back.
+    static constexpr size_t kPipePorts = 128;
+    std::array<std::array<double, kPipePorts>, 4> pipeEarly_{}, pipeLate_{};
+    alignas(64) std::atomic<long long> pipeEarlyDone_{0};
+    alignas(64) std::atomic<long long> pipeLateDone_{0};
+    long long pipeStep_ = 0, pipeStart_ = 0, pipeTried_ = -1;
+
     /// A source that is running an AC signal: which source, how big, how fast.
     ///
     /// The signal source is a DC voltage, or an AC one -- an amplitude and a
@@ -393,7 +413,7 @@ private:
     void captureSettledTransferIfRequested() noexcept;
     void applySettledLiveTransfer(bool stereo) noexcept;
     void readLivePotTargets(int rampSamples);
-    void advanceLivePots();
+    bool advanceLivePots();
     void applyLiveControlsToEngines(bool pots, bool switches);
     void buildEngineFromDoc(const wdf::LiveWDFDocument& doc, double fs,
                             const std::array<double, numPorts>& portPositions,
