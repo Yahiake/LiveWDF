@@ -112,13 +112,16 @@ void EngineStep::prepareSlowLag() {
     std::vector<double> slope(size_t(K_) * K_, 0.0), v, i(K_), a, x(K_);
     std::vector<int> pivots(K_);
     auto newton = makeNewtonContext();
-    constexpr double sweep[] = {-50.0, -5.0, 0.0, 1.0, 5.0, 50.0, 200.0, 400.0};
-    for (int point = 0; point < 512; ++point) {
+    constexpr double sweep[] = {-50, -20, -5, -2, -1, -0.5, 0, 0.5, 1, 2, 5, 10, 20, 50, 200, 400};
+    const auto at = [&](int point) {
         v = vv_;
         for (const auto& d : rootDevices_)
             for (int q = 0; q < std::min(d.numPorts, 3); ++q)
-                v[d.portBase + q] += sweep[(point >> (3 * q)) & 7];
+                v[d.portBase + q] += sweep[(point >> (4 * q)) & 15];
         solver::RootNewton::currentsInto(newton, v, i, J_);
+    };
+    for (int point = 0; point < 4096; ++point) {
+        at(point);
         for (const auto& d : rootDevices_) {
             const int m = d.numPorts, b = d.portBase;
             a.assign(size_t(m) * m, 0.0);
@@ -141,17 +144,47 @@ void EngineStep::prepareSlowLag() {
             }
         }
     }
-    auto base = std::tuple(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_,
-                           allClosedFormBlocks_, hasAntiParallelBlock_);
-    for (auto& b : newtonBlocks_)
-        b.clearLinearReduction();
     std::vector<uint8_t> lag;
-    auto ctx = makeRootGroupsContext();
-    lagCount_ = solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ? blockCount_ : 0;
-    lagBlocks_ = std::move(newtonBlocks_);
-    lagOrder_ = std::move(groupOrder_);
-    std::tie(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_, allClosedFormBlocks_,
-             hasAntiParallelBlock_) = std::move(base);
+    std::vector<int> owner;
+    bool closed = false, antiParallel = false;
+    int scalars = 0;
+    lagOrder_.resize(rootDevices_.size());
+    auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
+    if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag))
+        lagCount_ = 0;
+    // The pairwise rule misses a long loop: a late column closing around the solved
+    // forward path. Refuse unless |J (I + Zs J)^-1 Zl| stays below 1/4 over the sweep.
+    std::vector<double> late(size_t(K_) * K_, 0.0), m(size_t(K_) * K_), t(K_);
+    for (int b = 0; b < lagCount_; ++b)
+        for (const auto& [r, d] : lagBlocks_[size_t(b)].lagged)
+            late[size_t(r) * K_ + d.col] = d.z;
+    for (int point = 0; point < 4096 && lagCount_ > 1; point += 7) {
+        at(point);
+        for (int r = 0; r < K_; ++r)
+            for (int c = 0; c < K_; ++c) {
+                double sum = r == c;
+                for (int k = 0; k < K_; ++k)
+                    sum += (Z_[size_t(r) * K_ + k] - late[size_t(r) * K_ + k]) * J_[size_t(k) * K_ + c];
+                m[size_t(r) * K_ + c] = sum;
+            }
+        bool ok = detail::factorLUData(m.data(), pivots.data(), K_);
+        std::fill(t.begin(), t.end(), 0.0);
+        for (int c = 0; c < K_ && ok; ++c) {
+            for (int r = 0; r < K_; ++r)
+                x[r] = late[size_t(r) * K_ + c];
+            if (std::none_of(x.begin(), x.end(), [](double z) { return z != 0.0; }))
+                continue;
+            detail::solveLUData(m.data(), pivots.data(), x.data(), K_);
+            for (int r = 0; r < K_; ++r) {
+                double di = 0.0;
+                for (int k = 0; k < K_; ++k)
+                    di += J_[size_t(r) * K_ + k] * x[k];
+                t[r] += std::abs(di);
+            }
+        }
+        if (!ok || !(*std::max_element(t.begin(), t.end()) < 0.25))
+            lagCount_ = 0;
+    }
     lagHeld_.assign(K_, 0.0);
     lagRevision_ = linearRebuilds();
 }

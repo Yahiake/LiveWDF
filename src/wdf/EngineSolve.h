@@ -231,15 +231,22 @@ protected:
     }
 
     solver::RootGroupsContext makeRootGroupsContext() {
+        return makeRootGroupsContext(newtonBlocks_, groupOrder_, blockOf_, allClosedFormBlocks_,
+                                     hasAntiParallelBlock_, blockCount_, scalarBlockCount_);
+    }
+
+    solver::RootGroupsContext makeRootGroupsContext(std::vector<NewtonBlock>& blocks, std::vector<int>& order,
+                                                    std::vector<int>& owner, bool& closed, bool& antiParallel,
+                                                    int& count, int& scalars) {
         return solver::RootGroupsContext{
             rootDevices_, circuit_, comp_, ctrlResValues_, Z_,
             K_, nTri_, nD_, nCtrl_, nPent_, nJfet_, nMosfet_, nBjt_, nOpAmp_,
             explicitRootsAllowed_, runtimeBlockEnabled_, fineBlockSolver_,
-            explicitRootsActive_, allClosedFormBlocks_, hasAntiParallelBlock_,
-            blockCount_, scalarBlockCount_, groupCount_,
+            explicitRootsActive_, closed, antiParallel,
+            count, scalars, groupCount_,
             runtimeBlockCount_, runtimeBlockUsed_,
-            groupOrder_, grpIndeg_, grpQueue_, grpDiode_,
-            newtonBlocks_, blockOf_, blockReach_, blockAdj_,
+            order, grpIndeg_, grpQueue_, grpDiode_,
+            blocks, owner, blockReach_, blockAdj_,
             runtimeBlocks_, runtimeOrder_, runtimePartitions_, runtimePartition_
         };
     }

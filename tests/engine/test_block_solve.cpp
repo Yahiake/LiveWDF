@@ -862,3 +862,43 @@ TEST_CASE("Preview reads the JCM800 supply one sample late but keeps its power s
     }
     REQUIRE(std::sqrt(diff / signal) < 1e-3);
 }
+
+TEST_CASE("Preview refuses a late supply read that closes around the forward gain",
+          "[blocksolve][preview]") {
+    struct Probe : wdf::Engine {
+        using Engine::Engine;
+        int lagBlocks() const { return lagCount_; }
+        size_t pairwiseLagged() const {
+            size_t n = 0;
+            for (const auto& b : lagBlocks_)
+                n += b.lagged.size();
+            return n;
+        }
+    };
+    const bool decoupled = GENERATE(false, true);
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addSrc("e", "0", 300.0);
+    c.addRes("e", "b", 1e3);
+    c.addCap("b", "0", 47e-6);
+    for (int s = 0; s < 4; ++s) {
+        const std::string n = std::to_string(s), supply = decoupled ? "b" + n : "b";
+        if (decoupled) {
+            c.addRes("b", supply, 47e3);
+            c.addCap(supply, "0", 22e-6);
+        }
+        c.addRes(s ? "c" + std::to_string(s - 1) : "in", "g" + n, 68e3);
+        c.addRes("g" + n, "0", 1e6);
+        c.addRes(supply, "p" + n, s < 3 ? 100e3 : 5e3);
+        c.addCap("p" + n, "c" + n, 22e-9);
+        c.addRes("k" + n, "0", 1.5e3);
+        c.addCap("k" + n, "0", 25e-6);
+        c.addTri("g" + n, "p" + n, "k" + n, "g" + n, lwdf_test::gridlessQuadric());
+    }
+    c.addRes("c3", "0", 1e6);
+    Probe preview(c, kFs);
+    preview.prepareCompiledPreview(0, preview.nodeIndex("c3"), false, 1.0, false);
+    CAPTURE(decoupled, preview.pairwiseLagged(), preview.lagBlocks());
+    REQUIRE(preview.pairwiseLagged() > 0);
+    REQUIRE((preview.lagBlocks() > 1) == decoupled);
+}

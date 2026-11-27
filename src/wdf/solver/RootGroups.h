@@ -433,32 +433,21 @@ public:
             return false;
         };
 
-        // Gain from h's partition currents to g's: |dI_g/dV_g| |Z_gh|, row-summed.
-        const auto gain = [&](int g, int h) {
+        // Through Z_gh, row-summed over g's ports: the current gain |dI_g/dV_g| |Z_gh|, or with
+        // `volts` the voltage on g per volt on h, |Z_gh| |dI_h/dV_h|, the error a late read leaves in g.
+        const auto gain = [&](int g, int h, bool volts = false) {
             const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
             const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            const RootDevice& ds = volts ? dh : dg;
             double m = 0.0;
             for (int r = dg.portBase; r < dg.portBase + dg.numPorts; ++r) {
                 double row = 0.0;
                 for (int j = 0; j < partitionPortCount(dh); ++j)
-                    for (int k = dg.portBase; k < dg.portBase + dg.numPorts; ++k)
-                        row += (*slope)[static_cast<size_t>(r) * ctx.K + k] *
-                               std::abs(z[static_cast<size_t>(k) * ctx.K + activePort(dh, j)]);
-                m = std::max(m, row);
-            }
-            return m;
-        };
-        // Volts on g's ports per volt on h's ports through Z: the error a late read leaves in g.
-        const auto reach = [&](int g, int h) {
-            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
-            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
-            double m = 0.0;
-            for (int r = dg.portBase; r < dg.portBase + dg.numPorts; ++r) {
-                double row = 0.0;
-                for (int j = 0; j < partitionPortCount(dh); ++j)
-                    for (int k = dh.portBase; k < dh.portBase + dh.numPorts; ++k)
-                        row += std::abs(z[static_cast<size_t>(r) * ctx.K + activePort(dh, j)]) *
-                               (*slope)[static_cast<size_t>(activePort(dh, j)) * ctx.K + k];
+                    for (int k = ds.portBase; k < ds.portBase + ds.numPorts; ++k) {
+                        const int c = activePort(dh, j);
+                        row += volts ? std::abs(z[static_cast<size_t>(r) * ctx.K + c]) * (*slope)[static_cast<size_t>(c) * ctx.K + k]
+                                     : (*slope)[static_cast<size_t>(r) * ctx.K + k] * std::abs(z[static_cast<size_t>(k) * ctx.K + c]);
+                    }
                 m = std::max(m, row);
             }
             return m;
@@ -472,7 +461,7 @@ public:
                 return false;
             const double back = gain(g, h), forward = gain(h, g);
             return (back <= forward || (useSignalFlow && flowReach[static_cast<size_t>(g) * nGroups + h])) &&
-                   back * forward < 1e-4 && reach(g, h) < 0.05;
+                   back * forward < 1e-4 && gain(g, h, true) < 0.05;
         };
 
         const auto coupled = [&](int g, int h) -> bool {
@@ -488,14 +477,13 @@ public:
             return zCoupled(g, h);
         };
 
+        const size_t n2 = static_cast<size_t>(nGroups) * nGroups;
         if (lag) {
-            lag->assign(static_cast<size_t>(ctx.K) * ctx.K, 0);
+            lag->assign(n2, 0);
             for (int g = 0; g < nGroups; ++g)
                 for (int h = 0; h < nGroups; ++h)
-                    (*lag)[static_cast<size_t>(ctx.rootDevices[static_cast<size_t>(g)].portBase) * ctx.K +
-                           ctx.rootDevices[static_cast<size_t>(h)].portBase] = g != h && lagged(g, h);
+                    (*lag)[static_cast<size_t>(g) * nGroups + h] = g != h && lagged(g, h);
         }
-        const size_t n2 = static_cast<size_t>(nGroups) * nGroups;
         if (ctx.blockReach.size() < n2) {
             ctx.blockReach.resize(n2);
             ctx.blockAdj.resize(n2);
@@ -685,7 +673,7 @@ public:
             return buildRootOrder(ctx, false, slope, lag);
 
         compileBlockZAndPredFold(ctx.newtonBlocks, ctx.groupOrder.data(), nb, ctx.rootDevices.data(), ctx.Z.data(), ctx.K,
-                                 lag ? lag->data() : nullptr);
+                                 lag ? lag->data() : nullptr, nGroups);
         return true;
     }
 
@@ -697,7 +685,8 @@ public:
         const RootDevice* rootDevices,
         const double* zData,
         int K,
-        const uint8_t* lag = nullptr) noexcept
+        const uint8_t* lag = nullptr,
+        int groups = 0) noexcept
     {
         for (int b = 0; b < nb; ++b) {
             NewtonBlock& block = blocks[static_cast<size_t>(b)];
@@ -750,7 +739,7 @@ public:
                             // A later block's grid current is predicted, so its
                             // back-coupling lags instead of iterating.
                             const bool grid = od.kind == DeviceKind::Triode && c == od.portBase + 2;
-                            if (p > s && !grid && lag && lag[static_cast<size_t>(dev.portBase) * K + od.portBase] && zRow[c] != 0.0)
+                            if (p > s && !grid && lag && lag[static_cast<size_t>(di) * groups + otherBlock.portDevice[k]] && zRow[c] != 0.0)
                                 block.lagged.push_back({globalPort, PredecessorPort{c, zRow[c]}});
                             if (p > s && !grid)
                                 continue;

@@ -183,7 +183,8 @@ public:
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void prepareSlowLag();
     bool slowLagActive() const noexcept {
-        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1;
+        return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
+               !fineBlockSolver_;
     }
     long long triodePreviewHits() const noexcept { return triodePreviewHits_; }
     bool circuitPlanPrepared() const noexcept { return circuitPlanRevision_ == linearRebuilds(); }
