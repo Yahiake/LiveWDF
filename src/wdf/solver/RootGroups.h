@@ -512,11 +512,8 @@ public:
             lag->assign(static_cast<size_t>(ctx.K) * ctx.K, 0);
             for (int g = 0; g < nGroups; ++g)
                 for (int h = 0; h < nGroups; ++h)
-                    if (g != h && lagged(g, h))
-                        for (int r = 0; r < ctx.rootDevices[static_cast<size_t>(g)].numPorts; ++r)
-                            for (int c = 0; c < partitionPortCount(ctx.rootDevices[static_cast<size_t>(h)]); ++c)
-                                (*lag)[static_cast<size_t>(ctx.rootDevices[static_cast<size_t>(g)].portBase + r) * ctx.K +
-                                       activePort(ctx.rootDevices[static_cast<size_t>(h)], c)] = 1;
+                    (*lag)[static_cast<size_t>(ctx.rootDevices[static_cast<size_t>(g)].portBase) * ctx.K +
+                           ctx.rootDevices[static_cast<size_t>(h)].portBase] = g != h && lagged(g, h);
         }
         const size_t n2 = static_cast<size_t>(nGroups) * nGroups;
         if (ctx.blockReach.size() < n2) {
@@ -773,7 +770,7 @@ public:
                             // A later block's grid current is predicted, so its
                             // back-coupling lags instead of iterating.
                             const bool grid = od.kind == DeviceKind::Triode && c == od.portBase + 2;
-                            if (p > s && !grid && lag && lag[static_cast<size_t>(globalPort) * K + c] && zRow[c] != 0.0)
+                            if (p > s && !grid && lag && lag[static_cast<size_t>(dev.portBase) * K + od.portBase] && zRow[c] != 0.0)
                                 block.lagged.push_back({globalPort, PredecessorPort{c, zRow[c]}});
                             if (p > s && !grid)
                                 continue;
