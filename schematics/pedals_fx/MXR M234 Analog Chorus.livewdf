@@ -883,7 +883,8 @@
         "outputBias": 1.2,
         "outputOhms": 2600.0,
         "periodMicrosecondsPerVolt": 6.7,
-        "stages": 1024
+        "stages": 1024,
+        "transferLoss": 1.57e-4
       },
       "visual": {
         "flipped": false,

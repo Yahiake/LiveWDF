@@ -715,6 +715,7 @@ wdf::SchematicComponent makeComponent(const std::string& type,
         comp.values["inputSwing"] = model.inputSwing;
         comp.values["gain"] = model.gain;
         comp.values["outputOhms"] = model.outputOhms;
+        comp.values["transferLoss"] = model.transferLoss;
     }
 
     if (type == "photores") {

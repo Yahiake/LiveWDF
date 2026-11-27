@@ -151,6 +151,7 @@ std::string valueKeyLabel(const std::string& key) {
     if (key == "outputBias")     return "Output bias relative to common (V)";
     if (key == "inputSwing")     return "Input swing to clipping (V)";
     if (key == "outputOhms")     return "Output resistance (ohm)";
+    if (key == "transferLoss")   return "Charge left per transfer";
     // The JFET/MOSFET parameter names are the engine's symbols, but they are
     // displayed to a person; the one-letter keys are capitalised so a column of
     // captions does not read as a list of variable names.

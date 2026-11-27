@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <limits>
@@ -21,6 +22,9 @@ struct BucketBrigadeModel {
     double inputSwing = 2.75;
     double gain = 1.052;
     double outputOhms = 5200.0;
+    // Charge left behind per transfer, fitted to the MN3005 data sheet's Gi-fi
+    // curve at fcp 40 kHz: -1.9 dB at 10 kHz, of which the held output is -0.9 dB.
+    double transferLoss = 2.8e-5;
 
     bool valid() const noexcept {
         return stages >= 2 && stages <= 32768 && stages % 2 == 0 &&
@@ -29,7 +33,8 @@ struct BucketBrigadeModel {
                std::isfinite(inputBias) && std::isfinite(outputBias) &&
                std::isfinite(inputSwing) && inputSwing > 0.0 &&
                std::isfinite(gain) && gain > 0.0 &&
-               std::isfinite(outputOhms) && outputOhms > 0.0;
+               std::isfinite(outputOhms) && outputOhms > 0.0 &&
+               transferLoss >= 0.0 && stages * transferLoss <= 1.0;
     }
 
     double clockPeriod(double control) const noexcept {
@@ -50,12 +55,23 @@ struct BucketBrigadeModel {
 /// stores stages/2 input samples, independently of host sample rate. Each
 /// clock event samples an interpolated input; multiple events per host sample
 /// are possible when the clock runs above the host rate. Combined output is
-/// held until the next event. Clock feedthrough and loss/noise per stage are
-/// outside this model.
+/// held until the next event. Clock feedthrough and noise are outside this
+/// model.
 class BucketBrigadeState {
 public:
     explicit BucketBrigadeState(const BucketBrigadeModel& model)
         : model_(model), ring_(static_cast<std::size_t>(model.stages / 2)) {
+        // Each of the N transfers passes (1 - e) / (1 - e z^-1) at the clock
+        // rate, so the line's impulse response is the negative binomial series
+        // (1 - e)^N C(N + k - 1, k) e^k, normalized here to unit DC gain.
+        double tap = std::pow(1.0 - model_.transferLoss, model_.stages), sum = 0.0;
+        for (std::size_t k = 0; k < taps_.size(); ++k) {
+            taps_[k] = tap;
+            sum += tap;
+            tap *= (model_.stages + k) * model_.transferLoss / (k + 1.0);
+        }
+        for (auto& t : taps_)
+            t /= sum;
         reset(model_.inputBias);
     }
 
@@ -65,6 +81,7 @@ public:
         previousInput_ = input;
         output_ = model_.outputVoltage(input);
         std::fill(ring_.begin(), ring_.end(), output_);
+        history_.fill(output_);
     }
 
     double step(double input, double control, double samplePeriod) noexcept {
@@ -84,7 +101,11 @@ public:
         for (unsigned i = 0; i < clockEdges; ++i) {
             const double at = (1.0 - phase_ + i) / cycles;
             const double sample = std::lerp(previousInput_, input, std::clamp(at, 0.0, 1.0));
-            output_ = ring_[position_];
+            historyPosition_ = (historyPosition_ + 1) % history_.size();
+            history_[historyPosition_] = ring_[position_];
+            output_ = 0.0;
+            for (std::size_t k = 0; k < taps_.size(); ++k)
+                output_ += taps_[k] * history_[(historyPosition_ + history_.size() - k) % history_.size()];
             ring_[position_] = model_.outputVoltage(sample);
             if (++position_ == ring_.size())
                 position_ = 0;
@@ -99,7 +120,8 @@ public:
 private:
     BucketBrigadeModel model_;
     std::vector<double> ring_;
-    std::size_t position_ = 0;
+    std::array<double, 8> taps_{}, history_{};
+    std::size_t position_ = 0, historyPosition_ = 0;
     double phase_ = 0.0;
     double previousInput_ = 0.0;
     double output_ = 0.0;

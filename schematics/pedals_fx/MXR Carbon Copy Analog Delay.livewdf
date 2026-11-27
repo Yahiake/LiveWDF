@@ -1004,7 +1004,8 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4
       },
       "visual": {
         "flipped": false,
@@ -1189,7 +1190,8 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4
       },
       "visual": {
         "flipped": false,
@@ -1374,7 +1376,8 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4
       },
       "visual": {
         "flipped": false,
@@ -1559,7 +1562,8 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4
       },
       "visual": {
         "flipped": false,
