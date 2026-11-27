@@ -10,6 +10,12 @@ namespace wdf {
 
 void Engine::prepareSubsteps(int depth) {
     half_.reset();
+    // Sized even at the last level: the level above writes these on the audio thread.
+    lastSources_ = dcValues();
+    for (const auto& source : comp_.isrc)
+        lastSources_.push_back(source.second.dc);
+    midSources_ = lastSources_;
+    lastEoff_ = eoff_;
     if (depth <= 0 || !bucketBrigades_.empty() || !rmsDetectors_.empty() || powerSagEnabled_)
         return;
     auto half = std::make_shared<Engine>(circuit_, 2. * fs_, gridCurrent_);
@@ -17,11 +23,6 @@ void Engine::prepareSubsteps(int depth) {
         half->K_ != K_ || half->N_ != N_ || half->eoff_.size() != eoff_.size())
         return;
     half->prepareSubsteps(depth - 1);
-    lastSources_ = dcValues();
-    for (const auto& source : comp_.isrc)
-        lastSources_.push_back(source.second.dc);
-    midSources_ = lastSources_;
-    lastEoff_ = eoff_;
     half_ = std::move(half);
 }
 
@@ -63,8 +64,10 @@ void Engine::substep(const double* sources, size_t count, int maxIter, double to
     half.lastSources_ = lastSources_;
     half.opAmpVp_ = opAmpVp_;
     half.ctrlResValues_ = ctrlResValues_;
-    for (size_t p = 0; p < photoresistors_.size(); ++p)
+    for (size_t p = 0; p < photoresistors_.size(); ++p) {
         half.photoresistors_[p].illumination = photoresistors_[p].illumination;
+        half.photoresistors_[p].lit = photoresistors_[p].lit;
+    }
     half.triodeDomainPin_ = triodeDomainPin_;
     if (half.gridLag_.size() == gridLag_.size())
         half.gridLag_ = gridLag_;
@@ -89,8 +92,10 @@ void Engine::substep(const double* sources, size_t count, int maxIter, double to
     node_ = half.node_;
     opAmpVp_ = half.opAmpVp_;
     ctrlResValues_ = half.ctrlResValues_;
-    for (size_t p = 0; p < photoresistors_.size(); ++p)
+    for (size_t p = 0; p < photoresistors_.size(); ++p) {
         photoresistors_[p].illumination = half.photoresistors_[p].illumination;
+        photoresistors_[p].lit = half.photoresistors_[p].lit;
+    }
     triodeDomainPin_ = half.triodeDomainPin_;
     if (half.gridLag_.size() == gridLag_.size())
         gridLag_ = half.gridLag_;
