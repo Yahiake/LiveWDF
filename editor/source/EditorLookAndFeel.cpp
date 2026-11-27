@@ -214,7 +214,7 @@ void drawTerminalLettering(juce::Graphics& g, const wdf::SchematicComponent& par
 void drawTransistorTerminalLetters(juce::Graphics& g,
                                    const wdf::SchematicComponent& part,
                                    const SheetView& view) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
     if (offsets.empty())
         return;
 
@@ -260,7 +260,7 @@ void drawTransistorTerminalLetters(juce::Graphics& g,
 void drawOpAmpPolarityLetters(juce::Graphics& g,
                               const wdf::SchematicComponent& part,
                               const SheetView& view) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
     if (offsets.size() < 3)
         return;
 
@@ -310,7 +310,7 @@ void drawOpAmpPolarityLetters(juce::Graphics& g,
 /// like the transistor terminal letters.
 void drawPotTerminalLetters(juce::Graphics& g, const wdf::SchematicComponent& part,
                             const SheetView& view) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
     if (offsets.size() < 3)
         return;
 
@@ -702,7 +702,7 @@ namespace {
 /// the part's own pins rather than a fixed size, so a rotated or mirrored part
 /// gets a body that still sits between its leads.
 juce::Rectangle<float> bodyRect(const wdf::SchematicComponent& part, const SheetView& view) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
 
     if (offsets.empty())
         return {};
@@ -736,7 +736,7 @@ juce::Rectangle<float> bodyRect(const wdf::SchematicComponent& part, const Sheet
 std::vector<juce::Point<float>> pinPixels(const wdf::SchematicComponent& part,
                                           const SheetView& view) {
     std::vector<juce::Point<float>> points;
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
 
     for (int i = 0; i < static_cast<int>(offsets.size()); ++i) {
         const auto p = Schematic::pinPosition(part, i);
@@ -754,7 +754,7 @@ std::vector<juce::Point<float>> pinPixels(const wdf::SchematicComponent& part,
 float lowestReachBelowCentre(const wdf::SchematicComponent& part) {
     float reach = 0.0f;
 
-    for (const auto& p : Schematic::pinOffsets(part.type))
+    for (const auto& p : Schematic::pinOffsets(part))
         reach = std::max(reach, static_cast<float>(p.y));
 
     if (const auto* art = artworkForPart(part)) {
@@ -853,7 +853,13 @@ void drawComponentSymbolOnly(juce::Graphics& g, const wdf::SchematicComponent& p
     // together -- so nothing else is drawn for the body. This is Celine's own
     // division and the reason the two never fight: artwork carries the leads, the
     // canvas paints the pins over the top.
-    if (const auto* art = artworkForPart(part)) {
+    if (part.type == "switch_res" && wdf::switchResThrowCount(part) > 2) {
+        g.setColour(EditorLookAndFeel::partColour());
+        const auto selected = static_cast<size_t>(wdf::switchResPosition(part) + 1);
+        if (selected < pins.size())
+            g.drawLine(pins.front().x, pins.front().y, pins[selected].x, pins[selected].y,
+                       sheetStroke(view));
+    } else if (const auto* art = artworkForPart(part)) {
         g.setColour(EditorLookAndFeel::partColour());
         drawArtwork(g, *art, part, centre, view.gridSize, sheetStroke(view));
     } else {
@@ -986,7 +992,7 @@ void drawComponentGhost(juce::Graphics& g, const wdf::SchematicComponent& part,
     // Pins on the ghost too: the whole point is to see where the connections
     // will land before committing.
     const float pinR = std::max(1.5f, view.gridSize * 0.12f);
-    for (int i = 0; i < static_cast<int>(Schematic::pinOffsets(part.type).size()); ++i) {
+    for (int i = 0; i < static_cast<int>(Schematic::pinOffsets(part).size()); ++i) {
         const auto p = Schematic::pinPosition(part, i);
         const auto px = view.toPixel(p.x, p.y);
         g.setColour(EditorLookAndFeel::selection());

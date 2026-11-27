@@ -837,8 +837,9 @@ TEST_CASE("Every part can be renamed from the inspector") {
         panel.setSize(320, 700);
         panel.setTarget(&doc, doc.components.front().id);
 
-        REQUIRE(findCaption(panel, "Label:") != nullptr);
-        auto* editor = findEditorBelowCaption(panel, "Label:");
+        const juce::String caption = spec.type == "net_label" ? "Name:" : "Label:";
+        REQUIRE(findCaption(panel, caption) != nullptr);
+        auto* editor = findEditorBelowCaption(panel, caption);
         REQUIRE(editor != nullptr);
         CHECK(editor->getText().isEmpty());   // blank means "use the id"
     }
@@ -856,6 +857,15 @@ TEST_CASE("Every part can be renamed from the inspector") {
 
     CHECK(doc.components.front().properties.at("label") == "Rin");
     CHECK(partLabelText(doc.components.front()) == "Rin");
+
+    auto netDoc = documentWith("net_label");
+    panel.setTarget(&netDoc, netDoc.components.front().id);
+    editor = findEditorBelowCaption(panel, "Name:");
+    REQUIRE(editor != nullptr);
+    editor->setText("feedback", false);
+    editor->onFocusLost();
+    CHECK(netDoc.components.front().properties.at("name") == "feedback");
+    CHECK(partLabelText(netDoc.components.front()) == "feedback");
 }
 
 TEST_CASE("Pots and rheostats sharing a label move together") {

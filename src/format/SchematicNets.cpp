@@ -105,7 +105,7 @@ DerivedNets deriveNets(const std::vector<SchematicComponent>& components,
     // alternative, defaulting a pin to the part's centre or to ground, is what
     // connected a part to something it was never drawn on.
     for (std::size_t e = 0; e < components.size(); ++e) {
-        const int pinCount = static_cast<int>(livewdf::editor::pinFrame(components[e].type).size());
+        const int pinCount = static_cast<int>(livewdf::editor::pinFrame(components[e]).size());
         auto& row = result.netOfPin[e];
         row.resize(static_cast<std::size_t>(pinCount), -1);
 
@@ -177,6 +177,21 @@ DerivedNets deriveNets(const std::vector<SchematicComponent>& components,
         }
     }
 
+    // Equal net labels join their pin points before nets are numbered. This is
+    // the same operation as drawing a wire between those points; names reserved
+    // by terminals and automatic numbering are deliberately not labels.
+    std::map<std::string, int> labels;
+    for (std::size_t e = 0; e < components.size(); ++e) {
+        if (components[e].type != "net_label" || result.netOfPin[e].empty())
+            continue;
+        const auto name = components[e].properties.find("name");
+        if (name == components[e].properties.end() || !validNetLabelName(name->second, groundName))
+            continue;
+        const auto [it, inserted] = labels.emplace(name->second, result.netOfPin[e][0]);
+        if (!inserted)
+            sets.unite(it->second, result.netOfPin[e][0]);
+    }
+
     // Collapse the roots into dense net indices, assigned in a stable order --
     // by point position, Celine's -- so net numbering does not shuffle when an
     // unrelated part is added.
@@ -210,8 +225,8 @@ DerivedNets deriveNets(const std::vector<SchematicComponent>& components,
 
     result.netNames.assign(netOfRoot.size(), std::string());
 
-    // **Terminals name their net; nothing else does.** A net with a ground
-    // symbol drawn on it is ground whatever else shares it, and two ground
+    // **Terminals and net labels name their net; nothing else does.** A net
+    // with a ground symbol drawn on it is ground whatever else shares it, and two ground
     // symbols on two unconnected groups both name their net "0" -- which is not
     // a name clash and not a bug: `Circuit` maps nodes by name, so the two
     // become one node when the circuit is built, and grounding a pin in two
@@ -255,6 +270,17 @@ DerivedNets deriveNets(const std::vector<SchematicComponent>& components,
             if (slot.empty())
                 slot = name;
         }
+
+    for (std::size_t e = 0; e < components.size(); ++e) {
+        if (components[e].type != "net_label" || result.netOfPin[e].empty())
+            continue;
+        const auto name = components[e].properties.find("name");
+        if (name == components[e].properties.end() || !validNetLabelName(name->second, groundName))
+            continue;
+        auto& slot = result.netNames[static_cast<std::size_t>(result.netOfPin[e][0])];
+        if (slot.empty())
+            slot = name->second;
+    }
 
     // Anything still unnamed gets a number. The numbers are per net, in net
     // order, so a sheet reads the same way every time it is opened.

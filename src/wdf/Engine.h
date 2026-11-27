@@ -94,7 +94,7 @@ public:
         Circuit circuit_;
         double rate_ = 0.0;
         size_t input_ = 0;
-        bool gridCurrent_ = true;
+        bool gridCurrent_ = true, holds_ = false;
         long long revision_ = 0;
         std::vector<double> transfer_;
         std::vector<NewtonBlock> plans_;
@@ -157,7 +157,9 @@ private:
     int mixedAffineBlock() const noexcept;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);
-    std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
+    std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts,
+                                                            double tol = kDefaultTolerance,
+                                                            long long* evaluations = nullptr);
 };
 
 }  // namespace wdf

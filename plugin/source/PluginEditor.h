@@ -41,7 +41,7 @@ private:
     // Top Toolbar
     juce::Label titleLabel_;
     juce::TextButton factoryBtn_;
-    juce::ToggleButton powerAmpBtn_{"Power Amp"};
+    juce::ComboBox powerAmpSelector_;
     juce::Label factoryHint_{{}, "Browse"};
     juce::TextButton loadFileBtn_ { "Load .livewdf..." };
     juce::TextButton effectsBtn_ { "Effects" };
@@ -119,7 +119,7 @@ private:
 #endif
 
     // Dynamic circuit controls: one knob per pot/rheostat group and one button
-    // per SPDT group. Both are grouped by label, so a ganged pair takes one
+    // per switch group. Both are grouped by label, so a ganged pair takes one
     // place in the strip rather than two. The pot ceiling is the processor's,
     // since it owns the `pot_*` parameters; asking for more than it has is a
     // document the strip cannot drive, not a second buffer to grow.
@@ -132,6 +132,7 @@ private:
     std::vector<std::unique_ptr<VintageKnob>> dynamicPotKnobs_;
     std::vector<std::unique_ptr<juce::TextButton>> dynamicSwitchButtons_;
     std::vector<juce::String> dynamicSwitchNames_;
+    std::vector<int> dynamicSwitchThrowCounts_;
 
     // APVTS Attachments
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;
@@ -141,7 +142,7 @@ private:
     std::unique_ptr<ComboBoxAttachment> inputRouteAttach_;
     std::unique_ptr<ComboBoxAttachment> outputRouteAttach_;
     std::unique_ptr<ButtonAttachment> previewPadAttach_;
-    std::unique_ptr<ButtonAttachment> powerAmpAttach_;
+    std::unique_ptr<ComboBoxAttachment> powerAmpAttach_;
     std::unique_ptr<SliderAttachment> inTrimAttach_;
     std::unique_ptr<SliderAttachment> outMasterAttach_;
     std::unique_ptr<SliderAttachment> mixAttach_;

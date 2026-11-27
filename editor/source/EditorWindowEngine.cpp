@@ -70,6 +70,10 @@ void EditorWindow::Content::rebuildEngine() {
         messages.push_back({text, MessageConsole::Severity::Warning, juce::String(part)});
     }
 
+    for (const auto& [part, warning] : editor_.getDocument().netLabelWarnings())
+        messages.push_back({juce::String(warning), MessageConsole::Severity::Warning,
+                            juce::String(part)});
+
     // **What the loader had to say about the sheet.** A geometry-only file
     // names nothing beside a pin, so the things a read can get wrong are
     // visible things: a part type the library does not have, or a sheet with no

@@ -1298,6 +1298,7 @@ protected:
     /// controlled resistors eliminated from the Newton unknowns). A single
     /// such block is worth the block path even though `blockCount_ == 1`.
     bool mixedAffineEnabled_ = true;
+    bool mixedAffineHolds_ = false;  ///< calibration never failed a reduction on this multi-block root
     long long mixedAffineAttempts_ = 0;
     long long mixedAffineAccepted_ = 0;
     bool hasLinearReduction_ = false;

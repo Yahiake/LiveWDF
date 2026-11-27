@@ -24,7 +24,7 @@
 // project keeps being told off for.
 //
 // Names are assigned the way Celine assigns them: a net's name comes from the
-// *terminals drawn on it* (ground/in/out), and everything else is auto-numbered.
+// *terminals drawn on it* (ground/in/out or a net label), and everything else is auto-numbered.
 // A supply -- a rail or a source -- names nothing; it feeds whatever net it is
 // drawn onto. LiveSPICE's `Rail` and Celine's PSU both do this: their part name
 // goes into the equations ("i"+Name, an unknown current), never into the net.
