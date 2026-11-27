@@ -492,10 +492,11 @@ void LiveWDFPluginProcessor::prepareSettledLiveTransfer(bool audioActive) {
     captureState_.store(CaptureState::idle, std::memory_order_release);
     try {
         settledTransferJob_ = std::async(std::launch::async,
-            [work = std::move(job), input, output, fastLive, allowOutputOnly, peak, allowPad]() mutable {
+            [work = std::move(job), input, output, fastLive, lag = fastLive && !capture_.wantPreview,
+             allowOutputOnly, peak, allowPad]() mutable {
                 const AffineWorkerSlot slot;
-                work.left.build(input, work.affine);
-                work.right.build(input, work.affine);
+                work.left.build(input, work.affine, lag);
+                work.right.build(input, work.affine, lag);
                 if (fastLive)
                     work.left.screenCircuitPlan(work.right, input, output);
                 if (work.compilePreview)

@@ -191,7 +191,7 @@ protected:
     /// Each level only forwards construction down the chain; the work happens in
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
-    bool triodePreviewEnabled_ = false;
+    bool triodePreviewEnabled_ = false, slowLagEnabled_ = false;
     std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
     std::vector<int> lagOrder_;
     std::vector<double> lagHeld_;
