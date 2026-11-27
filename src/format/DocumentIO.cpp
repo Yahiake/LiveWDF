@@ -463,6 +463,12 @@ bool LiveWDFDocument::makePowerAmpDocument(LiveWDFDocument& powerAmp, std::strin
     const auto level = tap->values.find("preampFullScaleVolts");
     if (level != tap->values.end())
         input.values["referenceMillivoltsRms"] = level->second * kReferenceMillivolts;
+    auto& out = drawing.components[terminal("out") - components.data()];
+    for (const auto& [own, shared] : {std::pair{"powerAmpFullScaleVolts", "fullScaleVolts"},
+                                      std::pair{"powerAmpFastTrim", "fastTrim"},
+                                      std::pair{"powerAmpPreviewTrim", "previewTrim"}})
+        if (const auto value = out.values.find(own); value != out.values.end())
+            out.values[shared] = value->second;
     if (tap->type == "cap") {
         // The preamp hand-off has already crossed this coupling capacitor. Keep
         // a transparent DC block so the input source does not clamp the PI bias.

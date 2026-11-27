@@ -166,6 +166,8 @@ def run():
     parser.add_argument('report', type=Path)
     parser.add_argument('--verify', action='store_true')
     parser.add_argument('--preamp-only', action='store_true', help='calibrate the selected presets at their preamp tap')
+    parser.add_argument('--power-amp-chain', action='store_true',
+                        help='calibrate the Power amp position fed by the same amp in Preamp through chain mode')
     parser.add_argument('--fast-live', action='store_true', help='verify the same divisor in 1x Fast Live')
     parser.add_argument('--live-preview', action='store_true', help='verify the same divisor in 1x Preview')
     parser.add_argument('--jobs', type=int, default=1)
@@ -200,6 +202,10 @@ def run():
                 if args.preamp_only:
                     tap = next(c for c in doc['components'] if c.get('properties', {}).get('preampTap'))
                     out, scale = tap.setdefault('values', {}), 'preampFullScaleVolts'
+                elif args.power_amp_chain:
+                    out = next(c for c in doc['components'] if c['type'] == 'out')['values']
+                    scale = 'powerAmpFullScaleVolts'
+                    out.setdefault(scale, out['fullScaleVolts'])
                 else:
                     terminal = next(c for c in doc['components'] if c['type'] == 'out')
                     out, scale = terminal.setdefault('values', {}), 'fullScaleVolts'
@@ -211,19 +217,24 @@ def run():
                     load.write_text(json.dumps(doc))
                 volts = float(out[scale])
                 dest = work / f'{i}.f32'
-                result = subprocess.run([str(bench), str(load), '--calibration-render',
-                                         str(work / (profile + '.f32')), str(dest),
-                                         *(['--fast-live'] if args.fast_live else []),
-                                         *(['--live-preview'] if args.live_preview else []),
-                                         *(['--preamp-only'] if args.preamp_only else [])],
-                                        capture_output=True, timeout=300, text=True)
-                if result.returncode:
-                    raise RuntimeError((result.stderr or result.stdout)[-350:])
+                mode = [*(['--fast-live'] if args.fast_live else []), *(['--live-preview'] if args.live_preview else [])]
+                source = work / (profile + '.f32')
+                stages = [['--preamp-only'] if args.preamp_only else []]
+                if args.power_amp_chain:
+                    stages = [['--preamp-only', '--chain-output'], ['--power-amp-only', '--chain-input']]
+                for n, stage in enumerate(stages):
+                    target = dest if n == len(stages) - 1 else work / f'{i}.tap.f32'
+                    result = subprocess.run([str(bench), str(load), '--calibration-render', str(source), str(target),
+                                             *mode, *stage], capture_output=True, timeout=300, text=True)
+                    if result.returncode:
+                        raise RuntimeError((result.stderr or result.stdout)[-350:])
+                    source = target
                 values = np.fromfile(dest, dtype='=f4')
                 row.update(measure(inputs[profile], values, gate, volts, vin, args.verify))
                 if args.fast_live or args.live_preview:
                     # A mode whose level differs takes this as its fastTrim or previewTrim beside fullScaleVolts.
-                    trim = out.get('previewTrim' if args.live_preview else 'fastTrim', 1.)
+                    key = 'previewTrim' if args.live_preview else 'fastTrim'
+                    trim = out.get('powerAmp' + key[0].upper() + key[1:] if args.power_amp_chain else key, out.get(key, 1.))
                     row['recommended_trim'] = trim * row['recommended_output_divisor_V'] / volts
                 dest.unlink()
             except (ValueError, KeyError, RuntimeError, OSError, StopIteration,

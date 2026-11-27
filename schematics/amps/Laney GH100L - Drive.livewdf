@@ -938,7 +938,8 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 366.2692898
+        "fullScaleVolts": 366.2692898,
+        "powerAmpFullScaleVolts": 369.23717
       },
       "visual": {
         "flipped": false,
