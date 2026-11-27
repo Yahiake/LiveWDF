@@ -497,7 +497,8 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 42.895756
+        "fullScaleVolts": 43.004943,
+        "powerAmpFullScaleVolts": 50.563988
       },
       "properties": {},
       "visual": {

@@ -1360,6 +1360,8 @@
       "type": "out",
       "values": {
         "fullScaleVolts": 271.06202,
+        "powerAmpFullScaleVolts": 297.07268,
+        "powerAmpPreviewTrim": 1.0331539,
         "fastTrim": 1.0091325,
         "previewTrim": 1.0616646,
         "previewBlockAnswer": 1

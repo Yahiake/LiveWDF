@@ -336,7 +336,7 @@
         "peak": 9.159699790927403,
         "max_step": 7.3632263361304515
       },
-      "circuit_sha256": "e2ed3bac1c7d352992fc70e639aececf58fe998f5a338db7d6e68663ff56a027",
+      "circuit_sha256": "7b1a8eb9e4c44196fd6a1d3a5dd9d06716be1c4652e9478d64609e92fd351a0a",
       "case": "Orange Rockerverb 50w - Clean Channel",
       "wave": "22ff8a66798164a99f6cdb74059f0c242985a9564eeb345354efcb977aad4518.f32.gz",
       "wave_sha256": "22ff8a66798164a99f6cdb74059f0c242985a9564eeb345354efcb977aad4518",
@@ -370,7 +370,7 @@
         "peak": 9.159699790925655,
         "max_step": 7.3632263368972195
       },
-      "circuit_sha256": "e2ed3bac1c7d352992fc70e639aececf58fe998f5a338db7d6e68663ff56a027",
+      "circuit_sha256": "7b1a8eb9e4c44196fd6a1d3a5dd9d06716be1c4652e9478d64609e92fd351a0a",
       "case": "Orange Rockerverb 50w - Clean Channel",
       "wave": "cdf3bc78d1a28128ffd8fe0a6acc7956a769056510aef99d32e23df3df8b421e.f32.gz",
       "wave_sha256": "cdf3bc78d1a28128ffd8fe0a6acc7956a769056510aef99d32e23df3df8b421e",
@@ -404,7 +404,7 @@
         "peak": 9.159699790925655,
         "max_step": 7.3632263368972195
       },
-      "circuit_sha256": "e2ed3bac1c7d352992fc70e639aececf58fe998f5a338db7d6e68663ff56a027",
+      "circuit_sha256": "7b1a8eb9e4c44196fd6a1d3a5dd9d06716be1c4652e9478d64609e92fd351a0a",
       "case": "Orange Rockerverb 50w - Clean Channel",
       "wave": "cdf3bc78d1a28128ffd8fe0a6acc7956a769056510aef99d32e23df3df8b421e.f32.gz",
       "wave_sha256": "cdf3bc78d1a28128ffd8fe0a6acc7956a769056510aef99d32e23df3df8b421e",
@@ -438,7 +438,7 @@
         "peak": 27.662820059855466,
         "max_step": 36.62624982180544
       },
-      "circuit_sha256": "cdaf58e184a514002e554e45c4e2ad095fc8c7853b77ffbe751f270f45c74606",
+      "circuit_sha256": "7bdf52cbbd92ed52325683fb677d659eb48408026c1ab50d36f440b41c8c9be6",
       "case": "Orange Rockerverb 50w - Dirty Channel",
       "wave": "8818eda37f1c0e0b7a7d5e9ad997a3b1096d179892c3bd0cf4340ce37303ae26.f32.gz",
       "wave_sha256": "8818eda37f1c0e0b7a7d5e9ad997a3b1096d179892c3bd0cf4340ce37303ae26",
@@ -472,7 +472,7 @@
         "peak": 27.662820058815377,
         "max_step": 36.62624982224773
       },
-      "circuit_sha256": "cdaf58e184a514002e554e45c4e2ad095fc8c7853b77ffbe751f270f45c74606",
+      "circuit_sha256": "7bdf52cbbd92ed52325683fb677d659eb48408026c1ab50d36f440b41c8c9be6",
       "case": "Orange Rockerverb 50w - Dirty Channel",
       "wave": "71375d541a37a4fc827309fddf42e4e725f3a9145082544124207d9a2baa7513.f32.gz",
       "wave_sha256": "71375d541a37a4fc827309fddf42e4e725f3a9145082544124207d9a2baa7513",
@@ -506,7 +506,7 @@
         "peak": 27.662820058815377,
         "max_step": 36.62624982224773
       },
-      "circuit_sha256": "cdaf58e184a514002e554e45c4e2ad095fc8c7853b77ffbe751f270f45c74606",
+      "circuit_sha256": "7bdf52cbbd92ed52325683fb677d659eb48408026c1ab50d36f440b41c8c9be6",
       "case": "Orange Rockerverb 50w - Dirty Channel",
       "wave": "71375d541a37a4fc827309fddf42e4e725f3a9145082544124207d9a2baa7513.f32.gz",
       "wave_sha256": "71375d541a37a4fc827309fddf42e4e725f3a9145082544124207d9a2baa7513",
@@ -5844,7 +5844,7 @@
         "peak": 1.0568416837603394,
         "max_step": 0.25061139225012774
       },
-      "circuit_sha256": "b339136115225d8eb0561e5ea1767c381cdd3f0cbd2f8d5ece7fa28b1eb354f7",
+      "circuit_sha256": "44800de6984537e137d92877b965c6fd0c31de890d0594c3ee01e9b645938488",
       "case": "Fairchild-660",
       "wave": "e75212a9ca79e2a7eacfaac13a1064470c368b59c01da048d9b42e169c3d5bff.f32.gz",
       "wave_sha256": "e75212a9ca79e2a7eacfaac13a1064470c368b59c01da048d9b42e169c3d5bff",
@@ -5878,7 +5878,7 @@
         "peak": 1.0568416837602772,
         "max_step": 0.2506113922502792
       },
-      "circuit_sha256": "b339136115225d8eb0561e5ea1767c381cdd3f0cbd2f8d5ece7fa28b1eb354f7",
+      "circuit_sha256": "44800de6984537e137d92877b965c6fd0c31de890d0594c3ee01e9b645938488",
       "case": "Fairchild-660",
       "wave": "329fd5b58b7469c93225c533504a9002db4e72f4f52d675d40f1f2f485329180.f32.gz",
       "wave_sha256": "329fd5b58b7469c93225c533504a9002db4e72f4f52d675d40f1f2f485329180",
@@ -5912,7 +5912,7 @@
         "peak": 1.0568416837602521,
         "max_step": 0.25061139225025997
       },
-      "circuit_sha256": "b339136115225d8eb0561e5ea1767c381cdd3f0cbd2f8d5ece7fa28b1eb354f7",
+      "circuit_sha256": "44800de6984537e137d92877b965c6fd0c31de890d0594c3ee01e9b645938488",
       "case": "Fairchild-660",
       "wave": "7afab13b29ea35e7b43d0fd981c348c6a32b9fd12d8eebb9fbf88e1998702502.f32.gz",
       "wave_sha256": "7afab13b29ea35e7b43d0fd981c348c6a32b9fd12d8eebb9fbf88e1998702502",
@@ -5946,7 +5946,7 @@
         "peak": 1.0922937484148498,
         "max_step": 0.26368481065788885
       },
-      "circuit_sha256": "35f717e1c42d2579e4d4d6ee15f4a3e2c622b659548ed25ef27f6e12372f6eae",
+      "circuit_sha256": "89e122cb11b66fa0e6d5f9aab4b57be732e3c43708c257dc100d52aef2a25ca7",
       "case": "Gates-Sta-Level-M5167",
       "wave": "68d4bdc75dd40c7a92f46f6ddd5586b80c27a99798064f1ac023f810af47660b.f32.gz",
       "wave_sha256": "68d4bdc75dd40c7a92f46f6ddd5586b80c27a99798064f1ac023f810af47660b",
@@ -5980,7 +5980,7 @@
         "peak": 1.0922937482815493,
         "max_step": 0.2636848106576286
       },
-      "circuit_sha256": "35f717e1c42d2579e4d4d6ee15f4a3e2c622b659548ed25ef27f6e12372f6eae",
+      "circuit_sha256": "89e122cb11b66fa0e6d5f9aab4b57be732e3c43708c257dc100d52aef2a25ca7",
       "case": "Gates-Sta-Level-M5167",
       "wave": "32fa588b05ab235860951a89ba65515e69b72f4feea133bf2d1a9341ae0bfd1e.f32.gz",
       "wave_sha256": "32fa588b05ab235860951a89ba65515e69b72f4feea133bf2d1a9341ae0bfd1e",
@@ -6014,7 +6014,7 @@
         "peak": 1.092293748382283,
         "max_step": 0.2636848106577929
       },
-      "circuit_sha256": "35f717e1c42d2579e4d4d6ee15f4a3e2c622b659548ed25ef27f6e12372f6eae",
+      "circuit_sha256": "89e122cb11b66fa0e6d5f9aab4b57be732e3c43708c257dc100d52aef2a25ca7",
       "case": "Gates-Sta-Level-M5167",
       "wave": "979a663634860e2092a2bbed23dfd2091f02a1f6ed47c9b73854d736a86bd74b.f32.gz",
       "wave_sha256": "979a663634860e2092a2bbed23dfd2091f02a1f6ed47c9b73854d736a86bd74b",
@@ -9618,7 +9618,7 @@
         "peak": 26.699465080090075,
         "max_step": 51.25261580708491
       },
-      "circuit_sha256": "6389041791edc1d40681fa9099619ba9586d6a6619fa0c064fe12eac354ee19d",
+      "circuit_sha256": "0799d5d2d13367c5119242ed61b78d9734c22add8d316c9185354f3ff56a1f1f",
       "case": "Fender Deluxe Reverb AB763",
       "wave": "89e17aa14d5ee8c65daa309b6e91b65fdd123c3a153657e7c80e709a84e6aa1e.f32.gz",
       "wave_sha256": "89e17aa14d5ee8c65daa309b6e91b65fdd123c3a153657e7c80e709a84e6aa1e",
@@ -9652,7 +9652,7 @@
         "peak": 26.840619834362478,
         "max_step": 50.7063739726685
       },
-      "circuit_sha256": "6389041791edc1d40681fa9099619ba9586d6a6619fa0c064fe12eac354ee19d",
+      "circuit_sha256": "0799d5d2d13367c5119242ed61b78d9734c22add8d316c9185354f3ff56a1f1f",
       "case": "Fender Deluxe Reverb AB763",
       "wave": "f47bf016dec503dffcf0015c76c30725e4d299cc762b84ac84e17eb591ed6fb9.f32.gz",
       "wave_sha256": "f47bf016dec503dffcf0015c76c30725e4d299cc762b84ac84e17eb591ed6fb9",
@@ -9686,7 +9686,7 @@
         "peak": 26.839642576013162,
         "max_step": 50.7039097422893
       },
-      "circuit_sha256": "6389041791edc1d40681fa9099619ba9586d6a6619fa0c064fe12eac354ee19d",
+      "circuit_sha256": "0799d5d2d13367c5119242ed61b78d9734c22add8d316c9185354f3ff56a1f1f",
       "case": "Fender Deluxe Reverb AB763",
       "wave": "ace58f169ed6e0e384a6c769cf6feb7a6e206f530d32f12a8ec2c57a0472f0a7.f32.gz",
       "wave_sha256": "ace58f169ed6e0e384a6c769cf6feb7a6e206f530d32f12a8ec2c57a0472f0a7",
@@ -9720,7 +9720,7 @@
         "peak": 9.228062051031984,
         "max_step": 9.228056093076903
       },
-      "circuit_sha256": "5dc7720112ac032d547e6e0878bd5170d920e4454085c001a5663f9444881c5a",
+      "circuit_sha256": "09dab7dc8d9fa7f0570c917d8ff1d952680ee92fcb8fb8ce159b0dfac17234a5",
       "case": "Fender Princeton Reverb AA1164",
       "wave": "a73619480a2fbda0cc664458a1664c7f9fb29384b44e9a8ab5b6975541b0f259.f32.gz",
       "wave_sha256": "a73619480a2fbda0cc664458a1664c7f9fb29384b44e9a8ab5b6975541b0f259",
@@ -9754,7 +9754,7 @@
         "peak": 9.228062048751335,
         "max_step": 9.228056091805273
       },
-      "circuit_sha256": "5dc7720112ac032d547e6e0878bd5170d920e4454085c001a5663f9444881c5a",
+      "circuit_sha256": "09dab7dc8d9fa7f0570c917d8ff1d952680ee92fcb8fb8ce159b0dfac17234a5",
       "case": "Fender Princeton Reverb AA1164",
       "wave": "70935fa0fc02f29631b52d36b5844e6fcde1cbc45a6f1eb4afd5e892b9f57ad6.f32.gz",
       "wave_sha256": "70935fa0fc02f29631b52d36b5844e6fcde1cbc45a6f1eb4afd5e892b9f57ad6",
@@ -9788,7 +9788,7 @@
         "peak": 9.228062048751335,
         "max_step": 9.228056091805273
       },
-      "circuit_sha256": "5dc7720112ac032d547e6e0878bd5170d920e4454085c001a5663f9444881c5a",
+      "circuit_sha256": "09dab7dc8d9fa7f0570c917d8ff1d952680ee92fcb8fb8ce159b0dfac17234a5",
       "case": "Fender Princeton Reverb AA1164",
       "wave": "70935fa0fc02f29631b52d36b5844e6fcde1cbc45a6f1eb4afd5e892b9f57ad6.f32.gz",
       "wave_sha256": "70935fa0fc02f29631b52d36b5844e6fcde1cbc45a6f1eb4afd5e892b9f57ad6",
@@ -9822,7 +9822,7 @@
         "peak": 2.3148035011097696,
         "max_step": 0.5361364026447113
       },
-      "circuit_sha256": "500ab56bdc41387180bd247c535f636d722c7d671c34ed1915e5145b000ca20d",
+      "circuit_sha256": "a65507eea91daf25c3fd5250eab1e42d5a1c59f71e7e2a3155910d1790abba66",
       "case": "Fender Tweed Champ 5F1 - Input 1",
       "wave": "ed624e8a0272200d05c3bfb2ea05891a624791f0027074b7b98e61e5a8132851.f32.gz",
       "wave_sha256": "ed624e8a0272200d05c3bfb2ea05891a624791f0027074b7b98e61e5a8132851",
@@ -9856,7 +9856,7 @@
         "peak": 2.3148035011032424,
         "max_step": 0.5361364026952486
       },
-      "circuit_sha256": "500ab56bdc41387180bd247c535f636d722c7d671c34ed1915e5145b000ca20d",
+      "circuit_sha256": "a65507eea91daf25c3fd5250eab1e42d5a1c59f71e7e2a3155910d1790abba66",
       "case": "Fender Tweed Champ 5F1 - Input 1",
       "wave": "4b9994ed99f0f82398337d029d7feccc0a3d75904c63930d4dcdda5397fc042b.f32.gz",
       "wave_sha256": "4b9994ed99f0f82398337d029d7feccc0a3d75904c63930d4dcdda5397fc042b",
@@ -9890,7 +9890,7 @@
         "peak": 2.3148035011032424,
         "max_step": 0.5361364026952486
       },
-      "circuit_sha256": "500ab56bdc41387180bd247c535f636d722c7d671c34ed1915e5145b000ca20d",
+      "circuit_sha256": "a65507eea91daf25c3fd5250eab1e42d5a1c59f71e7e2a3155910d1790abba66",
       "case": "Fender Tweed Champ 5F1 - Input 1",
       "wave": "4b9994ed99f0f82398337d029d7feccc0a3d75904c63930d4dcdda5397fc042b.f32.gz",
       "wave_sha256": "4b9994ed99f0f82398337d029d7feccc0a3d75904c63930d4dcdda5397fc042b",
@@ -9924,7 +9924,7 @@
         "peak": 15.970488944293066,
         "max_step": 4.570203074265969
       },
-      "circuit_sha256": "cd19ea78405c7a6fdba6669c7363a0a5911a01b33a9048ece872a5c4c609467a",
+      "circuit_sha256": "4fd83e5c088e8aa2e95ca88967aa4617fa7547a1ee1f7a3f4cd2c6699891a06f",
       "case": "Fender Tweed Deluxe 5E3 - Instrument",
       "wave": "fea6eb991acb78aefe6c748a7f54e77e45e55b1ce5b135de01d484f8985e26ca.f32.gz",
       "wave_sha256": "fea6eb991acb78aefe6c748a7f54e77e45e55b1ce5b135de01d484f8985e26ca",
@@ -9958,7 +9958,7 @@
         "peak": 15.970488944265837,
         "max_step": 4.570203074222804
       },
-      "circuit_sha256": "cd19ea78405c7a6fdba6669c7363a0a5911a01b33a9048ece872a5c4c609467a",
+      "circuit_sha256": "4fd83e5c088e8aa2e95ca88967aa4617fa7547a1ee1f7a3f4cd2c6699891a06f",
       "case": "Fender Tweed Deluxe 5E3 - Instrument",
       "wave": "55e1c02295497989a1d2317e940cde17186c6d0482d57ce65f8cbcbadb3205b6.f32.gz",
       "wave_sha256": "55e1c02295497989a1d2317e940cde17186c6d0482d57ce65f8cbcbadb3205b6",
@@ -9992,7 +9992,7 @@
         "peak": 15.970488944265837,
         "max_step": 4.570203074222804
       },
-      "circuit_sha256": "cd19ea78405c7a6fdba6669c7363a0a5911a01b33a9048ece872a5c4c609467a",
+      "circuit_sha256": "4fd83e5c088e8aa2e95ca88967aa4617fa7547a1ee1f7a3f4cd2c6699891a06f",
       "case": "Fender Tweed Deluxe 5E3 - Instrument",
       "wave": "55e1c02295497989a1d2317e940cde17186c6d0482d57ce65f8cbcbadb3205b6.f32.gz",
       "wave_sha256": "55e1c02295497989a1d2317e940cde17186c6d0482d57ce65f8cbcbadb3205b6",
@@ -11326,8 +11326,8 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "7432f8da6986292d36413e8fcf1cc51e8a5b0e57",
-    "renderer_sha256": "dbd2540dd069e8a0cf5dbe069a5c203efe8ad3612f0613594120f0da74dcbaf2",
+    "declared_core_revision": "5762159d1e0c4e3926b9c80123697d73bede6f06",
+    "renderer_sha256": "537f7954bc55e43b875ea3109d7d7af19feee34a30eea798a05661dce57074b2",
     "sample_rate": 48000,
     "block_size": 128,
     "oversampling": 1,
