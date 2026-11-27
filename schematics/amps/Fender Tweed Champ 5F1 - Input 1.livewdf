@@ -429,11 +429,15 @@
       "id": "T1",
       "type": "transformer",
       "values": {
-        "turnsPrimary": 44.72135955,
+        "Lm": 20.382726,
+        "dcrPrimary": 329.73,
+        "dcrSecondary": 0.295,
+        "leakage": 0.037274019,
+        "turnsPrimary": 44.721359549995796,
         "turnsSecondary": 1.0
       },
       "properties": {
-        "model": "Real \u2014 Auto",
+        "model": "Real \u2014 Manual",
         "powerAmp": "1"
       },
       "visual": {
@@ -493,7 +497,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 41.741016
+        "fullScaleVolts": 41.640205
       },
       "properties": {},
       "visual": {
