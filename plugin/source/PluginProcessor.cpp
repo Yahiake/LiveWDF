@@ -344,9 +344,12 @@ bool LiveWDFPluginProcessor::compiledPreviewRequested() const {
            && *apvts_.getRawParameterValue("compiled_preview") > 0.5f;
 }
 
-// The drawn mains supply with its ripple only in Accurate; Fast and Preview use its DC equivalent, which costs what fixed rails did.
-bool LiveWDFPluginProcessor::mainsHumRequested() const {
-    return shouldForceAccurate() || *apvts_.getRawParameterValue("solve_quality") <= 0.5f;
+// The drawn mains supply with its ripple only in Accurate. Fast uses its sagging DC equivalent; Preview holds every
+// supply node at its idle voltage, because the filter chain otherwise couples the stages and costs more than fixed rails.
+LiveWDFPluginProcessor::MainsSupply LiveWDFPluginProcessor::mainsSupplyRequested() const {
+    if (shouldForceAccurate() || *apvts_.getRawParameterValue("solve_quality") <= 0.5f)
+        return MainsSupply::drawn;
+    return compiledPreviewRequested() ? MainsSupply::stiff : MainsSupply::sagging;
 }
 
 int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
@@ -392,7 +395,7 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
     const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
     const bool pentodePairModeChanged = previewPentodePairs_ && compiledPreviewRequested() != *previewPentodePairs_;
-    const bool mainsHumChanged = mainsHum_ && mainsHumRequested() != *mainsHum_;
+    const bool mainsHumChanged = mainsSupply_ && mainsSupplyRequested() != *mainsSupply_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
@@ -672,8 +675,8 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
     wdf::Circuit c;
     try {
         c = wdf::circuitWithPortImpedances(doc, &portPositions, &fixtureNames);
-        if (!mainsHumRequested())
-            wdf::replaceMainsSupplies(c, doc, fs);
+        if (const auto supply = mainsSupplyRequested(); supply != MainsSupply::drawn)
+            wdf::replaceMainsSupplies(c, doc, fs, supply == MainsSupply::stiff);
     } catch (const std::exception& e) {
         left.reset();
         right.reset();
@@ -884,13 +887,13 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
 
     powerAmpEnabled_ = hasPowerAmp ? std::optional(enablePowerAmp) : std::nullopt;
     previewPentodePairs_ = newPreviewPentodePairs;
-    mainsHum_ = playbackDoc.hasAcPowerSupply() ? std::optional(mainsHumRequested()) : std::nullopt;
+    mainsSupply_ = playbackDoc.hasAcPowerSupply() ? std::optional(mainsSupplyRequested()) : std::nullopt;
     rejectedPortRequest_.reset();
     auto cacheKey = wdf::playbackCacheKey(playbackDoc, fixtureNames);
     if (previewPentodePairs_.value_or(false))
         cacheKey += "\npreview-pentode-pairs";
-    if (!mainsHum_.value_or(true))
-        cacheKey += "\nmains-dc-equivalent";
+    if (mainsSupply_.value_or(MainsSupply::drawn) != MainsSupply::drawn)
+        cacheKey += mainsSupply_ == MainsSupply::stiff ? "\nmains-stiff" : "\nmains-dc-equivalent";
     cacheDocument_ = std::make_shared<const std::string>(std::move(cacheKey));
     settledControlCircuit_ = std::move(newSettledControlCircuit);
     // **A meter is a thing on the sheet**: `allProbes()` asks the drawing for

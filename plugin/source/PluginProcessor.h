@@ -147,7 +147,8 @@ public:
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
 
     bool compiledPreviewRequested() const;
-    bool mainsHumRequested() const;
+    enum class MainsSupply { drawn, sagging, stiff };
+    MainsSupply mainsSupplyRequested() const;
 
     /// The rate the host handed to `prepareToPlay`. This is the rate the
     /// engine is compiled at (times the oversampling factor), which is the one
@@ -190,7 +191,7 @@ private:
     bool attemptedGridCurrent_ = true;
     std::optional<bool> powerAmpEnabled_;
     std::optional<bool> previewPentodePairs_;
-    std::optional<bool> mainsHum_;
+    std::optional<MainsSupply> mainsSupply_;
     int currentOversamplingFactor_ = 1;
     bool useHalfBand_ = false;
     bool oversamplersPrepared_ = false;
