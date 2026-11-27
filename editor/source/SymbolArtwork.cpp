@@ -152,6 +152,7 @@ int assetForType(const std::string& type) {
     if (type == "pentode")     return static_cast<int>(Asset::Pentode);
     if (type == "in")          return static_cast<int>(Asset::Input);
     if (type == "out")         return static_cast<int>(Asset::Output);
+    if (type == "net_label")   return static_cast<int>(Asset::Output);
     if (type == "gnd")         return static_cast<int>(Asset::Ground);
     if (type == "ctrlres")     return static_cast<int>(Asset::ControlledResistor);
     if (type == "photores")    return static_cast<int>(Asset::Photoresistor);

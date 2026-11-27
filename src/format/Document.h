@@ -188,6 +188,16 @@ struct ProbeMarker {
 // old symbol is refused rather than shifted behind the user's back.
 inline constexpr int kLiveWDFVersion = 3;
 
+inline bool validNetLabelName(const std::string& name, const std::string& groundName = "0") {
+    if (name.empty() || name == groundName || name == "in" || name == "out")
+        return false;
+    if (name[0] != 'n' || name.size() == 1)
+        return true;
+    return !std::all_of(name.begin() + 1, name.end(), [](char c) {
+        return c >= '0' && c <= '9';
+    });
+}
+
 struct LiveWDFDocument {
     int version = kLiveWDFVersion;
     std::string name = "Untitled Circuit";
@@ -445,6 +455,29 @@ struct LiveWDFDocument {
                          });
 
         return loose;
+    }
+
+    std::vector<std::pair<std::string, std::string>> netLabelWarnings() const {
+        std::map<std::string, int> counts;
+        for (const auto& comp : components)
+            if (comp.type == "net_label") {
+                const auto labelName = comp.properties.find("name");
+                if (labelName != comp.properties.end() && validNetLabelName(labelName->second, groundNode))
+                    ++counts[labelName->second];
+            }
+
+        std::vector<std::pair<std::string, std::string>> warnings;
+        for (const auto& comp : components) {
+            if (comp.type != "net_label")
+                continue;
+            const auto labelName = comp.properties.find("name");
+            if (labelName == comp.properties.end() || !validNetLabelName(labelName->second, groundNode))
+                warnings.emplace_back(comp.id, "Net label " + comp.id +
+                    " needs a name other than ground, in, out, or n<digits>");
+            else if (counts[labelName->second] == 1)
+                warnings.emplace_back(comp.id, "Net label '" + labelName->second + "' occurs only once");
+        }
+        return warnings;
     }
 
     /// The net the scope probe watches: the "probe" pin of the first Scope Probe
