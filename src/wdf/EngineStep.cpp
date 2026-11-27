@@ -463,7 +463,8 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
             auto& lamp = photoresistors_[photo.lamp];
             if (&lamp == &photo) {
                 const auto& control = *circuit_.ctrlRes[photo.index].photo;
-                lamp.illumination = control.illumination(photoSenseVoltage(photo, node_, sourceValues, sourceCount));
+                lamp.illumination = control.illumination(
+                    latchedPhotoVolts(lamp, control, photoSenseVoltage(photo, node_, sourceValues, sourceCount)));
             }
             target = photo.dark + photo.span * lamp.illumination;
         } else {
