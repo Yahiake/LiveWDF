@@ -167,14 +167,15 @@ def run():
     parser.add_argument('--verify', action='store_true')
     parser.add_argument('--preamp-only', action='store_true', help='calibrate the selected presets at their preamp tap')
     parser.add_argument('--fast-live', action='store_true', help='verify the same divisor in 1x Fast Live')
+    parser.add_argument('--live-preview', action='store_true', help='verify the same divisor in 1x Preview')
     parser.add_argument('--jobs', type=int, default=1)
     parser.add_argument('--catalog', type=Path, default=ROOT / 'schematics')
     parser.add_argument('--filter', default='')
     parser.add_argument('--amp-di', action='store_true',
                         help='fit with palm mutes and strummed chords, then verify with picked notes')
     args = parser.parse_args()
-    if args.fast_live and not args.verify:
-        parser.error('--fast-live is a verification mode; fit once in Accurate')
+    if (args.fast_live or args.live_preview) and not args.verify:
+        parser.error('--fast-live and --live-preview are verification modes; fit once in Accurate')
     bench = args.bench.resolve()
     catalog = args.catalog.resolve()
     paths = [p for p in sorted(catalog.rglob('*.livewdf')) if args.filter.lower() in p.stem.lower()]
@@ -213,12 +214,17 @@ def run():
                 result = subprocess.run([str(bench), str(load), '--calibration-render',
                                          str(work / (profile + '.f32')), str(dest),
                                          *(['--fast-live'] if args.fast_live else []),
+                                         *(['--live-preview'] if args.live_preview else []),
                                          *(['--preamp-only'] if args.preamp_only else [])],
                                         capture_output=True, timeout=300, text=True)
                 if result.returncode:
                     raise RuntimeError((result.stderr or result.stdout)[-350:])
                 values = np.fromfile(dest, dtype='=f4')
                 row.update(measure(inputs[profile], values, gate, volts, vin, args.verify))
+                if args.fast_live or args.live_preview:
+                    # A mode whose level differs takes this as its fastTrim or previewTrim beside fullScaleVolts.
+                    trim = out.get('previewTrim' if args.live_preview else 'fastTrim', 1.)
+                    row['recommended_trim'] = trim * row['recommended_output_divisor_V'] / volts
                 dest.unlink()
             except (ValueError, KeyError, RuntimeError, OSError, StopIteration,
                     subprocess.SubprocessError) as e:
@@ -229,7 +235,7 @@ def run():
                 'measured_output_divisor_V', 'recommended_output_divisor_V',
                 'match_error_minus12_dB', 'match_error_minus9_dB', 'match_error_minus6_dB',
                 'median_match_error_dB', 'holdout_minus9_dB', 'max_output_peak_dBFS',
-                'settled_silence_dc_V', 'startup_peak_dBFS', 'error']
+                'settled_silence_dc_V', 'startup_peak_dBFS', 'recommended_trim', 'error']
         bad = 0
         with args.report.open('w', newline='') as target, ThreadPoolExecutor(args.jobs) as pool:
             writer = csv.DictWriter(target, keys)

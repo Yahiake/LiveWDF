@@ -55,6 +55,8 @@ Presets marked `amp` in the output table fit on palm mutes and strummed chords f
 
 To add this option to a schematic, set `properties.powerAmp` to `"1"` on the components to remove, including any feedback from the power stage. On a retained component at the preamp output, set `properties.preampTap` to its signal pin name and `values.preampFullScaleVolts` to its calibrated output divisor. A shared rail can use `values.preampDc` to maintain its voltage under the reduced load. Set `properties.preampOnly` to `"1"` on a component that only connects the preamp tap when the power stage is off.
 
+Fast and Preview solve some tubes with cheaper laws. Where their level differs from Accurate, the Output terminal carries `values.fastTrim` and `values.previewTrim`, which multiply `fullScaleVolts` in that mode; absent means 1. Take them from the `recommended_trim` column of the `--fast-live` and `--live-preview` verifications.
+
 The sweep runs the plugin at 48 kHz, mono, 1×, in 128-frame callbacks with 100% wet mix and unity Trim and Output. It measures digital output level. Real-time deadlines and agreement with physical hardware require separate measurements.
 
 To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute its path below. The script requires Python 3, NumPy, SciPy and FFmpeg. For the mixed amp DI sweep, pass `--amp-di` and select the desired presets with `--filter` or `--catalog`.
@@ -63,5 +65,6 @@ To repeat the measurement, build the `LiveWDF_PluginBench` target and substitute
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fit.csv
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench accurate.csv --verify
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench fast.csv --verify --fast-live
+python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench preview.csv --verify --live-preview
 python3 tools/calibrate_factory_outputs.py /path/to/LiveWDF_PluginBench amp-preamp.csv --catalog schematics/amps --amp-di --preamp-only --verify
 ```
