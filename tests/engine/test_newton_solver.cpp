@@ -601,3 +601,19 @@ TEST_CASE("A NaN Newton iterate does not pass as a converged DC operating point"
         engine.step(sources);
     REQUIRE(engine.stateRejectCount() == 0);
 }
+
+TEST_CASE("An oscillator without a DC operating point starts near its running state", "[newton][robustness]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/pedals_fx/Boss BF-2 Flanger.livewdf", error));
+    for (auto& part : document.components)
+        if (part.id == "VR1")
+            part.values["pos"] = 0.0;
+    const auto circuit = document.toCircuit();
+    std::vector<double> sources;
+    for (const auto& source : circuit.src)
+        sources.push_back(source.dc);
+    wdf::Engine engine(circuit, 48000.0);
+    const int out = engine.nodeIndex(document.outputNet());
+    REQUIRE(std::abs(engine.step(sources)[static_cast<size_t>(out)]) < 0.01);
+}
