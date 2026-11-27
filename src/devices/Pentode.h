@@ -69,7 +69,7 @@ struct QuadricEmission {
     }
 };
 
-// Fitted to the Reefman cards below; EL84 keeps Reefman until a fit is close enough.
+// Fitted emission laws for the Reefman cards below.
 // Regenerate with gen_table.py from the coefficient JSON files.
 inline constexpr QuadricEmission kQuadricEL34{
     {0.146270568032, 0.120203389709, 0.0927705047465, 0.189615508236, 0.0553450489352},
@@ -199,6 +199,7 @@ struct ReefmanPentode {
         r.wv = 58.0;
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
+        r.quadric = &kQuadricEL84;
         r.count = count;
         return r;
     }
@@ -481,12 +482,6 @@ struct ReefmanPentode {
         return vnew;
     }
 };
-
-/// The EL84 fit is cheaper but further from its Reefman card, so only Fast and Preview take it.
-inline const QuadricEmission* fastQuadricFor(ReefmanPentode r) noexcept {
-    r.count = 1.0;
-    return r == ReefmanPentode::el84() ? &kQuadricEL84 : r.quadric;
-}
 
 /// Authentic three-port Norman Koren (1996/2001) pentode model with active screen conduction:
 ///
