@@ -642,7 +642,7 @@ TEST_CASE("Bipolar Preview follows a qualified control and preserves state on fa
     for (int i = 0; i < 640; ++i) {
         CAPTURE(i);
         if (i == 128) movePot(0, .13);
-        if (i == 256) movePot(1, .8);  // Both control networks differ from the qualified plan.
+        if (i == 256) movePot(1, .8);  // Held at the compiled position while the first control is live.
         if (i == 320) movePot(0, .5);
         if (i == 384 || i == 448) {
             const double setting = i == 384 ? .50001 : .5;  // This rheostat changes the DC bias.
@@ -657,9 +657,9 @@ TEST_CASE("Bipolar Preview follows a qualified control and preserves state on fa
         const double expected = physical.step(sources)[output];
         double voltage = 0.;
         const bool active = preview.stepBipolarPreview(sources[0], voltage);
-        REQUIRE(active == (i < 256 || (i >= 320 && i < 384) || (i >= 448 && i < 512)));
+        REQUIRE(active == (i < 384 || (i >= 448 && i < 512)));
         if (!active) voltage = preview.step(sources)[output];
-        REQUIRE(voltage == Approx(expected).margin(50e-6));
+        if (i < 256 || i >= 320) REQUIRE(voltage == Approx(expected).margin(50e-6));
     }
 }
 

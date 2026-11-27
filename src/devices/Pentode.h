@@ -77,6 +77,12 @@ inline constexpr QuadricEmission kQuadricEL34{
     {0.00272866786428, 0.0108675644153, 0.0311899675706, 0.000338237719548, 0.0425556768557},
     0.105, 0.00408070934105, 1.6e-06, 0.000512767921239, 0.00312275664034};
 inline constexpr QuadricEmission kQuadric6L6GC{
+    {0.372459360661, 0.105362788647, 0.0368435498852, 0.0661503846848, 0.00500000000126},
+    {24.9999995649, -11.5033736576, -12.0548484009, 24.888132515, -2.58337583801},
+    {2.89314279738e-06, 0.000105123050115, 3.5453144483e-05, 0.0074594868438, 0.000742684157285},
+    0.0548896189473, 1.0, 0.000380824543824, 0.0379148763953, 0.492122847629};
+// The cheaper fit to the Reefman card keeps Preview inside its headroom.
+inline constexpr QuadricEmission kQuadric6L6GCPreview{
     {0.170219523967, 0.142616525263, 0.11307917015, 0.217636087066, 0.0729490552428},
     {-5.54151904163, -5.53857990429, -7.04389240158, -5.504627238, -9.90692531081},
     {0.00346625766973, 0.0105724907037, 0.0233999810999, 0.000529542856001, 0.0280165437189},
@@ -127,6 +133,7 @@ struct ReefmanPentode {
     double count = 1.0;
 
     const QuadricEmission* quadric = nullptr;
+    const QuadricEmission* previewQuadric = nullptr;
 
     bool operator==(const ReefmanPentode&) const = default;
 
@@ -177,6 +184,7 @@ struct ReefmanPentode {
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
         r.quadric = &kQuadric6L6GC;
+        r.previewQuadric = &kQuadric6L6GCPreview;
         r.count = count;
         return r;
     }
