@@ -188,6 +188,15 @@ private:
     // from 0.65 of the host rate, where the images of the host samples start.
     static const std::array<std::array<double, kTaps>, kPhases + 1>& kernel() {
         static const auto table = [] {
+            // Kaiser window's I0 as its power series: Apple's libc++ has no std::cyl_bessel_i.
+            const auto besselI0 = [](double x) {
+                double sum = 1.0, term = 1.0;
+                for (int k = 1; k < 40; ++k) {
+                    term *= (x / (2.0 * k)) * (x / (2.0 * k));
+                    sum += term;
+                }
+                return sum;
+            };
             std::array<std::array<double, kTaps>, kPhases + 1> t{};
             for (std::size_t p = 0; p <= kPhases; ++p) {
                 double sum = 0.0;
@@ -195,7 +204,7 @@ private:
                     const double x = double(p) / kPhases - kTaps / 2.0 + double(i);
                     const double r = x / (kTaps / 2.0);
                     const double sinc = x == 0.0 ? 1.0 : std::sin(std::numbers::pi * x) / (std::numbers::pi * x);
-                    t[p][i] = std::abs(r) < 1.0 ? sinc * std::cyl_bessel_i(0.0, 7.0 * std::sqrt(1.0 - r * r)) : 0.0;
+                    t[p][i] = std::abs(r) < 1.0 ? sinc * besselI0(7.0 * std::sqrt(1.0 - r * r)) : 0.0;
                     sum += t[p][i];
                 }
                 for (auto& v : t[p])
