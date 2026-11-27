@@ -27,7 +27,9 @@ public:
                           double gminOverride,
                           double tol,
                           const std::vector<double>* warmStart,
-                          const std::vector<double>* currentOverrides = nullptr) {
+                          const std::vector<double>* currentOverrides = nullptr,
+                          double capStep = 0.0,
+                          const std::vector<double>* capVolts = nullptr) {
         const bool savedStatic = eng.staticMode_;
         eng.staticMode_ = true;
         struct StaticModeGuard {
@@ -40,9 +42,10 @@ public:
         elements.reserve(static_cast<size_t>(eng.P_));
         for (int j = 0; j < eng.P_; ++j) {
             double g = eng.net_.eG[j];
-            if (eng.net_.capOf[j] >= 0)
-                g = eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])].holdsDc ? 1.0 : 0.0;
-            else if (eng.net_.indOf[j] >= 0)
+            if (eng.net_.capOf[j] >= 0) {
+                const auto& cap = eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])];
+                g = cap.holdsDc ? 1.0 : capStep > 0.0 ? cap.value / capStep : 0.0;
+            } else if (eng.net_.indOf[j] >= 0)
                 g = 1.0 / kIndDcR;
             elements.push_back({eng.net_.epA[j], eng.net_.epB[j], g});
         }
@@ -146,6 +149,8 @@ public:
             if (eng.net_.capOf[j] >= 0 && eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])].holdsDc)
                 eoff[static_cast<size_t>(j)] -=
                     sourceScale * *eng.circuit_.cap[static_cast<size_t>(eng.net_.capOf[j])].initialVolts;
+            else if (eng.net_.capOf[j] >= 0 && capStep > 0.0)
+                eoff[static_cast<size_t>(j)] -= (*capVolts)[static_cast<size_t>(eng.net_.capOf[j])];
         }
         for (int r = 0; r < eng.K_; ++r)
             roff[static_cast<size_t>(r)] =
@@ -466,7 +471,7 @@ public:
 
         const double gmin = 1e-10;
         if (!solveDcAt(eng, nodeTry, rootTry, 0.0, gmin, tol, nullptr, currentOverrides))
-            return false;
+            return solvePseudoTransient(eng, node, rootV, currentOverrides);
 
         std::vector<double> warm = rootTry;
         double reached = 0.0;
@@ -490,8 +495,47 @@ public:
             } else {
                 rung *= 0.5;
                 if (rung < 1.0 / 1024.0)
-                    return false;
+                    return solvePseudoTransient(eng, node, rootV, currentOverrides);
             }
+        }
+        return solvePseudoTransient(eng, node, rootV, currentOverrides);
+    }
+
+    // ngspice's transient-op fallback, for circuits such as the CE-2 LFO that
+    // no Newton start reaches: ramp the supplies with the capacitors as
+    // backward-Euler companions until the state settles, then polish.
+    template <typename EngineType>
+    static bool solvePseudoTransient(const EngineType& eng, std::vector<double>& node,
+                                     std::vector<double>& rootV,
+                                     const std::vector<double>* currentOverrides) {
+        std::vector<double> capV(eng.circuit_.cap.size(), 0.0), nodeTry, rootTry, warm;
+        const auto across = [&](int j) {
+            const int a = eng.net_.epA[j], b = eng.net_.epB[j];
+            return (a >= 0 ? nodeTry[static_cast<size_t>(a)] : 0.0) -
+                   (b >= 0 ? nodeTry[static_cast<size_t>(b)] : 0.0);
+        };
+        const double ramp = 1e-3;
+        double t = 0.0, h = 1e-6;
+        for (int step = 0; step < 2000 && h > 1e-12; ++step) {
+            const double scale = std::min(1.0, (t + h) / ramp);
+            if (!solveDcAt(eng, nodeTry, rootTry, scale, 0.0, 1e-10,
+                           warm.empty() ? nullptr : &warm, currentOverrides, h, &capV)) {
+                h *= 0.25;
+                continue;
+            }
+            double moved = 0.0;
+            for (int j = 0; j < eng.P_; ++j) {
+                const int c = eng.net_.capOf[j];
+                if (c < 0 || eng.circuit_.cap[static_cast<size_t>(c)].holdsDc)
+                    continue;
+                moved = std::max(moved, std::fabs(across(j) - capV[static_cast<size_t>(c)]));
+                capV[static_cast<size_t>(c)] = across(j);
+            }
+            t += h;
+            warm = rootTry;
+            if (scale == 1.0 && (moved < 1e-9 || h > 1e6))
+                return solveDcAt(eng, node, rootV, 1.0, 0.0, 1e-10, &warm, currentOverrides);
+            h *= 2.0;
         }
         return false;
     }
