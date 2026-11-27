@@ -746,7 +746,8 @@
         "stages": 1024,
         "transferLoss": 1.57e-4,
         "kneeWidth": 0.19,
-        "evenOrder": 0.012
+        "evenOrder": 0.012,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,

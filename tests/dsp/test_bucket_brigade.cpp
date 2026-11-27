@@ -29,6 +29,7 @@ wdf::BucketBrigadeModel clockedModel() {
     model.transferLoss = 0.0;
     model.kneeWidth = 0.0;
     model.evenOrder = 0.0;
+    model.slowClockLossDb = 0.0;
     return model;
 }
 

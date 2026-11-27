@@ -1007,7 +1007,8 @@
         "stages": 2048,
         "transferLoss": 1.35e-4,
         "kneeWidth": 0.36,
-        "evenOrder": 0.057
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1195,7 +1196,8 @@
         "stages": 2048,
         "transferLoss": 1.35e-4,
         "kneeWidth": 0.36,
-        "evenOrder": 0.057
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1383,7 +1385,8 @@
         "stages": 2048,
         "transferLoss": 1.35e-4,
         "kneeWidth": 0.36,
-        "evenOrder": 0.057
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1571,7 +1574,8 @@
         "stages": 2048,
         "transferLoss": 1.35e-4,
         "kneeWidth": 0.36,
-        "evenOrder": 0.057
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,

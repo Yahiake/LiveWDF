@@ -29,6 +29,9 @@ struct BucketBrigadeModel {
     // swing, fitted to the MN3005 data sheet's THD against input at 40 kHz.
     double kneeWidth = 0.1;
     double evenOrder = 0.014;
+    // Insertion loss at a 1 kHz clock, falling with the square root of the
+    // clock rate, read off the MN3005 data sheet's Gi-fcp curve.
+    double slowClockLossDb = 0.5;
 
     bool valid() const noexcept {
         return stages >= 2 && stages <= 32768 && stages % 2 == 0 &&
@@ -39,7 +42,8 @@ struct BucketBrigadeModel {
                std::isfinite(gain) && gain > 0.0 &&
                std::isfinite(outputOhms) && outputOhms > 0.0 &&
                transferLoss >= 0.0 && stages * transferLoss <= 1.0 &&
-               kneeWidth >= 0.0 && kneeWidth < 1.0 && std::abs(evenOrder) < 0.25;
+               kneeWidth >= 0.0 && kneeWidth < 1.0 && std::abs(evenOrder) < 0.25 &&
+               slowClockLossDb >= 0.0 && slowClockLossDb < 20.0;
     }
 
     double clockPeriod(double control) const noexcept {
@@ -90,7 +94,7 @@ public:
         position_ = 0;
         phase_ = 0.0;
         previousInput_ = input;
-        output_ = model_.outputVoltage(input);
+        output_ = restingOutput_ = model_.outputVoltage(input);
         std::fill(ring_.begin(), ring_.end(), output_);
         history_.fill(output_);
     }
@@ -109,6 +113,8 @@ public:
         if (!(edges >= 0.0 && edges < std::ldexp(1.0, std::numeric_limits<unsigned>::digits)))
             return output_;
         const auto clockEdges = static_cast<unsigned>(edges);
+        const double retained = std::pow(10.0, -0.05 * model_.slowClockLossDb *
+                                                   std::sqrt(1.0e3 * model_.clockPeriod(control)));
         for (unsigned i = 0; i < clockEdges; ++i) {
             const double at = (1.0 - phase_ + i) / cycles;
             const double sample = std::lerp(previousInput_, input, std::clamp(at, 0.0, 1.0));
@@ -117,6 +123,7 @@ public:
             output_ = 0.0;
             for (std::size_t k = 0; k < taps_.size(); ++k)
                 output_ += taps_[k] * history_[(historyPosition_ + history_.size() - k) % history_.size()];
+            output_ = restingOutput_ + retained * (output_ - restingOutput_);
             ring_[position_] = model_.outputVoltage(sample);
             if (++position_ == ring_.size())
                 position_ = 0;
@@ -136,6 +143,7 @@ private:
     double phase_ = 0.0;
     double previousInput_ = 0.0;
     double output_ = 0.0;
+    double restingOutput_ = 0.0;
 };
 
 } // namespace wdf
