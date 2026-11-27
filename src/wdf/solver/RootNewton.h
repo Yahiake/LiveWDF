@@ -90,6 +90,7 @@ struct NewtonContext {
     bool skipIdenticalRetry = false;
     bool pentodePreview = false;
     double modeTol = 0.0;
+    const unsigned char* frozen = nullptr;  ///< Replayed ports: their residual is not the solve's
 };
 
 class RootNewton {
@@ -133,9 +134,8 @@ public:
                                     const std::vector<double>& vOc, const std::vector<double>& Z,
                                     const std::vector<double>& i, std::vector<double>& F) noexcept {
         if (ctx.sharedColumns && ctx.sharedColumns->residual(
-                v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data()))
-            return;
-        if (!ctx.Zred.empty()) {
+                v.data(), vOc.data(), i.data(), ctx.redCol.data(), ctx.K, F.data())) {
+        } else if (!ctx.Zred.empty()) {
             RootResidual::residualIntoFast(
                 v.data(), vOc.data(), ctx.Zred.data(), i.data(), F.data(),
                 ctx.redCol.data(), ctx.nRed, ctx.K);
@@ -144,6 +144,8 @@ public:
                 v.data(), vOc.data(), Z.data(), i.data(), F.data(),
                 ctx.redCol.data(), ctx.nRed, ctx.K);
         }
+        for (int r = 0; ctx.frozen && r < ctx.K; ++r)
+            F[static_cast<size_t>(r)] *= !ctx.frozen[r];
     }
 
     static double roundingFloor(const NewtonContext& ctx) noexcept {

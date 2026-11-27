@@ -108,6 +108,10 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     triodeDomainTransfer_.prepare(Z_, K_, rootDevices_);
     prepareSlowLag();
     prepareLampReplay();
+    if (lamp_.held > 0.0) {
+        sharedNewtonColumns_.prepare(lamp_.Zred, K_, lamp_.nRed, lamp_.devices);
+        triodeDomainTransfer_.prepare(lamp_.Z, K_, rootDevices_);
+    }
 }
 
 void EngineStep::prepareLampReplay() {
@@ -138,32 +142,88 @@ void EngineStep::prepareLampReplay() {
         lamp_.frozen.assign(size_t(K_), 0);
         for (const int p : lamp_.ports) lamp_.frozen[size_t(p)] = 1;
         lamp_.watch = int(photo.index);
+        lamp_.port = own->portBase;
         lamp_.length = int(fs_);
         lamp_.ring.assign(size_t(lamp_.length) * (lamp_.ports.size() + 1), 0.0);
         lamp_.zLamp.assign(lamp_.ports.size() * lamp_.ports.size(), 0.0);
         lamp_.order.reserve(rootDevices_.size());
+
+        // Record one period with the lamp side solved alone from the DC point. Preview so loses the few
+        // percent the rate drifts while playing, which the supply carries back to the oscillator.
+        lamp_.alone.assign(size_t(K_), 1);
+        for (const int p : lamp_.ports) lamp_.alone[size_t(p)] = 0;
+        std::vector<double> sources;
+        for (const auto& s : circuit_.src) sources.push_back(s.dc);
+        for (const auto& s : circuit_.isrc) sources.push_back(s.dc);
+        for (int n = 0; n < 30 * lamp_.length && !lamp_.period; ++n)
+            step(sources);
+        lamp_.alone.clear();
+
+        // Fold only a cell from a node to ground whose other neighbours are tube ports.
+        const int r = lamp_.port;
+        bool fits = lamp_.period && (rootPortInfo_[size_t(r)].a == N_ || rootPortInfo_[size_t(r)].b == N_);
+        for (const auto& d : rootDevices_)
+            for (int p = d.portBase; p < d.portBase + d.numPorts && fits; ++p)
+                fits = p == r || lamp_.frozen[size_t(p)] || Z_[size_t(r) * K_ + p] == 0.0 ||
+                       d.kind == DeviceKind::Triode || d.kind == DeviceKind::Pentode;
+        if (!fits) {
+            lamp_.held = 0.0;
+            return;
+        }
+        lamp_.frozen[size_t(r)] = 1;
+        for (auto d : rootDevices_) {
+            if (lamp_.frozen[size_t(d.portBase)])
+                continue;
+            for (int q = 0; q < d.numActiveRows; ++q)
+                lamp_.redCol.push_back(redCol_[size_t(d.activeRowBase + q)]);
+            d.activeRowBase = lamp_.nRed;
+            lamp_.nRed += d.numActiveRows;
+            lamp_.devices.push_back(d);
+        }
+        lamp_.Z.resize(Z_.size());
+        lamp_.Zred.resize(size_t(K_) * size_t(lamp_.nRed));
+        foldLamp();
         return;
     }
 }
 
+void EngineStep::foldLamp() {
+    auto& L = lamp_;
+    const size_t r = size_t(L.port), K = size_t(K_);
+    const double k = 1.0 / (Z_[r * K + r] + L.held);
+    for (size_t p = 0; p < K; ++p)
+        for (size_t q = 0; q < K; ++q)
+            L.Z[p * K + q] = p == r || q == r ? 0.0 : Z_[p * K + q] - Z_[p * K + r] * Z_[r * K + q] * k;
+    for (size_t p = 0; p < K; ++p)
+        for (int j = 0; j < L.nRed; ++j)
+            L.Zred[p * size_t(L.nRed) + j] = L.Z[p * K + size_t(L.redCol[size_t(j)])];
+    L.foldedControls = liveControlRevision();
+}
+
 void EngineStep::stepLampReplay() {
     auto& L = lamp_;
+    if (!loadedJunctionEnabled_ && L.alone.empty())
+        return;
     const size_t nS = L.ports.size(), w = nS + 1;
-    bool moved = L.rebuilds != linearRebuilds() || !loadedJunctionEnabled_;
+    bool moved = L.rebuilds != linearRebuilds();
     for (size_t i = 0; i < nS * nS && !moved && L.controls != liveControlRevision(); ++i)
         moved = L.zLamp[i] != Z_[size_t(L.ports[i / nS]) * K_ + L.ports[i % nS]];
     L.controls = liveControlRevision();
-    if (moved) {
+    // A recorded curve keeps playing after a control move until the curve recorded for the new setting is installed.
+    if (moved && L.period) {
+        L.rebuilds = linearRebuilds();
+    } else if (moved) {
         L.n = L.period = L.previous = 0;
         L.crossing = -1;
         L.mid = NAN;
+        L.span = 0.0;
+        L.lengths.clear();
+        L.spans.clear();
         L.lo = HUGE_VAL;
         L.hi = -HUGE_VAL;
         L.rebuilds = linearRebuilds();
         for (size_t i = 0; i < nS * nS; ++i) L.zLamp[i] = Z_[size_t(L.ports[i / nS]) * K_ + L.ports[i % nS]];
     }
-    if (!loadedJunctionEnabled_)
-        return;
     if (L.period) {
         const double* rec = &L.ring[size_t((L.base + L.phase) % L.length) * w];
         for (size_t i = 0; i < nS; ++i) ii_[size_t(L.ports[i])] = rec[i];
@@ -175,23 +235,42 @@ void EngineStep::stepLampReplay() {
         L.phase = (L.phase + 1) % L.period;
         return;
     }
-    // Record until two successive periods of the watched resistance agree, then loop the last one.
+    // Record until two successive periods of the watched resistance agree, then loop the last one. Alone the neon
+    // relaxation never repeats exactly, so after settling it loops the first cycle of median length and swing.
     double* rec = &L.ring[size_t(L.n % L.length) * w];
     for (size_t i = 0; i < nS; ++i) rec[i] = ii_[size_t(L.ports[i])];
     const double x = rec[nS] = std::log(ctrlResValues_[size_t(L.watch)]);
     if (L.previous && L.n >= L.previous)
         L.deviation = std::max(L.deviation, std::abs(x - L.ring[size_t((L.n - L.previous) % L.length) * w + nS]));
     const double mid = std::isnan(L.mid) ? 0.5 * (L.lo + L.hi) : L.mid;
-    if (L.n > 0 && L.last < mid && x >= mid) {
+    if (L.n > 0 && L.last < mid && x >= mid && L.lo < mid - std::max(0.05, 0.25 * L.span)) {
         const long long p = L.n - L.crossing;
-        if (L.crossing >= 0 && L.previous && std::abs(p - L.previous) <= 1 && L.deviation <= 0.02 &&
-            p < L.length && L.hi - L.lo > 0.1) {
+        const auto median = [](std::vector<double> v) {
+            std::nth_element(v.begin(), v.begin() + v.size() / 2, v.end());
+            return v[v.size() / 2];
+        };
+        bool clean = L.alone.empty() && L.previous && std::abs(p - L.previous) <= 1 && L.deviation <= 0.02;
+        if (!L.alone.empty() && L.crossing >= 2 * L.length) {
+            clean = L.lengths.size() >= 16 && std::abs(p - median(L.lengths)) <= 0.01 * median(L.lengths) &&
+                    std::abs(L.hi - L.lo - median(L.spans)) <= 0.05 * median(L.spans);
+            L.lengths.push_back(double(p));
+            L.spans.push_back(L.hi - L.lo);
+        }
+        if (L.crossing >= 0 && clean && p < L.length && L.hi - L.lo > 0.1) {
             L.period = int(p);
             L.base = int((L.n + 1 - p) % L.length);
             L.phase = 0;
+            // The held value keeps the mean current the cell draws from its own open-circuit voltage.
+            const double z = Z_[size_t(L.port) * K_ + L.port];
+            double k = 0.0;
+            for (int s = 0; s < L.period; ++s)
+                k += 1.0 / (z + std::exp(L.ring[size_t((L.base + s) % L.length) * w + nS]));
+            L.held = L.period / k - z;
+            L.foldedControls = -1;
         }
         L.previous = L.crossing >= 0 && p < L.length ? int(p) : 0;
         L.mid = 0.5 * (L.lo + L.hi);
+        L.span = L.hi - L.lo;
         L.lo = HUGE_VAL;
         L.hi = -HUGE_VAL;
         L.deviation = 0.0;

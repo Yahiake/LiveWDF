@@ -186,6 +186,7 @@ public:
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
+    void foldLamp();
     bool slowLagActive() const noexcept {
         return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
                !fineBlockSolver_;
