@@ -186,7 +186,8 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.00055,
+        "pos": 0.00046934224143064726,
+        "taperMid": 0.15,
         "totalR": 1000000.0
       },
       "visual": {
@@ -854,7 +855,8 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.45,
+        "pos": 0.5306132634813369,
+        "taperMid": 0.15,
         "totalR": 1000000.0
       },
       "visual": {
@@ -903,7 +905,8 @@
       "type": "varres",
       "values": {
         "maxR": 1000000.0,
-        "pos": 0.5
+        "pos": 0.55309004314826,
+        "taperMid": 0.15
       },
       "visual": {
         "flipped": true,
@@ -972,7 +975,8 @@
       },
       "type": "pot",
       "values": {
-        "pos": 0.55,
+        "pos": 0.5783094047278271,
+        "taperMid": 0.15,
         "totalR": 50000.0
       },
       "visual": {
@@ -1539,7 +1543,7 @@
       }
     }
   ],
-  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails. The output is the line out after the return buffer, with the TBA820M headphone amplifier and its 4 Ω load hanging on the buffer.",
+  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails. The output is the line out after the return buffer, with the TBA820M headphone amplifier and its 4 Ω load hanging on the buffer. The log pots (1MA Lead Gain, Bass and Post Treble, 50KA Lead Volume) use a two-segment audio track at 15% at half rotation: the drawing prints A without a maker (grade B), the 15% is the common A-code convention (grade C, alternative 10%); positions are re-mapped to the same resistances as before.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
