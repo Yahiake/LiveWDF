@@ -18,6 +18,7 @@ public:
 
     /// Seed the reactive states so sample 1 reproduces the DC operating point.
     void reset() {
+        prepareHeldRails();
         resetPreviewState();
         std::vector<double> node, rootV;
         const bool haveDc =
@@ -223,6 +224,60 @@ public:
                                     double tol = kDefaultTolerance);
 
 protected:
+    // A held capacitor's current is what the elements at its `a` node and the other held capacitors there carry into
+    // that node; the explicit step is stable because T/RC stays far below one on supply filter chains.
+    struct HeldRail {
+        size_t source;
+        double farads, volts, current = 0.0, total = 0.0;
+        std::vector<std::pair<int, double>> ports = {}, rails = {};  // index, +1 where it carries current into the node
+    };
+    std::vector<HeldRail> heldRails_;
+    std::vector<double> heldSources_;
+
+    void prepareHeldRails() {
+        heldRails_.clear();
+        for (size_t s = 0; s < circuit_.src.size(); ++s)
+            if (circuit_.src[s].heldFarads > 0.0)
+                heldRails_.push_back({s, circuit_.src[s].heldFarads, circuit_.src[s].dc});
+        const int nRes = static_cast<int>(circuit_.res.size()), nCap = static_cast<int>(circuit_.cap.size());
+        for (auto& h : heldRails_) {
+            const auto& node = circuit_.src[h.source].a;
+            const auto attach = [&](auto& list, int index, const std::string& a, const std::string& b) {
+                if (a != b && (a == node || b == node)) list.emplace_back(index, b == node ? 1.0 : -1.0);
+            };
+            for (int k = 0; k < nRes; ++k) attach(h.ports, k, circuit_.res[size_t(k)].a, circuit_.res[size_t(k)].b);
+            for (int k = 0; k < nCap; ++k) attach(h.ports, nRes + k, circuit_.cap[size_t(k)].a, circuit_.cap[size_t(k)].b);
+            for (int k = 0; k < static_cast<int>(circuit_.ind.size()); ++k)
+                if (std::ranges::none_of(net_.coupledGroups, [&](const auto& g) { return std::ranges::count(g.indIndices, k); }))
+                    attach(h.ports, nRes + nCap + k, circuit_.ind[size_t(k)].a, circuit_.ind[size_t(k)].b);
+            for (size_t t = 0; t < heldRails_.size(); ++t)
+                if (&heldRails_[t] != &h)
+                    attach(h.rails, int(t), circuit_.src[heldRails_[t].source].a, circuit_.src[heldRails_[t].source].b);
+        }
+    }
+
+    void stepHeldRails() noexcept {
+        for (auto& h : heldRails_) {
+            h.current = 0.0;
+            for (const auto& [j, sign] : h.ports) {
+                const auto u = static_cast<size_t>(j);
+                double v = (net_.epA[u] >= 0 ? node_[size_t(net_.epA[u])] : 0.0) -
+                           (net_.epB[u] >= 0 ? node_[size_t(net_.epB[u])] : 0.0) + eoff_[u];
+                if (net_.capOf[u] >= 0) v -= capState_[size_t(net_.capOf[u])];
+                if (net_.indOf[u] >= 0) v += indState_[size_t(net_.indOf[u])];
+                h.current += sign * net_.eG[u] * v;
+            }
+            h.total = h.current;
+        }
+        // Stacked capacitors pass their current on; one pass per capacitor in the deepest stack.
+        for (size_t pass = 1; pass < heldRails_.size(); ++pass)
+            for (auto& h : heldRails_) {
+                h.total = h.current;
+                for (const auto& [t, sign] : h.rails) h.total += sign * heldRails_[size_t(t)].total;
+            }
+        for (auto& h : heldRails_) h.volts += T_ * h.total / h.farads;
+    }
+
     void resetPreviewState() {
         resetAffineMotion();
         loadedJunction_.seed = true;

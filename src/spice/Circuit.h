@@ -276,6 +276,7 @@ struct Src {
     double ac = 0.0;
     std::vector<double> sin;  // raw SIN(vo va freq td theta phase) args, if any
     std::string name;
+    double heldFarads = 0.0;  // > 0: a held capacitor, starting at `dc`, that the engine steps from its current
 };
 
 /// One tube: the nonlinear part of the Tubes.lib subckt.
