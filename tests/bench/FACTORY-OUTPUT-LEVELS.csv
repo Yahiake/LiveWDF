@@ -2,8 +2,8 @@ schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurat
 schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,271.06202,2.995,0.000,-2.987,0.000,0.261,-15.813,3.000,0.010,-2.977,0.010,0.283,-15.905
 schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf,amp,0.87059607,6.5291355,1.831,0.000,-1.936,0.000,1.545,-12.841,1.831,0.000,-1.936,0.000,1.545,-12.841
 schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,551.37944,2.480,0.000,-2.684,0.000,0.502,-21.157,2.485,-0.002,-2.694,-0.002,0.507,-21.129
-schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,97.912094,0.113,0.000,-0.337,0.000,0.597,-10.662,0.113,0.000,-0.337,0.000,0.597,-10.662
-schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,317.38126,2.328,0.000,-2.428,0.000,1.094,-20.335,2.328,0.000,-2.428,0.000,1.094,-20.335
+schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,94.662306,0.213,0.000,-0.377,0.000,0.734,-10.449,0.213,0.000,-0.377,0.000,0.734,-10.449
+schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,301.4031,2.330,0.000,-2.431,0.000,1.085,-19.993,2.330,0.000,-2.431,0.000,1.085,-19.993
 schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,188.36475,0.826,-0.000,-1.258,-0.000,0.009,-13.940,0.826,-0.000,-1.258,-0.000,0.009,-13.940
 schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.2882902,0.322,0.000,-0.738,0.000,-1.293,-5.021,0.322,0.000,-0.738,0.000,-1.293,-5.021
 schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,110.15979,1.076,-0.000,-1.395,-0.000,2.621,-16.478,1.076,-0.000,-1.395,-0.000,2.621,-16.478
