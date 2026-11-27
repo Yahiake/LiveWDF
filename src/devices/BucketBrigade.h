@@ -212,8 +212,8 @@ private:
         const double position = at * kPhases;
         const auto p = std::min(static_cast<std::size_t>(position), kPhases - 1);
         const double blend = position - p;
-        const auto& lo = kernel()[p];
-        const auto& hi = kernel()[p + 1];
+        const auto& lo = (*kernel_)[p];
+        const auto& hi = (*kernel_)[p + 1];
         double sum = 0.0;
         for (std::size_t i = 0; i < kTaps; ++i)
             sum += std::lerp(lo[i], hi[i], blend) * inputs_[(newest_ - i) % inputs_.size()];
@@ -240,6 +240,8 @@ private:
     BucketBrigadeModel model_;
     std::vector<double> ring_;
     std::array<double, 8> taps_{}, history_{};
+    // Taken at construction so the table is never built on the audio thread.
+    const std::array<std::array<double, kTaps>, kPhases + 1>* kernel_ = &kernel();
     std::array<double, 32> inputs_{};
     std::size_t newest_ = 0;
     std::array<std::complex<double>, kPoles> poles_{}, weights_{}, state_{};
