@@ -394,12 +394,11 @@ void LiveWDFPluginProcessor::applyPendingCircuitOptions() {
     auto* powerAmp = apvts_.getParameter("power_amp");
     const bool requestedPowerAmp = powerAmp->getValue() > 0.5f;
     const bool powerAmpChanged = powerAmpEnabled_ && requestedPowerAmp != *powerAmpEnabled_;
-    const bool pentodePairModeChanged = previewPentodePairs_ && compiledPreviewRequested() != *previewPentodePairs_;
     const bool mainsHumChanged = mainsSupply_ && mainsSupplyRequested() != *mainsSupply_;
     if ((portTopologyChanged && rejectedPortRequest_ != requestedPorts) ||
         effectiveOversamplingChoice() != attemptedOversamplingChoice_ ||
         (*apvts_.getRawParameterValue("grid_current") > 0.5f) != attemptedGridCurrent_ ||
-        powerAmpChanged || pentodePairModeChanged || mainsHumChanged || gatedSwitchChanged_.exchange(false)) {
+        powerAmpChanged || mainsHumChanged || gatedSwitchChanged_.exchange(false)) {
         const juce::File circuitFile = currentFile_;
         if (!loadCircuitDocument(currentDoc_, false)) {
             if (portTopologyChanged)
@@ -785,15 +784,12 @@ void LiveWDFPluginProcessor::buildEngineFromDoc(const wdf::LiveWDFDocument& doc,
         try {
             auto reduced = c;
             if (wdf::collapseMatchedPentodes(reduced, varyingSources) != 0) {
-                previewPentodePairs = false;
-                if (compiledPreviewRequested()) {
-                    build(reduced);
-                    if (outIdx >= 0) {
-                        previewPentodePairs = true;
-                        return;
-                    }
-                    previewPentodePairs.reset();
+                build(reduced);
+                if (outIdx >= 0) {
+                    previewPentodePairs = true;
+                    return;
                 }
+                previewPentodePairs.reset();
             }
         } catch (...) {
             previewPentodePairs.reset();
