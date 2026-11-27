@@ -64,6 +64,13 @@ bool compiles(const LiveWDFDocument& doc) {
     }
 }
 
+LiveWDFDocument loaded(const LiveWDFDocument& drawing) {
+    LiveWDFDocument doc;
+    std::string error;
+    REQUIRE(LiveWDFDocument::fromJson(drawing.toJson(), doc, error));
+    return doc;
+}
+
 }  // namespace
 
 TEST_CASE("A circuit whose every part is connected has nothing to report",
@@ -200,4 +207,50 @@ TEST_CASE("An op-amp on a 9 V single supply clips inside that supply") {
     REQUIRE(circuit.opamp.size() == 1);
     CHECK(circuit.opamp[0].model.railLow() == Approx(1.5));
     CHECK(circuit.opamp[0].model.railHigh() == Approx(7.5));
+}
+
+TEST_CASE("Two equal net labels join the same circuit as a wire", "[connectivity][net-label]") {
+    LiveWDFDocument wire;
+    wire.components.push_back(part("IN1", "in", {}));
+    wire.components.back().visual = {-2, -2};
+    wire.components.push_back(part("R1", "res", {}, {{"value", 1000.0}}));
+    wire.components.push_back(part("C1", "cap", {}, {{"value", 1e-6}}));
+    wire.components.back().visual = {10, 0};
+    wire.components.push_back(part("GND1", "gnd", {}));
+    wire.components.back().visual = {10, 4};
+    wire.wires.push_back({{}, {{0, 2}, {0, -2}, {10, -2}}});
+
+    LiveWDFDocument labels = wire;
+    labels.wires.clear();
+    labels.components.push_back(part("NET1", "net_label", {}));
+    labels.components.back().visual = {2, 2};
+    labels.components.back().properties["name"] = "feedback";
+    labels.components.push_back(part("NET2", "net_label", {}));
+    labels.components.back().visual = {12, -2};
+    labels.components.back().properties["name"] = "feedback";
+
+    const auto wired = loaded(wire).toCircuit();
+    const auto named = loaded(labels).toCircuit();
+
+    REQUIRE(wired.res.size() == named.res.size());
+    REQUIRE(wired.cap.size() == named.cap.size());
+    CHECK(wired.res[0].b == wired.cap[0].a);
+    CHECK(named.res[0].b == named.cap[0].a);
+    CHECK(named.res[0].b == "feedback");
+    CHECK(named.res[0].value == wired.res[0].value);
+    CHECK(named.cap[0].value == wired.cap[0].value);
+}
+
+TEST_CASE("A net label used once is a warning", "[connectivity][net-label]") {
+    LiveWDFDocument doc;
+    doc.components.push_back(part("NET1", "net_label", {{"sig", "feedback"}}));
+    doc.components.back().properties["name"] = "feedback";
+
+    const auto warnings = doc.netLabelWarnings();
+    REQUIRE(warnings.size() == 1);
+    CHECK(warnings[0].first == "NET1");
+    CHECK(warnings[0].second.find("only once") != std::string::npos);
+    CHECK_FALSE(validNetLabelName("0"));
+    CHECK_FALSE(validNetLabelName("n12"));
+    CHECK(validNetLabelName("Feedback"));
 }

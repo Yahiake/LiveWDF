@@ -70,8 +70,8 @@ wdf::SchematicComponent SchematicEditor::partWithLiveState(
         if (const auto it = livePotPositions_.find(part.id); it != livePotPositions_.end())
             live.values["pos"] = it->second;
     } else if (part.type == "switch_res") {
-        if (const auto it = liveSwitchThrowsB_.find(part.id); it != liveSwitchThrowsB_.end())
-            live.properties["select"] = it->second ? "1" : "0";
+        if (const auto it = liveSwitchPositions_.find(part.id); it != liveSwitchPositions_.end())
+            live.properties["select"] = std::to_string(it->second);
     }
 
     return live;

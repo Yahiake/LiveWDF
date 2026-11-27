@@ -39,9 +39,7 @@ void SchematicEditor::copySelection() {
         entry.values = part->values;
         entry.properties = part->properties;
 
-        const PartSpec* spec = findPart(part->type);
-        if (spec != nullptr)
-            entry.pins = spec->pins;
+        entry.pins = partPins(*part);
 
         group.parts.push_back(std::move(entry));
     }
@@ -62,7 +60,7 @@ void SchematicEditor::copySelection() {
         for (const auto& part : schematic_.getParts()) {
             if (!selectedPart(part.id))
                 continue;
-            for (int pin = 0; pin < static_cast<int>(Schematic::pinOffsets(part.type).size()); ++pin) {
+            for (int pin = 0; pin < static_cast<int>(Schematic::pinOffsets(part).size()); ++pin) {
                 const auto p = Schematic::pinPosition(part, pin);
                 if ((p.x == wire.ax && p.y == wire.ay) || (p.x == wire.bx && p.y == wire.by))
                     anyEnd = true;
@@ -95,7 +93,7 @@ int SchematicEditor::countEndsOnSelectedParts(const Wire& wire) const {
         if (std::find(selectedIds_.begin(), selectedIds_.end(), part.id) == selectedIds_.end())
             continue;
 
-        for (int pin = 0; pin < static_cast<int>(Schematic::pinOffsets(part.type).size()); ++pin) {
+        for (int pin = 0; pin < static_cast<int>(Schematic::pinOffsets(part).size()); ++pin) {
             const auto p = Schematic::pinPosition(part, pin);
             if ((p.x == wire.ax && p.y == wire.ay) || (p.x == wire.bx && p.y == wire.by))
                 ++ends;
@@ -348,11 +346,8 @@ void SchematicEditor::duplicateSelection() {
         if (auto* placed = schematic_.findPart(newId)) {
             // Pins are renamed so the copy starts on its own nets rather than
             // silently being the same node as the original it sits beside.
-            const PartSpec* spec = findPart(placed->type);
-            if (spec) {
-                for (const auto& pin : spec->pins)
-                    placed->pins[pin] = danglingNet(placed->id, pin);
-            }
+            for (const auto& pin : partPins(*placed))
+                placed->pins[pin] = danglingNet(placed->id, pin);
             copies.push_back(newId);
         }
     }

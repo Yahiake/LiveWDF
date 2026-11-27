@@ -105,21 +105,48 @@ inline std::vector<std::string> sourceValueKeys(SourceMode mode) {
     return { "dc" };
 }
 
-/// The two resistances of an SPDT throw. Celine's switch constants: a closed
+/// The two resistances of a switch throw. Celine's switch constants: a closed
 /// throw is ten milliohms, an open one is a gigaohm -- high enough to read as
 /// open, low enough to keep the node tied to something for the solver.
 inline constexpr double kSpdtClosedOhms = 0.01;
 inline constexpr double kSpdtOpenOhms = 1.0e9;
+inline constexpr int kMinSwitchThrows = 2;
+inline constexpr int kMaxSwitchThrows = 8;
+
+inline int switchResThrowCount(const SchematicComponent& part) {
+    const auto it = part.properties.find("throws");
+    if (it == part.properties.end())
+        return kMinSwitchThrows;
+    try {
+        return std::clamp(std::stoi(it->second), kMinSwitchThrows, kMaxSwitchThrows);
+    } catch (...) {
+        return kMinSwitchThrows;
+    }
+}
+
+inline int switchResPosition(const SchematicComponent& part) {
+    const auto it = part.properties.find("select");
+    if (it == part.properties.end())
+        return 0;
+    try {
+        return std::clamp(std::stoi(it->second), 0, switchResThrowCount(part) - 1);
+    } catch (...) {
+        return 0;
+    }
+}
+
+inline std::string switchResThrowPin(int position) {
+    return "out" + std::string(1, static_cast<char>('A' + position));
+}
 
 /// True when a `switch_res` is on throw B.
 ///
-/// The document stores `select` as "0" (throw A, the default) or "1" (throw B).
+/// The document stores `select` as a zero-based throw index.
 /// Celine's SPDT stores the complementary `closed` flag -- closed means throw A
 /// -- so the converter, the inspector and the plugin ask here rather than
 /// spelling the inversion out in several places.
 inline bool switchResSelectsB(const SchematicComponent& part) {
-    const auto it = part.properties.find("select");
-    return it != part.properties.end() && it->second == "1";
+    return switchResPosition(part) == 1;
 }
 
 struct WirePoint {
@@ -187,6 +214,16 @@ struct ProbeMarker {
 // symbol and the reader ask, and a document whose rails were drawn against the
 // old symbol is refused rather than shifted behind the user's back.
 inline constexpr int kLiveWDFVersion = 3;
+
+inline bool validNetLabelName(const std::string& name, const std::string& groundName = "0") {
+    if (name.empty() || name == groundName || name == "in" || name == "out")
+        return false;
+    if (name[0] != 'n' || name.size() == 1)
+        return true;
+    return !std::all_of(name.begin() + 1, name.end(), [](char c) {
+        return c >= '0' && c <= '9';
+    });
+}
 
 struct LiveWDFDocument {
     int version = kLiveWDFVersion;
@@ -433,8 +470,10 @@ struct LiveWDFDocument {
                                            || it->second->type != "switch_res"
                                            || islands.count(entry.first) != 0)
                                            return false;
-                                       return entry.second == "outA"
-                                              || entry.second == "outB";
+                                       return entry.second.size() == 4
+                                              && entry.second.starts_with("out")
+                                              && entry.second[3] >= 'A'
+                                              && entry.second[3] < 'A' + switchResThrowCount(*it->second);
                                    }),
                     loose.end());
 
@@ -445,6 +484,29 @@ struct LiveWDFDocument {
                          });
 
         return loose;
+    }
+
+    std::vector<std::pair<std::string, std::string>> netLabelWarnings() const {
+        std::map<std::string, int> counts;
+        for (const auto& comp : components)
+            if (comp.type == "net_label") {
+                const auto labelName = comp.properties.find("name");
+                if (labelName != comp.properties.end() && validNetLabelName(labelName->second, groundNode))
+                    ++counts[labelName->second];
+            }
+
+        std::vector<std::pair<std::string, std::string>> warnings;
+        for (const auto& comp : components) {
+            if (comp.type != "net_label")
+                continue;
+            const auto labelName = comp.properties.find("name");
+            if (labelName == comp.properties.end() || !validNetLabelName(labelName->second, groundNode))
+                warnings.emplace_back(comp.id, "Net label " + comp.id +
+                    " needs a name other than ground, in, out, or n<digits>");
+            else if (counts[labelName->second] == 1)
+                warnings.emplace_back(comp.id, "Net label '" + labelName->second + "' occurs only once");
+        }
+        return warnings;
     }
 
     /// The net the scope probe watches: the "probe" pin of the first Scope Probe

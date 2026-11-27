@@ -442,6 +442,7 @@ void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc
     dynamicPotKnobs_.clear();
     dynamicSwitchButtons_.clear();
     dynamicSwitchNames_.clear();
+    dynamicSwitchThrowCounts_.clear();
 
     addImpedanceKnob(doc, true);
     // **One knob per pot group.** The processor grouped pots and rheostats by
@@ -478,9 +479,11 @@ void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc
     for (size_t i = 0; i < switchGroups.size() && i < static_cast<size_t>(kMaxDynamicSwitches); ++i) {
         const int groupIndex = static_cast<int>(i);
         dynamicSwitchNames_.push_back(juce::String(switchGroups[i].name).toUpperCase());
+        const int throws = processor_.getSwitchGroupThrowCount(groupIndex);
+        dynamicSwitchThrowCounts_.push_back(throws);
 
         auto button = std::make_unique<juce::TextButton>();
-        button->setClickingTogglesState(true);
+        button->setClickingTogglesState(throws == 2);
         button->setColour(juce::TextButton::buttonColourId,
                           juce::Colour(0xFF1A212D));
         button->setColour(juce::TextButton::buttonOnColourId,
@@ -493,8 +496,10 @@ void LiveWDFPluginEditor::rebuildDynamicControls(const wdf::LiveWDFDocument& doc
                            juce::String(switchGroups[i].name));
 
         auto* raw = button.get();
-        button->onClick = [this, groupIndex, raw] {
-            processor_.setSwitchGroupB(groupIndex, raw->getToggleState());
+        button->onClick = [this, groupIndex, raw, throws] {
+            const int position = throws == 2 ? static_cast<int>(raw->getToggleState())
+                                             : (processor_.getSwitchGroupPosition(groupIndex) + 1) % throws;
+            processor_.setSwitchGroupPosition(groupIndex, position);
             updateSwitchButton(groupIndex, *raw);
             // The canvas would catch up on the next timer tick; repainting it
             // now makes the throw land visually with the click.
@@ -517,14 +522,17 @@ void LiveWDFPluginEditor::updateSwitchButton(int index, juce::TextButton& button
     if (index < 0 || index >= static_cast<int>(dynamicSwitchNames_.size()))
         return;
 
-    const bool throwB = processor_.getSwitchGroupB(index);
-    button.setButtonText(dynamicSwitchNames_[static_cast<size_t>(index)]);
-    button.setToggleState(throwB, juce::dontSendNotification);
+    const int position = processor_.getSwitchGroupPosition(index);
+    const int throws = dynamicSwitchThrowCounts_[static_cast<size_t>(index)];
+    button.setButtonText(dynamicSwitchNames_[static_cast<size_t>(index)]
+                         + (throws > 2 ? " " + juce::String::charToString(
+                               static_cast<juce::juce_wchar>('A' + position)) : ""));
+    button.setToggleState(throws == 2 && position == 1, juce::dontSendNotification);
 }
 
 void LiveWDFPluginEditor::syncSchematicLiveState() {
     schematicCanvas_.setLiveControlState(processor_.getLivePotPositions(),
-                                         processor_.getLiveSwitchStates());
+                                         processor_.getLiveSwitchPositions());
 }
 
 void LiveWDFPluginEditor::openCircuitFileChooser() {

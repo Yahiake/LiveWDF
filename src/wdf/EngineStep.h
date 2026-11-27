@@ -194,11 +194,24 @@ public:
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
+    void foldLamp();
     /// Make this clone stage 1 (the blocks before the first power-tube block) or
     /// stage 2 (the rest) of a two-core Preview. False when the partition has no such cut.
     bool preparePipelineStage(int stage);
-    bool pipelineReady() const noexcept {
+    bool pipelinePrepared() const noexcept {
         return pipe_.stage && pipe_.revision == linearRebuilds() && pipe_.lagView == slowLagActive() && !lamp_.period;
+    }
+    bool pipelineReady() const noexcept { return pipelinePrepared() && !pipe_.paused; }
+    bool pipelinePaused() const noexcept { return pipe_.paused; }
+    /// Solve the whole circuit again; `resumePipeline` restarts from this clone's own state.
+    void pausePipeline() noexcept { pipe_.paused = true; }
+    void resumePipeline() noexcept {
+        const size_t n = pipe_.inPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            pipe_.input[k] = ii_[static_cast<size_t>(pipe_.inPorts[k])];
+            pipe_.input[n + k] = vv_[static_cast<size_t>(pipe_.inPorts[k])];
+        }
+        pipe_.paused = false;
     }
     void stopPipeline() noexcept { pipe_.stage = 0; }
     /// The other stage's port currents, then its port voltages.

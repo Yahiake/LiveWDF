@@ -23,6 +23,8 @@ namespace livewdf {
 
 class LiveWDFPluginProcessor : public juce::AudioProcessor, private juce::Timer {
 public:
+    /// Two cores: blocks the worker did not take in time, and blocks it fell behind in.
+    std::pair<long long, long long> twoCoreMisses() const noexcept { return {pipeUnclaimed_, pipeTimeouts_}; }
     /// The APVTS layout is fixed when the processor is constructed, so this is
     /// the ceiling on how many document pot groups can get a knob. A document
     /// with more groups than this still loads and plays -- the extra groups
@@ -124,16 +126,18 @@ public:
     /// `pot_0`, `pot_1`, ... parameters and survives a reload.
     std::vector<wdf::LiveControlGroup> getPotGroups() const;
 
-    /// The SPDTs grouped by their visible name. One entry is one switch, and
+    /// The selector switches grouped by their visible name. One entry is one switch, and
     /// every member is thrown together.
     std::vector<wdf::LiveControlGroup> getSwitchGroups() const;
 
     /// The throw of switch group `index`: true for B, false for A.
     bool getSwitchGroupB(int index) const;
+    int getSwitchGroupPosition(int index) const;
+    int getSwitchGroupThrowCount(int index) const;
 
-    /// Throw every SPDT in group `index`. The two resistor branches are written
-    /// immediately; the document is updated too so the state survives a save.
+    /// Move every switch in group `index`; the document follows for state saves.
     void setSwitchGroupB(int index, bool throwB);
+    void setSwitchGroupPosition(int index, int position);
 
     /// Live positions for the schematic overlay, keyed by component id.
     ///
@@ -143,6 +147,7 @@ public:
     /// what the file said, while the param is where the user put the knob.
     std::map<std::string, double> getLivePotPositions() const;
     std::map<std::string, bool> getLiveSwitchStates() const;
+    std::map<std::string, int> getLiveSwitchPositions() const;
 
     std::map<std::string, double> getLiveProbeVoltages() const;
     float getLiveSignalActivity() const noexcept { return signalActivity_.load(std::memory_order_relaxed); }
@@ -320,7 +325,7 @@ private:
     /// read while the engine lock is held.
     std::vector<wdf::LiveControlGroup> potGroupsInCircuit_;
     std::vector<wdf::LiveControlGroup> switchGroupsInCircuit_;
-    std::vector<bool> switchGroupStates_;   // parallel to switchGroupsInCircuit_
+    std::vector<int> switchGroupStates_;   // parallel to switchGroupsInCircuit_
 
     /// Engine indices of every grouped member, resolved at load, and the
     /// per-block batch built from them (reserved at load, so no allocation).
@@ -331,7 +336,7 @@ private:
         double targetPosition() const;
     };
     struct PotTarget { int group; int index; bool varRes; };
-    struct SwitchTarget { size_t group; int resA; int resB; };
+    struct SwitchTarget { size_t group; std::vector<int> resistors; };
     static constexpr size_t numPorts = 2;
     static constexpr std::array<const char*, numPorts> portParameterIds{"source_impedance", "load_impedance"};
     struct PortControl {
@@ -367,7 +372,8 @@ private:
     std::array<std::array<double, kPipePorts>, 4> pipeEarly_{}, pipeLate_{};
     alignas(64) std::atomic<long long> pipeEarlyDone_{0};
     alignas(64) std::atomic<long long> pipeLateDone_{0};
-    long long pipeStep_ = 0, pipeStart_ = 0, pipeTried_ = -1;
+    long long pipeStep_ = 0, pipeStart_ = 0, pipeTried_ = -1, pipeUnclaimed_ = 0, pipeTimeouts_ = 0;
+    std::atomic<bool> pipeAbort_{false};
 
     /// A source that is running an AC signal: which source, how big, how fast.
     ///
