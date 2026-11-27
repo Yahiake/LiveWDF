@@ -234,7 +234,7 @@
         "peak": 46.159402589711256,
         "max_step": 56.67118714387763
       },
-      "circuit_sha256": "13187be5847a77201e3c94a0738cfb244c45ff4abae5c328f287d31a7114582e",
+      "circuit_sha256": "7e46c27b26c72df2a3c147d33fbcba86a49514d69eb91fc8edcd51521b51bc7c",
       "case": "Mesa Boogie Dual Rectifier",
       "wave": "32c27de242bb679863b7a7b623470c1f7c24bd9ed478e3d7cf97299c98130e99.f32.gz",
       "wave_sha256": "32c27de242bb679863b7a7b623470c1f7c24bd9ed478e3d7cf97299c98130e99",
@@ -268,7 +268,7 @@
         "peak": 46.03764822078035,
         "max_step": 56.75151187104582
       },
-      "circuit_sha256": "13187be5847a77201e3c94a0738cfb244c45ff4abae5c328f287d31a7114582e",
+      "circuit_sha256": "7e46c27b26c72df2a3c147d33fbcba86a49514d69eb91fc8edcd51521b51bc7c",
       "case": "Mesa Boogie Dual Rectifier",
       "wave": "2ec44d21128754362fe890695a75cee2cc5a50fec0a2ecc6cbc4c1ac384ef181.f32.gz",
       "wave_sha256": "2ec44d21128754362fe890695a75cee2cc5a50fec0a2ecc6cbc4c1ac384ef181",
@@ -278,34 +278,34 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 184485,
-      "line_trials": 9652,
+      "evaluations": 211553,
+      "line_trials": 6840,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
-      "newton": 12606,
+      "newton": 12988,
       "plan_hits": 0,
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 25.860910539557306,
-        "mean": -0.4437893198601213,
-        "peak": 46.417829505636824,
-        "max_step": 54.53437522527369,
-        "band_375": 9.273544263571733,
-        "band_1500": 11.179628447250808,
-        "band_6000": 28.74101946969603
+        "ac_rms": 23.782399487823945,
+        "mean": -0.3130828896814576,
+        "peak": 46.062079265821815,
+        "max_step": 57.29729830358125,
+        "band_375": 8.482239499088635,
+        "band_1500": 10.262417115517955,
+        "band_6000": 25.83769293062491
       },
       "wave_bounds": {
-        "ac_rms": 25.860910539557306,
-        "mean": -0.4437893198601213,
-        "peak": 46.417829505636824,
-        "max_step": 54.53437522527369
+        "ac_rms": 23.782399487823945,
+        "mean": -0.3130828896814576,
+        "peak": 46.062079265821815,
+        "max_step": 57.29729830358125
       },
-      "circuit_sha256": "13187be5847a77201e3c94a0738cfb244c45ff4abae5c328f287d31a7114582e",
+      "circuit_sha256": "7e46c27b26c72df2a3c147d33fbcba86a49514d69eb91fc8edcd51521b51bc7c",
       "case": "Mesa Boogie Dual Rectifier",
-      "wave": "11091b3ce3ca13f8d127f71cea9628acb649f9368d869bc9c5e674980c46f893.f32.gz",
-      "wave_sha256": "11091b3ce3ca13f8d127f71cea9628acb649f9368d869bc9c5e674980c46f893",
+      "wave": "6dc0680d69abac40c96fbd5f9e065b32df1dcddd2480a4e4131a2d1290f9e36f.f32.gz",
+      "wave_sha256": "6dc0680d69abac40c96fbd5f9e065b32df1dcddd2480a4e4131a2d1290f9e36f",
       "reference_stride": 7
     },
     "Orange Rockerverb 50w - Clean Channel/accurate": {
@@ -11326,8 +11326,8 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "10a541e41e2aa9a654d2651597d9d3a18d171e65",
-    "renderer_sha256": "f8d97d7efbf2d124b2945e283a968864a95f835b049a6795ddfcb52b1f75d1e7",
+    "declared_core_revision": "e1b9af27397b7008044d18d5d49d48d22a5333a5",
+    "renderer_sha256": "2ce105a57d725fd78b87f93dc1c95c0676457d822c778711aee812c30c56bcb6",
     "sample_rate": 48000,
     "block_size": 128,
     "oversampling": 1,

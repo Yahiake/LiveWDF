@@ -111,40 +111,6 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
         std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
     };
-    // Stiff: each reservoir and filter capacitor becomes a source at its precharge, so each supply node is a fixed
-    // rail and the stages do not couple through the filter chain. The filter chain is walked from the rectifier
-    // outputs through held capacitors and series resistors and chokes, stopping at any node that is neither a
-    // filter node nor a plain series joint, so a precharged oscillator capacitor stays a capacitor.
-    if (stiff) {
-        removeWinding();
-        std::set<std::string> chain(out.begin(), out.end());
-        std::vector<std::string> next(out.begin(), out.end());
-        while (!next.empty()) {
-            const auto n = next.back();
-            next.pop_back();
-            const auto reach = [&](const std::string& m, bool series) {
-                if (m != ground && !chain.count(m) && (filterNode(m) || (series && terminals(m) == 2)) && chain.insert(m).second)
-                    next.push_back(m);
-            };
-            for (const auto& x : c.cap)
-                if (x.holdsDc) { if (x.a == n) reach(x.b, false); if (x.b == n) reach(x.a, false); }
-            for (const auto& r : c.res) { if (r.a == n) reach(r.b, true); if (r.b == n) reach(r.a, true); }
-            for (const auto& l : c.ind) { if (l.a == n) reach(l.b, true); if (l.b == n) reach(l.a, true); }
-        }
-        const auto supplyCap = [&](const Cap& x) {
-            return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
-        };
-        // A capacitor whose nodes the rails already join (in parallel, or across a stack) adds no rail.
-        std::map<std::string, std::string> joined;
-        const auto root = [&](std::string n) { while (joined.count(n)) n = joined[n]; return n; };
-        for (const auto& cap : c.cap)
-            if (supplyCap(cap) && root(cap.a) != root(cap.b)) {
-                joined[root(cap.a)] = root(cap.b);
-                c.addSrc(cap.a, cap.b, *cap.initialVolts, 0.0, {}, "$mains rail " + cap.name);
-            }
-        std::erase_if(c.cap, supplyCap);
-        return true;
-    }
 
     // The drawn supply alone, loaded by one resistor per output.
     Circuit test;
@@ -191,6 +157,49 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         const double r = (vIdle[k] - vFull[k]) / (iFull - iIdle);
         c.addSrc("$mains " + out[k], ground, vIdle[k] + r * iIdle, 0.0, {}, "$mains source " + out[k]);
         c.addRes("$mains " + out[k], out[k], r, "$mains resistance " + out[k]);
+    }
+
+    // Stiff: each reservoir and filter capacitor becomes a source at its precharge that the engine steps from the
+    // current drawn in the previous sample (Src::heldFarads), so the rails sag but the stages do not couple through
+    // the filter chain inside a solve. The filter chain is walked from the rectifier
+    // outputs through held capacitors and series resistors and chokes, stopping at any node that is neither a
+    // filter node nor a plain series joint, so a precharged oscillator capacitor stays a capacitor.
+    if (stiff) {
+        std::set<std::string> chain(out.begin(), out.end());
+        std::vector<std::string> next(out.begin(), out.end());
+        while (!next.empty()) {
+            const auto n = next.back();
+            next.pop_back();
+            const auto reach = [&](const std::string& m, bool series) {
+                if (m != ground && !chain.count(m) && (filterNode(m) || (series && terminals(m) == 2)) && chain.insert(m).second)
+                    next.push_back(m);
+            };
+            for (const auto& x : c.cap)
+                if (x.holdsDc) { if (x.a == n) reach(x.b, false); if (x.b == n) reach(x.a, false); }
+            for (const auto& r : c.res) { if (r.a == n) reach(r.b, true); if (r.b == n) reach(r.a, true); }
+            for (const auto& l : c.ind) { if (l.a == n) reach(l.b, true); if (l.b == n) reach(l.a, true); }
+        }
+        const auto supplyCap = [&](const Cap& x) {
+            return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
+        };
+        // A capacitor in parallel with a rail adds to it; one the rails already join across a stack adds no rail.
+        std::map<std::pair<std::string, std::string>, size_t> rails;
+        std::map<std::string, std::string> joined;
+        const auto root = [&](std::string n) { while (joined.count(n)) n = joined[n]; return n; };
+        for (const auto& cap : c.cap) {
+            if (!supplyCap(cap)) continue;
+            if (const auto it = rails.find(std::minmax(cap.a, cap.b)); it != rails.end()) {
+                c.src[it->second].heldFarads += cap.value;
+            } else if (root(cap.a) != root(cap.b)) {
+                joined[root(cap.a)] = root(cap.b);
+                rails[std::minmax(cap.a, cap.b)] = c.src.size();
+                const bool flip = cap.a == ground;
+                c.addSrc(flip ? cap.b : cap.a, flip ? cap.a : cap.b, flip ? -*cap.initialVolts : *cap.initialVolts, 0.0, {},
+                         "$mains rail " + cap.name);
+                c.src.back().heldFarads = cap.value;
+            }
+        }
+        std::erase_if(c.cap, supplyCap);
     }
     return true;
 }

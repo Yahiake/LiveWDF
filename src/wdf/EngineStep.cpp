@@ -62,6 +62,12 @@ bool EngineStep::tryTriodePreview() noexcept {
 const std::vector<double>& EngineStep::step(const double* sourceValues, std::size_t sourceCount,
                                             int maxIter, double tol) {
     modeTol_ = tol;
+    if (!heldRails_.empty()) {
+        heldSources_.assign(sourceValues, sourceValues + sourceCount);
+        for (const auto& h : heldRails_)
+            if (h.source < sourceCount) heldSources_[h.source] = h.volts;
+        sourceValues = heldSources_.data();
+    }
     // Limit the error in the port voltages while evaluating all tube currents.
     if (triodePreviewEnabled_ && nPent_ > 0)
         tol = std::max(tol, 3e-3);
@@ -486,6 +492,7 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
     for (auto& rms : rmsDetectors_)
         rms.detector.step(rms.input.voltage(node_, sourceValues, sourceCount));
 
+    stepHeldRails();
     // Incident waves, then store the reactive states for the next sample.
     // Direct pre-compiled updates avoid acrossPort indirections and branch checks.
     double* LIVEWDF_RESTRICT capStateData = capState_.data();
