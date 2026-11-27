@@ -101,7 +101,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout LiveWDFPluginProcessor::crea
     params.push_back(std::make_unique<juce::AudioParameterBool>(
         juce::ParameterID{"stereo", 1}, "Stereo", false));
     params.push_back(std::make_unique<juce::AudioParameterBool>(
-        juce::ParameterID{"two_cores", 1}, "Two cores", false));
+        juce::ParameterID{"two_cores", 1}, "Two cores", true));
 
     // Dynamic Potentiometers. The layout has to exist before the document is
     // known, so this is the ceiling: kMaxPotKnobs groups always get a
