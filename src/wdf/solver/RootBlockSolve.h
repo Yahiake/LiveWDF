@@ -1234,6 +1234,8 @@ public:
             for (int s = 0; view.held && s < view.count; ++s)
                 for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged)
                     ctx.F[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
+            for (int r = 0; view.frozen && r < ctx.K; ++r)
+                ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
