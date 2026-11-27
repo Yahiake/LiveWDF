@@ -1004,7 +1004,11 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1189,7 +1193,11 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1374,7 +1382,11 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1559,7 +1571,11 @@
         "outputBias": 3.4,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": 142.17272,
-        "stages": 2048
+        "stages": 2048,
+        "transferLoss": 1.35e-4,
+        "kneeWidth": 0.36,
+        "evenOrder": 0.057,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -2437,7 +2453,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 0.93321046
+        "fullScaleVolts": 0.91908141
       },
       "visual": {
         "flipped": false,

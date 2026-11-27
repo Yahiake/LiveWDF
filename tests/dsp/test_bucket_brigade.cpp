@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <complex>
 #include <limits>
 #include <string>
 #include <vector>
@@ -25,6 +26,10 @@ wdf::BucketBrigadeModel clockedModel() {
     model.outputBias = 0.0;
     model.inputSwing = 1.0;
     model.gain = 1.0;
+    model.transferLoss = 0.0;
+    model.kneeWidth = 0.0;
+    model.evenOrder = 0.0;
+    model.slowClockLossDb = 0.0;
     return model;
 }
 
@@ -57,6 +62,44 @@ TEST_CASE("BBD samples every clock event above the host rate", "[bbd][dsp]") {
     }
     // The first shifted charge reaches output on edge 513.
     REQUIRE(firstWetFrame == static_cast<int>(std::ceil(513.0 * 13e-6 * kSampleRate)));
+}
+
+TEST_CASE("MN3005 transfer loss matches the data sheet's treble loss at a 40 kHz clock", "[bbd][dsp]") {
+    wdf::BucketBrigadeModel model;
+    model.clockHz = 40000.0;
+    model.inputBias = model.outputBias = 0.0;
+    model.gain = 1.0;
+    // One host sample per clock period reads the charge sequence without the
+    // held output's sinc, which the data sheet's -1.9 dB at 10 kHz includes
+    // as -0.9 dB.
+    const auto level = [&](double hz) {
+        wdf::BucketBrigadeState state(model);
+        std::complex<double> sum;
+        for (int n = 0; n < 6048; ++n) {
+            const auto phase = 2.0 * M_PI * hz * n / model.clockHz;
+            const auto out = state.step(std::sin(phase), 0.0, 1.0 / model.clockHz);
+            if (n >= 4048)
+                sum += out * std::polar(1.0, -phase);
+        }
+        return std::abs(sum);
+    };
+    REQUIRE(20.0 * std::log10(level(10000.0) / level(1000.0)) == Approx(-1.0).margin(0.1));
+}
+
+TEST_CASE("MN3005 transfer has the data sheet's distortion at its rated input", "[bbd][dsp]") {
+    const wdf::BucketBrigadeModel model;
+    // 1.0 Vrms, where the data sheet's typical THD curve reads 0.35%.
+    std::array<std::complex<double>, 6> harmonics{};
+    for (int n = 0; n < 1024; ++n) {
+        const auto phase = 2.0 * M_PI * n / 1024.0;
+        const auto out = model.outputVoltage(model.inputBias + std::sqrt(2.0) * std::sin(phase));
+        for (std::size_t h = 0; h < harmonics.size(); ++h)
+            harmonics[h] += out * std::polar(1.0, -phase * (h + 1.0));
+    }
+    double distortion = 0.0;
+    for (std::size_t h = 1; h < harmonics.size(); ++h)
+        distortion += std::norm(harmonics[h]);
+    REQUIRE(std::sqrt(distortion) / std::abs(harmonics[0]) == Approx(0.0035).margin(0.001));
 }
 
 TEST_CASE("engine BBD resets its wet path and recirculates delayed audio", "[bbd][engine]") {

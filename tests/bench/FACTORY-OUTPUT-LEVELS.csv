@@ -26,10 +26,10 @@ schematics/amps/Soldano SLO-100 - Overdrive.livewdf,amp,0.87059607,299.34019,2.1
 schematics/amps/Vox AC15 No. 3 - EF86 Normal.livewdf,amp,0.87059607,207.47846,2.312,0.000,-2.452,0.000,1.402,-19.684,2.312,0.000,-2.452,0.000,1.402,-19.684
 schematics/amps/Vox AC30 - Top Boost.livewdf,amp,0.87059607,422.69184,2.327,0.000,-2.362,0.000,1.408,-19.367,2.327,0.018,-2.363,0.018,1.409,-19.364
 schematics/pedals_fx/Boss BD-2 Blues Driver.livewdf,palm,0.87059607,2.3515832,1.827,0.000,-1.921,0.000,-0.672,-19.528,1.827,0.000,-1.921,0.000,-0.672,-19.528
-schematics/pedals_fx/Boss BF-2 Flanger.livewdf,chord,0.87059607,1.0601589,0.022,-0.007,0.000,0.000,-0.216,-5.527,0.022,-0.007,0.000,0.000,-0.215,-5.531
-schematics/pedals_fx/Boss CE-2 Chorus.livewdf,chord,0.87059607,1.0230217,0.000,0.017,-0.009,0.000,0.116,-7.376,0.000,0.017,-0.009,0.000,0.116,-7.376
+schematics/pedals_fx/Boss BF-2 Flanger.livewdf,chord,0.87059607,1.0437616,0.015,-0.012,0.000,0.000,-0.220,-5.575,0.015,-0.012,0.000,0.000,-0.219,-5.576
+schematics/pedals_fx/Boss CE-2 Chorus.livewdf,chord,0.87059607,1.0171396,0.000,0.014,-0.012,0.000,0.122,-7.296,0.000,0.014,-0.012,0.000,0.122,-7.296
 schematics/pedals_fx/Boss CS-3 Compression Sustainer (August 1986).livewdf,picked,0.87059607,0.74002938,2.821,0.000,-2.837,0.000,1.803,-8.069,2.821,0.000,-2.837,0.000,1.803,-8.069
-schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,chord,0.87059607,1.036292,0.028,0.000,-0.062,0.000,0.140,-7.321,0.028,0.000,-0.062,0.000,0.140,-7.321
+schematics/pedals_fx/Boss DM-2 Analog Delay.livewdf,chord,0.87059607,0.97937518,0.025,0.000,-0.043,0.000,0.065,-7.368,0.025,0.000,-0.043,0.000,0.065,-7.368
 schematics/pedals_fx/Boss DS-1A Distortion.livewdf,palm,0.87059607,1.5996472,1.862,0.000,-2.003,0.000,-0.386,-17.598,1.862,0.000,-2.003,0.000,-0.386,-17.598
 schematics/pedals_fx/Boss DS-2 Turbo Distortion.livewdf,palm,0.87059607,3.0869722,2.220,0.000,-2.318,0.000,-0.688,-20.565,2.220,0.000,-2.318,0.000,-0.688,-20.565
 schematics/pedals_fx/Boss GE-7 Equalizer.livewdf,chord,0.87059607,0.82169517,0.000,0.000,0.000,0.000,0.003,-6.093,0.000,0.000,0.000,0.000,0.003,-6.093
@@ -45,18 +45,18 @@ schematics/pedals_fx/Dan Armstrong Orange Squeezer.livewdf,picked,0.87059607,0.7
 schematics/pedals_fx/Diamond CPR-1 (Quartz Reference).livewdf,picked,0.87059607,1.0808316,1.277,0.000,-1.842,0.000,0.520,-9.254,1.277,0.000,-1.842,0.000,0.520,-9.254
 schematics/pedals_fx/Dunlop Cry Baby GCB-95.livewdf,chord,0.87059607,2.5296412,-0.001,0.000,0.001,0.000,1.363,-8.187,-0.001,0.000,0.001,0.000,1.363,-8.187
 schematics/pedals_fx/EHX Big Muff Pi Ram's Head Violet.livewdf,bend,0.87059607,1.4634045,2.425,0.000,-2.501,0.000,0.981,-13.659,2.425,0.000,-2.501,0.000,0.981,-13.659
-schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,chord,0.87059607,0.79374937,0.038,0.000,-0.035,0.000,0.330,-5.495,0.038,0.000,-0.035,0.000,0.330,-5.495
-schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,chord,0.87059607,0.25912472,-0.630,0.000,0.879,0.000,-0.276,-5.371,-0.630,0.000,0.879,0.000,-0.276,-5.371
-schematics/pedals_fx/EHX Small Clone MN3007.livewdf,chord,0.87059607,0.8152054,0.000,0.006,-0.199,0.000,0.447,-7.300,0.000,0.006,-0.199,0.000,0.447,-7.300
+schematics/pedals_fx/EHX Deluxe Memory Man.livewdf,chord,0.87059607,0.7397179,0.087,0.000,-0.098,0.000,0.301,-5.653,0.087,0.000,-0.098,0.000,0.301,-5.653
+schematics/pedals_fx/EHX Electric Mistress 9V.livewdf,chord,0.87059607,0.25688993,-0.604,0.000,0.880,0.000,-0.263,-5.475,-0.604,0.000,0.880,0.000,-0.264,-5.475
+schematics/pedals_fx/EHX Small Clone MN3007.livewdf,chord,0.87059607,0.81226984,0.000,0.007,-0.195,0.000,0.443,-7.263,0.000,0.007,-0.195,0.000,0.443,-7.263
 schematics/pedals_fx/EHX Small Stone Issue J.livewdf,chord,0.87059607,0.65272205,-0.292,0.000,0.109,0.000,0.517,-6.195,-0.292,0.000,0.109,0.000,0.517,-6.195
 schematics/pedals_fx/Fuzz Face.livewdf,bend,0.87059607,0.45693889,1.942,0.000,-2.363,0.000,1.384,-13.183,1.942,0.000,-2.363,0.000,1.384,-13.183
 schematics/pedals_fx/ISP Decimator II G String (Noise Terminator Reference).livewdf,palm,0.87059607,0.86691954,-0.012,0.000,0.003,0.000,-0.001,-5.979,-0.012,0.000,0.003,0.000,-0.001,-5.979
 schematics/pedals_fx/Ibanez TS_808.livewdf,palm,0.87059607,0.99653503,1.614,0.000,-1.657,0.000,-0.430,-12.953,1.614,0.000,-1.657,0.000,-0.430,-12.953
 schematics/pedals_fx/Klon Centaur.livewdf,chord,0.87059607,3.9494942,1.320,0.000,-1.504,0.000,0.268,-13.386,1.320,0.000,-1.504,0.000,0.268,-13.386
-schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,chord,0.87059607,0.93321046,0.004,0.000,-0.011,0.000,0.384,-6.251,0.004,0.000,-0.011,0.000,0.384,-6.251
+schematics/pedals_fx/MXR Carbon Copy Analog Delay.livewdf,chord,0.87059607,0.91908143,0.001,0.000,-0.001,0.000,0.027,-6.108,0.001,0.000,-0.001,0.000,0.027,-6.108
 schematics/pedals_fx/MXR Dyna Comp CA3080.livewdf,picked,0.87059607,0.85700161,2.404,0.000,-2.638,0.000,0.544,-8.597,2.404,0.000,-2.638,0.000,0.544,-8.597
 schematics/pedals_fx/MXR M108S Ten Band EQ (Rev E Reference).livewdf,chord,0.87059607,0.86843195,0.000,0.000,0.000,0.000,0.007,-6.023,0.000,0.000,0.000,0.000,0.007,-6.023
-schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,chord,0.87059607,0.43011624,-0.032,0.000,0.378,0.000,0.191,-6.247,0.000,0.150,0.263,0.150,0.203,-6.393
+schematics/pedals_fx/MXR M234 Analog Chorus.livewdf,chord,0.87059607,0.43657063,-0.144,0.000,0.087,0.000,-0.205,-6.536,-0.144,0.000,0.110,0.000,0.056,-6.536
 schematics/pedals_fx/MXR Micro Amp.livewdf,chord,0.87059607,1.843695,0.000,0.000,0.000,0.000,0.000,-6.015,0.000,0.000,0.000,0.000,0.000,-6.015
 schematics/pedals_fx/MXR Phase 90 Script.livewdf,chord,0.87059607,1.1151344,-0.001,0.000,0.174,0.000,-0.321,-5.303,-0.001,0.000,0.174,0.000,-0.321,-5.303
 schematics/pedals_fx/Maestro FZ-1 Fuzz-Tone 1962.livewdf,bend,1.1233498,0.55676153,2.528,0.000,-2.624,0.000,4.672,-9.589,2.528,0.000,-2.624,0.000,4.672,-9.589

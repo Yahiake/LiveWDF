@@ -738,12 +738,16 @@
       "values": {
         "clockHz": 32500,
         "gain": 1.0,
-        "inputBias": 2.5,
-        "inputSwing": 0.81,
-        "outputBias": 2.25,
+        "inputBias": 2.825,
+        "inputSwing": 0.925,
+        "outputBias": 2.575,
         "outputOhms": 2600,
         "periodMicrosecondsPerVolt": -7.9,
-        "stages": 1024
+        "stages": 1024,
+        "transferLoss": 1.57e-4,
+        "kneeWidth": 0.19,
+        "evenOrder": 0.012,
+        "slowClockLossDb": 0
       },
       "visual": {
         "flipped": false,
@@ -1349,7 +1353,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.0601589
+        "fullScaleVolts": 1.0437616
       },
       "visual": {
         "flipped": false,
