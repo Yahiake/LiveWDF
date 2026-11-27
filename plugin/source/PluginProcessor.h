@@ -295,7 +295,7 @@ private:
     /// the Output terminal, and the circuit is not changed, only scaled.
     ///
     /// 1 when the document has not said, which scales nothing.
-    std::atomic<double> outputFullScaleVolts_{1.0};
+    std::atomic<double> outputFullScaleVolts_{1.0}, outputFastTrim_{1.0}, outputPreviewTrim_{1.0};
     std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     double previewPadScale_ = 1.;
