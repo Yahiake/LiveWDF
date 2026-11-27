@@ -1207,6 +1207,7 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     // The editor reads the throws through `controlMutex_`; the audio thread
     // reads them under the engine lock, which we already hold. Lock order is
     // engine -> control everywhere, so the two cannot deadlock.
+    const bool changed = switchGroupStates_[static_cast<size_t>(index)] != throwB;
     {
         std::lock_guard<std::mutex> controlLock(controlMutex_);
         switchGroupStates_[static_cast<size_t>(index)] = throwB;
@@ -1222,7 +1223,7 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
-        if (std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
+        if (changed && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
                 const auto gate = comp.properties.find("enabledBy");
                 return gate != comp.properties.end() && gate->second == member.id;
             }))
