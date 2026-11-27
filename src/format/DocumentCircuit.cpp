@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <map>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
@@ -41,6 +42,7 @@ Circuit LiveWDFDocument::toCircuit() const {
     // compares source symbols, not their values -- so collapse the repeats here
     // and let only a genuine value conflict reach the user.
     std::map<std::string, std::tuple<double, double, std::string>> railSupplies;
+    std::vector<size_t> opAmpsOnSupplyPins;
 
         // **A part joined to nothing is not in the circuit.**
         //
@@ -411,6 +413,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                     model.setVRailBounds(low, high);
                 } else if (comp.values.count("vRailPos") && comp.values.count("vRailNeg")) {
                     model.setVRails(comp.values.at("vRailPos"), comp.values.at("vRailNeg"));
+                } else {
+                    opAmpsOnSupplyPins.push_back(c.opamp.size());
                 }
                 c.addOpAmp(getPin("out"), getPin("neg"), getPin("pos"),
                            getPin("vcc", "0"), getPin("vee", "0"), model, comp.id);
@@ -573,6 +577,26 @@ Circuit LiveWDFDocument::toCircuit() const {
             c.addBucketBrigade(bbd.input, bbd.output, bbd.clock, bbd.common, bbd.model, bbd.name);
         for (const auto& rms : rmsDetectors)
             c.addRmsDetector(rms.input, rms.output, rms.common, rms.model, rms.name);
+        // The swing keeps its margin to the supply it was specified on.
+        const std::string gnd = groundNode.empty() ? std::string("0") : groundNode;
+        const auto supplyDc = [&](const std::string& net) -> std::optional<double> {
+            if (net == gnd || net == "0")
+                return 0.0;
+            for (const auto& s : c.src) {
+                if (s.a == net && s.b == gnd)
+                    return s.dc;
+                if (s.b == net && s.a == gnd)
+                    return -s.dc;
+            }
+            return std::nullopt;
+        };
+        for (const size_t i : opAmpsOnSupplyPins) {
+            auto& model = c.opamp[i].model;
+            const auto vcc = supplyDc(c.opamp[i].vcc), vee = supplyDc(c.opamp[i].vee);
+            if (vcc && vee && *vcc > *vee)
+                model.setVRailBounds(model.railLow() + (*vee + model.supplyVolts),
+                                     model.railHigh() + (*vcc - model.supplyVolts));
+        }
         return c;
     }
 
