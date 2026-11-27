@@ -586,7 +586,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 247.87868
+        "fullScaleVolts": 246.97744
       },
       "visual": {
         "flipped": true,
@@ -1224,11 +1224,15 @@
     {
       "id": "PA Output Transformer",
       "properties": {
-        "model": "Real — Auto",
+        "model": "Real — Manual",
         "powerAmp": "1"
       },
       "type": "transformer_ct",
       "values": {
+        "Lm": 21.393229,
+        "dcrPrimary": 428.0,
+        "dcrSecondary": 0.41,
+        "leakage": 0.006771071,
         "turnsPrimary": 28.722813232690143,
         "turnsSecondary": 1.0
       },
