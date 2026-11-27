@@ -26,7 +26,7 @@ public:
         if (haveDc && (!photoresistors_.empty() || !vcas_.empty() || !otas_.empty())) {
             // Seed the controllers from their DC operating point, then settle
             // the signal path at those initial control settings.
-            for (const auto& photo : photoresistors_)
+            for (auto& photo : photoresistors_)
                 ctrlResValues_[photo.index] = 1.0 / photoTargetConductance(
                     photo, node, dcValues_.data(), dcValues_.size());
             updateVcas(node, dcValues_.data(), dcValues_.size());
@@ -154,6 +154,13 @@ public:
         }
         saveRecoveryState(haveDc && K_ > 0);
         resetSolverHistory();
+        if (!haveDc) {
+            // An oscillator has no stable DC point. Run it silently for two
+            // seconds so its coupling capacitors start where the running circuit has them.
+            const std::vector<double> sources = dcValues_;
+            for (long n = static_cast<long>(2.0 / T_); n > 0; --n)
+                step(sources);
+        }
     }
 
     static constexpr int kDefaultMaxIterations = 60;
@@ -413,12 +420,21 @@ protected:
             state.senseOffset.eval(sources, sourceCount);
     }
 
-    double photoTargetConductance(const PhotoresistorState& state,
+    static double latchedPhotoVolts(PhotoresistorState& state, const PhotoresistorControl& control,
+                                    double volts) {
+        if (control.strikeVolts <= 0.0)
+            return volts;
+        state.lit = volts >= control.strikeVolts || (state.lit && volts > control.extinguishVolts);
+        return state.lit ? control.referenceVolts : 0.0;
+    }
+
+    double photoTargetConductance(PhotoresistorState& state,
                                   const std::vector<double>& nodes,
                                   const double* sources, size_t sourceCount) const {
         const auto& ctrl = circuit_.ctrlRes[state.index];
-        return ctrl.photo->targetConductance(photoSenseVoltage(state, nodes, sources, sourceCount),
-                                             ctrl.initialOhms);
+        return ctrl.photo->targetConductance(
+            latchedPhotoVolts(state, *ctrl.photo, photoSenseVoltage(state, nodes, sources, sourceCount)),
+            ctrl.initialOhms);
     }
 
     /// A sample may only commit reactive state after a verified solve.

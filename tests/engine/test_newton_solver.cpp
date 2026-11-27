@@ -488,6 +488,31 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
     CHECK(preview.stateRejectCount() == before);
 }
 
+TEST_CASE("Deluxe Reverb Preview follows Fast on pickup hum", "[newton][preview][pentode]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const auto input = static_cast<size_t>(std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin());
+    wdf::Engine fast(circuit, kFs), preview(circuit, kFs);
+    const auto output = static_cast<size_t>(preview.nodeIndex(document.outputNet()));
+    preview.useTriodePreview(true);
+    std::vector<double> sources;
+    for (const auto& src : circuit.src)
+        sources.push_back(src.dc);
+    double error2 = 0.0, signal2 = 0.0;
+    for (int sample = 0; sample < 2400; ++sample) {
+        sources[input] = circuit.src[input].dc + .003 * std::sin(2 * M_PI * 50 * sample / kFs);
+        const double reference = fast.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
+        const double value = preview.step(sources, wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance)[output];
+        if (sample >= 1200) {
+            error2 += (value - reference) * (value - reference);
+            signal2 += reference * reference;
+        }
+    }
+    CHECK(error2 < 1e-6 * signal2);
+}
+
 TEST_CASE("Shared-current residual follows the physical transfer across a partial row block", "[engine][newton]") {
     constexpr int rows = 35, cols = 12, groups = 4;
     std::vector<double> z(rows * cols), v(rows), open(rows), current(rows), actual(rows);
@@ -583,4 +608,37 @@ TEST_CASE("Triode-domain transfer preserves block-order voltage folds after cont
     }
     current[3] = std::numeric_limits<double>::infinity();
     REQUIRE_FALSE(plan.fold(view, open.data(), current.data(), folded.data()));
+}
+
+TEST_CASE("A NaN Newton iterate does not pass as a converged DC operating point", "[newton][robustness]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/pedals_fx/Boss GE-7 Equalizer.livewdf", error));
+    for (auto& part : document.components)
+        if (part.id == "VR1")
+            part.values["pos"] = 0.2;
+    const auto circuit = document.toCircuit();
+    std::vector<double> sources;
+    for (const auto& source : circuit.src)
+        sources.push_back(source.dc);
+    wdf::Engine engine(circuit, 48000.0);
+    for (int sample = 0; sample < 64; ++sample)
+        engine.step(sources);
+    REQUIRE(engine.stateRejectCount() == 0);
+}
+
+TEST_CASE("An oscillator without a DC operating point starts near its running state", "[newton][robustness]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/pedals_fx/Boss BF-2 Flanger.livewdf", error));
+    for (auto& part : document.components)
+        if (part.id == "VR1")
+            part.values["pos"] = 0.0;
+    const auto circuit = document.toCircuit();
+    std::vector<double> sources;
+    for (const auto& source : circuit.src)
+        sources.push_back(source.dc);
+    wdf::Engine engine(circuit, 48000.0);
+    const int out = engine.nodeIndex(document.outputNet());
+    REQUIRE(std::abs(engine.step(sources)[static_cast<size_t>(out)]) < 0.01);
 }

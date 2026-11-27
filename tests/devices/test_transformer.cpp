@@ -177,6 +177,15 @@ TEST_CASE("Plain transformer element compiles to one coupled matrix", "[transfor
     CHECK(c.mutual[0].L[0][1] == Approx(2.0).epsilon(1.0e-12));
 }
 
+TEST_CASE("Manual transformer keeps a leakage below the automatic estimate", "[transformer]") {
+    wdf::TransformerSpec spec;
+    spec.turnsPrimary = 28.7;
+    spec.model = "Real — Manual";
+    spec.Lm = 21.39;
+    spec.leakage = 6.77e-3;
+    CHECK(wdf::resolveTransformerSpec(spec).leakage == spec.leakage);
+}
+
 TEST_CASE("Center-tapped transformer element compiles to one three-winding device", "[transformer]") {
     wdf::Circuit c;
     wdf::TransformerSpec spec;

@@ -74,6 +74,13 @@ Circuit LiveWDFDocument::toCircuit() const {
 
             if (getProp("preampOnly") == "1")
                 continue;
+            // A part switched in by a footswitch is left out while it is off, so an idle
+            // effect costs no solver work.
+            if (const auto gate = getProp("enabledBy"); !gate.empty()) {
+                const auto sw = std::ranges::find(components, gate, &SchematicComponent::id);
+                if (sw == components.end() || !switchResSelectsB(*sw))
+                    continue;
+            }
             if (comp.type == "res") {
                 c.addRes(getPin("a"), getPin("b"), getVal("value", 1000.0), comp.id);
             } else if (comp.type == "cap") {
@@ -118,6 +125,8 @@ Circuit LiveWDFDocument::toCircuit() const {
                 photo.gamma = getVal("gamma", photo.gamma);
                 photo.attackSeconds = getVal("attackSeconds", photo.attackSeconds);
                 photo.releaseSeconds = getVal("releaseSeconds", photo.releaseSeconds);
+                photo.strikeVolts = getVal("strikeVolts", 0.0);
+                photo.extinguishVolts = getVal("extinguishVolts", 0.0);
                 c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
                                    photo, comp.id);
             } else if (comp.type == "ca3080") {
