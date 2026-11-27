@@ -335,14 +335,17 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     };
 
     bool pipelined = false;
-    if (twoCores && !(leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) &&
+    // A moving control runs on one core: stage 1's copied blocks hold the settled transfer.
+    // The split comes back once the settled rebuild is installed and stage 1 is re-copied from stage 2.
+    const bool split = twoCores && !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer();
+    if (split && !(leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) &&
         pipeTried_ != leftEngine_->linearRebuilds()) {
         pipeTried_ = leftEngine_->linearRebuilds();
         if (!(leftEngine_->preparePipelineStage(2) && rightEngine_->preparePipelineStage(1) &&
               leftEngine_->pipelineOutputSize() <= kPipePorts && rightEngine_->pipelineOutputSize() <= kPipePorts))
             leftEngine_->stopPipeline();
     }
-    if (twoCores && leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) {
+    if (split && leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) {
         // First block, or the first after a late one: stage 1 restarts from stage 2's state.
         if (leftEngine_->pipelinePaused() || rightEngine_->pipelinePaused()) {
             rightEngine_->copyStateFrom(*leftEngine_);
