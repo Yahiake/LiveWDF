@@ -75,10 +75,12 @@ Circuit LiveWDFDocument::toCircuit() const {
             if (getProp("preampOnly") == "1")
                 continue;
             // A part switched in by a footswitch is left out while it is off, so an idle
-            // effect costs no solver work.
-            if (const auto gate = getProp("enabledBy"); !gate.empty()) {
+            // effect costs no solver work. A leading `!` keeps the part only while off.
+            if (auto gate = getProp("enabledBy"); !gate.empty()) {
+                const bool whileOff = gate.front() == '!';
+                if (whileOff) gate.erase(0, 1);
                 const auto sw = std::ranges::find(components, gate, &SchematicComponent::id);
-                if (sw == components.end() || !switchResSelectsB(*sw))
+                if (sw == components.end() || switchResSelectsB(*sw) == whileOff)
                     continue;
             }
             if (comp.type == "res") {
@@ -96,13 +98,15 @@ Circuit LiveWDFDocument::toCircuit() const {
                 if (taperStr == "Log") taper = PotTaper::Log;
                 else if (taperStr == "RevLog") taper = PotTaper::RevLog;
                 c.addPot(getPin("high"), getPin("wiper"), getPin("low"),
-                         getVal("totalR", 100000.0), getVal("pos", 0.5), taper, comp.id);
+                         getVal("totalR", 100000.0), getVal("pos", 0.5), taper, comp.id,
+                         getVal("taperMid", 0.0));
             } else if (comp.type == "varres") {
                 const std::string taperStr = getProp("taper", "Linear");
                 PotTaper taper = PotTaper::Linear;
                 if (taperStr == "Log") taper = PotTaper::Log;
                 else if (taperStr == "RevLog") taper = PotTaper::RevLog;
-                c.addVarRes(getPin("a"), getPin("b"), getVal("maxR", 10000.0), getVal("pos", 0.5), taper, comp.id);
+                c.addVarRes(getPin("a"), getPin("b"), getVal("maxR", 10000.0), getVal("pos", 0.5), taper, comp.id,
+                            getVal("taperMid", 0.0));
             } else if (comp.type == "ctrlres") {
                 c.addControlledRes(getPin("a"), getPin("b"), getVal("initialOhms", 1000.0), comp.id);
             } else if (comp.type == "vca") {

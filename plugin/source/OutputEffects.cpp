@@ -33,22 +33,22 @@ constexpr auto reverbFactory = "reverb_ir_factory";
 
 constexpr FactoryImpulse factoryCabinets[] = {
     {"synthetic-cab", "Studio Cab (Synthetic)", nullptr, 2.9f},
-    {"jensen-sm57", "Jensen SM57", "jensen-sm57.wav", 4.6f},
-    {"jensen-e606", "Jensen e606", "jensen-e606.wav", 6.9f},
-    {"hk-celestion-sm57", "H&K Celestion SM57", "hk-celestion-sm57.wav", 5.9f},
-    {"hk-celestion-c414", "H&K Celestion C414", "hk-celestion-c414.wav", 7.3f},
-    {"engl-v30-sm57", "ENGL V30 SM57", "engl-v30-sm57.wav", 6.7f},
-    {"engl-v30-e606", "ENGL V30 e606", "engl-v30-e606.wav", 9.4f},
-    {"bg412s-v30-sm57", "BG412S V30 SM57", "bg412s-v30-sm57.wav", 5.4f},
-    {"bg412s-dv77-sm57", "BG412S DV-77 SM57", "bg412s-dv77-sm57.wav", 4.7f},
-    {"bg412s-rockdriver-e606", "BG412S Rockdriver e606", "bg412s-rockdriver-e606.wav", 5.9f},
-    {"bg412s-v30-dv77-sm57", "BG412S V30 + DV-77", "bg412s-v30-dv77-sm57.wav", 5.0f},
-    {"orange-ppc112-v30-sm57", "Orange 1x12 V30", "orange-ppc112-v30-sm57.wav", 7.7f},
-    {"orange-ppc212v-neocreamback", "Orange 2x12 Neo Creamback", "orange-ppc212v-neocreamback.wav", 5.5f},
-    {"mesa-412-os-v30", "Mesa 412 OS V30", "mesa-412-os-v30.wav", 5.7f},
-    {"celestion-g12-vintage", "Celestion G12 Vintage", "celestion-g12-vintage.wav", 6.1f},
-    {"eminence-governor", "Eminence Governor", "eminence-governor.wav", 5.4f},
-    {"ampeg-810", "Ampeg 8x10", "ampeg-810.wav", 12.0f},
+    {"air-deluxe-p12q-sm57", "Deluxe P12Q", "air-deluxe-p12q-sm57.wav", 4.81f},
+    {"air-princeton-p10r-sm57", "Princeton P10R", "air-princeton-p10r-sm57.wav", 4.89f},
+    {"air-twin-oxford-sm57", "Twin Oxford", "air-twin-oxford-sm57.wav", 4.17f},
+    {"air-bassman-c12na-sm57", "Bassman C12NA", "air-bassman-c12na-sm57.wav", 5.45f},
+    {"air-champ-g8c-or57", "Champ G8C", "air-champ-g8c-or57.wav", 3.67f},
+    {"air-marshall-greenback-sm57", "Marshall Greenback", "air-marshall-greenback-sm57.wav", 5.64f},
+    {"air-hiwatt-fane-f25-sm57", "Fane F25", "air-hiwatt-fane-f25-sm57.wav", 6.72f},
+    {"air-v30-212-sm57", "V30 2x12", "air-v30-212-sm57.wav", 5.67f},
+    {"air-g12t75-212-sm57", "G12T-75 2x12", "air-g12t75-212-sm57.wav", 6.82f},
+    {"air-evh-g12-sm57", "EVH G12", "air-evh-g12-sm57.wav", 4.76f},
+    {"air-mesa-recto-v30-sm57", "Mesa Rectifier V30", "air-mesa-recto-v30-sm57.wav", 4.74f},
+    {"air-engl-v30-sm57", "ENGL E412 V30", "air-engl-v30-sm57.wav", 5.80f},
+    {"air-orange-ppc412-sm57", "Orange PPC412", "air-orange-ppc412-sm57.wav", 5.77f},
+    {"air-vox-blue-sm57", "Vox Alnico Blue", "air-vox-blue-sm57.wav", 6.47f},
+    {"air-roland-jc77-sm57", "Roland JC-77", "air-roland-jc77-sm57.wav", 5.39f},
+    {"air-ampeg-810-md421", "Ampeg 8x10", "air-ampeg-810-md421.wav", 15.03f},
 };
 
 constexpr FactoryImpulse factoryReverbs[] = {
@@ -72,31 +72,31 @@ constexpr FactoryImpulse factoryReverbs[] = {
 // Audition suggestions include alternatives where the bank lacks a capture
 // of the original combo speaker or the amp is a head or preamp.
 constexpr std::pair<std::string_view, const char*> cabinetSuggestions[] = {
-    {"Ampeg B-15N", "ampeg-810"},
-    {"ENGL E530", "engl-v30-sm57"},
-    {"EVH 5150 III", "bg412s-dv77-sm57"},
-    {"Fender Bassman", "jensen-e606"},
-    {"Fender Deluxe Reverb", "jensen-sm57"},
-    {"Fender Princeton Reverb", "jensen-sm57"},
-    {"Fender Tweed Champ", "jensen-sm57"},
-    {"Fender Tweed Deluxe", "jensen-e606"},
-    {"Fender Twin Reverb", "jensen-sm57"},
-    {"Hiwatt DR103", "hk-celestion-c414"},
-    {"Laney GH100L", "hk-celestion-sm57"},
-    {"Marshall 1959", "hk-celestion-sm57"},
-    {"Marshall 2555", "hk-celestion-sm57"},
-    {"Marshall JCM800", "hk-celestion-sm57"},
-    {"Marshall Valvestate", "hk-celestion-sm57"},
-    {"Mesa Boogie Dual Rectifier", "mesa-412-os-v30"},
-    {"Mesa Boogie Mark IIC+", "mesa-412-os-v30"},
-    {"Orange OR120", "orange-ppc112-v30-sm57"},
-    {"Orange Rockerverb 50w - Clean", "orange-ppc212v-neocreamback"},
-    {"Orange Rockerverb 50w - Dirty", "orange-ppc112-v30-sm57"},
-    {"Peavey 5150", "bg412s-dv77-sm57"},
-    {"Roland JC-120", "jensen-sm57"},
-    {"Soldano SLO-100", "mesa-412-os-v30"},
-    {"Vox AC15", "orange-ppc212v-neocreamback"},
-    {"Vox AC30", "orange-ppc212v-neocreamback"},
+    {"Ampeg B-15N", "air-ampeg-810-md421"},
+    {"ENGL E530", "air-engl-v30-sm57"},
+    {"EVH 5150 III", "air-evh-g12-sm57"},
+    {"Fender Bassman", "air-bassman-c12na-sm57"},
+    {"Fender Deluxe Reverb", "air-deluxe-p12q-sm57"},
+    {"Fender Princeton Reverb", "air-princeton-p10r-sm57"},
+    {"Fender Tweed Champ", "air-champ-g8c-or57"},
+    {"Fender Tweed Deluxe", "air-deluxe-p12q-sm57"},
+    {"Fender Twin Reverb", "air-twin-oxford-sm57"},
+    {"Hiwatt DR103", "air-hiwatt-fane-f25-sm57"},
+    {"Laney GH100L", "air-marshall-greenback-sm57"},
+    {"Marshall 1959", "air-marshall-greenback-sm57"},
+    {"Marshall 2555", "air-v30-212-sm57"},
+    {"Marshall JCM800", "air-marshall-greenback-sm57"},
+    {"Marshall Valvestate", "air-g12t75-212-sm57"},
+    {"Mesa Boogie Dual Rectifier", "air-mesa-recto-v30-sm57"},
+    {"Mesa Boogie Mark IIC+", "air-mesa-recto-v30-sm57"},
+    {"Orange OR120", "air-orange-ppc412-sm57"},
+    {"Orange Rockerverb 50w - Clean", "air-orange-ppc412-sm57"},
+    {"Orange Rockerverb 50w - Dirty", "air-orange-ppc412-sm57"},
+    {"Peavey 5150", "air-v30-212-sm57"},
+    {"Roland JC-120", "air-roland-jc77-sm57"},
+    {"Soldano SLO-100", "air-v30-212-sm57"},
+    {"Vox AC15", "air-vox-blue-sm57"},
+    {"Vox AC30", "air-vox-blue-sm57"},
 };
 
 std::span<const char> factoryResource(std::string_view filename) {
@@ -440,7 +440,7 @@ juce::String OutputEffects::suggestedCabinet(std::string_view circuit) {
 
 juce::String OutputEffects::factoryCredits() {
     juce::String credits;
-    for (const auto* name : {"CABINET-IR-SOURCES.md", "LICENSE-TONE3000.txt", "REVERB-IR-SOURCES.md"}) {
+    for (const auto* name : {"REVERB-IR-SOURCES.md"}) {
         const auto data = factoryResource(name);
         if (!data.empty())
             credits << juce::String::fromUTF8(data.data(), static_cast<int>(data.size())) << "\n\n";

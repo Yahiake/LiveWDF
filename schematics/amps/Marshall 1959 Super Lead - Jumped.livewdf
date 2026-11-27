@@ -86,10 +86,28 @@
     },
     {
       "id": "B+",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "rail",
       "values": {
         "dc": 282.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 52,
+        "y": -5
+      }
+    },
+    {
+      "id": "B+ JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 275
       },
       "visual": {
         "flipped": false,
@@ -184,10 +202,28 @@
     },
     {
       "id": "V1A-CK",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "cap",
       "values": {
         "value": 0.00025
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 28,
+        "y": 26
+      }
+    },
+    {
+      "id": "V1A-CK JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.00033
       },
       "visual": {
         "flipped": false,
@@ -294,10 +330,28 @@
     },
     {
       "id": "C-Bright",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "cap",
       "values": {
         "value": 2.2e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 31,
+        "y": 45
+      }
+    },
+    {
+      "id": "C-Bright JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
       },
       "visual": {
         "flipped": false,
@@ -408,10 +462,28 @@
     },
     {
       "id": "C-Mix-Bright",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "cap",
       "values": {
         "value": 5e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 53,
+        "y": 38
+      }
+    },
+    {
+      "id": "C-Mix-Bright JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
       },
       "visual": {
         "flipped": false,
@@ -452,10 +524,28 @@
     },
     {
       "id": "V2A-RK",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "res",
       "values": {
         "value": 820.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 65,
+        "y": 36
+      }
+    },
+    {
+      "id": "V2A-RK JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
       },
       "visual": {
         "flipped": false,
@@ -520,10 +610,28 @@
     },
     {
       "id": "C-Treble",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "cap",
       "values": {
         "value": 5e-10
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 100,
+        "y": 25
+      }
+    },
+    {
+      "id": "C-Treble JCM800",
+      "properties": {
+        "enabledBy": "ERA"
+      },
+      "type": "cap",
+      "values": {
+        "value": 4.7e-10
       },
       "visual": {
         "flipped": false,
@@ -751,11 +859,29 @@
     {
       "id": "PI B+",
       "properties": {
+        "enabledBy": "!ERA",
         "powerAmp": "1"
       },
       "type": "rail",
       "values": {
         "dc": 328.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 158,
+        "y": 11
+      }
+    },
+    {
+      "id": "PI B+ JCM800",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 320
       },
       "visual": {
         "flipped": false,
@@ -863,6 +989,7 @@
     {
       "id": "Feedback",
       "properties": {
+        "enabledBy": "!ERA",
         "powerAmp": "1"
       },
       "type": "res",
@@ -877,8 +1004,26 @@
       }
     },
     {
+      "id": "Feedback JCM800",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 195,
+        "y": 90
+      }
+    },
+    {
       "id": "Presence capacitor",
       "properties": {
+        "enabledBy": "!ERA",
         "powerAmp": "1"
       },
       "type": "cap",
@@ -893,8 +1038,26 @@
       }
     },
     {
+      "id": "Presence capacitor JCM800",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 270,
+        "x": 151,
+        "y": 73
+      }
+    },
+    {
       "id": "Presence",
       "properties": {
+        "enabledBy": "!ERA",
         "powerAmp": "1",
         "taper": "Linear"
       },
@@ -907,6 +1070,26 @@
         "flipped": false,
         "rotation": 0,
         "x": 143,
+        "y": 74
+      }
+    },
+    {
+      "id": "Presence JCM800",
+      "properties": {
+        "enabledBy": "ERA",
+        "label": "Presence",
+        "powerAmp": "1",
+        "taper": "Linear"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.38,
+        "totalR": 22000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 180,
+        "x": 135,
         "y": 74
       }
     },
@@ -1105,11 +1288,29 @@
     {
       "id": "Screen B+",
       "properties": {
+        "enabledBy": "!ERA",
         "powerAmp": "1"
       },
       "type": "rail",
       "values": {
         "dc": 470.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 210,
+        "y": 15
+      }
+    },
+    {
+      "id": "Screen B+ JCM800",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "rail",
+      "values": {
+        "dc": 468
       },
       "visual": {
         "flipped": false,
@@ -1216,7 +1417,9 @@
     },
     {
       "id": "V2A-CK",
-      "properties": {},
+      "properties": {
+        "enabledBy": "!ERA"
+      },
       "type": "cap",
       "values": {
         "value": 6.8e-07
@@ -1227,9 +1430,94 @@
         "x": 68,
         "y": 36
       }
+    },
+    {
+      "id": "Feedback shunt",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 4700
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 160,
+        "y": 76
+      }
+    },
+    {
+      "id": "ERA",
+      "properties": {
+        "label": "JCM800 era",
+        "select": "0"
+      },
+      "type": "switch_res",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 20,
+        "y": 70
+      }
+    },
+    {
+      "id": "OT1 4 ohm tap",
+      "properties": {
+        "enabledBy": "ERA",
+        "model": "Real — Manual",
+        "powerAmp": "1"
+      },
+      "type": "transformer",
+      "values": {
+        "Lm": 100.0,
+        "dcrPrimary": 0.0,
+        "dcrSecondary": 0.0,
+        "leakage": 0.0001,
+        "turnsPrimary": 2.0,
+        "turnsSecondary": 1.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 226,
+        "y": 90
+      }
+    },
+    {
+      "id": "PA-G4 primary",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 223,
+        "y": 97
+      }
+    },
+    {
+      "id": "PA-G4 secondary",
+      "properties": {
+        "enabledBy": "ERA",
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 229,
+        "y": 97
+      }
     }
   ],
-  "description": "Marshall 1959 Super Lead from the July 1970 Unicord drawing. Split-cathode V1, 500 pF bright mix, bypassed V2a, 47 kΩ feedback from the 16 Ω tap with the 5 kΩ Presence, four EL34s on fixed rails and bias.",
+  "description": "Marshall 1959 Super Lead from the July 1970 Unicord drawing. Split-cathode V1, 500 pF bright mix, bypassed V2a, 47 kΩ feedback from the 16 Ω tap with the 5 kΩ Presence, four EL34s on fixed rails and bias. JCM800 era switches to the 1981 Lead Series values and its 100 kΩ feedback from the 4 Ω tap of the same secondary with the 22 kΩ Presence.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -1245,7 +1533,7 @@
       "Presence"
     ]
   },
-  "name": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+  "name": "Marshall 1959 Super Lead - Jumped",
   "version": 3,
   "wires": [
     {
@@ -3965,6 +4253,186 @@
         {
           "x": 146,
           "y": 75
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 160,
+          "y": 74
+        },
+        {
+          "x": 160,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 149,
+          "y": 73
+        },
+        {
+          "x": 148,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 160,
+          "y": 78
+        },
+        {
+          "x": 160,
+          "y": 79
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 153,
+          "y": 73
+        },
+        {
+          "x": 154,
+          "y": 73
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 135,
+          "y": 76
+        },
+        {
+          "x": 135,
+          "y": 79
+        },
+        {
+          "x": 143,
+          "y": 79
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 132,
+          "y": 74
+        },
+        {
+          "x": 132,
+          "y": 72
+        },
+        {
+          "x": 135,
+          "y": 72
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 154,
+          "y": 73
+        },
+        {
+          "x": 154,
+          "y": 69
+        },
+        {
+          "x": 135,
+          "y": 69
+        },
+        {
+          "x": 135,
+          "y": 72
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 197,
+          "y": 90
+        },
+        {
+          "x": 198,
+          "y": 90
+        },
+        {
+          "x": 198,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 223,
+          "y": 87
+        },
+        {
+          "x": 222,
+          "y": 87
+        },
+        {
+          "x": 222,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 223,
+          "y": 93
+        },
+        {
+          "x": 223,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 229,
+          "y": 93
+        },
+        {
+          "x": 229,
+          "y": 95
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 229,
+          "y": 87
+        },
+        {
+          "x": 231,
+          "y": 87
+        },
+        {
+          "x": 231,
+          "y": 101
+        },
+        {
+          "x": 193,
+          "y": 101
+        },
+        {
+          "x": 193,
+          "y": 90
         }
       ]
     }

@@ -1,10 +1,10 @@
 schematic_path,profile,input_full_scale_V_peak,measured_output_divisor_V,accurate_minus12_error_dB,accurate_minus9_error_dB,accurate_minus6_error_dB,accurate_median_error_dB,accurate_holdout_error_dB,accurate_max_peak_dBFS,fast_live_minus12_error_dB,fast_live_minus9_error_dB,fast_live_minus6_error_dB,fast_live_median_error_dB,fast_live_holdout_error_dB,fast_live_max_peak_dBFS
-schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,271.24772,2.942,0.000,-2.968,0.000,0.152,-16.328,2.942,0.000,-2.968,0.000,0.152,-16.328
+schematics/amps/EVH 5150 III 100S Stealth - Channel 3.livewdf,amp,0.87059607,288.87126,2.959,0.000,-2.980,0.000,0.199,-16.636,2.959,0.000,-2.980,0.000,0.199,-16.636
 schematics/amps/Marshall Valvestate 8100 - Boost Channel.livewdf,amp,0.87059607,6.5291355,1.831,0.000,-1.936,0.000,1.545,-12.841,1.831,0.000,-1.936,0.000,1.545,-12.841
 schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,500.00163,2.530,0.000,-2.712,0.000,0.394,-20.785,2.530,0.000,-2.712,0.000,0.394,-20.785
 schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,95.059271,0.232,0.000,-0.446,0.000,0.717,-10.993,0.232,0.000,-0.446,0.000,0.717,-10.993
 schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,300.93722,2.347,0.000,-2.445,0.000,1.069,-20.555,2.347,0.000,-2.445,0.000,1.069,-20.555
-schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,181.76225,0.878,0.000,-1.316,0.000,0.081,-13.910,0.878,0.000,-1.316,0.000,0.081,-13.910
+schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,182.41879,0.870,0.000,-1.308,0.000,0.070,-13.866,0.870,0.000,-1.308,0.000,0.070,-13.866
 schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.2882902,0.322,0.000,-0.738,0.000,-1.293,-5.021,0.322,0.000,-0.738,0.000,-1.293,-5.021
 schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,100.06624,1.213,0.000,-1.521,0.000,2.708,-16.061,1.213,0.000,-1.521,0.000,2.708,-16.061
 schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,182.26052,1.065,0.000,-1.363,0.000,2.119,-12.777,1.065,0.000,-1.363,0.000,2.119,-12.777
@@ -14,8 +14,7 @@ schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,147.
 schematics/amps/Fender Twin Reverb AB763.livewdf,amp,0.87059607,119.17576,0.000,0.057,-0.326,0.000,0.689,-11.804,0.000,0.057,-0.326,0.000,0.689,-11.804
 schematics/amps/Hiwatt DR103.livewdf,amp,0.87059607,434.0205,0.841,0.000,-1.181,0.000,0.545,-14.201,0.841,0.000,-1.181,0.000,0.545,-14.201
 schematics/amps/Laney GH100L - Drive.livewdf,amp,0.87059607,352.50147,2.242,0.000,-2.381,0.000,2.301,-19.111,2.242,0.000,-2.381,0.000,2.301,-19.111
-schematics/amps/Marshall 1959 Super Lead JCM800 era - Jumped.livewdf,amp,0.87059607,554.77615,2.525,0.000,-2.651,0.000,0.673,-21.390,2.525,0.000,-2.651,0.000,0.673,-21.390
-schematics/amps/Marshall 1959 Super Lead Plexi 1970 - Jumped.livewdf,amp,0.87059607,925.61955,2.312,0.000,-2.317,0.000,1.945,-19.856,2.312,0.000,-2.317,0.000,1.945,-19.856
+schematics/amps/Marshall 1959 Super Lead - Jumped.livewdf,amp,0.87059607,925.61955,2.312,0.000,-2.317,0.000,1.945,-19.856,2.312,0.000,-2.317,0.000,1.945,-19.856
 schematics/amps/Marshall 2555 Silver Jubilee - Lead.livewdf,amp,0.87059607,47.524202,-0.343,0.154,0.000,0.000,-0.601,-6.646,-0.343,0.154,0.000,0.000,-0.601,-6.646
 schematics/amps/Marshall JCM800 2203 - High Input.livewdf,amp,0.87059607,366.32514,1.725,0.000,-1.959,0.000,2.297,-10.244,1.725,0.000,-1.959,0.000,2.297,-10.244
 schematics/amps/Mesa Boogie Mark IIC+ - Lead.livewdf,amp,0.87059607,699.24446,2.543,0.000,-2.640,0.000,1.317,-22.988,2.543,0.000,-2.640,0.000,1.317,-22.988
