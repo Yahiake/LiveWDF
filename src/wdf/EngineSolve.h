@@ -198,6 +198,15 @@ protected:
     int lagCount_ = 0;
     long long lagRevision_ = -1;
     double modeTol_ = 0.0;
+    /// Preview: a lamp side with no coupling to the rest, replayed from one recorded period of its port currents.
+    struct LampReplay {
+        std::vector<unsigned char> frozen;
+        std::vector<int> ports, order;
+        std::vector<double> zLamp, ring;  ///< lamp Z when recorded; per sample the lamp currents, then log R watched
+        long long n = 0, crossing = -1, rebuilds = -1, controls = -1;
+        int watch = -1, length = 0, period = 0, previous = 0, base = 0, phase = 0;
+        double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0;
+    } lamp_;
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
@@ -485,9 +494,15 @@ protected:
         ctx.mixedEnabled &= !adjusted;
         ctx.reductions = !adjusted;
         auto newtonCtx = makeNewtonContext();
-        solver::RootBlockSolve::solveRootBlocks(
-            ctx, newtonCtx, slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView(),
-            maxIter, tol, fineBlockSolver_ ? 6 : 0);
+        BlockView view = slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView();
+        if (lamp_.period) {
+            lamp_.order.clear();
+            for (int s = 0; s < view.count; ++s)
+                if (const int b = (*view.order)[static_cast<size_t>(s)]; !lamp_.frozen[(*view.blocks)[static_cast<size_t>(b)].ports.front()])
+                    lamp_.order.push_back(b);
+            view = {view.blocks, &lamp_.order, static_cast<int>(lamp_.order.size()), view.held, lamp_.frozen.data()};
+        }
+        solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 
     /// Runtime active-set variant of `solveRootBlocks`.

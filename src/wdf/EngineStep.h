@@ -188,6 +188,8 @@ public:
     }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void prepareSlowLag();
+    void prepareLampReplay();
+    void stepLampReplay();
     bool slowLagActive() const noexcept {
         return loadedJunctionEnabled_ && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
                !fineBlockSolver_;

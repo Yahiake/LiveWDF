@@ -313,6 +313,8 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         newtonIters_ = 0;
         deviceEvals_ = 0;
     }
+    if (lamp_.length)
+        stepLampReplay();
     tock(prof_.solve);
 
     // A block that had to fall back is not paying for itself. Spend a few
