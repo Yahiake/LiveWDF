@@ -196,6 +196,7 @@ struct BlockView {
     const std::vector<int>* order = nullptr;
     int count = 0;
     double* held = nullptr;  ///< Previous-sample currents of the `lagged` columns
+    const unsigned char* frozen = nullptr;  ///< Root ports replayed instead of solved
 };
 
 /// High-resolution diagnostic timestamps for the nonlinear solve.

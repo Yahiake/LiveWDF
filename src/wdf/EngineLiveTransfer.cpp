@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numeric>
 #include <tuple>
 
 namespace wdf {
@@ -105,6 +106,100 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
     sharedNewtonColumns_.prepare(Zred_, K_, nRed_, rootDevices_);
     triodeDomainTransfer_.prepare(Z_, K_, rootDevices_);
     prepareSlowLag();
+    prepareLampReplay();
+}
+
+void EngineStep::prepareLampReplay() {
+    lamp_ = {};
+    std::vector<int> side(static_cast<size_t>(K_));
+    std::iota(side.begin(), side.end(), 0);
+    const auto find = [&](int p) { while (side[p] != p) p = side[p] = side[side[p]]; return p; };
+    for (int r = 0; r < K_; ++r)
+        for (int c = 0; c < K_; ++c)
+            if (Z_[size_t(r) * K_ + c] != 0.0) side[find(r)] = find(c);
+    // A photoresistor whose light comes only from ports with no coupling to its own side watches a lamp.
+    for (const auto& photo : photoresistors_) {
+        const auto own = std::ranges::find_if(rootDevices_, [&](const RootDevice& d) {
+            return d.kind == DeviceKind::ControlledRes && d.compIndex == photo.index; });
+        const auto& light = compiledOptical_ ? photoresistors_[photo.lamp] : photo;
+        int lamp = -1;
+        bool alone = own != rootDevices_.end();
+        for (const int node : {light.sensePos, light.senseNeg})
+            for (int p = 0; node >= 0 && p < K_ && alone; ++p)
+                if (Xr_[size_t(node) * K_ + p] != 0.0) {
+                    alone = find(p) != find(own->portBase) && (lamp < 0 || find(p) == lamp);
+                    lamp = find(p);
+                }
+        if (!alone || lamp < 0)
+            continue;
+        for (int p = 0; p < K_; ++p)
+            if (find(p) == lamp) lamp_.ports.push_back(p);
+        lamp_.frozen.assign(size_t(K_), 0);
+        for (const int p : lamp_.ports) lamp_.frozen[size_t(p)] = 1;
+        lamp_.watch = int(photo.index);
+        lamp_.length = int(fs_);
+        lamp_.ring.assign(size_t(lamp_.length) * (lamp_.ports.size() + 1), 0.0);
+        lamp_.zLamp.assign(lamp_.ports.size() * lamp_.ports.size(), 0.0);
+        lamp_.order.reserve(rootDevices_.size());
+        return;
+    }
+}
+
+void EngineStep::stepLampReplay() {
+    auto& L = lamp_;
+    const size_t nS = L.ports.size(), w = nS + 1;
+    bool moved = L.rebuilds != linearRebuilds() || !loadedJunctionEnabled_;
+    for (size_t i = 0; i < nS * nS && !moved && L.controls != liveControlRevision(); ++i)
+        moved = L.zLamp[i] != Z_[size_t(L.ports[i / nS]) * K_ + L.ports[i % nS]];
+    L.controls = liveControlRevision();
+    if (moved) {
+        L.n = L.period = L.previous = 0;
+        L.crossing = -1;
+        L.mid = NAN;
+        L.lo = HUGE_VAL;
+        L.hi = -HUGE_VAL;
+        L.rebuilds = linearRebuilds();
+        for (size_t i = 0; i < nS * nS; ++i) L.zLamp[i] = Z_[size_t(L.ports[i / nS]) * K_ + L.ports[i % nS]];
+    }
+    if (!loadedJunctionEnabled_)
+        return;
+    if (L.period) {
+        const double* rec = &L.ring[size_t((L.base + L.phase) % L.length) * w];
+        for (size_t i = 0; i < nS; ++i) ii_[size_t(L.ports[i])] = rec[i];
+        for (const int r : L.ports) {
+            double v = vOc_[size_t(r)];
+            for (const int c : L.ports) v -= Z_[size_t(r) * K_ + c] * ii_[size_t(c)];
+            vv_[size_t(r)] = v;
+        }
+        L.phase = (L.phase + 1) % L.period;
+        return;
+    }
+    // Record until two successive periods of the watched resistance agree, then loop the last one.
+    double* rec = &L.ring[size_t(L.n % L.length) * w];
+    for (size_t i = 0; i < nS; ++i) rec[i] = ii_[size_t(L.ports[i])];
+    const double x = rec[nS] = std::log(ctrlResValues_[size_t(L.watch)]);
+    if (L.previous && L.n >= L.previous)
+        L.deviation = std::max(L.deviation, std::abs(x - L.ring[size_t((L.n - L.previous) % L.length) * w + nS]));
+    const double mid = std::isnan(L.mid) ? 0.5 * (L.lo + L.hi) : L.mid;
+    if (L.n > 0 && L.last < mid && x >= mid) {
+        const long long p = L.n - L.crossing;
+        if (L.crossing >= 0 && L.previous && std::abs(p - L.previous) <= 1 && L.deviation <= 0.02 &&
+            p < L.length && L.hi - L.lo > 0.1) {
+            L.period = int(p);
+            L.base = int((L.n + 1 - p) % L.length);
+            L.phase = 0;
+        }
+        L.previous = L.crossing >= 0 && p < L.length ? int(p) : 0;
+        L.mid = 0.5 * (L.lo + L.hi);
+        L.lo = HUGE_VAL;
+        L.hi = -HUGE_VAL;
+        L.deviation = 0.0;
+        L.crossing = L.n;
+    }
+    L.lo = std::min(L.lo, x);
+    L.hi = std::max(L.hi, x);
+    L.last = x;
+    ++L.n;
 }
 
 void EngineStep::prepareSlowLag() {
@@ -151,7 +246,7 @@ void EngineStep::prepareSlowLag() {
     lagOrder_.resize(rootDevices_.size());
     auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
     if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
-        std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); }))
+        (lagCount_ == blockCount_ && std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); })))
         lagCount_ = 0;
     for (int b = 0; b < lagCount_; ++b)
         solver::RootLinearPlan::build(lagBlocks_[size_t(b)], rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
@@ -241,6 +336,7 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             std::swap(lagBlocks_, preparedEngine.lagBlocks_);
             std::swap(lagOrder_, preparedEngine.lagOrder_);
             std::swap(lagHeld_, preparedEngine.lagHeld_);
+            std::swap(lamp_, preparedEngine.lamp_);
             lagCount_ = preparedEngine.lagCount_;
             lagRevision_ = preparedEngine.lagRevision_ == preparedEngine.linearRebuilds() ? linearRebuilds() : -1;
             if (!packedDrive_.panels.empty())

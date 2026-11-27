@@ -464,7 +464,21 @@ public:
                    back * forward < 1e-4 && gain(g, h, true) < 0.05;
         };
 
+        // A grid sitting on the driving plate has no coupling cap to absorb its
+        // current, so predicting it misses for a whole conduction episode.
+        const auto gridOnPlate = [&](int g, int h) {
+            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            if (dg.kind != DeviceKind::Triode || dh.kind != DeviceKind::Triode)
+                return false;
+            const auto& tg = ctx.circuit.tri[dg.compIndex];
+            const auto& th = ctx.circuit.tri[dh.compIndex];
+            return tg.p == th.g || th.p == tg.g;
+        };
+
         const auto coupled = [&](int g, int h) -> bool {
+            if (slope && gridOnPlate(g, h))
+                return true;
             if (lagged(g, h))
                 return false;
             if (useSignalFlow) {
