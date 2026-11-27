@@ -374,6 +374,227 @@
       }
     },
     {
+      "id": "RVIB",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 106,
+        "y": 21
+      }
+    },
+    {
+      "id": "CVIB",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-07
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 106,
+        "y": 27
+      }
+    },
+    {
+      "id": "B+ recovery",
+      "properties": {},
+      "type": "rail",
+      "values": {
+        "dc": 410
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 124,
+        "y": 24
+      }
+    },
+    {
+      "id": "RPV4B",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 31
+      }
+    },
+    {
+      "id": "V4B",
+      "properties": {
+        "model": "7025"
+      },
+      "type": "triode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 40
+      }
+    },
+    {
+      "id": "RGV4B",
+      "properties": {
+        "label": "Reverb return"
+      },
+      "type": "res",
+      "values": {
+        "value": 470000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 44
+      }
+    },
+    {
+      "id": "GND recovery grid",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 110,
+        "y": 50
+      }
+    },
+    {
+      "id": "RKV4B",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 820
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 47
+      }
+    },
+    {
+      "id": "GND recovery cathode",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 118,
+        "y": 53
+      }
+    },
+    {
+      "id": "CKV4B",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.5e-05
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 124,
+        "y": 47
+      }
+    },
+    {
+      "id": "GND recovery bypass",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 124,
+        "y": 53
+      }
+    },
+    {
+      "id": "RPReverb",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 136,
+        "y": 31
+      }
+    },
+    {
+      "id": "V4A",
+      "properties": {
+        "label": "Reverb return idle",
+        "model": "7025"
+      },
+      "type": "triode",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 136,
+        "y": 40
+      }
+    },
+    {
+      "id": "GND reverb return grid",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 133,
+        "y": 56
+      }
+    },
+    {
+      "id": "INTENSITY",
+      "properties": {
+        "label": "Intensity",
+        "taper": "RevLog"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 50000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 58
+      }
+    },
+    {
+      "id": "GND intensity",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 64
+      }
+    },
+    {
       "id": "RL",
       "properties": {
         "label": "Preamp bypass load",
@@ -382,7 +603,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 35.159629,
+        "preampFullScaleVolts": 20.762523,
         "value": 470000.0
       },
       "visual": {
@@ -397,7 +618,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 199.22579
+        "fullScaleVolts": 117.77612
       },
       "visual": {
         "flipped": true,
@@ -1168,6 +1389,250 @@
   "name": "Fender Twin Reverb AB763",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 106,
+          "y": 24
+        },
+        {
+          "x": 103,
+          "y": 24
+        },
+        {
+          "x": 103,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 56
+        },
+        {
+          "x": 162,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 162,
+          "y": 60
+        },
+        {
+          "x": 162,
+          "y": 62
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 17
+        },
+        {
+          "x": 106,
+          "y": 17
+        },
+        {
+          "x": 106,
+          "y": 19
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 106,
+          "y": 23
+        },
+        {
+          "x": 106,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 106,
+          "y": 29
+        },
+        {
+          "x": 106,
+          "y": 35
+        },
+        {
+          "x": 118,
+          "y": 35
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 29
+        },
+        {
+          "x": 118,
+          "y": 27
+        },
+        {
+          "x": 136,
+          "y": 27
+        },
+        {
+          "x": 136,
+          "y": 29
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 124,
+          "y": 24
+        },
+        {
+          "x": 124,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 33
+        },
+        {
+          "x": 118,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 115,
+          "y": 40
+        },
+        {
+          "x": 110,
+          "y": 40
+        },
+        {
+          "x": 110,
+          "y": 42
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 110,
+          "y": 46
+        },
+        {
+          "x": 110,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 43
+        },
+        {
+          "x": 118,
+          "y": 45
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 49
+        },
+        {
+          "x": 118,
+          "y": 51
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 118,
+          "y": 45
+        },
+        {
+          "x": 124,
+          "y": 45
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 124,
+          "y": 49
+        },
+        {
+          "x": 124,
+          "y": 51
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 136,
+          "y": 33
+        },
+        {
+          "x": 136,
+          "y": 37
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 136,
+          "y": 43
+        },
+        {
+          "x": 136,
+          "y": 45
+        },
+        {
+          "x": 124,
+          "y": 45
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 133,
+          "y": 40
+        },
+        {
+          "x": 133,
+          "y": 54
+        }
+      ]
+    },
     {
       "points": [
         {

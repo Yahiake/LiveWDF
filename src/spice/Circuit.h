@@ -120,6 +120,8 @@ struct PhotoresistorControl {
     double gamma = 1.0;
     double attackSeconds = 0.002;
     double releaseSeconds = 0.020;
+    // A gas lamp strikes at one voltage and goes out at a lower one; zero leaves the cell analog.
+    double strikeVolts = 0.0, extinguishVolts = 0.0;
 
     double illumination(double volts) const {
         return std::pow(std::clamp(volts / referenceVolts, 0.0, 1.0), gamma);

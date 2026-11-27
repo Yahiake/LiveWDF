@@ -94,6 +94,7 @@ struct BlockSolveContext {
     bool mixedEnabled;
     long long& mixedAttempts;
     long long& mixedAccepted;
+    double modeTol;
 };
 
 class RootBlockSolve {
@@ -1140,6 +1141,9 @@ public:
         BlockSolveContext& ctx, bool* acceptedDeviceCurrents = nullptr) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        // Later stages amplify an error left in a block without a pentode, so only power tubes get the loose Preview tolerance.
+        if (std::ranges::none_of(block.devices, [&](int d) { return ctx.rootDevices[static_cast<size_t>(d)].kind == DeviceKind::Pentode; }))
+            tol = std::min(tol, ctx.modeTol);
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
         if (ctx.mixedEnabled && !block.alternateLinearSlopes.empty() &&
