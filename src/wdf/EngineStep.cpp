@@ -273,11 +273,11 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         }
     }
     if (K_ > 0 && !loadedRoot && !compiledRoot && !triodePreview) {
-        // Where the reference is the joint Newton, the lagged partition only
+        // Unless it replaces a multi-block partition, the lagged partition only
         // pays on expensive samples, so it takes the same gate in bursts.
         const bool burst = slowLagCooldown_ > 0 && (previousHard || slowLagCooldown_ > 28);
-        const bool slowLag = slowLagActive() && (blockRoots() || burst || previousCostly);
-        if (!blockRoots())
+        const bool slowLag = slowLagActive() && (slowLagReplacesBlocks() || burst || previousCostly);
+        if (!slowLagReplacesBlocks())
             slowLagCooldown_ = !slowLag ? 0 : slowLagCooldown_ > 0 ? slowLagCooldown_ - 1 : 32;
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
@@ -314,7 +314,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             solveRootBlocks(maxIter, tol, slowLag);
         else
             solveRootsNewton(maxIter, tol);
-        if (slowLag && !blockRoots())
+        if (slowLag && !slowLagReplacesBlocks())
             jointLastIters_ = jointLastTrials_ = 0;
     } else if (K_ == 0) {
         lastConverged_ = true;

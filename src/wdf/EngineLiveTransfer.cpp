@@ -142,7 +142,7 @@ void EngineStep::prepareSlowLag() {
         }
     }
     // A block-path reference already lives with its grid prediction misses.
-    const double gridMargin = blockRoots() ? HUGE_VAL : 0.25;
+    const double gridMargin = slowLagReplacesBlocks() ? HUGE_VAL : 0.25;
     auto base = std::tuple(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_,
                            allClosedFormBlocks_, hasAntiParallelBlock_);
     for (auto& b : newtonBlocks_)
@@ -154,14 +154,14 @@ void EngineStep::prepareSlowLag() {
     lagOrder_ = std::move(groupOrder_);
     std::tie(newtonBlocks_, groupOrder_, blockOf_, blockCount_, scalarBlockCount_, allClosedFormBlocks_,
              hasAntiParallelBlock_) = std::move(base);
-    // Against a joint Newton, small blocks pay only once the largest one is at least halved.
+    // Against one big solve, small blocks pay only once the largest one is at least halved.
     const auto largest = [](const std::vector<NewtonBlock>& blocks, int count) {
         size_t ports = 0;
         for (int b = 0; b < count; ++b)
             ports = std::max(ports, blocks[size_t(b)].ports.size());
         return ports;
     };
-    if (!blockRoots() && 2 * largest(lagBlocks_, lagCount_) > largest(newtonBlocks_, blockCount_))
+    if (!slowLagReplacesBlocks() && 2 * largest(lagBlocks_, lagCount_) > largest(newtonBlocks_, blockCount_))
         lagCount_ = 0;
     lagHeld_.assign(K_, 0.0);
     lagRevision_ = linearRebuilds();

@@ -466,6 +466,21 @@ public:
             return gainOver(g, dg.portBase, dg.numPorts, [&](int) { return grid; }, 1) *
                    gainOver(h, grid, 1, [&](int j) { return dg.portBase + j; }, dg.numPorts);
         };
+        // Volts on g's ports per volt on h's ports through Z: the error a late read leaves in g.
+        const auto reach = [&](int g, int h) {
+            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            double m = 0.0;
+            for (int r = dg.portBase; r < dg.portBase + dg.numPorts; ++r) {
+                double row = 0.0;
+                for (int j = 0; j < partitionPortCount(dh); ++j)
+                    for (int k = dh.portBase; k < dh.portBase + dh.numPorts; ++k)
+                        row += std::abs(z[static_cast<size_t>(r) * ctx.K + activePort(dh, j)]) *
+                               (*slope)[static_cast<size_t>(activePort(dh, j)) * ctx.K + k];
+                m = std::max(m, row);
+            }
+            return m;
+        };
         // Preview reads the weaker direction of a weak loop (supply, screen and
         // bias nodes) one sample late. Delayed, a loop rings at Nyquist unless the
         // gain around it, bounded by Z and the steepest device slopes, is below 1;
@@ -475,7 +490,7 @@ public:
                 return false;
             const double back = gain(g, h), forward = gain(h, g);
             return (back <= forward || (useSignalFlow && flowReach[static_cast<size_t>(g) * nGroups + h])) &&
-                   back * forward < 1e-3;
+                   back * forward < 1e-3 && reach(g, h) < 0.05;
         };
 
         const auto coupled = [&](int g, int h) -> bool {
