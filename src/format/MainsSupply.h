@@ -182,16 +182,22 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         const auto supplyCap = [&](const Cap& x) {
             return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
         };
+        // A capacitor in parallel with a rail adds to it; one the rails already join across a stack adds no rail.
         std::map<std::pair<std::string, std::string>, size_t> rails;
+        std::map<std::string, std::string> joined;
+        const auto root = [&](std::string n) { while (joined.count(n)) n = joined[n]; return n; };
         for (const auto& cap : c.cap) {
             if (!supplyCap(cap)) continue;
-            const auto [it, added] = rails.try_emplace(std::minmax(cap.a, cap.b), c.src.size());
-            if (added) {
+            if (const auto it = rails.find(std::minmax(cap.a, cap.b)); it != rails.end()) {
+                c.src[it->second].heldFarads += cap.value;
+            } else if (root(cap.a) != root(cap.b)) {
+                joined[root(cap.a)] = root(cap.b);
+                rails[std::minmax(cap.a, cap.b)] = c.src.size();
                 const bool flip = cap.a == ground;
                 c.addSrc(flip ? cap.b : cap.a, flip ? cap.a : cap.b, flip ? -*cap.initialVolts : *cap.initialVolts, 0.0, {},
                          "$mains rail " + cap.name);
+                c.src.back().heldFarads = cap.value;
             }
-            c.src[it->second].heldFarads += cap.value;
         }
         std::erase_if(c.cap, supplyCap);
     }
