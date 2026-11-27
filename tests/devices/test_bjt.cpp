@@ -239,17 +239,17 @@ TEST_CASE("BJT model basic Ebers-Moll reference", "[bjt][equation]") {
     REQUIRE(std::abs(res.iC + res.iB + res.iE) < 1e-6); // KCL
 }
 
-TEST_CASE("AC128 card is an Ebers-Moll PNP with the extracted transport values",
+TEST_CASE("AC128 card is a PNP with the fitted transport values",
           "[bjt][ac128][presets]") {
     const BjtEntry* e = findBjtByName("AC128");
     REQUIRE(e != nullptr);
     const BjtModel& m = e->model;
     CHECK(m.pnp);
-    CHECK(m.Is == Approx(20.66e-6));
-    CHECK(m.Bf == Approx(229.6));
-    CHECK(m.Br == Approx(14.66));
-    CHECK(m.Nf == Approx(1.133));
-    CHECK(m.Nr == Approx(1.140));
+    CHECK(m.Is == Approx(22.61e-6));
+    CHECK(m.Bf == Approx(1000.0));
+    CHECK(m.Br == Approx(3.76));
+    CHECK(m.Nf == Approx(1.04));
+    CHECK(m.Nr == Approx(1.07));
     CHECK(m.valid());
 
     // Forward-active PNP: collector and base currents are negative.
