@@ -17,6 +17,11 @@ struct PentodeCurrents {
     double dig_dvgk = 0.0;                                    // dIg/dVsk = dIg/dVpk = 0
     double dis_dvgk = 0.0, dis_dvsk = 0.0, dis_dvpk = 0.0;
     double dip_dvgk = 0.0, dip_dvsk = 0.0, dip_dvpk = 0.0;
+
+    void scale(double k) noexcept {
+        for (double* x : {&ig, &is, &ip, &dig_dvgk, &dis_dvgk, &dis_dvsk, &dis_dvpk, &dip_dvgk, &dip_dvsk, &dip_dvpk})
+            *x *= k;
+    }
 };
 
 /// Knee formulation for the Reefman pentode model.
@@ -24,6 +29,63 @@ enum class PentodeKneeType {
     DerkD,  ///< Tier 2A: rational knee, kappa = 1 / (1 + beta * Vp)
     DerkE   ///< Tier 2B: exponential knee, kappa = exp(-(beta * Vp)^1.5)
 };
+
+/// Emission as a sum of squared hinges of (Vgk + av*Vsk - knot), split between
+/// plate and screen by the knee K = 1/(1 + beta*Vpk):
+///   Ip = E*(plate*(1 - K) + lambda*Vpk),  Is = E*(rho + sigma*K).
+/// The fits conduct a little at zero screen voltage, so E fades out below
+/// about screenFade volts instead of stepping to zero at Vsk = 0.
+struct QuadricEmission {
+    static constexpr double screenFade = 10.0;
+    double av[5], knot[5], coef[5];
+    double beta, plate, lambda, rho, sigma;
+
+    double screenShare(double vpk) const noexcept { return rho + sigma / (1.0 + beta * vpk); }
+
+    void currents(double vgk, double vsk, double vpk, PentodeCurrents& c) const noexcept {
+        double e = 0.0, eg = 0.0, es = 0.0;
+        for (int j = 0; j < 5; ++j) {
+            const double h = vgk + av[j] * vsk - knot[j];
+            if (h > 0.0) {
+                e += coef[j] * h * h;
+                eg += 2.0 * coef[j] * h;
+                es += 2.0 * coef[j] * av[j] * h;
+            }
+        }
+        const double d = vsk * vsk + screenFade * screenFade, fade = vsk * vsk / d;
+        es = es * fade + e * 2.0 * vsk * screenFade * screenFade / (d * d);
+        e *= fade;
+        eg *= fade;
+        const double k = 1.0 / (1.0 + beta * vpk), dk = -beta * k * k;
+        const double toPlate = plate * (1.0 - k) + lambda * vpk, toScreen = rho + sigma * k;
+        c.ip = e * toPlate;
+        c.dip_dvgk = eg * toPlate;
+        c.dip_dvsk = es * toPlate;
+        c.dip_dvpk = e * (lambda - plate * dk);
+        c.is = e * toScreen;
+        c.dis_dvgk = eg * toScreen;
+        c.dis_dvsk = es * toScreen;
+        c.dis_dvpk = e * sigma * dk;
+    }
+};
+
+// Fitted to the Reefman cards below; EL84 keeps Reefman until a fit is close enough.
+// Regenerate with gen_table.py from the coefficient JSON files.
+inline constexpr QuadricEmission kQuadricEL34{
+    {0.146270568032, 0.120203389709, 0.0927705047465, 0.189615508236, 0.0553450489352},
+    {-3.54589504812, -3.53585081269, -4.6749480785, -3.13665148511, -7.59060722067},
+    {0.00272866786428, 0.0108675644153, 0.0311899675706, 0.000338237719548, 0.0425556768557},
+    0.105, 0.00408070934105, 1.6e-06, 0.000512767921239, 0.00312275664034};
+inline constexpr QuadricEmission kQuadric6L6GC{
+    {0.170219523967, 0.142616525263, 0.11307917015, 0.217636087066, 0.0729490552428},
+    {-5.54151904163, -5.53857990429, -7.04389240158, -5.504627238, -9.90692531081},
+    {0.00346625766973, 0.0105724907037, 0.0233999810999, 0.000529542856001, 0.0280165437189},
+    0.069, 0.00208927130543, 1.1e-06, 0.000149868864743, 0.00121393780442};
+inline constexpr QuadricEmission kQuadric6V6S{
+    {0.13245251316, 0.103506792147, 0.159397472203, 0.205583002114, 0.0635950285451},
+    {-4.68755583824, -6.14124219061, -4.67874389284, -4.37719603098, -9.17898712588},
+    {0.0102649284249, 0.024965769563, 0.00304125166826, 0.000428734698274, 0.0307164191188},
+    0.068, 0.00158196899481, 5.7e-07, 5.79129336955e-05, 0.00108413011878};
 
 /// Clean, self-contained constitutive evaluator for the Reefman pentode model
 /// (incorporating Derk D and Derk E knees and optional secondary emission).
@@ -59,7 +121,14 @@ struct ReefmanPentode {
     // Count / matched-pair scaling
     double count = 1.0;
 
+    const QuadricEmission* quadric = nullptr;
+
     bool operator==(const ReefmanPentode&) const = default;
+
+    /// The active plate/screen split; Reefman's is exact for DerkD without secondary emission.
+    QuadricEmission split() const noexcept {
+        return quadric ? *quadric : QuadricEmission{{}, {}, {}, beta, 1.0 / kg1 - 1.0 / kg2, a / kg1, 1.0 / kg2, alpha_s / kg2};
+    }
 
     static ReefmanPentode el34(double count = 1.0) noexcept {
         ReefmanPentode r;
@@ -79,6 +148,7 @@ struct ReefmanPentode {
         r.wv = 64.0;
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
+        r.quadric = &kQuadricEL34;
         r.count = count;
         return r;
     }
@@ -101,6 +171,7 @@ struct ReefmanPentode {
         r.wv = -5.0;
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
+        r.quadric = &kQuadric6L6GC;
         r.count = count;
         return r;
     }
@@ -145,6 +216,7 @@ struct ReefmanPentode {
         r.wv = 18.0;
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
+        r.quadric = &kQuadric6V6S;
         r.count = count;
         return r;
     }
@@ -193,6 +265,12 @@ struct ReefmanPentode {
     PentodeCurrents eval(double vgk, double vsk, double vpk) const noexcept {
         PentodeCurrents c;
         evalGrid(vgk, c.ig, c.dig_dvgk);
+        if (quadric) {
+            if (vpk >= 0.0 && vsk > 0.0)
+                quadric->currents(vgk, vsk, vpk, c);
+            c.scale(count);
+            return c;
+        }
 
         if (!isSupported(vgk, vsk, vpk)) {
             if (count != 1.0) {
@@ -308,6 +386,11 @@ struct ReefmanPentode {
     /// Value-only evaluation for currents (in Amperes).
     void evalCurrents(double vgk, double vsk, double vpk,
                       double& ig, double& is, double& ip) const noexcept {
+        if (quadric) {
+            const auto c = eval(vgk, vsk, vpk);
+            ig = c.ig, is = c.is, ip = c.ip;
+            return;
+        }
         double dummy_dig = 0.0;
         evalGrid(vgk, ig, dummy_dig);
 

@@ -371,26 +371,26 @@ inline const BjtModel kOC44 = withLowCurrentCorrections(
 // One registry for the engine and the picker.
 inline const BjtEntry kBjtTable[] = {
     // Silicon NPN (LTspice standard.bjt)
-    {"2N3904",  makeEM(1e-14,    300.0,  4.0,   1.0,   1.0,   false)},
+    // onsemi 2N3904 Figs. 15-17 typical gain and VBE(on), 0.1-10 mA.
+    {"2N3904",  makeEM(1.428e-14,126.9,  4.0,   1.0,   1.0,   false)},
     {"2N2222A", makeEM(1.43e-14, 255.9,  6.092, 1.0,   1.0,   false)},
     {"2N2222",  makeEM(1e-14,    200.0,  3.0,   1.0,   1.0,   false)},
     {"BC547B",  makeEM(2.39e-14, 294.3,  7.946, 1.008, 1.004, false)},
-    {"2N5088",  makeEM(5.911e-15,1122.0, 1.271, 1.0,   1.0,   false)},
+    // onsemi 2N5088/89 typical gain and VBE(on), 2N5089 gain scaled by its limits.
+    {"2N5088",  makeEM(1.543e-13,557.8,  1.271, 1.09,  1.09,  false)},
     {"BC109C",  makeEM(7.049e-15,677.0,  2.209, 1.0,   1.0,   false)},
     // Toshiba 2SC2240 SPICE transport parameters (IS, BF, BR, default NF/NR).
     // https://blog.kdenki.com/2020/01/spice.html
     {"2SC2240", makeEM(1.41e-15, 310.0,  0.8893, 1.0,  1.0,   false)},
-    // DAFx-23 Table 1 (Massi, Giampiccolo, Bernardini, Sarti)
-    {"2N5089",  makeEM(5.915e-15,1427.57,1.262, 1.0,   1.0,   false)},
+    {"2N5089",  makeEM(1.543e-13,743.8,  1.262, 1.09,  1.09,  false)},
 
     // Silicon PNP (LTspice standard.bjt)
     {"2N3906",  makeEM(1e-14,    200.0,  4.0,   1.0,   1.0,   true)},
     {"2N2907",  makeEM(1e-14,    250.0,  3.0,   1.0,   1.0,   true)},
-    // Fairchild 2N4403, LTspice standard.bjt: static Gummel-Poon transport.
-    // Package resistances and junction charge are outside this DC card.
+    // onsemi 2N4403 Figs. 14-16 typical gain and VBE(on); Early voltage from LTspice.
     {"2N4403", withForwardRolloff(withLowCurrentCorrections(
-                    makeEM(650.6e-18, 216.2, 3.578, 1.0, 1.0, true),
-                    115.7, 58.72e-15, 1.829), 1.079)},
+                    makeEM(999.3e-15, 193.7, 3.578, 1.15, 1.15, true),
+                    115.7, 9.486e-12, 1.887), 0.4952)},
     {"BC557B",  makeEM(3.83e-14, 344.4,  14.84, 1.008, 1.005, true)},
     {"2N5087",  makeEM(6.734e-15,254.1,  2.683, 1.0,   1.0,   true)},
 

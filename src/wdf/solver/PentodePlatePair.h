@@ -8,17 +8,18 @@
 
 namespace wdf::solver {
 
-// At fixed control-grid and screen voltages, a DerkD plate has
+// At fixed control-grid and screen voltages, a quadric plate has
 // Ip(v) = v * (conductance + saturation / (v + knee)) on its conducting branch.
 struct DerkDPlate {
     double knee, conductance, saturation, screenBase;
 
     bool at(const Pentode& model, const double* voltage, double screenCurrent) noexcept {
         const auto& m = model.reefman;
+        const auto q = m.split();
         if (model.modelKind != PentodeModelKind::Reefman || !model.useReefman ||
-            m.knee != PentodeKneeType::DerkD || m.secondaryEmission ||
-            !(m.kg2 > m.kg1 && m.kg1 > 0. && m.beta > 0. && m.a >= 0. &&
-              m.alpha_s >= 0. && m.count > 0. && m.isSupported(voltage[1], voltage[2], 0.)))
+            (!m.quadric && (m.knee != PentodeKneeType::DerkD || m.secondaryEmission)) ||
+            !(q.beta > 0. && q.plate >= 0. && q.lambda >= 0. && q.rho > 0. && q.sigma >= 0. &&
+              m.count > 0. && m.isSupported(voltage[1], voltage[2], 0.)))
             return false;
         double plate = voltage[0];
         if (plate < 0.) {
@@ -28,11 +29,10 @@ struct DerkDPlate {
             plate = 0.;
             m.evalCurrents(voltage[1], voltage[2], plate, grid, screenCurrent, current);
         }
-        knee = 1. / m.beta;
-        screenBase = screenCurrent / (1. + m.alpha_s / (1. + m.beta * plate));
-        const double emission = screenBase * m.kg2;
-        conductance = emission * m.a / m.kg1;
-        saturation = emission * (1. / m.kg1 - 1. / m.kg2);
+        knee = 1. / q.beta;
+        screenBase = screenCurrent / q.screenShare(plate);
+        conductance = screenBase * q.lambda;
+        saturation = screenBase * q.plate;
         return knee > 0. && std::isfinite(knee) && conductance >= 0. && std::isfinite(conductance) &&
                saturation >= 0. && std::isfinite(saturation) && std::isfinite(screenBase);
     }
@@ -72,7 +72,8 @@ inline bool solvePentodePlatePair(const DerkDPlate& left, const DerkDPlate& righ
         return satisfiesLoad();
     plate2 = right.isolatedVoltage(drive2, z22);
     plate1 = drive1 - mutual * right.current(plate2);
-    if (plate1 <= 0.)
+    // A plate rounded just above zero is still at cutoff when the load holds.
+    if (plate1 <= 0. || satisfiesLoad())
         return satisfiesLoad();
 
     // In admittance coordinates with u = Vp1 + knee1 and v = Vp2 + knee2,
