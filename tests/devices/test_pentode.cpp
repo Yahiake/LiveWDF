@@ -470,15 +470,17 @@ TEST_CASE("Reefman Pentode supported domain is strictly enforced", "[pentode][re
         }
     }
 
-    SECTION("Negative plate voltage is outside supported domain") {
-        REQUIRE_FALSE(p.isSupported(-10.0, 250.0, -1.0));
-        REQUIRE_FALSE(p.isSupported(-10.0, 250.0, -50.0));
+    SECTION("Negative plate voltage cuts the plate off and keeps the screen current continuous") {
+        const auto edge = p.eval(-10.0, 250.0, 0.0);
         const auto c = p.eval(-10.0, 250.0, -5.0);
-        // Enforces domain: plate and screen currents are 0, does NOT evaluate unstable exponential growth
+        REQUIRE(edge.is > 0.0);
         REQUIRE(c.ip == 0.0);
-        REQUIRE(c.is == 0.0);
         REQUIRE(c.dip_dvpk == 0.0);
+        REQUIRE(c.is == edge.is);
         REQUIRE(c.dis_dvpk == 0.0);
+        const double h = 1e-4;
+        REQUIRE(c.dis_dvgk == Approx((p.eval(-10.0 + h, 250.0, -5.0).is - p.eval(-10.0 - h, 250.0, -5.0).is) / (2 * h)));
+        REQUIRE(c.dis_dvsk == Approx((p.eval(-10.0, 250.0 + h, -5.0).is - p.eval(-10.0, 250.0 - h, -5.0).is) / (2 * h)));
     }
 
     SECTION("Non-positive screen voltage is outside supported domain") {

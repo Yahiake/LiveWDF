@@ -56,6 +56,13 @@ struct QuadricEmission {
         es = es * fade + e * 2.0 * vsk * screenFade * screenFade / (d * d);
         e *= fade;
         eg *= fade;
+        if (vpk < 0.0) {
+            // With the plate below the cathode the screen keeps its Vpk = 0 current.
+            c.is = e * (rho + sigma);
+            c.dis_dvgk = eg * (rho + sigma);
+            c.dis_dvsk = es * (rho + sigma);
+            return;
+        }
         const double k = 1.0 / (1.0 + beta * vpk), dk = -beta * k * k;
         const double toPlate = plate * (1.0 - k) + lambda * vpk, toScreen = rho + sigma * k;
         c.ip = e * toPlate;
@@ -280,7 +287,7 @@ struct ReefmanPentode {
         PentodeCurrents c;
         evalGrid(vgk, c.ig, c.dig_dvgk);
         if (quadric) {
-            if (vpk >= 0.0 && vsk > 0.0)
+            if (vsk > 0.0)
                 quadric->currents(vgk, vsk, vpk, c);
             c.scale(count);
             return c;

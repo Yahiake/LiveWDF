@@ -23,8 +23,8 @@ struct DerkDPlate {
             return false;
         double plate = voltage[0];
         if (plate < 0.) {
-            // Reverse cutoff zeros both terminal currents. Recover emission
-            // from the same device at the edge of its conducting branch.
+            // Reverse cutoff zeros the plate current (and the legacy law's screen current).
+            // Recover emission from the same device at the edge of its conducting branch.
             double grid, current;
             plate = 0.;
             m.evalCurrents(voltage[1], voltage[2], plate, grid, screenCurrent, current);

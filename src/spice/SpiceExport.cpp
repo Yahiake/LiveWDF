@@ -430,15 +430,16 @@ SpiceExportResult spiceExport(const Circuit& c,
               << " I = {" << spiceNum(reef.grid_is) << "*(exp(V(" << gk
               << ")/" << spiceNum(reef.grid_vt) << ")-1)}\n";
 
-            // K = 1/(1 + beta*Vpk); both currents vanish for Vpk < 0 or Vsk <= 0, as in the engine.
+            // K = 1/(1 + beta*Vpk); both currents vanish for Vsk <= 0 and the plate's for Vpk < 0,
+            // where the screen keeps its Vpk = 0 current, as in the engine.
             const std::string on = "(V(" + pk + ")>=0&&V(" + sk + ")>0)";
             const std::string knee = "1/(1+" + spiceNum(q.beta) + "*V(" + pk + "))";
             f << "B" << spiceUnique("ip_" + spiceSafe(base), used) << " " << pk << " I = {" << on << "?"
               << spiceNum(reef.count) << "*V(" << e1Node << ")*(" << spiceNum(q.plate) << "*(1-" << knee << ")+"
               << spiceNum(q.lambda) << "*V(" << pk << ")):0}\n";
-            f << "B" << spiceUnique("is_" + spiceSafe(base), used) << " " << sk << " I = {" << on << "?"
+            f << "B" << spiceUnique("is_" + spiceSafe(base), used) << " " << sk << " I = {(V(" << sk << ")>0)?"
               << spiceNum(reef.count) << "*V(" << e1Node << ")*(" << spiceNum(q.rho) << "+" << spiceNum(q.sigma)
-              << "*" << knee << "):0}\n";
+              << "/(1+" << spiceNum(q.beta) << "*max(V(" << pk << "),0))):0}\n";
         } else if (useReefman) {
             const auto& reef = pent.reefman;
             const double mu = reef.mu;

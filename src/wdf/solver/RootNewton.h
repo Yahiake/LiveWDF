@@ -212,7 +212,7 @@ public:
         // A plate crossing can abruptly change screen current. Accept the
         // projection only if every row stays within the original residual norm.
         const auto screenDelta = [&](int port, double plate, const DerkDPlate& law, const ReefmanPentode& m) {
-            return (plate >= 0. ? law.screenBase * m.split().screenShare(plate) : 0.) - i[port + 2];
+            return (plate >= 0. || m.quadric ? law.screenBase * m.split().screenShare(std::max(plate, 0.)) : 0.) - i[port + 2];
         };
         const double dIp1 = law1.current(plate1) - i[l], dIp2 = law2.current(plate2) - i[r];
         const double dIs1 = screenDelta(l, plate1, law1, model1.reefman);
