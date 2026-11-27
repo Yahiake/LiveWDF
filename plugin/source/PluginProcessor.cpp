@@ -908,6 +908,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         inSourceIndex_ = inSrcIdx;
         outNodeIndex_ = outIdx;
         outputFullScaleVolts_.store(playbackDoc.outputFullScaleVolts(), std::memory_order_relaxed);
+        outputAtSpeakerLevel_.store(hasPowerAmp && enablePowerAmp, std::memory_order_relaxed);
         previewPadScale_ = doc.validPreviewPadDb(doc.previewPadDb)
             ? juce::Decibels::decibelsToGain(-doc.previewPadDb) : 1.;
         previewPadOutputBias_ = outputBias;
@@ -1225,7 +1226,7 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
         if (changed && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
                 const auto gate = comp.properties.find("enabledBy");
-                return gate != comp.properties.end() && gate->second == member.id;
+                return gate != comp.properties.end() && (gate->second == member.id || gate->second == "!" + member.id);
             }))
             gatedSwitchChanged_.store(true, std::memory_order_relaxed);
     }

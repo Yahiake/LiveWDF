@@ -109,7 +109,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const float outputGain = juce::Decibels::decibelsToGain(outputMasterDb);
     const float wetMix = mixPercent * 0.01f;
     const bool chainInput = *apvts_.getRawParameterValue("chain_input") > 0.5f;
-    const bool matchOutput = *apvts_.getRawParameterValue("match_output") > 0.5f;
+    // A powered amp ends at speaker level, which is no input for a next LiveWDF.
+    const bool matchOutput = outputAtSpeakerLevel() || *apvts_.getRawParameterValue("match_output") > 0.5f;
 
     const bool wantStereo = stereoRequested && numChannels > 1;
 
