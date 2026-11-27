@@ -622,3 +622,20 @@ TEST_CASE("Triode-domain transfer preserves block-order voltage folds after cont
     current[3] = std::numeric_limits<double>::infinity();
     REQUIRE_FALSE(plan.fold(view, open.data(), current.data(), folded.data()));
 }
+
+TEST_CASE("A NaN Newton iterate does not pass as a converged DC operating point", "[newton][robustness]") {
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/pedals_fx/Boss GE-7 Equalizer.livewdf", error));
+    for (auto& part : document.components)
+        if (part.id == "VR1")
+            part.values["pos"] = 0.2;
+    const auto circuit = document.toCircuit();
+    std::vector<double> sources;
+    for (const auto& source : circuit.src)
+        sources.push_back(source.dc);
+    wdf::Engine engine(circuit, 48000.0);
+    for (int sample = 0; sample < 64; ++sample)
+        engine.step(sources);
+    REQUIRE(engine.stateRejectCount() == 0);
+}

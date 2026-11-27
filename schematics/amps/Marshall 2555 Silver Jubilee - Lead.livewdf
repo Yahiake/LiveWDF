@@ -503,7 +503,7 @@
       "properties": {},
       "type": "cap",
       "values": {
-        "value": 1e-07
+        "value": 1e-09
       },
       "visual": {
         "flipped": false,
@@ -1260,7 +1260,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 0.61449052,
+        "preampFullScaleVolts": 3.93613,
         "value": 1000000.0
       },
       "visual": {
@@ -1275,7 +1275,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 6.307847
+        "fullScaleVolts": 47.03916
       },
       "visual": {
         "flipped": false,
