@@ -45,7 +45,7 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
     for (size_t i : mains)
         for (const auto& n : {c.src[i].a, c.src[i].b})
             if (n != ground && winding.insert(n).second) todo.push_back(n);
-    const auto reach = [&](const std::string& y) {
+    const auto spread = [&](const std::string& y) {
         if (y == ground || winding.count(y)) return;
         if (filterNode(y)) outputs.insert(y);
         else if (winding.insert(y).second) todo.push_back(y);
@@ -55,10 +55,10 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         todo.pop_back();
         for (const auto& r : c.res)
             for (const auto& [x, y] : {std::pair{r.a, r.b}, std::pair{r.b, r.a}})
-                if (x == n) reach(y);
+                if (x == n) spread(y);
         for (const auto& d : c.diode)
             for (const auto& [x, y] : {std::pair{d.a, d.b}, std::pair{d.b, d.a}})
-                if (x == n) reach(y);
+                if (x == n) spread(y);
     }
     const auto onWinding = [&](const std::string& n) { return n == ground || winding.count(n); };
     const auto terminals = [&](const std::string& n) {
@@ -122,14 +122,14 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         while (!next.empty()) {
             const auto n = next.back();
             next.pop_back();
-            const auto walk = [&](const std::string& m, bool series) {
+            const auto reach = [&](const std::string& m, bool series) {
                 if (m != ground && !chain.count(m) && (filterNode(m) || (series && terminals(m) == 2)) && chain.insert(m).second)
                     next.push_back(m);
             };
             for (const auto& x : c.cap)
-                if (x.holdsDc) { if (x.a == n) walk(x.b, false); if (x.b == n) walk(x.a, false); }
-            for (const auto& r : c.res) { if (r.a == n) walk(r.b, true); if (r.b == n) walk(r.a, true); }
-            for (const auto& l : c.ind) { if (l.a == n) walk(l.b, true); if (l.b == n) walk(l.a, true); }
+                if (x.holdsDc) { if (x.a == n) reach(x.b, false); if (x.b == n) reach(x.a, false); }
+            for (const auto& r : c.res) { if (r.a == n) reach(r.b, true); if (r.b == n) reach(r.a, true); }
+            for (const auto& l : c.ind) { if (l.a == n) reach(l.b, true); if (l.b == n) reach(l.a, true); }
         }
         const auto supplyCap = [&](const Cap& x) {
             return x.holdsDc && (chain.count(x.a) || x.a == ground) && (chain.count(x.b) || x.b == ground);
