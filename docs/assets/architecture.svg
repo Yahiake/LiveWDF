@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 570" width="1200" height="570" role="img" aria-labelledby="t d">
+  <title id="t">LiveWDF architecture</title>
+  <desc id="d">The schematic editor saves a schematic file and runs the engine for its scope. The file and the part library become a circuit, which is compiled into stages and blocks with per-mode shortcuts, then run by the engine in Accurate, Fast or Preview mode, which feeds the plugin and the standalone app. Below, reference simulator comparisons, recorded fixtures and level calibration check the engine.</desc>
+  <style>
+    .bg { fill: #ffffff; }
+    .box { fill: #f3f6f9; stroke: #3b6974; stroke-width: 1.5; }
+    .hot { fill: #e4f7fa; stroke: #00838f; stroke-width: 1.5; }
+    .group { fill: none; stroke: #3b6974; stroke-width: 1.5; stroke-dasharray: 6 5; }
+    .line { fill: none; stroke: #3b6974; stroke-width: 1.6; }
+    .rule { stroke: #c7d0db; stroke-width: 1; }
+    .head { fill: #3b6974; }
+    text { font-family: Inter, "Segoe UI", system-ui, sans-serif; fill: #1a212d; }
+    .title { font-size: 19px; font-weight: 650; }
+    .sub { font-size: 14px; fill: #4a5566; }
+    .gutter { font-size: 13px; fill: #4a5566; }
+    .label { font-family: ui-monospace, "Cascadia Code", monospace; font-size: 13px; letter-spacing: .08em; fill: #00838f; }
+    .warm { fill: #8a6d00; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0f1216; }
+      .box { fill: #151b23; stroke: #467587; }
+      .hot { fill: #102830; stroke: #00e5ff; }
+      .group, .line { stroke: #6f93a3; }
+      .rule { stroke: #293444; }
+      .head { fill: #6f93a3; }
+      text { fill: #e2e8f0; }
+      .sub, .gutter { fill: #a2aec0; }
+      .label { fill: #00e5ff; }
+      .warm { fill: #ffb800; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path class="head" d="M0 0 L10 5 L0 10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" width="1200" height="570"/>
+
+  <!-- editor on top -->
+  <rect class="box" x="40" y="24" width="870" height="64" rx="8"/>
+  <text class="title" x="64" y="62">Schematic editor</text>
+  <text class="sub" x="240" y="62">draw, wire, set values, watch the scope</text>
+
+  <!-- column 1: inputs -->
+  <rect class="box" x="40" y="140" width="170" height="95" rx="8"/>
+  <text class="title" x="125" y="182" text-anchor="middle">Schematic file</text>
+  <text class="sub" x="125" y="206" text-anchor="middle">.livewdf</text>
+  <rect class="box" x="40" y="255" width="170" height="95" rx="8"/>
+  <text class="title" x="125" y="297" text-anchor="middle">Part library</text>
+  <text class="sub" x="125" y="321" text-anchor="middle">tubes, transistors, ICs</text>
+
+  <!-- column 2: circuit -->
+  <rect class="box" x="270" y="140" width="170" height="210" rx="8"/>
+  <text class="title" x="355" y="238" text-anchor="middle">Circuit</text>
+  <text class="sub" x="355" y="262" text-anchor="middle">parts and nets</text>
+
+  <!-- column 3: compile -->
+  <rect class="box" x="500" y="140" width="190" height="210" rx="8"/>
+  <text class="title" x="595" y="214" text-anchor="middle">Compile</text>
+  <text class="sub" x="595" y="246" text-anchor="middle">stages and blocks</text>
+  <text class="sub" x="595" y="272" text-anchor="middle">per-mode shortcuts</text>
+
+  <!-- column 4: engine -->
+  <rect class="group" x="740" y="124" width="170" height="242" rx="10"/>
+  <text class="label" x="825" y="148" text-anchor="middle">ENGINE</text>
+  <rect class="box" x="756" y="162" width="138" height="54" rx="7"/>
+  <text class="title" x="825" y="195" text-anchor="middle">Accurate</text>
+  <rect class="box" x="756" y="230" width="138" height="54" rx="7"/>
+  <text class="title" x="825" y="263" text-anchor="middle">Fast</text>
+  <rect class="hot" x="756" y="298" width="138" height="54" rx="7"/>
+  <text class="title" x="825" y="331" text-anchor="middle">Preview</text>
+
+  <!-- column 5: hosts -->
+  <rect class="box" x="980" y="150" width="180" height="80" rx="8"/>
+  <text class="title" x="1070" y="186" text-anchor="middle">Plugin</text>
+  <text class="sub" x="1070" y="210" text-anchor="middle">VST3 in a DAW</text>
+  <rect class="box" x="980" y="260" width="180" height="80" rx="8"/>
+  <text class="title" x="1070" y="296" text-anchor="middle">Standalone</text>
+  <text class="sub" x="1070" y="320" text-anchor="middle">desktop and Android</text>
+
+  <!-- flow -->
+  <line class="line" x1="125" y1="88" x2="125" y2="138" marker-end="url(#a)"/>
+  <text class="gutter" x="137" y="118">saves</text>
+  <line class="line" x1="825" y1="88" x2="825" y2="122" marker-end="url(#a)"/>
+  <text class="gutter" x="837" y="110">scope runs on it</text>
+  <line class="line" x1="210" y1="187" x2="268" y2="187" marker-end="url(#a)"/>
+  <line class="line" x1="210" y1="302" x2="268" y2="302" marker-end="url(#a)"/>
+  <line class="line" x1="440" y1="245" x2="498" y2="245" marker-end="url(#a)"/>
+  <line class="line" x1="690" y1="245" x2="738" y2="245" marker-end="url(#a)"/>
+  <line class="line" x1="910" y1="190" x2="978" y2="190" marker-end="url(#a)"/>
+  <line class="line" x1="910" y1="300" x2="978" y2="300" marker-end="url(#a)"/>
+
+  <!-- what checks it -->
+  <line class="rule" x1="40" y1="408" x2="1160" y2="408"/>
+  <text class="label warm" x="40" y="440">WHAT CHECKS IT</text>
+  <rect class="box" x="40" y="456" width="330" height="84" rx="8"/>
+  <text class="title" x="205" y="492" text-anchor="middle">Reference simulator</text>
+  <text class="sub" x="205" y="516" text-anchor="middle">same circuits, compared</text>
+  <rect class="box" x="435" y="456" width="330" height="84" rx="8"/>
+  <text class="title" x="600" y="492" text-anchor="middle">Recorded fixtures</text>
+  <text class="sub" x="600" y="516" text-anchor="middle">every preset, every mode</text>
+  <rect class="box" x="830" y="456" width="330" height="84" rx="8"/>
+  <text class="title" x="995" y="492" text-anchor="middle">Level calibration</text>
+  <text class="sub" x="995" y="516" text-anchor="middle">modes match in level</text>
+</svg>
