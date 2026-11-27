@@ -146,6 +146,24 @@ public:
         }
     }
 
+    static double roundingFloor(const NewtonContext& ctx) noexcept {
+        const int K = ctx.K;
+        double floor = 0.0;
+        for (int r = 0; r < K; ++r) {
+            double row = std::abs(ctx.vv[r]) + std::abs(ctx.vOc[r]);
+            for (int j = 0; j < K; ++j) {
+                if (ctx.Z[r * K + j] == 0.0)
+                    continue;
+                double scale = std::abs(ctx.ii[j]);
+                for (int k = 0; k < K; ++k)
+                    scale += std::abs(ctx.J[j * K + k] * ctx.vv[k]);
+                row += std::abs(ctx.Z[r * K + j]) * scale;
+            }
+            floor = std::max(floor, row);
+        }
+        return 64.0 * std::numeric_limits<double>::epsilon() * floor;
+    }
+
     static const RootDevice* coupledPentodes(const NewtonContext& ctx) noexcept {
         if (!ctx.pentodePreview || ctx.staticMode || ctx.pentodes.size() != 2 || ctx.rootDevices.size() < 2)
             return nullptr;
@@ -484,8 +502,13 @@ public:
                 reached = true;
                 break;
             }
-            if (it > 0 && maxDelta < 1e-13 * std::max(1.0, maxV))
+            if (it > 0 && maxDelta < 1e-13 * std::max(1.0, maxV)) {
+                // A stalled step leaves only rounding, which a high-gain law such as an
+                // op-amp's open loop amplifies past tol; whether that rounding lands under
+                // tol must not decide a reject, it differs between compilers.
+                reached = curValid && base < roundingFloor(ctx);
                 break;
+            }
             // Near plate cutoff a badly stalled pass can consume its entire
             // budget before the retry gets to try the previous voltage seed.
             if (poweredPreview && it >= 15 && it - lastImprovement >= 10 && ctx.bestFn > 10.0)
