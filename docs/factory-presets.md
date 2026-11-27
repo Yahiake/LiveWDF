@@ -47,7 +47,7 @@ Lower is lighter. All timings are in microseconds of CPU time per 128-sample blo
 | [Mosrite Fuzzrite Silicon][preset-43] | Pedals | Fuzz | Two-stage silicon fuzz with a 22 kΩ load on the Depth blend. | 149.5 | 153.0 | 199.0 |
 | [Fuzz Face][preset-30] | Pedals | Fuzz | Two-transistor fuzz modeled with germanium AC128 devices. | 150.6 | 146.5 | 225.0 |
 | [MCI JH-400B Mic Preamp 43E241][preset-90] | Studio | Preamp | Microphone input to patch output with live input pad, gain, and representative 1:10 transformer. | 158.5 | 151.0 | 229.0 |
-| [Marshall 1959 Super Lead - Jumped][preset-102] | Amps | Preamp | Jumped high-treble and normal channels from the 1981 Marshall Standard Lead drawing. | 160.2 | 138.0 | 272.0 |
+| [Marshall 1959 Super Lead - Jumped][preset-102] | Amps | Preamp | Marshall 1959 Super Lead from the July 1970 Unicord drawing. Split-cathode V1, 500 pF bright mix, bypassed V2a, 47 kΩ feedback from the 16 Ω tap with the 5 kΩ Presence, four EL34s on fixed rails and bias. JCM800 era switches to the 1981 Lead Series values and its 100 kΩ feedback from the 4 Ω tap with the 22 kΩ Presence. | 160.2 | 138.0 | 272.0 |
 | [Harrison 32-Series 3232 Channel EQ][preset-76] | Studio | EQ | Four-band proportional-Q EQ with separate sweepable high-pass and low-pass filters. | 163.0 | 162.0 | 211.0 |
 | [Roland JC-120][preset-108] | Amps | Preamp | 1979 Jazz Chorus Channel 1 high input and four 2SK117-GR JFETs, with passive three-band EQ and switchable Bright. | 166.5 | 166.0 | 180.0 |
 | [Colorsound Power Boost 18V][preset-20] | Pedals | Boost | Three-transistor 18 V boost with an active Baxandall tone network. | 168.5 | 170.0 | 187.0 |
