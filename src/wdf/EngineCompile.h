@@ -163,6 +163,7 @@ public:
             if (transferFailed)
                 return false;
             compileZred();
+            refreshBlockZValues();
             ++liveControlRevision_;
             return true;
         };
