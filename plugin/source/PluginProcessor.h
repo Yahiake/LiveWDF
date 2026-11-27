@@ -246,6 +246,7 @@ private:
     bool settledTransferPublished_ = false;
     bool initialTransferPending_ = false;
     bool previewPrepared_ = false; // eligibility was evaluated for these control/transfer revisions
+    int previewLoadOverruns_ = 0;
     long long previewLinearRevision_ = -1, previewControlRevision_ = -1;
     bool outputOnlyPreviewAllowed_ = false;
     // The timer can service an idle engine directly. During playback the
