@@ -61,6 +61,7 @@ bool EngineStep::tryTriodePreview() noexcept {
 
 const std::vector<double>& EngineStep::step(const double* sourceValues, std::size_t sourceCount,
                                             int maxIter, double tol) {
+    modeTol_ = tol;
     // Limit the error in the port voltages while evaluating all tube currents.
     if (triodePreviewEnabled_ && nPent_ > 0)
         tol = std::max(tol, 3e-3);
@@ -471,7 +472,8 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
             auto& lamp = photoresistors_[photo.lamp];
             if (&lamp == &photo) {
                 const auto& control = *circuit_.ctrlRes[photo.index].photo;
-                lamp.illumination = control.illumination(photoSenseVoltage(photo, node_, sourceValues, sourceCount));
+                lamp.illumination = control.illumination(
+                    latchedPhotoVolts(lamp, control, photoSenseVoltage(photo, node_, sourceValues, sourceCount)));
             }
             target = photo.dark + photo.span * lamp.illumination;
         } else {

@@ -135,6 +135,8 @@ std::string fingerprint(const wdf::Circuit& c) {
             mixDouble(hash, e.photo->gamma);
             mixDouble(hash, e.photo->attackSeconds);
             mixDouble(hash, e.photo->releaseSeconds);
+            mixDouble(hash, e.photo->strikeVolts);
+            mixDouble(hash, e.photo->extinguishVolts);
         }
         if (e.vca) {
             mixString(hash, e.vca->control);

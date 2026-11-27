@@ -565,6 +565,36 @@
       }
     },
     {
+      "id": "INTENSITY",
+      "properties": {
+        "label": "Intensity",
+        "taper": "RevLog"
+      },
+      "type": "pot",
+      "values": {
+        "pos": 0.5,
+        "totalR": 50000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 58
+      }
+    },
+    {
+      "id": "GND intensity",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 162,
+        "y": 64
+      }
+    },
+    {
       "id": "RL",
       "properties": {
         "label": "Preamp bypass load",
@@ -573,7 +603,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 21.406485,
+        "preampFullScaleVolts": 20.762523,
         "value": 470000.0
       },
       "visual": {
@@ -588,7 +618,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 121.99732
+        "fullScaleVolts": 117.77612
       },
       "visual": {
         "flipped": true,
@@ -1359,6 +1389,46 @@
   "name": "Fender Twin Reverb AB763",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 106,
+          "y": 24
+        },
+        {
+          "x": 103,
+          "y": 24
+        },
+        {
+          "x": 103,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 62
+        },
+        {
+          "x": 160,
+          "y": 56
+        },
+        {
+          "x": 162,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 162,
+          "y": 60
+        },
+        {
+          "x": 162,
+          "y": 62
+        }
+      ]
+    },
     {
       "points": [
         {
