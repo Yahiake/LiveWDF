@@ -361,6 +361,170 @@
       }
     },
     {
+      "id": "R clean shunt",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 220000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 102,
+        "y": 29
+      }
+    },
+    {
+      "id": "C clean treble",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 1e-09
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 49
+      }
+    },
+    {
+      "id": "R clean treble top",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 125000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 53
+      }
+    },
+    {
+      "id": "R clean treble bottom",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 125000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 57
+      }
+    },
+    {
+      "id": "R clean bass",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 60100.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 61
+      }
+    },
+    {
+      "id": "R clean middle",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 2400.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 65
+      }
+    },
+    {
+      "id": "GND clean middle",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 8,
+        "y": 69
+      }
+    },
+    {
+      "id": "R clean volume path",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 854000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 57
+      }
+    },
+    {
+      "id": "GND clean volume",
+      "properties": {},
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 3,
+        "y": 61
+      }
+    },
+    {
+      "id": "R clean slope",
+      "properties": {},
+      "type": "res",
+      "values": {
+        "value": 100000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 20,
+        "y": 49
+      }
+    },
+    {
+      "id": "C clean bass",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 2.2e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 20,
+        "y": 55
+      }
+    },
+    {
+      "id": "C clean mid",
+      "properties": {},
+      "type": "cap",
+      "values": {
+        "value": 4.7e-08
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 26,
+        "y": 55
+      }
+    },
+    {
       "id": "GND8",
       "properties": {},
       "type": "gnd",
@@ -851,7 +1015,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 1.4839007,
+        "preampFullScaleVolts": 0.79225652,
         "value": 47000.0
       },
       "visual": {
@@ -866,13 +1030,13 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 21.1916
+        "fullScaleVolts": 1.2882902
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 139,
-        "y": 111
+        "x": 72,
+        "y": 125
       }
     },
     {
@@ -1047,6 +1211,68 @@
         "rotation": 180,
         "x": 58,
         "y": 122
+      }
+    },
+    {
+      "id": "PA Line Out Series",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 1000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 117
+      }
+    },
+    {
+      "id": "PA Line Out Coupling",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 1e-06
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 123
+      }
+    },
+    {
+      "id": "PA Line Out Load",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 10000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 129
+      }
+    },
+    {
+      "id": "PA GND line out",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 68,
+        "y": 135
       }
     },
     {
@@ -1313,7 +1539,7 @@
       }
     }
   ],
-  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails. The switchable TBA820M practice amplifier drives a 4 Ω load through the original output coupling capacitor.",
+  "description": "Four ECC83 triodes in Lead Hi Gain mode, with its four-band tone network and instrument send divider. Contour off. Fixed supply rails. The output is the line out after the return buffer, with the TBA820M headphone amplifier and its 4 Ω load hanging on the buffer.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -1332,6 +1558,178 @@
   "name": "ENGL E530 - Lead Hi Gain",
   "version": 3,
   "wires": [
+    {
+      "points": [
+        {
+          "x": 68,
+          "y": 112
+        },
+        {
+          "x": 68,
+          "y": 115
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 68,
+          "y": 119
+        },
+        {
+          "x": 68,
+          "y": 121
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 68,
+          "y": 125
+        },
+        {
+          "x": 68,
+          "y": 127
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 68,
+          "y": 131
+        },
+        {
+          "x": 68,
+          "y": 133
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 68,
+          "y": 125
+        },
+        {
+          "x": 70,
+          "y": 125
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 40,
+          "y": 17
+        },
+        {
+          "x": 40,
+          "y": 47
+        },
+        {
+          "x": 8,
+          "y": 47
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 8,
+          "y": 55
+        },
+        {
+          "x": 3,
+          "y": 55
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 51
+        },
+        {
+          "x": 20,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 57
+        },
+        {
+          "x": 20,
+          "y": 59
+        },
+        {
+          "x": 8,
+          "y": 59
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 20,
+          "y": 51
+        },
+        {
+          "x": 26,
+          "y": 51
+        },
+        {
+          "x": 26,
+          "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 26,
+          "y": 57
+        },
+        {
+          "x": 26,
+          "y": 63
+        },
+        {
+          "x": 8,
+          "y": 63
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 27
+        },
+        {
+          "x": 98,
+          "y": 27
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 102,
+          "y": 31
+        },
+        {
+          "x": 98,
+          "y": 31
+        }
+      ]
+    },
     {
       "points": [
         {
@@ -2669,18 +3067,6 @@
         {
           "x": 130,
           "y": 128
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 130,
-          "y": 111
-        },
-        {
-          "x": 137,
-          "y": 111
         }
       ]
     }
