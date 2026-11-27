@@ -22,6 +22,8 @@ namespace livewdf {
 
 class LiveWDFPluginProcessor : public juce::AudioProcessor, private juce::Timer {
 public:
+    enum class AmpSection { preamp, powerAmp, both };
+
     /// The APVTS layout is fixed when the processor is constructed, so this is
     /// the ceiling on how many document pot groups can get a knob. A document
     /// with more groups than this still loads and plays -- the extra groups
@@ -189,7 +191,7 @@ private:
     std::unique_ptr<juce::dsp::Oversampling<float>> oversampler8x_;
     int attemptedOversamplingChoice_ = 0;
     bool attemptedGridCurrent_ = true;
-    std::optional<bool> powerAmpEnabled_;
+    std::optional<AmpSection> ampSection_;
     std::optional<bool> previewPentodePairs_;
     std::optional<MainsSupply> mainsSupply_;
     int currentOversamplingFactor_ = 1;
@@ -299,6 +301,7 @@ private:
     std::atomic<double> outputFullScaleVolts_{1.0}, outputFastTrim_{1.0}, outputPreviewTrim_{1.0};
     std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
+    std::atomic<double> previewPeakVolts_{2.0};
     double previewPadScale_ = 1.;
     double previewPadOutputBias_ = 0.;
     juce::SmoothedValue<double> previewPadGain_{1.};

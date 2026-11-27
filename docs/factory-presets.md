@@ -2,7 +2,7 @@
 
 The Factory browser ships 111 presets in three collections.
 
-- **Amps (25)** covers complete dry signal paths for 25 amp and channel selections. Use **Power Amp** beside **Circuit** to audition the calibrated preamp tap.
+- **Amps (25)** covers complete dry signal paths for 25 amp and channel selections. Use **Power Amp** beside **Circuit** to choose the complete amp, calibrated preamp tap or isolated power stage.
 - **Pedals (46)** covers drive, fuzz, delay, modulation, EQ, filters, and dynamics.
 - **Studio (40)** covers preamps, EQ, dynamics, and saturation or enhancement.
 
@@ -10,7 +10,7 @@ The Factory browser ships 111 presets in three collections.
 
 ## Mean CPU time
 
-Lower is lighter. All timings are in microseconds of CPU time per 128-sample block. Amp rows labeled Preamp measure the path with Power Amp off.
+Lower is lighter. All timings are in microseconds of CPU time per 128-sample block. Amp rows labeled Preamp measure the selector's Preamp position.
 
 | Preset | Collection | Type | Circuit | Mean µs | Median µs | p99 µs |
 | --- | --- | --- | --- | ---: | ---: | ---: |

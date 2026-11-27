@@ -579,6 +579,7 @@ struct LiveWDFDocument {
 
     const SchematicComponent* preampTap() const;
     bool makePreampDocument(LiveWDFDocument& preamp, std::string& error) const;
+    bool makePowerAmpDocument(LiveWDFDocument& powerAmp, std::string& error) const;
 
     /// One source's AC settings: how big the swing is, and how fast it moves.
     struct SourceAc {
