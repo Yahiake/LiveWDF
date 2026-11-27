@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 #include <tuple>
 
@@ -243,48 +244,67 @@ void EngineStep::prepareSlowLag() {
     std::vector<int> owner;
     bool closed = false, antiParallel = false;
     int scalars = 0;
-    lagOrder_.resize(rootDevices_.size());
-    auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
-    if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
-        (lagCount_ == blockCount_ && std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); })))
-        lagCount_ = 0;
-    for (int b = 0; b < lagCount_; ++b)
-        solver::RootLinearPlan::build(lagBlocks_[size_t(b)], rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
-                                      ctrlResValues_, fs_);
-    // The pairwise rule misses a long loop: a late column closing around the solved
-    // forward path. Refuse unless |J (I + Zs J)^-1 Zl| stays below 1/4 over the sweep.
-    std::vector<double> late(size_t(K_) * K_, 0.0), m(size_t(K_) * K_), t(K_);
-    for (int b = 0; b < lagCount_; ++b)
-        for (const auto& [r, d] : lagBlocks_[size_t(b)].lagged)
-            late[size_t(r) * K_ + d.col] = d.z;
-    for (int point = 0; point < 4096 && lagCount_ > 1; point += 29) {
-        at(point);
-        std::fill(m.begin(), m.end(), 0.0);
-        for (int r = 0; r < K_; ++r)
-            m[size_t(r) * K_ + r] = 1.0;
-        for (const auto& d : rootDevices_)
-            for (int r = 0; r < K_; ++r)
-                for (int c = d.portBase; c < d.portBase + d.numPorts; ++c)
-                    for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
-                        m[size_t(r) * K_ + c] += (Z_[size_t(r) * K_ + k] - late[size_t(r) * K_ + k]) * J_[size_t(k) * K_ + c];
-        bool ok = detail::factorLUData(m.data(), pivots.data(), K_);
-        std::fill(t.begin(), t.end(), 0.0);
-        for (int c = 0; c < K_ && ok; ++c) {
-            for (int r = 0; r < K_; ++r)
-                x[r] = late[size_t(r) * K_ + c];
-            if (std::none_of(x.begin(), x.end(), [](double z) { return z != 0.0; }))
-                continue;
-            detail::solveLUData(m.data(), pivots.data(), x.data(), K_);
-            for (const auto& d : rootDevices_)
-                for (int r = d.portBase; r < d.portBase + d.numPorts; ++r) {
-                    double di = 0.0;
-                    for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
-                        di += J_[size_t(r) * K_ + k] * x[k];
-                    t[r] += std::abs(di);
-                }
-        }
-        if (!ok || !(*std::max_element(t.begin(), t.end()) < 0.25))
+    std::vector<double> late(size_t(K_) * K_), m(size_t(K_) * K_), t(K_);
+    for (bool retry = true; retry;) {
+        retry = false;
+        lagOrder_.resize(rootDevices_.size());
+        auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
+        if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
+            (lagCount_ == blockCount_ && std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); })))
             lagCount_ = 0;
+        for (int b = 0; b < lagCount_; ++b)
+            solver::RootLinearPlan::build(lagBlocks_[size_t(b)], rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
+                                          ctrlResValues_, fs_);
+        // The pairwise rule misses a long loop: a late column closing around the solved
+        // forward path. Refuse unless |J (I + Zs J)^-1 Zl| stays below 1/4 over the sweep.
+        std::fill(late.begin(), late.end(), 0.0);
+        for (int b = 0; b < lagCount_; ++b)
+            for (const auto& [r, d] : lagBlocks_[size_t(b)].lagged)
+                late[size_t(r) * K_ + d.col] = d.z;
+        for (int point = 0; point < 4096 && lagCount_ > 1; point += 29) {
+            at(point);
+            std::fill(m.begin(), m.end(), 0.0);
+            for (int r = 0; r < K_; ++r)
+                m[size_t(r) * K_ + r] = 1.0;
+            for (const auto& d : rootDevices_)
+                for (int r = 0; r < K_; ++r)
+                    for (int c = d.portBase; c < d.portBase + d.numPorts; ++c)
+                        for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
+                            m[size_t(r) * K_ + c] += (Z_[size_t(r) * K_ + k] - late[size_t(r) * K_ + k]) * J_[size_t(k) * K_ + c];
+            bool ok = detail::factorLUData(m.data(), pivots.data(), K_);
+            std::fill(t.begin(), t.end(), 0.0);
+            int worst = -1;
+            double worstGain = 0.0;
+            for (int c = 0; c < K_ && ok; ++c) {
+                for (int r = 0; r < K_; ++r)
+                    x[r] = late[size_t(r) * K_ + c];
+                if (std::none_of(x.begin(), x.end(), [](double z) { return z != 0.0; }))
+                    continue;
+                detail::solveLUData(m.data(), pivots.data(), x.data(), K_);
+                for (const auto& d : rootDevices_)
+                    for (int r = d.portBase; r < d.portBase + d.numPorts; ++r) {
+                        double di = 0.0;
+                        for (int k = d.portBase; k < d.portBase + d.numPorts; ++k)
+                            di += J_[size_t(r) * K_ + k] * x[k];
+                        t[r] += std::abs(di);
+                        if (std::abs(di) > worstGain) {
+                            worstGain = std::abs(di);
+                            worst = c;
+                        }
+                    }
+            }
+            if (ok && *std::max_element(t.begin(), t.end()) < 0.25)
+                continue;
+            lagCount_ = 0;
+            // Read the worst late device on time and keep the other cuts: a finite
+            // maximum slope keeps it out of every lag, where infinity times a zero Z is NaN.
+            for (const auto& d : rootDevices_)
+                if (worst >= d.portBase && worst < d.portBase + d.numPorts)
+                    for (int r = 0; r < d.numPorts; ++r)
+                        for (int c = 0; c < d.numPorts; ++c)
+                            slope[size_t(d.portBase + r) * K_ + d.portBase + c] = std::numeric_limits<double>::max();
+            retry = worst >= 0;
+        }
     }
     lagHeld_.assign(K_, 0.0);
     lagRevision_ = linearRebuilds();

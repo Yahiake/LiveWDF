@@ -842,6 +842,6 @@ TEST_CASE("Preview refuses a late supply read that closes around the forward gai
     Probe preview(c, kFs);
     preview.prepareCompiledPreview(0, preview.nodeIndex("c3"), false, 1.0, false);
     CAPTURE(decoupled, preview.late(), preview.blocks());
-    REQUIRE(preview.late() > 0);
+    REQUIRE((preview.late() > 0) == decoupled);
     REQUIRE((preview.blocks() > 1) == decoupled);
 }
