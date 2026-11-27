@@ -1141,7 +1141,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 141.34913
+        "fullScaleVolts": 142.20394
       },
       "visual": {
         "flipped": true,
@@ -1784,10 +1784,10 @@
       },
       "type": "transformer_ct",
       "values": {
-        "Lm": 21.393229,
+        "Lm": 102.98,
         "dcrPrimary": 428.0,
         "dcrSecondary": 0.41,
-        "leakage": 0.006771071,
+        "leakage": 0.006770223,
         "turnsPrimary": 28.722813232690143,
         "turnsSecondary": 1.0
       },
