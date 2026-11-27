@@ -1,35 +1,40 @@
 #include "wdf/Engine.h"
 
+#include <algorithm>
 #include <array>
 #include <map>
 #include <numbers>
 
 namespace wdf {
 
-bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
-    if (hasAdjustedLiveTransfer() || blockCount_ != 1)
-        return false;
-    const auto& block = newtonBlocks_.front();
-    // Reconstructing the original voltages costs more than removing a
-    // single row in a large coupled block. Skip small reductions.
-    if (!explicitRootsAllowed_ || inputSource >= circuit_.src.size() ||
-        !block.linearReduction || block.linearDevices.empty() || block.reducedPorts.size() < 3 ||
-        block.linearDevices.size() * 8 < block.ports.size())
-        return false;
-    for (int index : block.linearDevices) {
-        const auto& dev = rootDevices_[static_cast<size_t>(index)];
-        if (dev.kind != DeviceKind::OpAmp || opAmps_[dev.compIndex].hasClassABOutput() ||
-            opAmps_[dev.compIndex].softRails)
-            return false;
+int Engine::mixedAffineBlock() const noexcept {
+    for (size_t b = 0; b < std::min(newtonBlocks_.size(), static_cast<size_t>(blockCount_)); ++b) {
+        const auto& block = newtonBlocks_[b];
+        // Reconstructing the original voltages costs more than removing a
+        // single row in a large coupled block. Skip small reductions.
+        if (!block.linearReduction || block.linearDevices.empty() || block.reducedPorts.size() < 3 ||
+            block.linearDevices.size() * 8 < block.ports.size())
+            continue;
+        const auto linear = [&](int index) {
+            const auto& dev = rootDevices_[static_cast<size_t>(index)];
+            return dev.kind == DeviceKind::OpAmp && !opAmps_[dev.compIndex].hasClassABOutput() &&
+                   !opAmps_[dev.compIndex].softRails;
+        };
+        const auto reduced = [&](int index) {
+            const auto kind = rootDevices_[static_cast<size_t>(index)].kind;
+            return kind == DeviceKind::Diode || kind == DeviceKind::Bjt ||
+                   kind == DeviceKind::Jfet || kind == DeviceKind::Mosfet;
+        };
+        if (std::all_of(block.linearDevices.begin(), block.linearDevices.end(), linear) &&
+            std::all_of(block.reducedDevices.begin(), block.reducedDevices.end(), reduced))
+            return static_cast<int>(b);
     }
-    for (int index : block.reducedDevices) {
-        const auto kind = rootDevices_[static_cast<size_t>(index)].kind;
-        if (kind != DeviceKind::Diode && kind != DeviceKind::Bjt &&
-            kind != DeviceKind::Jfet && kind != DeviceKind::Mosfet)
-            return false;
-    }
+    return -1;
+}
 
-    return true;
+bool Engine::canPrepareMixedAffineReduction(size_t inputSource) const noexcept {
+    return !hasAdjustedLiveTransfer() && explicitRootsAllowed_ && inputSource < circuit_.src.size() &&
+           mixedAffineBlock() >= 0;
 }
 
 std::optional<Engine::MixedAffineSetup> Engine::captureMixedAffineSetup(size_t inputSource) const {
@@ -55,7 +60,7 @@ void Engine::MixedAffineSetup::build(std::optional<std::span<const unsigned>> ca
         engine.compileMixedAffinePlans(*cachedMasks);
     else
         engine.prepareMixedAffineReduction(input_);
-    plans_ = std::move(engine.newtonBlocks_.front().alternateLinearSlopes);
+    plans_ = std::move(engine.newtonBlocks_[static_cast<size_t>(engine.mixedAffineBlock())].alternateLinearSlopes);
 }
 
 std::vector<unsigned> Engine::MixedAffineSetup::slopeMasks() const {
@@ -70,7 +75,7 @@ bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
     if (setup.owner_ != this || setup.revision_ != linearRebuilds() || setup.rate_ != fs_ ||
         !canPrepareMixedAffineReduction(setup.input_) || setup.transfer_ != Z_)
         return false;
-    auto& live = newtonBlocks_.front().alternateLinearSlopes;
+    auto& live = newtonBlocks_[static_cast<size_t>(mixedAffineBlock())].alternateLinearSlopes;
     if (!std::equal(live.begin(), live.end(), setup.plans_.begin(), setup.plans_.end(),
                     [](const auto& a, const auto& b) { return a.linearSlopeMask == b.linearSlopeMask; })) {
         ++mixedAffineRevision_;
@@ -81,17 +86,17 @@ bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
 }
 
 size_t Engine::prepareMixedAffineReduction(size_t inputSource, double peakVolts) {
-    if (blockCount_ != 1)
-        return 0;
-    auto& block = newtonBlocks_.front();
-    block.alternateLinearSlopes.clear();
+    for (auto& block : newtonBlocks_)
+        block.alternateLinearSlopes.clear();
     if (!canPrepareMixedAffineReduction(inputSource) ||
         !(peakVolts > 0.0) || !std::isfinite(peakVolts * 8.0))
         return 0;
+    const int index = mixedAffineBlock();
+    auto& block = newtonBlocks_[static_cast<size_t>(index)];
 
     Engine calibration(circuit_, fs_, gridCurrent_);
-    if (calibration.blockCount_ != 1 ||
-        calibration.newtonBlocks_.front().linearDevices != block.linearDevices)
+    if (calibration.mixedAffineBlock() != index ||
+        calibration.newtonBlocks_[static_cast<size_t>(index)].linearDevices != block.linearDevices)
         return 0;
     auto patterns = calibration.measureAffineSlopes(inputSource, peakVolts);
     std::stable_sort(patterns.begin(), patterns.end(),
@@ -107,7 +112,7 @@ size_t Engine::prepareMixedAffineReduction(size_t inputSource, double peakVolts)
 }
 
 void Engine::compileMixedAffinePlans(std::span<const unsigned> masks) {
-    auto& block = newtonBlocks_.front();
+    auto& block = newtonBlocks_[static_cast<size_t>(mixedAffineBlock())];
     const size_t width = block.linearDevices.size();
     const unsigned validBits = width == 32 ? ~0u : (1u << width) - 1u;
     for (const unsigned mask : masks) {
@@ -124,9 +129,10 @@ void Engine::compileMixedAffinePlans(std::span<const unsigned> masks) {
 }
 
 std::vector<std::pair<unsigned, int>> Engine::measureAffineSlopes(size_t inputSource, double peakVolts) {
-    if (blockCount_ != 1 || !newtonBlocks_.front().linearReduction)
+    const int index = mixedAffineBlock();
+    if (index < 0)
         return {};
-    const auto& block = newtonBlocks_.front();
+    const auto& block = newtonBlocks_[static_cast<size_t>(index)];
     std::vector<double> sources = dcValues_;
     for (const auto& source : circuit_.isrc)
         sources.push_back(source.dc);

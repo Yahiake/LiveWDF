@@ -154,6 +154,7 @@ private:
     void copyBipolarPreviewFrom(const Engine& source);
     struct BipolarPreview;
     std::shared_ptr<BipolarPreview> bipolarPreview_;
+    int mixedAffineBlock() const noexcept;
     bool canPrepareMixedAffineReduction(size_t inputSource) const noexcept;
     void compileMixedAffinePlans(std::span<const unsigned> masks);
     std::vector<std::pair<unsigned, int>> measureAffineSlopes(size_t inputSource, double peakVolts);
