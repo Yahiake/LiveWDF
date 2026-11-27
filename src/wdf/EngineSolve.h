@@ -191,7 +191,8 @@ protected:
     /// Each level only forwards construction down the chain; the work happens in
     /// `EngineCore` (topology) and `Engine` (transfer, buffers, seeding).
     using EngineCore::EngineCore;
-    bool triodePreviewEnabled_ = false;
+    bool triodePreviewEnabled_ = false, slowLagEnabled_ = false;
+    bool keepBlockAnswer_ = false;
     std::vector<NewtonBlock> lagBlocks_;  ///< Preview partition with slow couplings read one sample late
     std::vector<int> lagOrder_;
     std::vector<double> lagHeld_;
@@ -199,29 +200,50 @@ protected:
     long long lagRevision_ = -1;
     double modeTol_ = 0.0;
     /// Preview: a lamp side with no coupling to the rest, replayed from one recorded period of its port currents.
+    /// Where the watched cell shunts a node to ground ahead of tube inputs, it is folded into Z at a held value
+    /// and its swing enters as the extra current it draws, read from the other ports one sample late.
     struct LampReplay {
-        std::vector<unsigned char> frozen;
-        std::vector<int> ports, order;
+        std::vector<unsigned char> frozen, alone;  ///< alone: the ports skipped while the lamp side is recorded by itself
+        std::vector<int> ports, order, redCol;  ///< redCol, devices, nRed: the joint Newton without the frozen ports
+        std::vector<RootDevice> devices;
         std::vector<double> zLamp, ring;  ///< lamp Z when recorded; per sample the lamp currents, then log R watched
-        long long n = 0, crossing = -1, rebuilds = -1, controls = -1;
-        int watch = -1, length = 0, period = 0, previous = 0, base = 0, phase = 0;
-        double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0;
+        std::vector<double> Z, Zred;      ///< Z and its reduced columns with the cell folded in at `held`
+        std::vector<double> lengths, spans;  ///< settled cycles seen while recording alone
+        long long n = 0, crossing = -1, rebuilds = -1, controls = -1, foldedControls = -1;
+        int watch = -1, port = -1, nRed = 0, length = 0, period = 0, previous = 0, base = 0, phase = 0;
+        double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0, span = 0.0, held = 0.0, drive = 0.0;
     } lamp_;
+    /// Two-core Preview: this clone solves one side of the first power-tube block; the
+    /// other side's port currents come in from the other clone. Stage 1 reads them as
+    /// lagged couplings, stage 2 folds them in as solved predecessors.
+    struct PipelineStage {
+        int stage = 0;
+        bool lagView = false, paused = true;
+        long long revision = -1;
+        std::vector<NewtonBlock> blocks;
+        std::vector<int> order, ownPorts, inPorts;
+        std::vector<unsigned char> frozen;
+        std::vector<double> held, input;
+    } pipe_;
+
+    bool lampFolded() const noexcept { return lamp_.held > 0.0 && !lamp_.Z.empty() && loadedJunctionEnabled_; }
 
     solver::NewtonContext makeNewtonContext() {
         return solver::NewtonContext{
-            vv_, ii_, J_, F_, vOc_, Z_, Zred_,
+            vv_, ii_, J_, F_, vOc_, lampFolded() ? lamp_.Z : Z_, lampFolded() ? lamp_.Zred : Zred_,
             loadedJunctionEnabled_ && sharedNewtonColumns_.hasPackedResidual() ? &sharedNewtonColumns_ : nullptr,
             loadedJunctionEnabled_ ? &triodeDomainTransfer_ : nullptr,
-            vvPrev_, vvPrev2_, predUp_, predDown_, stepUp_, stepDown_, redCol_,
+            vvPrev_, vvPrev2_, predUp_, predDown_, stepUp_, stepDown_, lampFolded() ? lamp_.redCol : redCol_,
             redToActive_, activeRedCol_, Mr_, rN_, dv_, vt_, ft_, Jt_, iv_,
             bestV_, bestI_, gridJunctionLimiters_, junctionLimiters_, rootLayout_,
-            bjts_, rootDevices_, comp_, ctrlResValues_, pentodes_,
+            bjts_, lampFolded() ? lamp_.devices : rootDevices_, comp_, ctrlResValues_, pentodes_,
             opAmps_, opAmpVp_, opAmpAlpha_, opAmpMaxDv_, triodeDomainPin_,
-            staticMode_, K_, nRed_, keepBestOn_, &prof_, profileOn_,
+            staticMode_, K_, lampFolded() ? lamp_.nRed : nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
             jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
-            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_
+            loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_,
+            loadedJunctionEnabled_ && blockCount_ == 0,
+            lampFolded() ? lamp_.frozen.data() : nullptr
         };
     }
 
@@ -242,7 +264,7 @@ protected:
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_),
-            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_
+            mixedAffineAttempts_, mixedAffineAccepted_, modeTol_, keepBlockAnswer_
         };
     }
 
@@ -495,13 +517,31 @@ protected:
         ctx.reductions = !adjusted;
         auto newtonCtx = makeNewtonContext();
         BlockView view = slowLag ? BlockView{&lagBlocks_, &lagOrder_, lagCount_, lagHeld_.data()} : staticBlockView();
-        if (lamp_.period) {
+        if ((lamp_.period && loadedJunctionEnabled_) || !lamp_.alone.empty()) {
+            const auto& skip = lamp_.alone.empty() ? lamp_.frozen : lamp_.alone;
             lamp_.order.clear();
             for (int s = 0; s < view.count; ++s)
-                if (const int b = (*view.order)[static_cast<size_t>(s)]; !lamp_.frozen[(*view.blocks)[static_cast<size_t>(b)].ports.front()])
+                if (const int b = (*view.order)[static_cast<size_t>(s)]; !skip[(*view.blocks)[static_cast<size_t>(b)].ports.front()])
                     lamp_.order.push_back(b);
-            view = {view.blocks, &lamp_.order, static_cast<int>(lamp_.order.size()), view.held, lamp_.frozen.data()};
+            view = {view.blocks, &lamp_.order, static_cast<int>(lamp_.order.size()), view.held, skip.data()};
         }
+        solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
+    }
+
+    void solvePipelineStage(int maxIter, double tol, bool adjusted) {
+        const size_t n = pipe_.inPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            ii_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[k];
+            vv_[static_cast<size_t>(pipe_.inPorts[k])] = pipe_.input[n + k];
+        }
+        auto ctx = makeBlockSolveContext();
+        ctx.mixedEnabled &= !adjusted;
+        ctx.reductions = !adjusted;
+        auto newtonCtx = makeNewtonContext();
+        const bool first = pipe_.stage == 1;
+        const BlockView view{first ? &pipe_.blocks : pipe_.lagView ? &lagBlocks_ : &newtonBlocks_, &pipe_.order,
+                             static_cast<int>(pipe_.order.size()),
+                             first ? pipe_.held.data() : pipe_.lagView ? lagHeld_.data() : nullptr, pipe_.frozen.data()};
         solver::RootBlockSolve::solveRootBlocks(ctx, newtonCtx, view, maxIter, tol, fineBlockSolver_ ? 6 : 0);
     }
 

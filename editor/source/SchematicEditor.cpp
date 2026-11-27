@@ -108,7 +108,7 @@ void SchematicEditor::setDocument(const wdf::LiveWDFDocument& doc) {
     selectedIds_.clear();
     selectedWireIds_.clear();
     livePotPositions_.clear();
-    liveSwitchThrowsB_.clear();
+    liveSwitchPositions_.clear();
     dirty_ = false;
     rebuildGeometry();
 
@@ -173,15 +173,15 @@ void SchematicEditor::setSignalActivity(float level) {
 
 void SchematicEditor::setLiveControlState(
     const std::map<std::string, double>& potPositions,
-    const std::map<std::string, bool>& switchThrowsB) {
+    const std::map<std::string, int>& switchPositions) {
     // The plugin calls this from its 30 Hz timer with a fresh map every tick.
     // Repainting when nothing moved would make an idle editor burn a core for
     // no visible reason, which is the same rule `setNodeVoltages` follows.
-    if (livePotPositions_ == potPositions && liveSwitchThrowsB_ == switchThrowsB)
+    if (livePotPositions_ == potPositions && liveSwitchPositions_ == switchPositions)
         return;
 
     livePotPositions_ = potPositions;
-    liveSwitchThrowsB_ = switchThrowsB;
+    liveSwitchPositions_ = switchPositions;
     repaint();
 }
 

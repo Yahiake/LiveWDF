@@ -515,10 +515,8 @@ void SchematicEditor::placePendingPart(juce::Point<int> grid) {
         // The copy starts on its own nets: it must not silently share the node
         // names of the part it was cloned from.
         if (auto* placed = schematic_.findPart(newId)) {
-            const PartSpec* spec = findPart(placed->type);
-            if (spec)
-                for (const auto& pin : spec->pins)
-                    placed->pins[pin] = danglingNet(placed->id, pin);
+            for (const auto& pin : partPins(*placed))
+                placed->pins[pin] = danglingNet(placed->id, pin);
         }
     } else {
         // Built through the palette entry, not just the type, so a model row

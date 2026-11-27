@@ -379,7 +379,7 @@ void InspectorPanel::rebuild() {
             continue;
 
         // The throw already has its own row above.
-        if (comp.type == "switch_res" && key == "select")
+        if (comp.type == "switch_res" && (key == "select" || key == "throws"))
             continue;
 
         auto* lab = labels.add(new juce::Label({}, propertyLabel(key) + ":"));
@@ -672,42 +672,60 @@ void InspectorPanel::rebuild() {
     // `select`: both the converter and the artwork treat a missing value as
     // throw A, so the inspector must not silently offer no way to change it.
     if (comp.type == "switch_res") {
-        const bool throwB = wdf::switchResSelectsB(comp);
+        const int throws = wdf::switchResThrowCount(comp);
+        const int position = wdf::switchResPosition(comp);
+
+        auto* throwsLabel = labels.add(new juce::Label({}, "Throws:"));
+        throwsLabel->setColour(juce::Label::textColourId, glow::getColourTextSecondary());
+        throwsLabel->setFont(Fonts::semiBold(11.5f));
+        content_.addAndMakeVisible(throwsLabel);
+
+        auto* throwsBox = new juce::ComboBox();
+        stylePicker(*throwsBox);
+        for (int count = wdf::kMinSwitchThrows; count <= wdf::kMaxSwitchThrows; ++count)
+            throwsBox->addItem(juce::String(count), count - wdf::kMinSwitchThrows + 1);
+        throwsBox->setSelectedId(throws - wdf::kMinSwitchThrows + 1, juce::dontSendNotification);
+        throwsBox->onChange = [this, throwsBox] { commitEdit("throws", throwsBox->getText()); };
+        content_.addAndMakeVisible(throwsBox);
+        editors.add(throwsBox);
+        ++row;
 
         auto* lab = labels.add(new juce::Label({}, "Position:"));
         lab->setColour(juce::Label::textColourId, glow::getColourTextSecondary());
         lab->setFont(Fonts::semiBold(11.5f));
         content_.addAndMakeVisible(lab);
 
-        auto* btn = new juce::TextButton(throwB ? "Throw B" : "Throw A");
-        btn->setClickingTogglesState(true);
-        btn->setToggleState(throwB, juce::dontSendNotification);
-        btn->setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF161A22));
-        btn->setColour(juce::TextButton::textColourOffId, glow::getColourHighlight());
-        content_.addAndMakeVisible(*btn);
-        editors.add(btn);
+        if (throws == 2) {
+            const bool throwB = position == 1;
+            auto* btn = new juce::TextButton(throwB ? "Throw B" : "Throw A");
+            btn->setClickingTogglesState(true);
+            btn->setToggleState(throwB, juce::dontSendNotification);
+            btn->setColour(juce::TextButton::buttonColourId, juce::Colour(0xFF161A22));
+            btn->setColour(juce::TextButton::textColourOffId, glow::getColourHighlight());
+            content_.addAndMakeVisible(*btn);
+            editors.add(btn);
 
-        // Read the document at click time. Capturing the value that was on
-        // screen when the panel was built makes a second click write the same
-        // value again, because the host's rebuild is deferred.
-        btn->onClick = [this, btn] {
-            if (!doc_ || id_.empty())
-                return;
-
-            auto sw = std::find_if(doc_->components.begin(), doc_->components.end(),
-                                   [&](const wdf::SchematicComponent& c) { return c.id == id_; });
-            if (sw == doc_->components.end() || sw->type != "switch_res")
-                return;
-
-            const bool onB = wdf::switchResSelectsB(*sw);
-            commitEdit("select", juce::String(onB ? "0" : "1"));
-
-            // Keep the button honest even when no host callback rebuilds the
-            // panel (the tests drive `onClick` directly), and so a second click
-            // reads the new state rather than the old one.
-            btn->setButtonText(onB ? "Throw A" : "Throw B");
-            btn->setToggleState(!onB, juce::dontSendNotification);
-        };
+            btn->onClick = [this, btn] {
+                if (!doc_ || id_.empty())
+                    return;
+                auto sw = std::ranges::find(doc_->components, id_, &wdf::SchematicComponent::id);
+                if (sw == doc_->components.end() || sw->type != "switch_res")
+                    return;
+                const bool onB = wdf::switchResSelectsB(*sw);
+                commitEdit("select", juce::String(onB ? "0" : "1"));
+                btn->setButtonText(onB ? "Throw A" : "Throw B");
+                btn->setToggleState(!onB, juce::dontSendNotification);
+            };
+        } else {
+            auto* box = new juce::ComboBox();
+            stylePicker(*box);
+            for (int i = 0; i < throws; ++i)
+                box->addItem("Throw " + juce::String::charToString(static_cast<juce::juce_wchar>('A' + i)), i + 1);
+            box->setSelectedId(position + 1, juce::dontSendNotification);
+            box->onChange = [this, box] { commitEdit("select", juce::String(box->getSelectedItemIndex())); };
+            content_.addAndMakeVisible(box);
+            editors.add(box);
+        }
 
         ++row;
     }
@@ -767,8 +785,8 @@ void InspectorPanel::rebuild() {
 
     if (selectedParts_.size() == 1 && canSetAmpSection(comp) && ampSectionOf(comp) != powerAmpOnly) {
         std::vector<std::string> pins{std::string()};
-        if (const auto* spec = findPart(comp.type)) {
-            for (const auto& pin : spec->pins) {
+        if (findPart(comp.type) != nullptr) {
+            for (const auto& pin : partPins(comp)) {
                 const auto net = comp.pins.find(pin);
                 if (net != comp.pins.end() && !net->second.empty() && net->second != doc_->groundNode)
                     pins.push_back(pin);
@@ -897,6 +915,16 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
             text == juce::String(formatValue(doc_->previewPadDb, "")) || db == doc_->previewPadDb)
             return;
         doc_->previewPadDb = db;
+    } else if (it->type == "switch_res" && key == "throws") {
+        const int count = std::clamp(text.getIntValue(), wdf::kMinSwitchThrows,
+                                     wdf::kMaxSwitchThrows);
+        if (count == wdf::switchResThrowCount(*it))
+            return;
+        if (count == wdf::kMinSwitchThrows)
+            it->properties.erase("throws");
+        else
+            it->properties["throws"] = std::to_string(count);
+        it->properties["select"] = std::to_string(std::min(wdf::switchResPosition(*it), count - 1));
     } else if (it->values.count(key) || inputReference || outputReference || preampReference) {
         const bool isPotValue =
             (key == primaryValueKey(it->type) && it->properties.count("taper") != 0);
@@ -1092,20 +1120,27 @@ void InspectorPanel::commitEdit(const std::string& displayedKey, const juce::Str
                 it->properties[identityKey] = "Custom";
         }
 
-        // **Ganging.** switch_res parts that share a `label` are one changeover:
-        // flipping one flips them all, exactly like a hardware ganged switch.
-        if (it->type == "switch_res" && key == "select") {
-            const std::string myLabel = it->properties.count("label") ? it->properties["label"] : std::string();
-            if (!myLabel.empty()) {
-                for (auto& other : doc_->components) {
-                    if (other.id == it->id)
-                        continue;
-                    if (other.type != "switch_res")
-                        continue;
-                    if (other.properties.count("label") == 0 || other.properties["label"] != myLabel)
-                        continue;
-                    other.properties["select"] = text.toStdString();
+    }
+
+    if (it->type == "switch_res" && (key == "select" || key == "throws")) {
+        const auto label = it->properties.find("label");
+        if (label != it->properties.end() && !label->second.empty()) {
+            const int count = wdf::switchResThrowCount(*it);
+            for (auto& other : doc_->components) {
+                if (other.id == it->id || other.type != "switch_res")
+                    continue;
+                const auto otherLabel = other.properties.find("label");
+                if (otherLabel == other.properties.end() || otherLabel->second != label->second)
+                    continue;
+                if (key == "throws") {
+                    if (count == wdf::kMinSwitchThrows)
+                        other.properties.erase("throws");
+                    else
+                        other.properties["throws"] = std::to_string(count);
                 }
+                other.properties["select"] = std::to_string(std::clamp(
+                    key == "select" ? text.getIntValue() : wdf::switchResPosition(other),
+                    0, count - 1));
             }
         }
     }

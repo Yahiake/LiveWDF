@@ -89,6 +89,16 @@ juce::TextButton* findButton(juce::Component& panel, const juce::String& text) {
     return nullptr;
 }
 
+juce::ComboBox* findComboWithItems(juce::Component& panel, int items) {
+    for (auto* child : panel.getChildren()) {
+        if (auto* box = dynamic_cast<juce::ComboBox*>(child); box && box->getNumItems() == items)
+            return box;
+        if (auto* nested = findComboWithItems(*child, items))
+            return nested;
+    }
+    return nullptr;
+}
+
 }  // namespace
 
 TEST_CASE("switch_res is in the palette with three pins", "[editor]") {
@@ -132,6 +142,88 @@ TEST_CASE("switch_res defaults select to \"0\"", "[editor]") {
     wdf::SchematicComponent comp = makeComponent("switch_res", {}, 0.0f, 0.0f);
     REQUIRE(comp.properties.count("select") == 1);
     CHECK(comp.properties["select"] == "0");
+}
+
+TEST_CASE("switch_res extends its pin frame from the throw count", "[editor]") {
+    auto sw = makeComponent("switch_res", {}, 10.0f, 10.0f);
+    sw.properties["throws"] = "4";
+    sw.properties["select"] = "3";
+
+    CHECK(partPins(sw) == std::vector<std::string>{"in", "outA", "outB", "outC", "outD"});
+    const auto pins = Schematic::pinOffsets(sw);
+    REQUIRE(pins.size() == 5);
+    CHECK(pins[0].x == 0);
+    CHECK(pins[1].x == -3);
+    CHECK(pins[2].x == -1);
+    CHECK(pins[3].x == 1);
+    CHECK(pins[4].x == 3);
+    CHECK(wdf::switchResPosition(sw) == 3);
+}
+
+TEST_CASE("toCircuit connects exactly one of three throws", "[editor]") {
+    auto doc = spdtDoc("2", "CHOICE");
+    auto& sw = doc.components[1];
+    sw.properties["throws"] = "3";
+    sw.pins["outC"] = "nC";
+
+    wdf::SchematicComponent rc;
+    rc.id = "R_C"; rc.type = "res";
+    rc.pins = {{"a", "nC"}, {"b", "out"}};
+    rc.values = {{"value", 470000.0}};
+    doc.components.push_back(rc);
+
+    const auto circuit = doc.toCircuit();
+    for (const char suffix : {'A', 'B', 'C'}) {
+        const auto resistor = std::ranges::find(circuit.res, "S1_" + std::string(1, suffix),
+                                               &wdf::Res::name);
+        REQUIRE(resistor != circuit.res.end());
+        CHECK(resistor->value == Approx(suffix == 'C' ? wdf::kSpdtClosedOhms
+                                                       : wdf::kSpdtOpenOhms));
+    }
+}
+
+TEST_CASE("A three-throw switch may leave its middle throw unconnected", "[editor]") {
+    auto doc = spdtDoc("1", "CHOICE");
+    auto& sw = doc.components[1];
+    sw.properties["throws"] = "3";
+    sw.pins["outC"] = "nC";
+    doc.components.erase(doc.components.begin() + 3);
+
+    const auto loose = doc.unconnectedPins();
+    CHECK(std::ranges::none_of(loose, [](const auto& pin) { return pin.first == "S1"; }));
+    CircuitSession session;
+    REQUIRE(session.compile(doc, 48000.0));
+}
+
+TEST_CASE("Multi-throw selectors preserve throw-B gating", "[editor]") {
+    auto doc = spdtDoc("1", "CHOICE");
+    doc.components[1].properties["throws"] = "3";
+    doc.components[1].pins["outC"] = "nC";
+    doc.components[2].properties["enabledBy"] = "S1";
+    CHECK(std::ranges::any_of(doc.toCircuit().res, [](const auto& r) { return r.name == "R_A"; }));
+
+    doc.components[1].properties["select"] = "2";
+    CHECK(std::ranges::none_of(doc.toCircuit().res, [](const auto& r) { return r.name == "R_A"; }));
+}
+
+TEST_CASE("Inspector sets a switch throw count and indexed position", "[editor]") {
+    auto doc = spdtDoc("0", "CHOICE");
+    doc.components[1].properties["throws"] = "3";
+    InspectorPanel panel;
+    panel.setTarget(&doc, "S1");
+
+    auto* position = findComboWithItems(panel, 3);
+    REQUIRE(position != nullptr);
+    position->setSelectedId(3, juce::dontSendNotification);
+    position->onChange();
+    CHECK(doc.components[1].properties["select"] == "2");
+
+    auto* throws = findComboWithItems(panel, wdf::kMaxSwitchThrows - wdf::kMinSwitchThrows + 1);
+    REQUIRE(throws != nullptr);
+    throws->setSelectedId(1, juce::dontSendNotification);
+    throws->onChange();
+    CHECK(doc.components[1].properties.count("throws") == 0);
+    CHECK(wdf::switchResPosition(doc.components[1]) == 1);
 }
 
 TEST_CASE("toCircuit builds two resistors for switch_res", "[editor]") {

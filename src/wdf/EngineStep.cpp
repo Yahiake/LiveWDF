@@ -260,16 +260,35 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         vOcData[r] = (uData[rp.a] - uData[rp.b]) + roffData[r];
     }
     tock(prof_.network);
+    const bool folded = lampFolded();
+    if (folded) {
+        auto& L = lamp_;
+        if (L.foldedControls != liveControlRevision()) {
+            foldLamp();
+            sharedNewtonColumns_.refresh(L.Zred, K_, L.nRed);
+            triodeDomainTransfer_.refresh(L.Z, K_);
+        }
+        // Held part solved with the circuit; the swing on top reads the other ports' currents one sample late.
+        const size_t r = size_t(L.port);
+        const double held = 1.0 / (Z_[r * K_ + r] + L.held);
+        double open = vOcData[r];
+        for (int c = 0; c < K_; ++c)
+            open -= c == int(r) ? 0.0 : Z_[r * K_ + c] * ii_[size_t(c)];
+        L.drive = held * vOcData[r] + (1.0 / (Z_[r * K_ + r] + ctrlResValues_[size_t(L.watch)]) - held) * open;
+        for (int p = 0; p < K_; ++p)
+            vOcData[p] -= p == int(r) ? 0.0 : Z_[size_t(p) * K_ + r] * L.drive;
+    }
 
     const long long fallbacksBefore = blockFallbacks_;
-    const bool loadedRoot = loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
-    const bool movingAffine = !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
+    const bool pipeline = pipelineReady();
+    const bool loadedRoot = !pipeline && !folded && loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
+    const bool movingAffine = !pipeline && !folded && !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
                               affineNodes_.revision == linearRebuilds() && tryAffineMotion(tol);
-    const bool compiledRoot = movingAffine || (!loadedRoot && compiled && maxIter >= 4 &&
+    const bool compiledRoot = movingAffine || (!pipeline && !folded && !loadedRoot && compiled && maxIter >= 4 &&
                               (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol));
     bool triodePreview = false;
-    if (!loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
+    if (!pipeline && !folded && !loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
         nTri_ > 2 && static_cast<size_t>(nTri_) == rootDevices_.size()) {
         if (triodePreviewCooldown_ == 0) {
             triodePreview = tryTriodePreview();
@@ -304,11 +323,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             --runtimeGateCooldown_;
         }
 
-        if (explicitRootsActive_ && !adjustedTransfer)
+        if (folded)
+            solveRootsNewton(maxIter, tol);
+        else if (pipeline && blockFallbackCooldown_ == 0)
+            solvePipelineStage(maxIter, tol, adjustedTransfer);
+        else if (explicitRootsActive_ && !adjustedTransfer)
             solveRootGroups(maxIter, tol);
         else if (useRuntime)
             solveRootBlocksRuntime(maxIter, tol);
-        else if ((explicitRootsActive_ || blockRoots()) && blockFallbackCooldown_ == 0)
+        else if ((explicitRootsActive_ || blockRoots() || !lamp_.alone.empty()) && blockFallbackCooldown_ == 0)
             solveRootBlocks(maxIter, tol, slowLagActive(), adjustedTransfer);
         else
             solveRootsNewton(maxIter, tol);
@@ -318,6 +341,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         keptBest_ = false;
         newtonIters_ = 0;
         deviceEvals_ = 0;
+    }
+    if (folded) {
+        auto& L = lamp_;
+        const size_t r = size_t(L.port);
+        double i = L.drive;
+        for (int c = 0; c < K_; ++c)
+            i -= c == int(r) ? 0.0 : Z_[r * K_ + c] * ii_[size_t(c)] / (Z_[r * K_ + r] + L.held);
+        ii_[r] = i;
+        vv_[r] = i * ctrlResValues_[size_t(L.watch)];
     }
     if (lamp_.length)
         stepLampReplay();

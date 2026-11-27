@@ -105,7 +105,7 @@ DerivedNets deriveNets(const std::vector<SchematicComponent>& components,
     // alternative, defaulting a pin to the part's centre or to ground, is what
     // connected a part to something it was never drawn on.
     for (std::size_t e = 0; e < components.size(); ++e) {
-        const int pinCount = static_cast<int>(livewdf::editor::pinFrame(components[e].type).size());
+        const int pinCount = static_cast<int>(livewdf::editor::pinFrame(components[e]).size());
         auto& row = result.netOfPin[e];
         row.resize(static_cast<std::size_t>(pinCount), -1);
 

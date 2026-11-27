@@ -48,14 +48,14 @@ bool applySavedPlaybackControls(const wdf::LiveWDFDocument& doc, wdf::Engine& en
         }
     }
     for (const auto& group : wdf::switchControlGroups(doc)) {
-        const bool throwB = wdf::switchResSelectsB(component(group.members.front().id));
+        const int selected = wdf::switchResPosition(component(group.members.front().id));
         for (const auto& member : group.members) {
-            const int a = engine.resIndexByName(member.id + "_A");
-            const int b = engine.resIndexByName(member.id + "_B");
-            if (a >= 0 && b >= 0) {
-                switches.emplace_back(a, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
-                switches.emplace_back(b, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
-            }
+            const int count = wdf::switchResThrowCount(component(member.id));
+            for (int position = 0; position < count; ++position)
+                if (const int index = engine.resIndexByName(
+                        member.id + "_" + static_cast<char>('A' + position)); index >= 0)
+                    switches.emplace_back(index, position == selected ? wdf::kSpdtClosedOhms
+                                                                      : wdf::kSpdtOpenOhms);
         }
     }
     return engine.setParametersByIndex(pots, rheostats, switches);
