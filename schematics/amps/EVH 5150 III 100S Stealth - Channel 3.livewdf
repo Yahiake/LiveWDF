@@ -2291,7 +2291,7 @@
       "type": "cap",
       "values": {
         "value": 0.00015,
-        "initialVolts": 242
+        "initialVolts": 241.9
       },
       "visual": {
         "flipped": false,
@@ -2308,7 +2308,7 @@
       "type": "cap",
       "values": {
         "value": 0.00015,
-        "initialVolts": 242
+        "initialVolts": 241.9
       },
       "visual": {
         "flipped": false,
@@ -2341,7 +2341,7 @@
       "type": "cap",
       "values": {
         "value": 0.00015,
-        "initialVolts": 237.5
+        "initialVolts": 236.5
       },
       "visual": {
         "flipped": false,
@@ -2358,7 +2358,7 @@
       "type": "cap",
       "values": {
         "value": 0.00015,
-        "initialVolts": 237.5
+        "initialVolts": 236.5
       },
       "visual": {
         "flipped": false,
@@ -2439,7 +2439,7 @@
       "type": "cap",
       "values": {
         "value": 4.7e-05,
-        "initialVolts": 428
+        "initialVolts": 397.9
       },
       "visual": {
         "flipped": false,
@@ -2488,7 +2488,7 @@
       "type": "cap",
       "values": {
         "value": 4.7e-05,
-        "initialVolts": 396
+        "initialVolts": 338.1
       },
       "visual": {
         "flipped": false,
@@ -2521,7 +2521,7 @@
       "type": "cap",
       "values": {
         "value": 2.2e-05,
-        "initialVolts": 370
+        "initialVolts": 290.4
       },
       "visual": {
         "flipped": false,
@@ -2543,9 +2543,128 @@
         "x": 505,
         "y": 101
       }
+    },
+    {
+      "id": "V1-B idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 323000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 498,
+        "y": 94
+      }
+    },
+    {
+      "id": "V2-A idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 323000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 499,
+        "y": 94
+      }
+    },
+    {
+      "id": "V2-B idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 323000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 500,
+        "y": 94
+      }
+    },
+    {
+      "id": "V3-A idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 350000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 494,
+        "y": 84
+      }
+    },
+    {
+      "id": "V3-B idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 266000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 495,
+        "y": 84
+      }
+    },
+    {
+      "id": "V7-A idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 306000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 496,
+        "y": 84
+      }
+    },
+    {
+      "id": "V7-B idle load",
+      "properties": {
+        "powerAmp": "1",
+        "label": "Channel 1-2 or loop stage omitted from the signal path, drawn as its idle current"
+      },
+      "type": "res",
+      "values": {
+        "value": 469000.0
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 490,
+        "y": 84
+      }
     }
   ],
-  "description": "Channel 3 and the 100S four-6L6GC output stage, with Presence and Resonance. The 8 Ω load and output transformer use estimated winding parameters.",
+  "description": "Channel 3 and the 100S four-6L6GC output stage, with Presence and Resonance. The 8 Ω load and output transformer use estimated winding parameters. Channels 1 and 2, the loop send and the loop return are not in the signal path; each of their seven triodes is drawn as a resistor carrying its idle current from the service diagram.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -6142,6 +6261,174 @@
         {
           "x": 97,
           "y": 5
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 498,
+          "y": 92
+        },
+        {
+          "x": 501,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 498,
+          "y": 96
+        },
+        {
+          "x": 501,
+          "y": 96
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 499,
+          "y": 92
+        },
+        {
+          "x": 501,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 499,
+          "y": 96
+        },
+        {
+          "x": 501,
+          "y": 96
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 500,
+          "y": 92
+        },
+        {
+          "x": 501,
+          "y": 92
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 500,
+          "y": 96
+        },
+        {
+          "x": 501,
+          "y": 96
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 494,
+          "y": 82
+        },
+        {
+          "x": 493,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 494,
+          "y": 86
+        },
+        {
+          "x": 493,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 495,
+          "y": 82
+        },
+        {
+          "x": 493,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 495,
+          "y": 86
+        },
+        {
+          "x": 493,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 496,
+          "y": 82
+        },
+        {
+          "x": 493,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 496,
+          "y": 86
+        },
+        {
+          "x": 493,
+          "y": 86
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 490,
+          "y": 82
+        },
+        {
+          "x": 493,
+          "y": 82
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 490,
+          "y": 86
+        },
+        {
+          "x": 493,
+          "y": 86
         }
       ]
     }
