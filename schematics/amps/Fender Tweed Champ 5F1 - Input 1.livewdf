@@ -429,10 +429,10 @@
       "id": "T1",
       "type": "transformer",
       "values": {
-        "Lm": 71.51,
+        "Lm": 61.9,
         "dcrPrimary": 329.73,
         "dcrSecondary": 0.295,
-        "leakage": 0.037249697,
+        "leakage": 0.037251202,
         "turnsPrimary": 44.721359549995796,
         "turnsSecondary": 1.0
       },
@@ -497,7 +497,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 42.334439
+        "fullScaleVolts": 42.29751
       },
       "properties": {},
       "visual": {
