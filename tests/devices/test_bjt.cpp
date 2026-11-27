@@ -267,11 +267,11 @@ TEST_CASE("2N5089 preset matches the datasheet fit",
     REQUIRE(e != nullptr);
     const BjtModel& m = e->model;
     CHECK_FALSE(m.pnp);
-    CHECK(m.Is == Approx(1.543e-13).margin(1e-16));
+    CHECK(m.Is == Approx(5.915e-15).margin(1e-18));
     CHECK(m.Bf == Approx(743.8).margin(0.1));
     CHECK(m.Br == Approx(1.262).margin(0.01));
-    CHECK(m.Nf == Approx(1.09));
-    CHECK(m.Nr == Approx(1.09));
+    CHECK(m.Nf == Approx(1.0));
+    CHECK(m.Nr == Approx(1.0));
     CHECK(m.valid());
 
     BjtModel prep = m;
