@@ -361,6 +361,8 @@ int LiveWDFPluginProcessor::effectiveOversamplingChoice() const {
 // Changes to grid current or sample rate rebuild the engines.
 void LiveWDFPluginProcessor::timerCallback() {
     outputEffects_.reclaim();
+    if (*apvts_.getRawParameterValue("stereo") > 0.5f)
+        rightWorker_.start();
     if (!isNonRealtime())
         outputEffects_.applyReverbSize(reverbSize_->load(std::memory_order_relaxed) * 0.01f, false);
     const std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
@@ -1276,9 +1278,9 @@ void LiveWDFPluginProcessor::readLivePotTargets(int rampSamples) {
     }
 }
 
-void LiveWDFPluginProcessor::advanceLivePots() {
+bool LiveWDFPluginProcessor::advanceLivePots() {
     if (!potsMoving_)
-        return;
+        return false;
 
     // Use a host-sample interval so oversampling and block boundaries have
     // no effect on the control curve. Batch ganged and simultaneous changes.
@@ -1291,13 +1293,13 @@ void LiveWDFPluginProcessor::advanceLivePots() {
     }
     if (potsMoving_ && samplesUntilPotUpdate_ > 0) {
         --samplesUntilPotUpdate_;
-        return;
+        return false;
     }
 
     samplesUntilPotUpdate_ = interval - 1;
-    applyLiveControlsToEngines(true, false);
     if (!potsMoving_)
         samplesUntilPotUpdate_ = 0;
+    return true;
 }
 
 void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches) {
