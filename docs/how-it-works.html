@@ -76,7 +76,7 @@
       <p>Power pentodes are harder. A pentode has a screen grid, an extra electrode between the control grid and the plate that sets how much current the tube can pass. The full pentode law is expensive, and the power stage is where big amps spend their time.</p>
       <p>So the EL34, 6L6GC and 6V6 use a cheaper law, the quadric pentode. It treats the total current as a sum of a few smooth squared terms in grid and screen voltage, fitted per tube, and splits that current between plate and screen the same way the full law does.</p>
       <p>A plain fit still conducts a little with no screen voltage, which a real tube does not. A correction fades the current out over the last few volts of screen voltage, so it reaches zero smoothly. At normal screen voltages it changes almost nothing.</p>
-      <p>The EL84 has its own quadric fit, made to its datasheet. It is used in Fast and Preview; Accurate keeps the full law for the EL84.</p>
+      <p>The EL84 has its own quadric fit, made to its datasheet, and uses it in every mode like the others.</p>
     </section>
 
     <section id="solid-state" class="doc-section">
