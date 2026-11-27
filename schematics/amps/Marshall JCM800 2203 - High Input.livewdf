@@ -1205,13 +1205,139 @@
       },
       "type": "res",
       "values": {
-        "value": 4
+        "value": 3.225
       },
       "visual": {
         "flipped": false,
         "rotation": 0,
-        "x": 275,
-        "y": 43
+        "x": 290,
+        "y": 46
+      }
+    },
+    {
+      "id": "Speaker coil L1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.0001978
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 290,
+        "y": 50
+      }
+    },
+    {
+      "id": "Speaker coil R1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 23.01
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 293,
+        "y": 50
+      }
+    },
+    {
+      "id": "Speaker coil L2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.0005478
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 290,
+        "y": 54
+      }
+    },
+    {
+      "id": "Speaker coil R2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 3.148
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 293,
+        "y": 54
+      }
+    },
+    {
+      "id": "Speaker resonance L",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.002937
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 290,
+        "y": 58
+      }
+    },
+    {
+      "id": "Speaker resonance R",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 17.65
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 293,
+        "y": 58
+      }
+    },
+    {
+      "id": "Speaker resonance C",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.0007257
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 296,
+        "y": 58
+      }
+    },
+    {
+      "id": "Speaker ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 290,
+        "y": 62
       }
     },
     {
@@ -1233,7 +1359,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 324.78696
+        "fullScaleVolts": 366.38523
       },
       "visual": {
         "flipped": false,
@@ -1243,7 +1369,7 @@
       }
     }
   ],
-  "description": "Marshall 1981 Lead Series phase-splitter and 100 W EL34 power circuit. Matched EL34 pairs, fixed rails and bias, 4 Ω output with Presence feedback. Power Amp off keeps the original calibrated preamp.",
+  "description": "Marshall 1981 Lead Series phase-splitter and 100 W EL34 power circuit. Matched EL34 pairs, fixed rails and bias, 4 Ω output into a closed 4x12 of G12T-75s, with Presence feedback. Power Amp off keeps the original calibrated preamp.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -2419,18 +2545,6 @@
         {
           "x": 267,
           "y": 34
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 275,
-          "y": 41
-        },
-        {
-          "x": 275,
-          "y": 40
         }
       ]
     },
@@ -3794,18 +3908,6 @@
       "points": [
         {
           "x": 275,
-          "y": 45
-        },
-        {
-          "x": 275,
-          "y": 46
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 275,
           "y": 48
         },
         {
@@ -3999,6 +4101,94 @@
         {
           "x": 235,
           "y": 53
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 275,
+          "y": 40
+        },
+        {
+          "x": 290,
+          "y": 40
+        },
+        {
+          "x": 290,
+          "y": 44
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 290,
+          "y": 48
+        },
+        {
+          "x": 293,
+          "y": 48
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 290,
+          "y": 52
+        },
+        {
+          "x": 293,
+          "y": 52
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 290,
+          "y": 56
+        },
+        {
+          "x": 293,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 293,
+          "y": 56
+        },
+        {
+          "x": 296,
+          "y": 56
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 290,
+          "y": 60
+        },
+        {
+          "x": 293,
+          "y": 60
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 293,
+          "y": 60
+        },
+        {
+          "x": 296,
+          "y": 60
         }
       ]
     }
