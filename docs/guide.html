@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="How to use LiveWDF: first sound, circuits and cabinets, the three modes, input and output levels, the schematic editor, per-mode trims and presets.">
+  <title>Guide · LiveWDF</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">∿</span> LiveWDF</a>
+      <nav aria-label="Main navigation">
+        <a href="index.html#presets">Factory presets</a>
+        <a href="index.html#demos">Sound demos</a>
+        <a href="index.html#architecture">Architecture</a>
+        <a href="how-it-works.html">How it works</a>
+        <a href="guide.html" aria-current="page">Guide</a>
+        <a href="branding.html">Branding</a>
+        <a class="repo-link" href="https://github.com/Yahiake/LiveWDF">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="content" class="shell doc">
+    <div class="doc-intro">
+      <p class="section-label">Guide</p>
+      <h1>Using LiveWDF</h1>
+      <p class="lead">Short how-tos for playing through a circuit, setting levels, and drawing your own.</p>
+    </div>
+
+    <nav class="toc" aria-label="On this page">
+      <a href="#install">Install and first sound</a>
+      <a href="#circuit">Circuit and cab</a>
+      <a href="#modes">Modes</a>
+      <a href="#input">Input calibration</a>
+      <a href="#output">Output level</a>
+      <a href="#editor">The editor</a>
+      <a href="#trims">Mode trims</a>
+      <a href="#presets">Presets</a>
+    </nav>
+
+    <section id="install" class="doc-section">
+      <h2>Install and first sound</h2>
+      <p>Download a nightly build from the prereleases on <a href="https://github.com/Yahiake/LiveWDF/releases">GitHub Releases</a>. There are builds for Windows, macOS and Linux, each with the VST3 plugin, the standalone player and the schematic editor.</p>
+      <p>Put the plugin on a guitar track in your DAW, or open the standalone player. Then pick a circuit, as below.</p>
+      <p>Leave <strong>Input from</strong> on <strong>Track</strong> and <strong>Output to</strong> on <strong>Track (level matched)</strong>. Those are the defaults, and they make the circuit see a guitar-level signal and come back at a sensible level.</p>
+      <p>Set the solve mode to <strong>Preview</strong> to play. The scope shows what goes in and what comes out.</p>
+      <p>On Android the standalone player is the preset player. It ships the factory circuits and imports <code>.livewdf</code> files through the file picker.</p>
+    </section>
+
+    <section id="circuit" class="doc-section">
+      <h2>Picking a circuit and a cab</h2>
+      <p>Click <strong>Browse</strong> beside <strong>Circuit</strong> to open the factory circuits. The browser has a search field, so typing a name is the quickest way in. <strong>Load .livewdf...</strong> opens your own file, and you can also drop a <code>.livewdf</code> file onto the plugin window.</p>
+      <p>The circuit's pots appear as knobs and its switches as buttons, named as in the schematic.</p>
+      <p>On an amp, <strong>Power Amp</strong> turns the power stage on or off. Off plays the preamp output, for running into your own power amp or another circuit.</p>
+      <p>The <strong>Cabinet</strong> menu picks a speaker impulse response. <strong>Suggested</strong> follows the circuit you load. You can also pick a factory one or <strong>Load WAV...</strong> for your own, mono or stereo. <strong>Reverb</strong> works the same way, and <strong>Effects</strong> holds echo and reverb settings.</p>
+    </section>
+
+    <section id="modes" class="doc-section">
+      <h2>The three modes and when to switch</h2>
+      <dl class="doc-list">
+        <div><dt>Preview</dt><dd>For playing. The cheapest mode, made for live use.</dd></div>
+        <div><dt>Fast</dt><dd>A step closer to the full circuit. Use it when you want to hear more detail and the CPU allows.</dd></div>
+        <div><dt>Accurate</dt><dd>The full circuit, including the drawn power supply with its hum. Use it for renders and for checking a circuit.</dd></div>
+      </dl>
+      <p>Turn on <strong>Accurate export</strong> to have offline renders use Accurate whatever you play in. <strong>4× export</strong> does the same for oversampling.</p>
+      <p>The levels of the three modes are matched, so you can switch without the volume jumping. See <a href="how-it-works.html#modes">How it works</a> for what each mode gives up.</p>
+      <p>Some circuits show a <strong>Pad hack</strong> switch in Preview. It lowers the drive into the circuit and adds the same amount back at the output.</p>
+    </section>
+
+    <section id="input" class="doc-section">
+      <h2>Input calibration</h2>
+      <p>A circuit runs on volts, your DAW on samples. The input reference says how many volts a full-scale sample is, so a pedal sees a guitar's level and a studio unit sees line level. Every factory circuit has one already.</p>
+      <p>To set it on your own circuit, select its <strong>Input</strong> part in the editor and fill in one of two fields. They set the same thing, use whichever matches what you know.</p>
+      <ul>
+        <li><strong>Input V peak at 0 dBFS</strong>: the peak voltage a full-scale sample stands for.</li>
+        <li><strong>Input mV RMS at -18 dBFS</strong>: the level of a −18 dBFS sine in millivolts RMS. A guitar input is often set to 77.5 mV here.</li>
+      </ul>
+      <p>In the player, <strong>TRIM</strong> moves the input level in dB on top of the reference. Double-click it to go back to zero.</p>
+      <p>To chain two LiveWDF instances at real voltages, set the first one's <strong>Output to</strong> to <strong>Next LiveWDF</strong> and the second one's <strong>Input from</strong> to <strong>Previous LiveWDF</strong>. Keep DAW gain at unity and both trims at zero between them.</p>
+      <p>Some presets show <strong>SOURCE R</strong> and <strong>OUTPUT LOAD</strong> knobs. They set the resistance of what feeds the input, like a guitar pickup, and of what the output drives.</p>
+    </section>
+
+    <section id="output" class="doc-section">
+      <h2>Output level matching</h2>
+      <p>With <strong>Output to</strong> on <strong>Track (level matched)</strong>, each circuit comes back at about the loudness of the dry signal. A fixed gain does this, so the circuit's dynamics stay as they are.</p>
+      <p>For your own circuit, select its main <strong>Output</strong> part in the editor and click <strong>Calibrate output</strong>. It drives a copy of the circuit with a test signal and writes the result into <strong>Matched output V peak at 0 dBFS</strong>. You can type your own value there instead.</p>
+      <p>Calibrate with the controls where you want the preset saved. Save the circuit afterwards.</p>
+      <p>The <strong>OUTPUT</strong> knob in the player sets your listening level on top, and <strong>MIX</strong> blends in the dry signal.</p>
+    </section>
+
+    <section id="editor" class="doc-section">
+      <h2>The schematic editor</h2>
+      <figure class="doc-figure">
+        <img src="assets/fuzz-face-editor.webp" width="1200" height="760" loading="lazy"
+             alt="The Fuzz Face schematic in the editor, with the scope showing input and output traces below.">
+        <figcaption>Fuzz Face in the editor</figcaption>
+      </figure>
+      <h3>Open a circuit</h3>
+      <p>Click <strong>Open</strong>, or <strong>Presets</strong> to browse your circuits and the factory ones. <strong>New</strong> starts an empty sheet in a new tab.</p>
+      <h3>Add and wire parts</h3>
+      <p>Pick a part in the parts panel, or search for it, then click on the sheet to place it. Right-click cancels placing.</p>
+      <p>Press <kbd>W</kbd> or pick <strong>Wire</strong>, then drag from pin to pin. A wire end that lands near a pin snaps onto it. <kbd>S</kbd> goes back to Select.</p>
+      <p>Rotate with <kbd>Ctrl</kbd>+<kbd>R</kbd>, flip with <kbd>Ctrl</kbd>+<kbd>F</kbd>, duplicate with <kbd>Ctrl</kbd>+<kbd>D</kbd>. On macOS use <kbd>Cmd</kbd>. <kbd>F</kbd> fits the drawing in the window. <strong>Keys</strong> lists the rest.</p>
+      <h3>Set values</h3>
+      <p>Select a part and edit it in the properties panel. Or type a number straight over a selected part, such as <code>2k7</code>, and press <kbd>Enter</kbd>.</p>
+      <h3>Pots and switches</h3>
+      <p>A potentiometer has a total resistance, a position and a taper. A switch has two throws, and the <strong>Throw A</strong> and <strong>Throw B</strong> buttons pick which one is closed.</p>
+      <h3>Mark input and output</h3>
+      <p>Place an <strong>Input</strong> part where the signal comes in and an <strong>Output</strong> part where it leaves, plus a <strong>Ground</strong>. A <strong>Scope Probe</strong> on any net makes the scope show that point instead of the output.</p>
+      <h3>Rebuild and save</h3>
+      <p>After a change, <strong>Rebuild</strong> lights up. Click it to run the new circuit. <strong>Save</strong> or <strong>Save As</strong> writes the <code>.livewdf</code> file. In the player, <strong>Reload</strong> re-reads the saved file, so you can edit and listen side by side.</p>
+      <h3>What the checker complains about</h3>
+      <p><strong>Messages</strong> shows what the build found. The common ones:</p>
+      <ul>
+        <li>a part or wire that is not connected to anything, often a wire that stops just short of a pin;</li>
+        <li>a value the engine cannot use, such as a zero-ohm resistor;</li>
+        <li>no resting point found, usually a floating node or a missing path to ground.</li>
+      </ul>
+    </section>
+
+    <section id="trims" class="doc-section">
+      <h2>Matching a circuit's mode levels</h2>
+      <p>Fast and Preview use cheaper tube laws and supplies, so on some circuits they come out a little louder or quieter than Accurate. A trim per mode fixes that.</p>
+      <p>The trims are two values on the main Output part: <code>fastTrim</code> and <code>previewTrim</code>. Each multiplies the matched output level in that mode. Leave them out and they count as 1.</p>
+      <p>To find them, run the output calibration script from the repository in verify mode with <code>--fast-live</code> and with <code>--live-preview</code>, and take the <code>recommended_trim</code> column. The steps are in <a href="https://github.com/Yahiake/LiveWDF/blob/main/schematics/INPUT-CALIBRATION.md">INPUT-CALIBRATION.md</a>.</p>
+      <p>When a trim is already on the Output part, the properties panel shows it and you can edit it there.</p>
+    </section>
+
+    <section id="presets" class="doc-section">
+      <h2>Where presets live</h2>
+      <p>Your circuits go in a <strong>LiveWDF</strong> folder in your Documents folder. The editor's preset library reads from there.</p>
+      <p>The factory circuits are copied to <strong>LiveWDF/Factory</strong> inside that folder, so they show up next to your own.</p>
+      <p>On Android, the factory circuits and the files you import live in the app's own storage.</p>
+      <p>The full factory list with descriptions is in the <a href="https://github.com/Yahiake/LiveWDF/blob/main/docs/factory-presets.md">factory catalog</a>.</p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="shell footer-inner">
+      <a class="brand" href="./"><span class="brand-mark" aria-hidden="true">∿</span> LiveWDF</a>
+      <div><a href="how-it-works.html">How it works</a><a href="branding.html">Branding</a><a href="https://github.com/Yahiake/LiveWDF/blob/main/LICENSE">AGPL-3.0</a></div>
+    </div>
+  </footer>
+</body>
+</html>

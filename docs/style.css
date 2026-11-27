@@ -156,3 +156,23 @@ dd { margin: 0; }
   .filters .button { justify-self: start; }
   .modes > div { grid-template-columns: 1fr; gap: .2rem; }
 }
+
+.doc { max-width: 52rem; }
+.doc-intro { display: grid; gap: .9rem; padding-block: 3.5rem 2rem; }
+.doc-figure { margin-bottom: 2rem; border: 1px solid var(--border); border-radius: .65rem; overflow: hidden; background: var(--panel); }
+.doc-figure img { width: 100%; }
+.doc-figure figcaption { padding: .63rem .9rem; border-top: 1px solid var(--border); color: var(--muted); font: .8rem/1.45 var(--mono); }
+.toc { display: flex; flex-wrap: wrap; gap: .5rem 1.2rem; padding-bottom: 2rem; }
+.toc a { font-size: .9rem; }
+.doc-section { padding-block: 2.5rem; border-top: 1px solid var(--border); }
+.doc-section h2 { margin-bottom: 1rem; font-size: clamp(1.6rem, 3vw, 2.1rem); }
+.doc-section h3 { margin: 1.6rem 0 .5rem; }
+.doc-section p + p, .doc-section p + ul, .doc-section ul + p, .doc-section .doc-list + p { margin-top: .85rem; }
+.doc-section ul { color: var(--muted); padding-left: 1.3rem; margin: .85rem 0 0; }
+.doc-section li { margin-block: .35rem; }
+.doc-section strong { color: var(--text); font-weight: 620; }
+.doc-section .doc-figure { margin: 0 0 1rem; }
+.doc-list { margin: 1rem 0 0; border-top: 1px solid var(--border); }
+.doc-list > div { display: grid; grid-template-columns: 7rem 1fr; gap: .75rem; padding-block: .75rem; border-bottom: 1px solid var(--border); }
+kbd { font: .82rem/1 var(--mono); padding: .12rem .38rem; border: 1px solid var(--border); border-radius: .25rem; background: var(--raised); color: var(--text); }
+@media (max-width: 540px) { .doc-list > div { grid-template-columns: 1fr; gap: .2rem; } }
