@@ -218,7 +218,7 @@ protected:
     /// lagged couplings, stage 2 folds them in as solved predecessors.
     struct PipelineStage {
         int stage = 0;
-        bool lagView = false;
+        bool lagView = false, paused = true;
         long long revision = -1;
         std::vector<NewtonBlock> blocks;
         std::vector<int> order, ownPorts, inPorts;

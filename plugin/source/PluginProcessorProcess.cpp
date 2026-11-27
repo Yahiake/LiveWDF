@@ -335,23 +335,32 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     };
 
     bool pipelined = false;
-    if (twoCores && !(leftEngine_->pipelineReady() && rightEngine_->pipelineReady()) &&
+    // A moving control runs on one core: stage 1's copied blocks hold the settled transfer.
+    // The split comes back once the settled rebuild is installed and stage 1 is re-copied from stage 2.
+    const bool split = twoCores && !potsMoving_ && !leftEngine_->hasAdjustedLiveTransfer();
+    if (split && !(leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) &&
         pipeTried_ != leftEngine_->linearRebuilds()) {
         pipeTried_ = leftEngine_->linearRebuilds();
-        rightEngine_->copyStateFrom(*leftEngine_);
-        std::copy(svLeft_.begin(), svLeft_.end(), svRight_.begin());
         if (!(leftEngine_->preparePipelineStage(2) && rightEngine_->preparePipelineStage(1) &&
               leftEngine_->pipelineOutputSize() <= kPipePorts && rightEngine_->pipelineOutputSize() <= kPipePorts))
             leftEngine_->stopPipeline();
-        pipeStart_ = pipeStep_;
-        pipeEarlyDone_.store(pipeStep_, std::memory_order_relaxed);
-        pipeLateDone_.store(pipeStep_, std::memory_order_relaxed);
     }
-    if (twoCores && leftEngine_->pipelineReady() && rightEngine_->pipelineReady()) {
+    if (split && leftEngine_->pipelinePrepared() && rightEngine_->pipelinePrepared()) {
+        // First block, or the first after a late one: stage 1 restarts from stage 2's state.
+        if (leftEngine_->pipelinePaused() || rightEngine_->pipelinePaused()) {
+            rightEngine_->copyStateFrom(*leftEngine_);
+            std::copy(svLeft_.begin(), svLeft_.end(), svRight_.begin());
+            leftEngine_->resumePipeline();
+            rightEngine_->resumePipeline();
+            pipeStart_ = pipeStep_;
+            pipeEarlyDone_.store(pipeStep_, std::memory_order_relaxed);
+            pipeLateDone_.store(pipeStep_, std::memory_order_relaxed);
+            pipeAbort_.store(false, std::memory_order_relaxed);
+        }
         pipelined = true;
     } else {
-        leftEngine_->stopPipeline();
-        if (rightEngine_) rightEngine_->stopPipeline();
+        leftEngine_->pausePipeline();
+        if (rightEngine_) rightEngine_->pausePipeline();
         if (!twoCores) pipeTried_ = -1;
     }
     if (!processStereo && !pipelined) {
@@ -394,15 +403,29 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         float leftPeak = 0.0f, rightPeak = 0.0f;
         const long long firstStep = pipeStep_;
         long long earlyStep = firstStep, lateStep = firstStep;
-        const auto spinUntil = [](const std::atomic<long long>& done, long long step) {
+        // The audio thread waits a few sample periods at most, then solves the rest of the block alone.
+        const auto spinLimit = std::chrono::nanoseconds(static_cast<long long>(4.0e9 / sampleRate_));
+        const auto arrived = [&](const std::atomic<long long>& done, long long step) {
+            const auto deadline = std::chrono::steady_clock::now() + spinLimit;
             while (done.load(std::memory_order_acquire) < step)
-                cpuRelax();
+                if (std::chrono::steady_clock::now() > deadline)
+                    return false;
+                else
+                    cpuRelax();
+            return true;
         };
+        bool late = false;
         // Stage 1 reads stage 2's currents two steps back, so the two run one step apart.
         const auto earlyStage = [&](wdf::Engine& engine, std::vector<double>& sources, double sample, double scale) {
             const long long n = earlyStep++;
+            if (pipeAbort_.load(std::memory_order_relaxed))
+                return OutputSample{0.0, nullptr};
             if (n - 2 >= pipeStart_) {
-                spinUntil(pipeLateDone_, n - 1);
+                while (pipeLateDone_.load(std::memory_order_acquire) < n - 1)
+                    if (pipeAbort_.load(std::memory_order_relaxed))
+                        return OutputSample{0.0, nullptr};
+                    else
+                        cpuRelax();
                 const auto& late = pipeLate_[static_cast<size_t>(n - 2) & 3];
                 std::copy_n(late.begin(), engine.pipelineInputSize(), engine.pipelineInput());
             }
@@ -413,7 +436,14 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         };
         const auto lateStage = [&](wdf::Engine& engine, std::vector<double>& sources, double sample, double scale) {
             const long long n = lateStep++;
-            spinUntil(pipeEarlyDone_, n + 1);
+            if (!late && !arrived(pipeEarlyDone_, n + 1)) {
+                late = true;
+                ++pipeTimeouts_;
+                pipeAbort_.store(true, std::memory_order_relaxed);
+                leftEngine_->pausePipeline();
+            }
+            if (late)
+                return solve(engine, sources, sample, scale);
             const auto& early = pipeEarly_[static_cast<size_t>(n) & 3];
             std::copy_n(early.begin(), engine.pipelineInputSize(), engine.pipelineInput());
             const auto result = solve(engine, sources, sample, scale);
@@ -436,28 +466,30 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                                    [&](int s, double& scale, double& gainMakeup) { replay(*rightEngine_, rightPotMoves_, rightVarResMoves_, s, scale, gainMakeup); }, step));
         };
         auto runRightBlock = [&] { runRight(from, to); };
-        // Spin only against a realtime worker that takes the block at once; otherwise run both stages here.
+        // Spin only against a realtime worker that takes the block at once; otherwise solve the block on one core.
         const auto pipePosted = [&](auto& job) {
             if (!rightWorker_.post(job))
                 return false;
-            const auto deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(200);
+            const auto deadline = std::chrono::steady_clock::now() + spinLimit;
             while (rightWorker_.realtime() && !rightWorker_.claimed() && std::chrono::steady_clock::now() < deadline)
                 cpuRelax();
             if (!rightWorker_.takeBack())
                 return true;
+            ++pipeUnclaimed_;
             rightWorker_.join();
             return false;
         };
         if (!pipelined) {
             rightWorker_.runBeside([&] { runLeft(from, to); }, runRightBlock);
+        } else if (pipeAbort_.load(std::memory_order_relaxed)) {
+            runLeft(from, to);
         } else if (pipePosted(runRightBlock)) {
             runLeft(from, to);
             rightWorker_.join();
         } else {
-            for (int s = from; s < to; ++s) {
-                runRight(s, s + 1);
-                runLeft(s, s + 1);
-            }
+            late = true;
+            leftEngine_->pausePipeline();
+            runLeft(from, to);
         }
         pipeStep_ = lateStep;
         maxAbsOut = std::max({maxAbsOut, leftPeak, pipelined ? 0.0f : rightPeak});
