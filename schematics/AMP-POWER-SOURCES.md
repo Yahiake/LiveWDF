@@ -1,6 +1,6 @@
 # Factory amp power stages
 
-The factory presets model one dry signal path per channel selection. Tube circuits use the phase splitter, output valves, feedback where fitted, and a resistive speaker load through the output transformer. Most amp supplies use fixed operating rails derived from the service drawings. Where a transformer sheet exists, leakage and winding resistances come from it, and the magnetising inductance from its response graph at 50 Hz, because the sheet's 1 kHz, 1 V inductance contradicts its own response. Cabinet IRs supply frequency-dependent speaker and microphone coloration for playback.
+The factory presets model one dry signal path per channel selection. Tube circuits use the phase splitter, output valves, feedback where fitted, and a resistive speaker load through the output transformer. Most amp supplies use fixed operating rails derived from the service drawings. Where a transformer sheet exists, leakage and winding resistances come from it, and the magnetising inductance is the least that its response graph at 50 Hz allows, read to about 0.05 dB, because the sheet's 1 kHz, 1 V inductance contradicts its own response; the real working value may be higher. Cabinet IRs supply frequency-dependent speaker and microphone coloration for playback.
 
 ## Clean amps
 
