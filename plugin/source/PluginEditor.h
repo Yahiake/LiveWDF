@@ -118,7 +118,7 @@ private:
 #endif
 
     // Dynamic circuit controls: one knob per pot/rheostat group and one button
-    // per SPDT group. Both are grouped by label, so a ganged pair takes one
+    // per switch group. Both are grouped by label, so a ganged pair takes one
     // place in the strip rather than two. The pot ceiling is the processor's,
     // since it owns the `pot_*` parameters; asking for more than it has is a
     // document the strip cannot drive, not a second buffer to grow.
@@ -131,6 +131,7 @@ private:
     std::vector<std::unique_ptr<VintageKnob>> dynamicPotKnobs_;
     std::vector<std::unique_ptr<juce::TextButton>> dynamicSwitchButtons_;
     std::vector<juce::String> dynamicSwitchNames_;
+    std::vector<int> dynamicSwitchThrowCounts_;
 
     // APVTS Attachments
     using SliderAttachment = juce::AudioProcessorValueTreeState::SliderAttachment;

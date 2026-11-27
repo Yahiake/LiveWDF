@@ -91,7 +91,7 @@ std::pair<std::string, int> SchematicEditor::pinAtPixel(juce::Point<float> pixel
 
     const auto& parts = schematic_.getParts();
     for (const auto& part : parts) {
-        const auto offsets = Schematic::pinOffsets(part.type);
+        const auto offsets = Schematic::pinOffsets(part);
         for (int pin = 0; pin < static_cast<int>(offsets.size()); ++pin) {
             const auto p = Schematic::pinPosition(part, pin);
             const float dx = grid.x - static_cast<float>(p.x);

@@ -51,7 +51,8 @@ void setDocumentControls(wdf::LiveWDFDocument& document, const Value& selections
             auto component = std::ranges::find(document.components, member.id, &wdf::SchematicComponent::id);
             if (component == document.components.end()) throw std::runtime_error("Missing control member " + member.id);
             if (switches)
-                component->properties["select"] = selection.asInt() ? "1" : "0";
+                component->properties["select"] = std::to_string(std::clamp(
+                    selection.asInt(), 0, wdf::switchResThrowCount(*component) - 1));
             else
                 component->values["pos"] = selection.asDouble();
         }

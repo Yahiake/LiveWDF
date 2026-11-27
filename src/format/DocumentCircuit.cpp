@@ -548,10 +548,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                 const std::string gnd = groundNode.empty() ? std::string("0") : groundNode;
                 c.addSrc(getPin("sig"), gnd, 0.0, 0.0, {}, comp.id);
             } else if (comp.type == "switch_res") {
-                // A changeover (SPDT) switch: common connects to one throw or
-                // the other, never both. Celine models each contact as an
-                // ordinary resistor, <id>_A and <id>_B, in opposition:
-                // `select` "0" closes A, "1" closes B.
+                // A changeover switch connects common to exactly one throw.
                 //
                 // **An ordinary resistor, not a controlled one.** A controlled
                 // resistor is a root port, and the engine's root network cannot
@@ -562,18 +559,17 @@ Circuit LiveWDFDocument::toCircuit() const {
                 // to the common; Celine's own Switch.h makes the same choice.
                 //
                 // These are Celine's constants: 0.01 ohm closed, 1 Gohm open.
-                const bool selectB = switchResSelectsB(comp);
-                const double rA = selectB ? kSpdtOpenOhms : kSpdtClosedOhms;
-                const double rB = selectB ? kSpdtClosedOhms : kSpdtOpenOhms;
-
                 const std::string common = getPin("in", "");
-                const std::string throwA = getPin("outA", "");
-                const std::string throwB = getPin("outB", "");
                 if (!common.empty()) {
-                    if (!throwA.empty())
-                        c.addRes(common, throwA, rA, comp.id + "_A");
-                    if (!throwB.empty())
-                        c.addRes(common, throwB, rB, comp.id + "_B");
+                    const int selected = switchResPosition(comp);
+                    for (int i = 0; i < switchResThrowCount(comp); ++i) {
+                        const auto pin = switchResThrowPin(i);
+                        const auto output = getPin(pin, "");
+                        if (!output.empty())
+                            c.addRes(common, output,
+                                     i == selected ? kSpdtClosedOhms : kSpdtOpenOhms,
+                                     comp.id + "_" + pin.back());
+                    }
                 }
             }
             // The Output terminal stamps nothing: it is a marker that names the

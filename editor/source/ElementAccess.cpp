@@ -76,7 +76,7 @@ std::string pinNet(const wdf::SchematicComponent& part, const std::string& pinNa
 }
 
 std::string pinNetAt(const wdf::SchematicComponent& part, int index) {
-    const auto& names = pinNames(part.type);
+    const auto& names = partPins(part);
     if (index < 0 || index >= static_cast<int>(names.size()))
         return {};
     return pinNet(part, names[static_cast<size_t>(index)]);

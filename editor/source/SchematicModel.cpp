@@ -28,7 +28,7 @@ struct PointLess {
 constexpr float kPinDotRadius = 0.2f;
 
 bool pinHitTest(const wdf::SchematicComponent& part, float px, float py, float reach) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
     const float radius = kPinDotRadius + reach;
 
     for (int pin = 0; pin < static_cast<int>(offsets.size()); ++pin) {
@@ -44,7 +44,7 @@ bool pinHitTest(const wdf::SchematicComponent& part, float px, float py, float r
 }
 
 bool pinTouchesBox(const wdf::SchematicComponent& part, juce::Rectangle<float> box) {
-    const auto offsets = Schematic::pinOffsets(part.type);
+    const auto offsets = Schematic::pinOffsets(part);
 
     for (int pin = 0; pin < static_cast<int>(offsets.size()); ++pin) {
         const auto p = Schematic::pinPosition(part, pin);
@@ -92,6 +92,13 @@ bool pinTouchesBox(const wdf::SchematicComponent& part, juce::Rectangle<float> b
 std::vector<PinOffset> Schematic::pinOffsets(const std::string& type) {
     std::vector<PinOffset> offsets;
     for (const auto& o : livewdf::editor::pinFrame(type))
+        offsets.push_back({o.x, o.y});
+    return offsets;
+}
+
+std::vector<PinOffset> Schematic::pinOffsets(const wdf::SchematicComponent& part) {
+    std::vector<PinOffset> offsets;
+    for (const auto& o : livewdf::editor::pinFrame(part))
         offsets.push_back({o.x, o.y});
     return offsets;
 }
@@ -146,7 +153,7 @@ juce::Rectangle<float> Schematic::partBounds(const wdf::SchematicComponent& part
 
     // The pins, so a part is always grabbable by its terminals even if its
     // artwork is missing entirely. (Céline's rule, and its reason.)
-    const auto offsets = pinOffsets(part.type);
+    const auto offsets = pinOffsets(part);
     for (int pin = 0; pin < static_cast<int>(offsets.size()); ++pin) {
         const auto p = pinPosition(part, pin);
         include(juce::Rectangle<float>(0.4f, 0.4f)
@@ -294,7 +301,7 @@ std::pair<std::string, int> Schematic::pinNear(int px, int py, int reach) const 
     long bestDistance = static_cast<long>(reach) * reach + 1;
 
     for (const auto& part : parts_) {
-        const int pinCount = static_cast<int>(pinOffsets(part.type).size());
+        const int pinCount = static_cast<int>(pinOffsets(part).size());
         for (int pin = 0; pin < pinCount; ++pin) {
             const auto p = pinPosition(part, pin);
             const long dx = px - p.x, dy = py - p.y;
@@ -446,7 +453,7 @@ int Schematic::mergeCollinearWires(int preferredId) {
     // explanation, and it is why merging is gated rather than unconditional.)
     const auto seamSurvives = [this](int px, int py, const Wire& x, const Wire& y) {
         for (const auto& part : parts_)
-            for (int pin = 0; pin < static_cast<int>(pinOffsets(part.type).size()); ++pin) {
+            for (int pin = 0; pin < static_cast<int>(pinOffsets(part).size()); ++pin) {
                 const auto p = pinPosition(part, pin);
                 if (p.x == px && p.y == py)
                     return true;
@@ -823,12 +830,13 @@ wdf::LiveWDFDocument Schematic::toDocument() const {
         if (!spec)
             continue;   // no pins means no placement; derivation gave this part an empty row too
 
+        const auto& pins = livewdf::editor::partPins(doc.components[partIndex]);
         const auto& row = nets.netOfPart[partIndex];
-        for (size_t pin = 0; pin < spec->pins.size(); ++pin) {
+        for (size_t pin = 0; pin < pins.size(); ++pin) {
             const int net = pin < row.size() ? row[pin] : -1;
             if (net < 0 || net >= static_cast<int>(nets.netNames.size()))
                 continue;
-            doc.components[partIndex].pins[spec->pins[pin]] = nets.netNames[static_cast<size_t>(net)];
+            doc.components[partIndex].pins[pins[pin]] = nets.netNames[static_cast<size_t>(net)];
         }
     }
 
