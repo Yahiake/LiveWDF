@@ -86,6 +86,11 @@ inline constexpr QuadricEmission kQuadric6V6S{
     {-4.68755583824, -6.14124219061, -4.67874389284, -4.37719603098, -9.17898712588},
     {0.0102649284249, 0.024965769563, 0.00304125166826, 0.000428734698274, 0.0307164191188},
     0.068, 0.00158196899481, 5.7e-07, 5.79129336955e-05, 0.00108413011878};
+inline constexpr QuadricEmission kQuadricEL84{
+    {0.0993297223214, 0.0817991171387, 0.0660144503955, 0.120942106641, 0.0475566091411},
+    {-2.88008812116, -2.61236741052, -2.28650904696, -3.15090901235, -3.24571770558},
+    {1.77890766481e-05, 0.000361071252681, 0.005524683261, 5.50719008781e-07, 0.0489829780131},
+    0.148, 0.00773357383839, 3.7e-06, 0.00078431372549, 0.00600784313725};
 
 /// Clean, self-contained constitutive evaluator for the Reefman pentode model
 /// (incorporating Derk D and Derk E knees and optional secondary emission).
@@ -476,6 +481,12 @@ struct ReefmanPentode {
         return vnew;
     }
 };
+
+/// The EL84 fit is cheaper but further from its Reefman card, so only Fast and Preview take it.
+inline const QuadricEmission* fastQuadricFor(ReefmanPentode r) noexcept {
+    r.count = 1.0;
+    return r == ReefmanPentode::el84() ? &kQuadricEL84 : r.quadric;
+}
 
 /// Authentic three-port Norman Koren (1996/2001) pentode model with active screen conduction:
 ///

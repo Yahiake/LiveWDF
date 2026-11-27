@@ -181,6 +181,11 @@ public:
 
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
+    void useFastPentodes(bool enabled) noexcept {
+        for (size_t i = 0; i < pentodes_.size(); ++i)
+            pentodes_[i].reefman.quadric = enabled ? fastQuadricFor(comp_.pent[i].model.reefman)
+                                                   : comp_.pent[i].model.reefman.quadric;
+    }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void prepareSlowLag();
     bool slowLagActive() const noexcept {
