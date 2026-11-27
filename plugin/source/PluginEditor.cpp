@@ -265,7 +265,6 @@ LiveWDFPluginEditor::LiveWDFPluginEditor(LiveWDFPluginProcessor& p)
     inputRoute_.addItemList({"Track", "Previous LiveWDF"}, 1);
     outputRoute_.addItemList({"Next LiveWDF", "Track (level matched)"}, 1);
     inputRoute_.setTooltip("Track uses the preset's input voltage scale. Previous LiveWDF receives the preceding circuit's output voltage.");
-    outputRoute_.setTooltip("Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
     addAndMakeVisible(inputRouteLabel_);
     addAndMakeVisible(inputRoute_);
     addChildComponent(previewPadBtn_);
@@ -847,6 +846,14 @@ void LiveWDFPluginEditor::timerCallback() {
     // host can change the device rate while it stays open, so reading this once
     // in the constructor is not enough: the scope's timebase is in samples.
     oscilloscope_.setSampleRate(processor_.getHostSampleRate());
+    // Show the processor's effective output mode without writing the stored choice.
+    const bool speakerLevel = processor_.outputAtSpeakerLevel();
+    outputRoute_.setEnabled(!speakerLevel);
+    outputRoute_.setSelectedItemIndex(speakerLevel || processor_.getAPVTS().getParameter("match_output")->getValue() > 0.5f,
+                                      juce::dontSendNotification);
+    outputRoute_.setTooltip(speakerLevel
+        ? "The power amp drives a speaker, so the output is always level matched. Turn Power Amp off to send to the next LiveWDF."
+        : "Next LiveWDF sends the circuit's output voltage. Track applies the preset's fixed listening gain.");
     updateScopeScales();
     previewPadBtn_.setEnabled(processor_.compiledPreviewRequested());
 
