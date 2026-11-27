@@ -343,7 +343,8 @@ public:
     }
 
     /// Build the Newton blocks and their dependency order.
-    static bool buildRootOrder(RootGroupsContext& ctx, bool allowSignalFlowPruning = true) {
+    static bool buildRootOrder(RootGroupsContext& ctx, bool allowSignalFlowPruning = true,
+                               const std::vector<double>* slope = nullptr, std::vector<uint8_t>* lag = nullptr) {
         ctx.hasAntiParallelBlock = false;
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
@@ -432,7 +433,40 @@ public:
             return false;
         };
 
+        // Through Z_gh, row-summed over g's ports: the current gain |dI_g/dV_g| |Z_gh|, or with
+        // `volts` the voltage on g per volt on h, |Z_gh| |dI_h/dV_h|, the error a late read leaves in g.
+        const auto gain = [&](int g, int h, bool volts = false) {
+            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            const RootDevice& ds = volts ? dh : dg;
+            double m = 0.0;
+            for (int r = dg.portBase; r < dg.portBase + dg.numPorts; ++r) {
+                double row = 0.0;
+                for (int j = 0; j < partitionPortCount(dh); ++j)
+                    for (int k = ds.portBase; k < ds.portBase + ds.numPorts; ++k) {
+                        const int c = activePort(dh, j);
+                        row += volts ? std::abs(z[static_cast<size_t>(r) * ctx.K + c]) * (*slope)[static_cast<size_t>(c) * ctx.K + k]
+                                     : (*slope)[static_cast<size_t>(r) * ctx.K + k] * std::abs(z[static_cast<size_t>(k) * ctx.K + c]);
+                    }
+                m = std::max(m, row);
+            }
+            return m;
+        };
+        // Preview reads the weaker direction of a weak loop (supply, screen and
+        // bias nodes) one sample late. Delayed, a loop rings at Nyquist unless the
+        // gain around it, bounded by Z and the steepest device slopes, is below 1;
+        // the margin is far lower because the late coupling also carries signal.
+        const auto lagged = [&](int g, int h) {
+            if (!slope || (useSignalFlow && flowReach[static_cast<size_t>(h) * nGroups + g]))
+                return false;
+            const double back = gain(g, h), forward = gain(h, g);
+            return (back <= forward || (useSignalFlow && flowReach[static_cast<size_t>(g) * nGroups + h])) &&
+                   back * forward < 1e-4 && gain(g, h, true) < 0.05;
+        };
+
         const auto coupled = [&](int g, int h) -> bool {
+            if (lagged(g, h))
+                return false;
             if (useSignalFlow) {
                 if (flowReach[static_cast<size_t>(h) * nGroups + g])
                     return true;
@@ -444,6 +478,12 @@ public:
         };
 
         const size_t n2 = static_cast<size_t>(nGroups) * nGroups;
+        if (lag) {
+            lag->assign(n2, 0);
+            for (int g = 0; g < nGroups; ++g)
+                for (int h = 0; h < nGroups; ++h)
+                    (*lag)[static_cast<size_t>(g) * nGroups + h] = g != h && lagged(g, h);
+        }
         if (ctx.blockReach.size() < n2) {
             ctx.blockReach.resize(n2);
             ctx.blockAdj.resize(n2);
@@ -622,12 +662,18 @@ public:
             }
         }
 
+        // A pruned back-coupling is dropped, so only a lagged one may keep the pruned order.
+        bool everyPrunedCouplingLagged = slope != nullptr;
+        for (int g = 0; g < nGroups && everyPrunedCouplingLagged; ++g)
+            for (int h = 0; h < nGroups && everyPrunedCouplingLagged; ++h)
+                everyPrunedCouplingLagged = g == h || !zCoupled(g, h) || coupled(g, h) || lagged(g, h);
         if (allowSignalFlowPruning &&
             (!ctx.allClosedFormBlocks || cutCouplingIntoPair) &&
-            !ctx.allowNonScalarSignalFlow)
-            return buildRootOrder(ctx, false);
+            !ctx.allowNonScalarSignalFlow && !(useSignalFlow && everyPrunedCouplingLagged))
+            return buildRootOrder(ctx, false, slope, lag);
 
-        compileBlockZAndPredFold(ctx.newtonBlocks, ctx.groupOrder.data(), nb, ctx.rootDevices.data(), ctx.Z.data(), ctx.K);
+        compileBlockZAndPredFold(ctx.newtonBlocks, ctx.groupOrder.data(), nb, ctx.rootDevices.data(), ctx.Z.data(), ctx.K,
+                                 lag ? lag->data() : nullptr, nGroups);
         return true;
     }
 
@@ -638,7 +684,9 @@ public:
         int nb,
         const RootDevice* rootDevices,
         const double* zData,
-        int K) noexcept
+        int K,
+        const uint8_t* lag = nullptr,
+        int groups = 0) noexcept
     {
         for (int b = 0; b < nb; ++b) {
             NewtonBlock& block = blocks[static_cast<size_t>(b)];
@@ -671,6 +719,7 @@ public:
             block.predFold.resize(static_cast<size_t>(totalDevPorts));
             block.allFold.resize(static_cast<size_t>(totalDevPorts));
             block.laterGrid.clear();
+            block.lagged.clear();
 
             int devPortOffset = 0;
             for (int di : block.devices) {
@@ -689,7 +738,10 @@ public:
                             const RootDevice& od = rootDevices[otherBlock.portDevice[k]];
                             // A later block's grid current is predicted, so its
                             // back-coupling lags instead of iterating.
-                            if (p > s && !(od.kind == DeviceKind::Triode && c == od.portBase + 2))
+                            const bool grid = od.kind == DeviceKind::Triode && c == od.portBase + 2;
+                            if (p > s && !grid && lag && lag[static_cast<size_t>(di) * groups + otherBlock.portDevice[k]] && zRow[c] != 0.0)
+                                block.lagged.push_back({globalPort, PredecessorPort{c, zRow[c]}});
+                            if (p > s && !grid)
                                 continue;
                             const double z = zRow[c];
                             if (z == 0.0)
