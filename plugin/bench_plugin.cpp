@@ -2631,7 +2631,7 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
         }
     }
     if (!source.loadCircuitFromFile(amp) || !source.reloadCircuit()
-        || source.suggestedCabinetId() != "orange-ppc112-v30-sm57"
+        || source.suggestedCabinetId() != "air-orange-ppc412-sm57"
         || !source.selectSuggestedCabinet()
         || !source.selectFactoryOutputImpulse(true, "spring-combo"))
         return false;
@@ -2640,28 +2640,38 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
     source.getStateInformation(saved);
     livewdf::LiveWDFPluginProcessor restored;
     restored.setStateInformation(saved.getData(), static_cast<int>(saved.getSize()));
-    if (restored.outputImpulseId(false) != "orange-ppc112-v30-sm57"
+    if (restored.outputImpulseId(false) != "air-orange-ppc412-sm57"
         || restored.outputImpulseId(true) != "spring-combo"
         || restored.suggestedCabinetId() != source.suggestedCabinetId()
         || !restored.cabinetFollowsSuggestion())
         return false;
 
     const auto champ = amp.getSiblingFile("Fender Tweed Champ 5F1 - Input 1.livewdf");
-    if (!restored.loadCircuitFromFile(champ) || restored.outputImpulseId(false) != "jensen-sm57")
+    if (!restored.loadCircuitFromFile(champ) || restored.outputImpulseId(false) != "air-champ-g8c-or57")
         return false;
 
     auto unnamed = restored.getDocumentSnapshot();
     unnamed.name = "Other Circuit";
-    if (!restored.loadCircuitDocument(unnamed) || restored.outputImpulseId(false) != "jensen-sm57"
+    if (!restored.loadCircuitDocument(unnamed) || restored.outputImpulseId(false) != "air-champ-g8c-or57"
         || !restored.cabinetFollowsSuggestion()
-        || !restored.loadCircuitFromFile(amp) || restored.outputImpulseId(false) != "orange-ppc112-v30-sm57")
+        || !restored.loadCircuitFromFile(amp) || restored.outputImpulseId(false) != "air-orange-ppc412-sm57")
         return false;
 
-    return restored.outputImpulseId(true) == "spring-combo"
-        && restored.selectFactoryOutputImpulse(false, "jensen-e606")
-        && !restored.cabinetFollowsSuggestion()
-        && restored.loadCircuitFromFile(champ)
-        && restored.outputImpulseId(false) == "jensen-e606";
+    if (restored.outputImpulseId(true) != "spring-combo"
+        || !restored.selectFactoryOutputImpulse(false, "air-v30-212-sm57")
+        || restored.cabinetFollowsSuggestion()
+        || !restored.loadCircuitFromFile(champ)
+        || restored.outputImpulseId(false) != "air-v30-212-sm57")
+        return false;
+
+    juce::MemoryBlock retired;
+    restored.getStateInformation(retired);
+    auto xml = juce::AudioProcessor::getXmlFromBinary(retired.getData(), static_cast<int>(retired.getSize()));
+    xml->setAttribute("cabinet_ir_factory", "jensen-e606");
+    juce::AudioProcessor::copyXmlToBinary(*xml, retired);
+    livewdf::LiveWDFPluginProcessor upgraded;
+    upgraded.setStateInformation(retired.getData(), static_cast<int>(retired.getSize()));
+    return upgraded.outputImpulseId(false) == "air-champ-g8c-or57";
 }
 
 int main(int argc, char** argv) {
