@@ -1355,7 +1355,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 271.24772
+        "fullScaleVolts": 260.66635
       },
       "visual": {
         "flipped": false,
@@ -2042,7 +2042,7 @@
       },
       "type": "cap",
       "values": {
-        "value": 2.2e-05
+        "value": 0.00022
       },
       "visual": {
         "flipped": false,
@@ -2118,7 +2118,7 @@
       "properties": {
         "label": "Presence",
         "powerAmp": "1",
-        "taper": "Linear"
+        "taper": "Log"
       },
       "type": "pot",
       "values": {
