@@ -396,7 +396,7 @@ SpiceExportResult spiceExport(const Circuit& c,
         }
     }
 
-    // ---- Pentodes (Reefman DerkD/DerkE and Koren) ----
+    // ---- Pentodes (quadric emission, Reefman DerkD/DerkE and Koren) ----
     // Exported as behavioural subcircuits. Intermediate island potential E1 is
     // held on an internal node by a behavioural voltage source; plate and
     // screen currents are then behavioural current sources reading that node.
@@ -415,7 +415,31 @@ SpiceExportResult spiceExport(const Circuit& c,
 
         f << ".subckt " << subName << " plate screen grid cathode\n";
 
-        if (useReefman) {
+        if (useReefman && pent.reefman.quadric) {
+            const auto& reef = pent.reefman;
+            const auto& q = *reef.quadric;
+
+            // E = sum c_j * max(0, Vgk + av_j*Vsk - knot_j)^2, faded out below screenFade volts of screen
+            f << "E" << spiceUnique("e1_" + spiceSafe(base), used) << " " << e1Node << " 0 VALUE = {(0";
+            for (int j = 0; j < 5; ++j)
+                f << "+" << spiceNum(q.coef[j]) << "*max(0,V(" << gk << ")+" << spiceNum(q.av[j]) << "*V(" << sk
+                  << ")-(" << spiceNum(q.knot[j]) << "))^2";
+            f << ")*V(" << sk << ")^2/(V(" << sk << ")^2+" << spiceNum(q.screenFade * q.screenFade) << ")}\n";
+
+            f << "B" << spiceUnique("ig_" + spiceSafe(base), used) << " " << gk
+              << " I = {" << spiceNum(reef.grid_is) << "*(exp(V(" << gk
+              << ")/" << spiceNum(reef.grid_vt) << ")-1)}\n";
+
+            // K = 1/(1 + beta*Vpk); both currents vanish for Vpk < 0 or Vsk <= 0, as in the engine.
+            const std::string on = "(V(" + pk + ")>=0&&V(" + sk + ")>0)";
+            const std::string knee = "1/(1+" + spiceNum(q.beta) + "*V(" + pk + "))";
+            f << "B" << spiceUnique("ip_" + spiceSafe(base), used) << " " << pk << " I = {" << on << "?"
+              << spiceNum(reef.count) << "*V(" << e1Node << ")*(" << spiceNum(q.plate) << "*(1-" << knee << ")+"
+              << spiceNum(q.lambda) << "*V(" << pk << ")):0}\n";
+            f << "B" << spiceUnique("is_" + spiceSafe(base), used) << " " << sk << " I = {" << on << "?"
+              << spiceNum(reef.count) << "*V(" << e1Node << ")*(" << spiceNum(q.rho) << "+" << spiceNum(q.sigma)
+              << "*" << knee << "):0}\n";
+        } else if (useReefman) {
             const auto& reef = pent.reefman;
             const double mu = reef.mu;
             const double ex = reef.ex;

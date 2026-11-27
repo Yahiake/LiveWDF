@@ -1299,7 +1299,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 325.67518
+        "fullScaleVolts": 355.57196
       },
       "visual": {
         "flipped": false,
