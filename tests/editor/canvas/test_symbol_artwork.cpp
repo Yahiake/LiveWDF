@@ -99,7 +99,7 @@ TEST_CASE("Every drawing in the palette has a file") {
                              "transformer", "transformer_ct", "triode", "pentode", "ctrlres",
                              "switch_res", "bjt", "jfet", "mosfet", "in", "out",
                              "scope", "opamp", "idealopamp", "photores", "dbx209",
-                             "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080"}) {
+                             "rmsdet", "bbd", "vca", "dbx200", "that2180", "ca3080", "ne570"}) {
         INFO("expected artwork for: " << type);
         CHECK(hasArtwork(type));
     }

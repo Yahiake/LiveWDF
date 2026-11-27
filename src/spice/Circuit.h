@@ -809,6 +809,35 @@ struct Circuit {
 
     /// Signal law of the matched NPN differential pair in MiSTer-Discrete's
     /// circuits/parts/ca3080.lib, with a real bias diode and current sensing.
+    /// One channel of the NE570/NE571/SA571 compandor, from the onsemi NE570/D
+    /// block diagram and circuit description: rectifier and gain-cell inputs
+    /// through R1 10k and R2 20k into summing nodes at the 1.8 V bandgap, the
+    /// full-wave rectifier current 2|Vin|/R1 averaged on CRECT through 10k, the
+    /// gain cell Iout = Iin IG / 140 uA, and a 741-class op-amp with R3 20k to
+    /// its pin and R4 30k to ground. Omits noise, the cell's offset (THD trim)
+    /// and temperature.
+    void addNe570(const std::string& rectIn, const std::string& rectCap,
+                  const std::string& cellIn, const std::string& invIn,
+                  const std::string& r3, const std::string& out,
+                  const std::string& vcc, const std::string& gnd, const std::string& name) {
+        const auto local = [&](const char* suffix) { return name + "$" + suffix; };
+        const auto bandgap = local("bandgap"), vref = local("vref");
+        addIsrc(gnd, bandgap, 1.8e-3, 0.0, {}, local("bandgap_i"));
+        addRes(bandgap, gnd, 1e3, local("bandgap_r"));
+        addVCVS(vref, gnd, bandgap, gnd, 1.0, 1e-4, local("vref_buffer"));
+        addRes(rectIn, vref, 10e3, local("R1"));
+        // Each half mirrors 2|Vin|/R1 into CRECT: a fixed 0.4 mA scaled by
+        // its side of the rectifier input over 2 V.
+        addCurrentVca(gnd, rectCap, vref, 1e6, 4.5e3, {rectIn, vref, 2.0}, local("rect_pos"));
+        addCurrentVca(gnd, rectCap, vref, 1e6, 4.5e3, {vref, rectIn, 2.0}, local("rect_neg"));
+        addRes(rectCap, gnd, 10e3, local("rect_r"));
+        // Scaled by four to keep IG / I1 below the VCA's gain bound.
+        addCurrentVca(vref, invIn, cellIn, 20e3, 5e3, {rectCap, gnd, 5.6}, local("cell"));
+        addRes(invIn, r3, 20e3, local("R3"));
+        addRes(invIn, gnd, 30e3, local("R4"));
+        addOpAmp(out, invIn, vref, vcc, gnd, OpAmpModel::fromType(OpAmpType::Lm741), name);
+    }
+
     void addCa3080(const std::string& out, const std::string& neg, const std::string& pos,
                    const std::string& vcc, const std::string& vee, const std::string& bias,
                    const std::string& name) {
