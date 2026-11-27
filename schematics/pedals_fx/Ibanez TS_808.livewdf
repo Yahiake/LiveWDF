@@ -1,6 +1,6 @@
 {
-  "author": "LiveWDF User",
-  "category": "Custom",
+  "author": "LiveWDF",
+  "category": "Overdrive",
   "components": [
     {
       "id": "U1",
@@ -427,7 +427,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.258965
+        "fullScaleVolts": 0.99653503
       },
       "visual": {
         "flipped": false,
@@ -463,13 +463,13 @@
       }
     }
   ],
-  "description": "",
+  "description": "Clipping and tone core of the TS-808 from Steve Cerutti's redraw. Both JRC4558 stages share the 9 V supply and 4.5 V bias. The input and output buffers and the electronic bypass are omitted.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
     "outputNode": "out"
   },
-  "name": "Untitled Circuit",
+  "name": "Ibanez TS808",
   "version": 3,
   "wires": [
     {

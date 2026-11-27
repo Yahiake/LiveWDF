@@ -512,7 +512,7 @@
       },
       "type": "res",
       "values": {
-        "preampFullScaleVolts": 307.35583,
+        "preampFullScaleVolts": 218.43374,
         "value": 1000000.0
       },
       "visual": {
@@ -1019,7 +1019,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 969.24992
+        "fullScaleVolts": 918.66474
       },
       "visual": {
         "flipped": false,
@@ -1602,6 +1602,10 @@
       "points": [
         {
           "x": 45,
+          "y": 31
+        },
+        {
+          "x": 52,
           "y": 31
         },
         {
