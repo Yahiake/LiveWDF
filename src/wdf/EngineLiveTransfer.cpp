@@ -151,7 +151,7 @@ void EngineStep::prepareSlowLag() {
     lagOrder_.resize(rootDevices_.size());
     auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
     if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
-        std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); }))
+        (lagCount_ == blockCount_ && std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); })))
         lagCount_ = 0;
     for (int b = 0; b < lagCount_; ++b)
         solver::RootLinearPlan::build(lagBlocks_[size_t(b)], rootDevices_.data(), Z_.data(), K_, comp_, opAmps_,
