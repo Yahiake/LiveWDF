@@ -11,6 +11,7 @@
 
 #include "format/AcSource.h"
 #include "format/Document.h"
+#include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 
 #include <cmath>
@@ -183,8 +184,9 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         const auto first = line(fullLoad);
 
         // Refit through the mean current the amp itself draws on a full-scale 110 Hz burst, so the line is exact where
-        // the rail sits when played hard, whatever the rectifier's curve.
-        auto amp = c;
+        // the rail sits when played hard, whatever the rectifier's curve. The amp runs at the document's control
+        // positions, the ones the level trims are fitted at, so the cached fit does not depend on the knobs at load.
+        auto amp = circuitWithPortImpedances(doc);
         addSupply(amp, first);
         Engine engine(amp, fs);
         auto values = engine.dcValues();
