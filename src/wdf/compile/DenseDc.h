@@ -391,6 +391,9 @@ public:
         if (std::getenv("LIVEWDF_DEBUG_DC"))
             std::fprintf(stderr, "solveDcAt scale %.6g gmin %.3g tol %.1g iters %d conv %d\n",
                          sourceScale, gminOverride, tol, lastIt + 1, converged ? 1 : 0);
+        // A NaN residual passes every max-and-compare test above.
+        for (double x : v)
+            converged = converged && std::isfinite(x);
         rootV = v;
         return converged;
     }
