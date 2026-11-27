@@ -359,15 +359,11 @@ bool EngineStep::preparePipelineStage(int stage) {
                                                      lag.data(), int(groups));
     }
     pipe_.held.assign(size_t(K_), 0.0);
-    const size_t n = pipe_.inPorts.size();
-    pipe_.input.resize(2 * n);
-    for (size_t k = 0; k < n; ++k) {
-        pipe_.input[k] = ii_[size_t(pipe_.inPorts[k])];
-        pipe_.input[n + k] = vv_[size_t(pipe_.inPorts[k])];
-    }
+    pipe_.input.resize(2 * pipe_.inPorts.size());
     pipe_.lagView = lagView;
     pipe_.revision = linearRebuilds();
     pipe_.stage = stage;
+    pipe_.paused = true;
     return true;
 }
 
