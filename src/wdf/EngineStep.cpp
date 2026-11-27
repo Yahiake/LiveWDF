@@ -72,6 +72,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // keeps the path from oscillating on alternating samples.
     const bool previousCostly =
         jointLastIters_ + jointLastTrials_ >= 8;
+    const bool previousHard = deviceEvals_ > 4 * static_cast<long long>(rootDevices_.size());
     newtonIters_ = 0;
     deviceEvals_ = 0;
     lineTrials_ = 0;
@@ -272,6 +273,12 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         }
     }
     if (K_ > 0 && !loadedRoot && !compiledRoot && !triodePreview) {
+        // Where the reference is the joint Newton, the lagged partition only
+        // pays on expensive samples, so it takes the same gate in bursts.
+        const bool burst = slowLagCooldown_ > 0 && (previousHard || slowLagCooldown_ > 28);
+        const bool slowLag = slowLagActive() && (blockRoots() || burst || previousCostly);
+        if (!blockRoots())
+            slowLagCooldown_ = !slowLag ? 0 : slowLagCooldown_ > 0 ? slowLagCooldown_ - 1 : 32;
         // The runtime partition is an experiment on top of the reference
         // path. It is built only when neither of the existing exact paths
         // is driving the solve, and it never replaces the static partition
@@ -303,10 +310,12 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             solveRootGroups(maxIter, tol);
         else if (useRuntime)
             solveRootBlocksRuntime(maxIter, tol);
-        else if ((slowLagActive() || blockRoots()) && blockFallbackCooldown_ == 0)
-            solveRootBlocks(maxIter, tol, slowLagActive());
+        else if ((slowLag || blockRoots()) && blockFallbackCooldown_ == 0)
+            solveRootBlocks(maxIter, tol, slowLag);
         else
             solveRootsNewton(maxIter, tol);
+        if (slowLag && !blockRoots())
+            jointLastIters_ = jointLastTrials_ = 0;
     } else if (K_ == 0) {
         lastConverged_ = true;
         lastResidual_ = 0.0;

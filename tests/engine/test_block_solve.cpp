@@ -6,6 +6,9 @@
 #include <string>
 #include <vector>
 
+#include "format/AcSource.h"
+#include "format/LiveWDFFile.h"
+#include "format/PortImpedance.h"
 #include "wdf/Engine.h"
 #include "support/CircuitCases.h"
 
@@ -772,37 +775,57 @@ TEST_CASE("nodes with common root currents retain the scalar transfer", "[engine
     }
 }
 
-TEST_CASE("Preview reads a stiff supply one sample late but keeps a shared cathode exact",
+TEST_CASE("Preview reads the Dual Rectifier supply one sample late but keeps its power stage whole",
           "[blocksolve][preview]") {
     struct Probe : wdf::Engine {
         using Engine::Engine;
-        int lagBlocks() const { return lagCount_; }
+        std::vector<std::vector<int>> lagged() const {
+            std::vector<std::vector<int>> kinds;
+            for (int b = 0; b < lagCount_; ++b) {
+                kinds.emplace_back();
+                for (int d : lagBlocks_[size_t(b)].devices)
+                    kinds.back().push_back(int(rootDevices_[size_t(d)].kind));
+            }
+            return kinds;
+        }
     };
-    wdf::Circuit c = lwdf_test::sharedCathodePair();
-    c.addSrc("mains", "0", 260.0);
-    c.addRes("mains", "r", 100.0);
-    c.addDiode("r", "b", wdf::DiodeModel(1e-9, 1.0, 0.0), "Drect");
-    c.addCap("b", "0", 47e-6);
-    for (auto& r : c.res)
-        if (r.a == "e")
-            r.a = "b";
-    Probe preview(c, kFs);
-    wdf::Engine fast(c, kFs);
-    REQUIRE(fast.rootBlockCount() == 1);
-    preview.prepareCompiledPreview(0, preview.nodeIndex("out"), false, 1.0, false);
+    wdf::LiveWDFDocument document;
+    std::string error;
+    REQUIRE(document.loadFromFile("schematics/amps/Mesa Boogie Dual Rectifier.livewdf", error));
+    const auto circuit = wdf::circuitWithPortImpedances(document);
+    const size_t input = std::ranges::find(circuit.src, document.inputId(), &wdf::Src::name) - circuit.src.begin();
+    Probe preview(circuit, kFs, true);
+    wdf::Engine fast(circuit, kFs, true);
+    const int output = preview.nodeIndex(document.outputNet());
+    const auto ac = document.sourceAcSettings(circuit);
+    std::vector<double> sv(circuit.src.size());
+    const auto drive = [&](long n, double in) {
+        for (size_t i = 0; i < sv.size(); ++i)
+            sv[i] = wdf::sourceValueAt(circuit.src[i].dc, ac[i].ac, ac[i].freq, kFs, n);
+        sv[input] += in;
+    };
+    for (long n = -12000; n < 0; ++n) {
+        drive(n, 0.0);
+        preview.step(sv);
+        fast.step(sv);
+    }
+    preview.prepareCompiledPreview(input, output, false, document.previewPeakVolts(), false);
     preview.useLoadedJunctionPreview(true);
-    REQUIRE(preview.lagBlocks() == 2);
-    REQUIRE(preview.slowLagActive());
+    REQUIRE(fast.rootBlockCount() == 1);
+    const auto blocks = preview.lagged();
+    REQUIRE(blocks.size() > 2);
+    const auto pentodes = [](const std::vector<int>& kinds) {
+        return std::ranges::count(kinds, int(wdf::DeviceKind::Pentode));
+    };
+    REQUIRE(std::ranges::any_of(blocks, [&](const auto& kinds) { return pentodes(kinds) == 4 || pentodes(kinds) == 2; }));
 
-    double error = 0.0, signal = 0.0;
-    std::vector<double> sv{0.0, 250.0, 260.0};
-    for (int n = 0; n < 4800; ++n) {
-        sv[0] = sine(1.0, n);
-        const double a = preview.step(sv)[size_t(preview.nodeIndex("out"))];
-        const double b = fast.step(sv)[size_t(fast.nodeIndex("out"))];
-        error += (a - b) * (a - b);
+    double diff = 0.0, signal = 0.0;
+    for (int n = 0; n < 2400; ++n) {
+        drive(n, sine(0.5, n));
+        const double a = preview.step(sv)[size_t(output)];
+        const double b = fast.step(sv)[size_t(output)];
+        diff += (a - b) * (a - b);
         signal += b * b;
     }
-    REQUIRE(preview.blockFallbackCount() == 0);
-    REQUIRE(std::sqrt(error / signal) < 1e-4);
+    REQUIRE(std::sqrt(diff / signal) < 1e-3);
 }

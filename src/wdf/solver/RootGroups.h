@@ -344,7 +344,8 @@ public:
 
     /// Build the Newton blocks and their dependency order.
     static bool buildRootOrder(RootGroupsContext& ctx, bool allowSignalFlowPruning = true,
-                               const std::vector<double>* slope = nullptr, std::vector<uint8_t>* lag = nullptr) {
+                               const std::vector<double>* slope = nullptr, std::vector<uint8_t>* lag = nullptr,
+                               double gridMargin = 0.25) {
         ctx.hasAntiParallelBlock = false;
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
@@ -433,20 +434,37 @@ public:
             return false;
         };
 
-        // Gain from h's partition currents to g's: |dI_g/dV_g| |Z_gh|, row-summed.
-        const auto gain = [&](int g, int h) {
+        // Gain from the currents in `columns` to the currents on g's rows
+        // [first, first + rows): |dI_g/dV_g| |Z|, row-summed.
+        const auto gainOver = [&](int g, int first, int rows, auto column, int columns) {
             const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
-            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
             double m = 0.0;
-            for (int r = dg.portBase; r < dg.portBase + dg.numPorts; ++r) {
+            for (int r = first; r < first + rows; ++r) {
                 double row = 0.0;
-                for (int j = 0; j < partitionPortCount(dh); ++j)
+                for (int j = 0; j < columns; ++j)
                     for (int k = dg.portBase; k < dg.portBase + dg.numPorts; ++k)
                         row += (*slope)[static_cast<size_t>(r) * ctx.K + k] *
-                               std::abs(z[static_cast<size_t>(k) * ctx.K + activePort(dh, j)]);
+                               std::abs(z[static_cast<size_t>(k) * ctx.K + column(j)]);
                 m = std::max(m, row);
             }
             return m;
+        };
+        const auto gain = [&](int g, int h) {
+            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            return gainOver(g, dg.portBase, dg.numPorts, [&](int j) { return activePort(dh, j); },
+                            partitionPortCount(dh));
+        };
+        // A later triode's grid current is predicted and re-solved once, which
+        // only settles while the loop through that grid stays well below 1.
+        const auto gridLoop = [&](int g, int h) {
+            const RootDevice& dg = ctx.rootDevices[static_cast<size_t>(g)];
+            const RootDevice& dh = ctx.rootDevices[static_cast<size_t>(h)];
+            if (!slope || dh.kind != DeviceKind::Triode)
+                return 0.0;
+            const int grid = dh.portBase + 2;
+            return gainOver(g, dg.portBase, dg.numPorts, [&](int) { return grid; }, 1) *
+                   gainOver(h, grid, 1, [&](int j) { return dg.portBase + j; }, dg.numPorts);
         };
         // Preview reads the weaker direction of a weak loop (supply, screen and
         // bias nodes) one sample late. Delayed, a loop rings at Nyquist unless the
@@ -461,6 +479,8 @@ public:
         };
 
         const auto coupled = [&](int g, int h) -> bool {
+            if (gridLoop(g, h) >= gridMargin)
+                return true;
             if (lagged(g, h))
                 return false;
             if (useSignalFlow) {
@@ -670,7 +690,7 @@ public:
         if (allowSignalFlowPruning &&
             (!ctx.allClosedFormBlocks || cutCouplingIntoPair) &&
             !ctx.allowNonScalarSignalFlow && !(useSignalFlow && everyPrunedCouplingLagged))
-            return buildRootOrder(ctx, false, slope, lag);
+            return buildRootOrder(ctx, false, slope, lag, gridMargin);
 
         compileBlockZAndPredFold(ctx.newtonBlocks, ctx.groupOrder.data(), nb, ctx.rootDevices.data(), ctx.Z.data(), ctx.K,
                                  lag ? lag->data() : nullptr);
