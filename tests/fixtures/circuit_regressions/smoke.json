@@ -9400,24 +9400,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275,
+        "band_375": 0.015104428276528732,
+        "band_1500": 0.015668208814303187,
+        "band_6000": 0.011078060511797886
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "a737eb8e1a2641f0e04beec163469570bc21f8f54afbaa9b2f96b37b24822a98",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7.f32.gz",
+      "wave_sha256": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7",
       "reference_stride": 7
     },
     "ENGL E530 - Lead Hi Gain/fast": {
@@ -9434,24 +9434,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275,
+        "band_375": 0.015104428276528732,
+        "band_1500": 0.015668208814303187,
+        "band_6000": 0.011078060511797886
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "a737eb8e1a2641f0e04beec163469570bc21f8f54afbaa9b2f96b37b24822a98",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7.f32.gz",
+      "wave_sha256": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7",
       "reference_stride": 7
     },
     "ENGL E530 - Lead Hi Gain/preview": {
@@ -9468,24 +9468,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463,
-        "band_375": 0.3696174462430989,
-        "band_1500": 0.405092643415189,
-        "band_6000": 0.25482339663682163
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275,
+        "band_375": 0.015104428276528732,
+        "band_1500": 0.015668208814303187,
+        "band_6000": 0.011078060511797886
       },
       "wave_bounds": {
-        "ac_rms": 0.5294524018037721,
-        "mean": -0.0009437532806273644,
-        "peak": 1.7613310914351155,
-        "max_step": 0.5086354810906463
+        "ac_rms": 0.021368456132084306,
+        "mean": -2.0517157557286987e-05,
+        "peak": 0.0702867093819934,
+        "max_step": 0.020800314396399275
       },
-      "circuit_sha256": "a89ce1a5a98d8084b248af1ab74aede20db2b792e8721649bcec15618836534c",
+      "circuit_sha256": "a737eb8e1a2641f0e04beec163469570bc21f8f54afbaa9b2f96b37b24822a98",
       "case": "ENGL E530 - Lead Hi Gain",
-      "wave": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9.f32.gz",
-      "wave_sha256": "8153be7520d4b0743cf2f909db3bddd76ffc07817b633b62721ad3da6c909ba9",
+      "wave": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7.f32.gz",
+      "wave_sha256": "67504d95237fb34f28c7623780a7d75187c71cd059327cf8763692ad12c202d7",
       "reference_stride": 7
     },
     "Fender Bassman 5F6-A/accurate": {
@@ -9594,8 +9594,8 @@
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 86202,
-      "line_trials": 7435,
+      "evaluations": 86193,
+      "line_trials": 7434,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
@@ -9604,32 +9604,32 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 3.7887639508147544,
-        "mean": 0.008674435196997,
-        "peak": 11.258475892275955,
-        "max_step": 11.06200455757536,
-        "band_375": 1.3226492758329924,
-        "band_1500": 1.332685927337728,
-        "band_6000": 3.855436009461328
+        "ac_rms": 3.7887639508176774,
+        "mean": 0.00867443519563242,
+        "peak": 11.258475892275275,
+        "max_step": 11.062004557401837,
+        "band_375": 1.3226492758355572,
+        "band_1500": 1.3326859273395633,
+        "band_6000": 3.8554360094647704
       },
       "wave_bounds": {
-        "ac_rms": 3.7887639508147544,
-        "mean": 0.008674435196997,
-        "peak": 11.258475892275955,
-        "max_step": 11.06200455757536
+        "ac_rms": 3.7887639508176774,
+        "mean": 0.00867443519563242,
+        "peak": 11.258475892275275,
+        "max_step": 11.062004557401837
       },
-      "circuit_sha256": "5facd3bb0c29996f701ee9d86661efcbd1e4c7ad1ce1d38fa4f454b38ffd3915",
+      "circuit_sha256": "a840d35a66d2922995962fe54e0d03491a413f82ac64631fd7455fc24f706a62",
       "case": "Fender Deluxe Reverb AB763",
-      "wave": "34397356f0b6b8737a6913f7cd557d819f4d56a2382905f75f3672d8fa90e9e6.f32.gz",
-      "wave_sha256": "34397356f0b6b8737a6913f7cd557d819f4d56a2382905f75f3672d8fa90e9e6",
+      "wave": "6069ef8094c0d327244af7851c6eacb6692b967edc9094b08e4a872dd7690fe6.f32.gz",
+      "wave_sha256": "6069ef8094c0d327244af7851c6eacb6692b967edc9094b08e4a872dd7690fe6",
       "reference_stride": 7
     },
     "Fender Deluxe Reverb AB763/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 79434,
-      "line_trials": 6683,
+      "evaluations": 79425,
+      "line_trials": 6682,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
@@ -9638,32 +9638,32 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 3.788763950779758,
-        "mean": 0.008674435189384122,
-        "peak": 11.258475892454953,
-        "max_step": 11.062004556367494,
-        "band_375": 1.3226492758128663,
-        "band_1500": 1.3326859273479237,
-        "band_6000": 3.855436009406286
+        "ac_rms": 3.7887639507848605,
+        "mean": 0.00867443518685967,
+        "peak": 11.258475892475412,
+        "max_step": 11.062004556515966,
+        "band_375": 1.3226492758140722,
+        "band_1500": 1.3326859273498721,
+        "band_6000": 3.8554360094116698
       },
       "wave_bounds": {
-        "ac_rms": 3.788763950779758,
-        "mean": 0.008674435189384122,
-        "peak": 11.258475892454953,
-        "max_step": 11.062004556367494
+        "ac_rms": 3.7887639507848605,
+        "mean": 0.00867443518685967,
+        "peak": 11.258475892475412,
+        "max_step": 11.062004556515966
       },
-      "circuit_sha256": "5facd3bb0c29996f701ee9d86661efcbd1e4c7ad1ce1d38fa4f454b38ffd3915",
+      "circuit_sha256": "a840d35a66d2922995962fe54e0d03491a413f82ac64631fd7455fc24f706a62",
       "case": "Fender Deluxe Reverb AB763",
-      "wave": "5a548f834c62d73ebdd8e33fe69f37d7d43df825ba1575d540daedac1a4e411d.f32.gz",
-      "wave_sha256": "5a548f834c62d73ebdd8e33fe69f37d7d43df825ba1575d540daedac1a4e411d",
+      "wave": "afe66df1c364c92013343d469e8dfeca80bea9205a9c5e75e76db55800679f60.f32.gz",
+      "wave_sha256": "afe66df1c364c92013343d469e8dfeca80bea9205a9c5e75e76db55800679f60",
       "reference_stride": 7
     },
     "Fender Deluxe Reverb AB763/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 79434,
-      "line_trials": 6683,
+      "evaluations": 79425,
+      "line_trials": 6682,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
@@ -9672,24 +9672,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 3.788763950779758,
-        "mean": 0.008674435189384122,
-        "peak": 11.258475892454953,
-        "max_step": 11.062004556367494,
-        "band_375": 1.3226492758128663,
-        "band_1500": 1.3326859273479237,
-        "band_6000": 3.855436009406286
+        "ac_rms": 3.7887639507848605,
+        "mean": 0.00867443518685967,
+        "peak": 11.258475892475412,
+        "max_step": 11.062004556515966,
+        "band_375": 1.3226492758140722,
+        "band_1500": 1.3326859273498721,
+        "band_6000": 3.8554360094116698
       },
       "wave_bounds": {
-        "ac_rms": 3.788763950779758,
-        "mean": 0.008674435189384122,
-        "peak": 11.258475892454953,
-        "max_step": 11.062004556367494
+        "ac_rms": 3.7887639507848605,
+        "mean": 0.00867443518685967,
+        "peak": 11.258475892475412,
+        "max_step": 11.062004556515966
       },
-      "circuit_sha256": "5facd3bb0c29996f701ee9d86661efcbd1e4c7ad1ce1d38fa4f454b38ffd3915",
+      "circuit_sha256": "a840d35a66d2922995962fe54e0d03491a413f82ac64631fd7455fc24f706a62",
       "case": "Fender Deluxe Reverb AB763",
-      "wave": "5a548f834c62d73ebdd8e33fe69f37d7d43df825ba1575d540daedac1a4e411d.f32.gz",
-      "wave_sha256": "5a548f834c62d73ebdd8e33fe69f37d7d43df825ba1575d540daedac1a4e411d",
+      "wave": "afe66df1c364c92013343d469e8dfeca80bea9205a9c5e75e76db55800679f60.f32.gz",
+      "wave_sha256": "afe66df1c364c92013343d469e8dfeca80bea9205a9c5e75e76db55800679f60",
       "reference_stride": 7
     },
     "Fender Princeton Reverb AA1164/accurate": {
@@ -10012,32 +10012,32 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 2.434816035775975,
-        "mean": 0.00026348866622587247,
-        "peak": 7.860941763716519,
-        "max_step": 4.1835104505065015,
-        "band_375": 0.7096496371361477,
-        "band_1500": 0.9117535426731513,
-        "band_6000": 2.4964675740669326
+        "ac_rms": 2.434816035770957,
+        "mean": 0.00026348866567250126,
+        "peak": 7.860941763736026,
+        "max_step": 4.18351045050925,
+        "band_375": 0.7096496371339261,
+        "band_1500": 0.9117535426707263,
+        "band_6000": 2.496467574062501
       },
       "wave_bounds": {
-        "ac_rms": 2.434816035775975,
-        "mean": 0.00026348866622587247,
-        "peak": 7.860941763716519,
-        "max_step": 4.1835104505065015
+        "ac_rms": 2.434816035770957,
+        "mean": 0.00026348866567250126,
+        "peak": 7.860941763736026,
+        "max_step": 4.18351045050925
       },
-      "circuit_sha256": "e775cf4bcbe171f1da4338d64b73d71ab7938bcbe03b2b40457ec2ea6a0da142",
+      "circuit_sha256": "7a0c1ca21cc1bb4e21c12001feb36c6a1ed46c21a49712dd88e379680a1574ce",
       "case": "Fender Twin Reverb AB763",
-      "wave": "c2e014e068cc34e1ab53d040bb61d595779f3b56bbb70a6322a552051fbfab89.f32.gz",
-      "wave_sha256": "c2e014e068cc34e1ab53d040bb61d595779f3b56bbb70a6322a552051fbfab89",
+      "wave": "c3118a4fd7d66aa19bbacdb886c29bac3ccaa3e228d2655ca5b7674dd8843983.f32.gz",
+      "wave_sha256": "c3118a4fd7d66aa19bbacdb886c29bac3ccaa3e228d2655ca5b7674dd8843983",
       "reference_stride": 7
     },
     "Fender Twin Reverb AB763/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 89705,
-      "line_trials": 6084,
+      "evaluations": 89716,
+      "line_trials": 6085,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
@@ -10046,32 +10046,32 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 2.4348160357977955,
-        "mean": 0.0002634886619115951,
-        "peak": 7.860941764200289,
-        "max_step": 4.183510450496336,
-        "band_375": 0.709649637147767,
-        "band_1500": 0.9117535426817632,
-        "band_6000": 2.496467574083787
+        "ac_rms": 2.4348160357914472,
+        "mean": 0.00026348868332503955,
+        "peak": 7.86094176415423,
+        "max_step": 4.183510450492909,
+        "band_375": 0.7096496371437883,
+        "band_1500": 0.9117535426801806,
+        "band_6000": 2.4964675740783306
       },
       "wave_bounds": {
-        "ac_rms": 2.4348160357977955,
-        "mean": 0.0002634886619115951,
-        "peak": 7.860941764200289,
-        "max_step": 4.183510450496336
+        "ac_rms": 2.4348160357914472,
+        "mean": 0.00026348868332503955,
+        "peak": 7.86094176415423,
+        "max_step": 4.183510450492909
       },
-      "circuit_sha256": "e775cf4bcbe171f1da4338d64b73d71ab7938bcbe03b2b40457ec2ea6a0da142",
+      "circuit_sha256": "7a0c1ca21cc1bb4e21c12001feb36c6a1ed46c21a49712dd88e379680a1574ce",
       "case": "Fender Twin Reverb AB763",
-      "wave": "fea9c1f556239895afa083ef715e2853777fc2974abbe650b46aebe54418e7a9.f32.gz",
-      "wave_sha256": "fea9c1f556239895afa083ef715e2853777fc2974abbe650b46aebe54418e7a9",
+      "wave": "8b2753708c2371f92577eafc7b7436f553dc1c0504ea30931d5234bfb2e22446.f32.gz",
+      "wave_sha256": "8b2753708c2371f92577eafc7b7436f553dc1c0504ea30931d5234bfb2e22446",
       "reference_stride": 7
     },
     "Fender Twin Reverb AB763/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 89705,
-      "line_trials": 6084,
+      "evaluations": 89716,
+      "line_trials": 6085,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
@@ -10080,24 +10080,24 @@
       "rejected": 0,
       "samples": 2048,
       "features": {
-        "ac_rms": 2.4348160357977955,
-        "mean": 0.0002634886619115951,
-        "peak": 7.860941764200289,
-        "max_step": 4.183510450496336,
-        "band_375": 0.709649637147767,
-        "band_1500": 0.9117535426817632,
-        "band_6000": 2.496467574083787
+        "ac_rms": 2.4348160357914472,
+        "mean": 0.00026348868332503955,
+        "peak": 7.86094176415423,
+        "max_step": 4.183510450492909,
+        "band_375": 0.7096496371437883,
+        "band_1500": 0.9117535426801806,
+        "band_6000": 2.4964675740783306
       },
       "wave_bounds": {
-        "ac_rms": 2.4348160357977955,
-        "mean": 0.0002634886619115951,
-        "peak": 7.860941764200289,
-        "max_step": 4.183510450496336
+        "ac_rms": 2.4348160357914472,
+        "mean": 0.00026348868332503955,
+        "peak": 7.86094176415423,
+        "max_step": 4.183510450492909
       },
-      "circuit_sha256": "e775cf4bcbe171f1da4338d64b73d71ab7938bcbe03b2b40457ec2ea6a0da142",
+      "circuit_sha256": "7a0c1ca21cc1bb4e21c12001feb36c6a1ed46c21a49712dd88e379680a1574ce",
       "case": "Fender Twin Reverb AB763",
-      "wave": "fea9c1f556239895afa083ef715e2853777fc2974abbe650b46aebe54418e7a9.f32.gz",
-      "wave_sha256": "fea9c1f556239895afa083ef715e2853777fc2974abbe650b46aebe54418e7a9",
+      "wave": "8b2753708c2371f92577eafc7b7436f553dc1c0504ea30931d5234bfb2e22446.f32.gz",
+      "wave_sha256": "8b2753708c2371f92577eafc7b7436f553dc1c0504ea30931d5234bfb2e22446",
       "reference_stride": 7
     },
     "Hiwatt DR103/accurate": {
@@ -10304,7 +10304,7 @@
       "wave_sha256": "ccf2b0e66bfce5df655b225f2e28523aee9a014734f6e727636d3b0eaaa80d25",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/accurate": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/accurate": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10332,13 +10332,13 @@
         "peak": 37.735451747554656,
         "max_step": 42.76300367163479
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884.f32.gz",
       "wave_sha256": "d29fc871a4451d8958e01be5d46b5261436dbb9419f191180f2690caa7f60884",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/fast": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10366,13 +10366,13 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
     },
-    "Marshall 1959 Super Lead - Jumped/preview": {
+    "Marshall 1959 Super Lead JCM800 era - Jumped/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
@@ -10400,8 +10400,8 @@
         "peak": 37.73545158869635,
         "max_step": 42.7630035889442
       },
-      "circuit_sha256": "2fb0282d4336c06f2d14a92a017c6e0da3877a7e81b9809f6403f1750f4bfc62",
-      "case": "Marshall 1959 Super Lead - Jumped",
+      "circuit_sha256": "ba8fa2fa179453871d580c3e48fd91db5e05044de370251e043d097e6898a379",
+      "case": "Marshall 1959 Super Lead JCM800 era - Jumped",
       "wave": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4.f32.gz",
       "wave_sha256": "b4f8b44953565e905fc49ce6970145b0bc38420c4fa9d694bfb9784e90ae12d4",
       "reference_stride": 7
@@ -10434,7 +10434,7 @@
         "peak": 2.9567433908926857,
         "max_step": 1.8357969798756442
       },
-      "circuit_sha256": "d73655ad4922592db1d9d0d1d94ef39fd74925ee217b0a89fb03d93531fe4804",
+      "circuit_sha256": "a3c4bccac01f458b1479a80be94449c12de0a62e5869a72c7519d89167033469",
       "case": "Marshall 2555 Silver Jubilee - Lead",
       "wave": "8681b6617151fdf07d05ba9174290119972608635d1079509a34b256ef776ab3.f32.gz",
       "wave_sha256": "8681b6617151fdf07d05ba9174290119972608635d1079509a34b256ef776ab3",
@@ -10468,7 +10468,7 @@
         "peak": 2.9567433909741565,
         "max_step": 1.835796979920598
       },
-      "circuit_sha256": "d73655ad4922592db1d9d0d1d94ef39fd74925ee217b0a89fb03d93531fe4804",
+      "circuit_sha256": "a3c4bccac01f458b1479a80be94449c12de0a62e5869a72c7519d89167033469",
       "case": "Marshall 2555 Silver Jubilee - Lead",
       "wave": "627eed55d5155bd43dc7b8f52924b370616ffc2c358b42d915d08cb31c75c287.f32.gz",
       "wave_sha256": "627eed55d5155bd43dc7b8f52924b370616ffc2c358b42d915d08cb31c75c287",
@@ -10502,7 +10502,7 @@
         "peak": 2.9567433909741565,
         "max_step": 1.835796979920598
       },
-      "circuit_sha256": "d73655ad4922592db1d9d0d1d94ef39fd74925ee217b0a89fb03d93531fe4804",
+      "circuit_sha256": "a3c4bccac01f458b1479a80be94449c12de0a62e5869a72c7519d89167033469",
       "case": "Marshall 2555 Silver Jubilee - Lead",
       "wave": "627eed55d5155bd43dc7b8f52924b370616ffc2c358b42d915d08cb31c75c287.f32.gz",
       "wave_sha256": "627eed55d5155bd43dc7b8f52924b370616ffc2c358b42d915d08cb31c75c287",
@@ -10740,7 +10740,7 @@
         "peak": 73.01665106530857,
         "max_step": 48.807317744543305
       },
-      "circuit_sha256": "32f58095b5d6e2b2281622758ffd0b581673d90b66a89598e9658b5120733252",
+      "circuit_sha256": "f550071b68f479cb498245039b3eb7feebe39366eaf3cda17ddb75ac019eccd2",
       "case": "Orange OR120 Graphic MkII",
       "wave": "528db7f45e1cb18951dcdd39f9a3c591b431245fa35cdd9fc1fc6e26950769fd.f32.gz",
       "wave_sha256": "528db7f45e1cb18951dcdd39f9a3c591b431245fa35cdd9fc1fc6e26950769fd",
@@ -10774,7 +10774,7 @@
         "peak": 73.01665106262585,
         "max_step": 48.8073177421917
       },
-      "circuit_sha256": "32f58095b5d6e2b2281622758ffd0b581673d90b66a89598e9658b5120733252",
+      "circuit_sha256": "f550071b68f479cb498245039b3eb7feebe39366eaf3cda17ddb75ac019eccd2",
       "case": "Orange OR120 Graphic MkII",
       "wave": "b09012352a5f7f93dc60d7186af9d6ca89cc8639daf3cc7b65ceb2d8b241fc1d.f32.gz",
       "wave_sha256": "b09012352a5f7f93dc60d7186af9d6ca89cc8639daf3cc7b65ceb2d8b241fc1d",
@@ -10808,7 +10808,7 @@
         "peak": 73.01665106262585,
         "max_step": 48.8073177421917
       },
-      "circuit_sha256": "32f58095b5d6e2b2281622758ffd0b581673d90b66a89598e9658b5120733252",
+      "circuit_sha256": "f550071b68f479cb498245039b3eb7feebe39366eaf3cda17ddb75ac019eccd2",
       "case": "Orange OR120 Graphic MkII",
       "wave": "b09012352a5f7f93dc60d7186af9d6ca89cc8639daf3cc7b65ceb2d8b241fc1d.f32.gz",
       "wave_sha256": "b09012352a5f7f93dc60d7186af9d6ca89cc8639daf3cc7b65ceb2d8b241fc1d",
@@ -11227,41 +11227,41 @@
       "affine_node_hits": 0,
       "bipolar_hits": 0,
       "evaluations": 168128,
-      "line_trials": 14708,
+      "line_trials": 14707,
       "loaded_hits": 0,
       "mode": "accurate",
       "moves": 0,
-      "newton": 12900,
+      "newton": 12898,
       "plan_hits": 0,
       "rejected": 2,
       "samples": 2048,
       "features": {
-        "ac_rms": 16.755131324855007,
-        "mean": 0.09125748670996484,
-        "peak": 33.916610929350774,
-        "max_step": 36.91871896697462,
-        "band_375": 9.29097997583091,
-        "band_1500": 7.291366901564548,
-        "band_6000": 16.009053390734962
+        "ac_rms": 16.755174054183247,
+        "mean": 0.09125862715137405,
+        "peak": 33.916596645193984,
+        "max_step": 36.919108722712764,
+        "band_375": 9.29095628966355,
+        "band_1500": 7.291409768734717,
+        "band_6000": 16.00914174707297
       },
       "wave_bounds": {
-        "ac_rms": 16.755131324855007,
-        "mean": 0.09125748670996484,
-        "peak": 33.916610929350774,
-        "max_step": 36.91871896697462
+        "ac_rms": 16.755174054183247,
+        "mean": 0.09125862715137405,
+        "peak": 33.916596645193984,
+        "max_step": 36.919108722712764
       },
-      "circuit_sha256": "f9fee55f5e6b7f7eb3db61b461c40948020ba9fbbb02b10c2b2208065be53eff",
+      "circuit_sha256": "59a31c655c0fc14b599a912f79c90145235c8f9858a3903b4db5b849d2845e85",
       "case": "Vox AC30 - Top Boost",
-      "wave": "9acb11b242afbd32258836e9d45c7e257ba21fa32eed93882253a16be56f16fe.f32.gz",
-      "wave_sha256": "9acb11b242afbd32258836e9d45c7e257ba21fa32eed93882253a16be56f16fe",
+      "wave": "55c1b8a5b015b35fb9723bda4a295726e96fe621ee420963a06d5acfbb70b7d6.f32.gz",
+      "wave_sha256": "55c1b8a5b015b35fb9723bda4a295726e96fe621ee420963a06d5acfbb70b7d6",
       "reference_stride": 7
     },
     "Vox AC30 - Top Boost/fast": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 164649,
-      "line_trials": 14384,
+      "evaluations": 164665,
+      "line_trials": 14385,
       "loaded_hits": 0,
       "mode": "fast",
       "moves": 0,
@@ -11270,32 +11270,32 @@
       "rejected": 2,
       "samples": 2048,
       "features": {
-        "ac_rms": 16.755131323727312,
-        "mean": 0.0912574865444038,
-        "peak": 33.91661092808302,
-        "max_step": 36.918718960270155,
-        "band_375": 9.290979978077825,
-        "band_1500": 7.2913669032860815,
-        "band_6000": 16.009053387612123
+        "ac_rms": 16.755174053056283,
+        "mean": 0.09125862701764924,
+        "peak": 33.91659664400395,
+        "max_step": 36.91910871599016,
+        "band_375": 9.290956291911627,
+        "band_1500": 7.291409770447505,
+        "band_6000": 16.00914174395753
       },
       "wave_bounds": {
-        "ac_rms": 16.755131323727312,
-        "mean": 0.0912574865444038,
-        "peak": 33.91661092808302,
-        "max_step": 36.918718960270155
+        "ac_rms": 16.755174053056283,
+        "mean": 0.09125862701764924,
+        "peak": 33.91659664400395,
+        "max_step": 36.91910871599016
       },
-      "circuit_sha256": "f9fee55f5e6b7f7eb3db61b461c40948020ba9fbbb02b10c2b2208065be53eff",
+      "circuit_sha256": "59a31c655c0fc14b599a912f79c90145235c8f9858a3903b4db5b849d2845e85",
       "case": "Vox AC30 - Top Boost",
-      "wave": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a.f32.gz",
-      "wave_sha256": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a",
+      "wave": "c0a4de093cce8a2e2542f117ac116c57053f52f84850c7524652f093685dfe3a.f32.gz",
+      "wave_sha256": "c0a4de093cce8a2e2542f117ac116c57053f52f84850c7524652f093685dfe3a",
       "reference_stride": 7
     },
     "Vox AC30 - Top Boost/preview": {
       "affine_hits": 0,
       "affine_node_hits": 0,
       "bipolar_hits": 0,
-      "evaluations": 163177,
-      "line_trials": 14234,
+      "evaluations": 163193,
+      "line_trials": 14235,
       "loaded_hits": 0,
       "mode": "preview",
       "moves": 0,
@@ -11304,24 +11304,126 @@
       "rejected": 2,
       "samples": 2048,
       "features": {
-        "ac_rms": 16.755131323727312,
-        "mean": 0.0912574865444038,
-        "peak": 33.91661092808302,
-        "max_step": 36.918718960270155,
-        "band_375": 9.290979978077825,
-        "band_1500": 7.2913669032860815,
-        "band_6000": 16.009053387612123
+        "ac_rms": 16.755174053056283,
+        "mean": 0.09125862701764924,
+        "peak": 33.91659664400395,
+        "max_step": 36.91910871599016,
+        "band_375": 9.290956291911627,
+        "band_1500": 7.291409770447505,
+        "band_6000": 16.00914174395753
       },
       "wave_bounds": {
-        "ac_rms": 16.755131323727312,
-        "mean": 0.0912574865444038,
-        "peak": 33.91661092808302,
-        "max_step": 36.918718960270155
+        "ac_rms": 16.755174053056283,
+        "mean": 0.09125862701764924,
+        "peak": 33.91659664400395,
+        "max_step": 36.91910871599016
       },
-      "circuit_sha256": "f9fee55f5e6b7f7eb3db61b461c40948020ba9fbbb02b10c2b2208065be53eff",
+      "circuit_sha256": "59a31c655c0fc14b599a912f79c90145235c8f9858a3903b4db5b849d2845e85",
       "case": "Vox AC30 - Top Boost",
-      "wave": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a.f32.gz",
-      "wave_sha256": "d65213c49d3f441b9085b033e4a221abc69af46d87dd9b6f76af41df05300d5a",
+      "wave": "c0a4de093cce8a2e2542f117ac116c57053f52f84850c7524652f093685dfe3a.f32.gz",
+      "wave_sha256": "c0a4de093cce8a2e2542f117ac116c57053f52f84850c7524652f093685dfe3a",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/accurate": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 158687,
+      "line_trials": 8209,
+      "loaded_hits": 0,
+      "mode": "accurate",
+      "moves": 0,
+      "newton": 17356,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.5272296936685,
+        "mean": 0.32377857987782444,
+        "peak": 83.68619533551909,
+        "max_step": 84.66939744804132,
+        "band_375": 16.913949925018343,
+        "band_1500": 30.81510378111508,
+        "band_6000": 32.23137920424474
+      },
+      "wave_bounds": {
+        "ac_rms": 39.5272296936685,
+        "mean": 0.32377857987782444,
+        "peak": 83.68619533551909,
+        "max_step": 84.66939744804132
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "a567e3314a8ab738b00eee68b4c5a13b292f1445dee8f153a7e0674528d98750.f32.gz",
+      "wave_sha256": "a567e3314a8ab738b00eee68b4c5a13b292f1445dee8f153a7e0674528d98750",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/fast": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 151297,
+      "line_trials": 7952,
+      "loaded_hits": 0,
+      "mode": "fast",
+      "moves": 0,
+      "newton": 16000,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392,
+        "band_375": 16.913949880256848,
+        "band_1500": 30.815103857639837,
+        "band_6000": 32.23137932248128
+      },
+      "wave_bounds": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282.f32.gz",
+      "wave_sha256": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282",
+      "reference_stride": 7
+    },
+    "Marshall 1959 Super Lead Plexi 1970 - Jumped/preview": {
+      "affine_hits": 0,
+      "affine_node_hits": 0,
+      "bipolar_hits": 0,
+      "evaluations": 151297,
+      "line_trials": 7952,
+      "loaded_hits": 0,
+      "mode": "preview",
+      "moves": 0,
+      "newton": 16000,
+      "plan_hits": 0,
+      "rejected": 0,
+      "samples": 2048,
+      "features": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392,
+        "band_375": 16.913949880256848,
+        "band_1500": 30.815103857639837,
+        "band_6000": 32.23137932248128
+      },
+      "wave_bounds": {
+        "ac_rms": 39.52722975291102,
+        "mean": 0.32377858222896716,
+        "peak": 83.68619649200845,
+        "max_step": 84.669397710392
+      },
+      "circuit_sha256": "26482baab6010cdcd3f7b00a69fbee04738c889678bcacd045da7f8365b43ac3",
+      "case": "Marshall 1959 Super Lead Plexi 1970 - Jumped",
+      "wave": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282.f32.gz",
+      "wave_sha256": "76094f9b1d2d8a0b32715a213cb23f0ed92858b163de34f12695133c1dba7282",
       "reference_stride": 7
     }
   },

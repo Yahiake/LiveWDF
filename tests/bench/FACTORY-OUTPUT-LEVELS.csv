@@ -5,7 +5,7 @@ schematics/amps/Mesa Boogie Dual Rectifier.livewdf,amp,0.87059607,485.53735,2.54
 schematics/amps/Orange Rockerverb 50w - Clean Channel.livewdf,amp,0.87059607,94.730621,0.231,0.000,-0.450,0.000,0.665,-10.944,0.231,0.000,-0.450,0.000,0.665,-10.944
 schematics/amps/Orange Rockerverb 50w - Dirty Channel.livewdf,amp,0.87059607,290.31818,2.388,0.000,-2.480,0.000,1.243,-19.953,2.388,0.000,-2.480,0.000,1.243,-19.953
 schematics/amps/Ampeg B-15N Portaflex.livewdf,amp,0.87059607,188.64748,0.756,0.000,-1.230,0.000,-0.074,-13.354,0.756,0.000,-1.230,0.000,-0.074,-13.354
-schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,21.1916,1.577,0.000,-1.928,0.000,0.801,-15.123,1.577,0.000,-1.928,0.000,0.801,-15.123
+schematics/amps/ENGL E530 - Lead Hi Gain.livewdf,amp,1.1233498,1.2882902,0.322,0.000,-0.738,0.000,-1.293,-5.021,0.322,0.000,-0.738,0.000,-1.293,-5.021
 schematics/amps/Fender Bassman 5F6-A.livewdf,amp,0.87059607,93.204007,1.348,0.000,-1.635,0.000,2.995,-16.688,1.348,0.000,-1.635,0.000,2.995,-16.688
 schematics/amps/Fender Deluxe Reverb AB763.livewdf,amp,0.87059607,142.27216,1.071,0.000,-1.429,0.000,1.166,-15.115,1.072,0.000,-1.429,0.000,1.170,-15.115
 schematics/amps/Fender Princeton Reverb AA1164.livewdf,amp,0.87059607,102.7326,0.360,0.000,-0.884,0.000,0.798,-13.086,0.360,0.000,-0.884,0.000,0.798,-13.086
@@ -14,7 +14,8 @@ schematics/amps/Fender Tweed Deluxe 5E3 - Instrument.livewdf,amp,0.87059607,147.
 schematics/amps/Fender Twin Reverb AB763.livewdf,amp,0.87059607,117.77612,0.010,0.000,-0.443,0.000,0.509,-12.092,0.010,0.000,-0.443,0.000,0.509,-12.092
 schematics/amps/Hiwatt DR103.livewdf,amp,0.87059607,433.29661,0.855,0.000,-1.195,0.000,0.425,-14.490,0.855,0.000,-1.195,0.000,0.425,-14.490
 schematics/amps/Laney GH100L - Drive.livewdf,amp,0.87059607,329.12538,2.310,0.000,-2.441,0.000,2.490,-18.886,2.310,0.000,-2.441,0.000,2.490,-18.886
-schematics/amps/Marshall 1959 Super Lead - Jumped.livewdf,amp,0.87059607,514.40636,2.488,0.000,-2.634,0.000,0.749,-19.212,2.488,0.000,-2.634,0.000,0.749,-19.212
+schematics/amps/Marshall 1959 Super Lead JCM800 era - Jumped.livewdf,amp,0.87059607,514.40636,2.488,0.000,-2.634,0.000,0.749,-19.212,2.488,0.000,-2.634,0.000,0.749,-19.212
+schematics/amps/Marshall 1959 Super Lead Plexi 1970 - Jumped.livewdf,amp,0.87059607,911.86933,2.316,0.000,-2.314,0.000,1.970,-18.331,2.316,0.000,-2.314,0.000,1.970,-18.331
 schematics/amps/Marshall 2555 Silver Jubilee - Lead.livewdf,amp,0.87059607,47.03916,-0.307,0.172,0.000,0.000,-0.631,-7.009,-0.307,0.172,0.000,0.000,-0.631,-7.009
 schematics/amps/Marshall JCM800 2203 - High Input.livewdf,amp,0.87059607,296.09504,1.824,0.000,-2.039,0.000,1.557,-16.667,1.824,0.000,-2.039,0.000,1.557,-16.667
 schematics/amps/Mesa Boogie Mark IIC+ - Lead.livewdf,amp,0.87059607,685.40388,2.536,0.000,-2.632,0.000,1.284,-20.781,2.536,0.000,-2.632,0.000,1.284,-20.781
