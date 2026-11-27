@@ -22,7 +22,7 @@
 
 namespace wdf {
 
-inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double fs) {
+inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double fs, bool stiff = false) {
     const std::string ground = doc.groundNode.empty() ? "0" : doc.groundNode;
     const auto settings = doc.sourceAcSettings(c);
     std::set<size_t> mains;
@@ -72,6 +72,26 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
         if (!held.count(o) || held[o] == 0.0)
             return false;
 
+    std::set<std::string> mainsNames;
+    for (size_t i : mains) mainsNames.insert(c.src[i].name);
+    const auto removeWinding = [&] {
+        std::erase_if(c.src, [&](const Src& s) { return mainsNames.count(s.name) != 0; });
+        std::erase_if(c.res, [&](const Res& r) { return onWinding(r.a) && onWinding(r.b); });
+        std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
+        std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
+    };
+    // Stiff: every precharged capacitor becomes a source at its precharge, so each supply node is a fixed rail
+    // and the stages do not couple through the filter chain.
+    if (stiff) {
+        removeWinding();
+        std::set<std::pair<std::string, std::string>> rails;
+        for (const auto& cap : c.cap)
+            if (cap.holdsDc && rails.insert(std::minmax(cap.a, cap.b)).second)
+                c.addSrc(cap.a, cap.b, *cap.initialVolts, 0.0, {}, "$mains rail " + cap.name);
+        std::erase_if(c.cap, [](const Cap& cap) { return cap.holdsDc; });
+        return true;
+    }
+
     // The drawn supply alone, loaded by one resistor per output.
     Circuit test;
     for (size_t i : mains)
@@ -111,12 +131,7 @@ inline bool replaceMainsSupplies(Circuit& c, const LiveWDFDocument& doc, double 
     for (auto& r : fullLoad) r /= 4.0;
     const auto vIdle = average(idleLoad), vFull = average(fullLoad);
 
-    std::set<std::string> mainsNames;
-    for (size_t i : mains) mainsNames.insert(c.src[i].name);
-    std::erase_if(c.src, [&](const Src& s) { return mainsNames.count(s.name) != 0; });
-    std::erase_if(c.res, [&](const Res& r) { return onWinding(r.a) && onWinding(r.b); });
-    std::erase_if(c.cap, [&](const Cap& cap) { return winding.count(cap.a) && winding.count(cap.b); });
-    std::erase_if(c.diode, [&](const Diode& d) { return onWinding(d.a) || onWinding(d.b); });
+    removeWinding();
     for (size_t k = 0; k < out.size(); ++k) {
         const double iIdle = vIdle[k] / idleLoad[k], iFull = vFull[k] / fullLoad[k];
         const double r = (vIdle[k] - vFull[k]) / (iFull - iIdle);
