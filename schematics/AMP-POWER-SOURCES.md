@@ -42,3 +42,11 @@ The reduced JC-120 and Valvestate stages model gain, feedback, and rail clipping
 - **Marshall Valvestate 8100** uses the PC0689P input coupling and the speaker voltage/current-sense network. A rail-limited class-AB equivalent represents the IC8B drive and complementary Darlington output on estimated ±36 V rails with a 4 Ω load. [Marshall PC0689P power board](https://www.drtube.com/schematics/marshall/8080-pwr.gif)
 
 The **Fender Tweed Champ 5F1** uses its existing single-ended 6V6 circuit and 4 Ω load. [Fender 5F1 service drawing](https://schematicheaven.net/fenderamps/champ_5f1_schem.pdf)
+
+## Power supplies
+
+These amps run from the supply on their drawing instead of fixed rails: the high-voltage winding as AC sources at the drawing's voltage behind its winding resistance (secondary plus the primary reflected), the rectifier, reservoir, choke, dropping resistors and filter capacitors down to every preamp node. Preamp-only playback keeps the fixed rails. Grades: A measured, B maker's figure, C scaled from a relative, D hearsay.
+
+| Amp | Supply | Sources and decisions |
+|---|---|---|
+| Fender Deluxe Reverb AB763 | 330-0-330 VAC at 60 Hz, since it was built for the US. GZ34, two 16 µF in parallel, 4 H choke to the screens and two 10 kΩ to the phase inverter and preamp 16 µF nodes. Bias from the 50 V tap through 470 Ω, a silicon diode, 25 µF and the 10 kΩ pot, set for the drawing's −35 V. | [Fender AB763](https://schematicheaven.net/fenderamps/deluxe_reverb_ab763_schem.pdf). [Hammond 290BX](https://www.hammfg.com/files/parts/pdf/290BX.pdf), the 125P23B replacement: 112.5 Ω secondary, 3.261 Ω primary, 50 V bias tap (B), so 84.1 Ω per half. [Hammond 194A](https://www.hammfg.com/files/parts/pdf/194A.pdf) for the 125C3A choke: 4 H, 167 Ω (B). The GZ34 law is fitted to the [Philips](https://frank.pocnet.net/sheets/030/g/GZ34.pdf) 1958 per-anode curve; the 1954 curve drops about half as much again. |
