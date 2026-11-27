@@ -1226,7 +1226,7 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
         if (changed && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
                 const auto gate = comp.properties.find("enabledBy");
-                return gate != comp.properties.end() && gate->second == member.id;
+                return gate != comp.properties.end() && (gate->second == member.id || gate->second == "!" + member.id);
             }))
             gatedSwitchChanged_.store(true, std::memory_order_relaxed);
     }
