@@ -194,9 +194,11 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
+    leftEngine_->useFastPentodes(fastLive);
     if (processStereo) {
         rightEngine_->useMixedAffineReduction(fastLive);
         rightEngine_->useCircuitPlan(fastLive);
+        rightEngine_->useFastPentodes(fastLive);
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
