@@ -2677,6 +2677,26 @@ static bool checkFactoryOutputIrState(const juce::File& amp) {
     return upgraded.outputImpulseId(false) == "air-champ-g8c-or57";
 }
 
+static bool checkMultiThrowSwitchState(const juce::File& file) {
+    livewdf::LiveWDFPluginProcessor source;
+    source.prepareToPlay(48000.0, 128);
+    if (!source.loadCircuitFromFile(file) || source.getSwitchGroups().size() != 1
+        || source.getSwitchGroupThrowCount(0) != 3)
+        return false;
+    source.setSwitchGroupPosition(0, 2);
+    if (source.getSwitchGroupPosition(0) != 2)
+        return false;
+
+    juce::MemoryBlock state;
+    source.getStateInformation(state);
+    livewdf::LiveWDFPluginProcessor restored;
+    restored.prepareToPlay(48000.0, 128);
+    restored.setStateInformation(state.getData(), static_cast<int>(state.getSize()));
+    return restored.getSwitchGroupThrowCount(0) == 3
+        && restored.getSwitchGroupPosition(0) == 2
+        && wdf::switchResPosition(restored.getCurrentDocument().components[1]) == 2;
+}
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
@@ -2704,6 +2724,8 @@ int main(int argc, char** argv) {
         return livewdf::checkLivePreviewCapture(file) ? 0 : 1;
     if (argc == 3 && std::string(argv[2]) == "--check-factory-output-irs")
         return checkFactoryOutputIrState(file) ? 0 : 1;
+    if (argc == 3 && std::string(argv[2]) == "--check-switch-state")
+        return checkMultiThrowSwitchState(file) ? 0 : 1;
 
     if (argc == 3 && std::string(argv[2]) == "--check-power-amp")
         return livewdf::checkPowerAmp(file) ? 0 : 1;

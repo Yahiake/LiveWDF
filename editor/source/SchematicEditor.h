@@ -97,9 +97,9 @@ public:
     /// pretend a parameter move was a document edit.
     ///
     /// `potPositions` carries 0..1 for both pots and rheostats; a missing id
-    /// keeps the document's saved position. `switchThrowsB` is true for throw B.
+    /// keeps the document's saved position. Switch positions are zero-based.
     void setLiveControlState(const std::map<std::string, double>& potPositions,
-                             const std::map<std::string, bool>& switchThrowsB);
+                             const std::map<std::string, int>& switchPositions);
 
     /// The part the last build failed on, marked with a red ring. "" clears it.
     ///
@@ -519,7 +519,7 @@ private:
     /// Live control overlay, keyed by component id. Empty in the editor app,
     /// where moving a control edits the document itself.
     std::map<std::string, double> livePotPositions_;
-    std::map<std::string, bool> liveSwitchThrowsB_;
+    std::map<std::string, int> liveSwitchPositions_;
 
     Tool tool_ = Tool::Select;
     std::string pendingType_;

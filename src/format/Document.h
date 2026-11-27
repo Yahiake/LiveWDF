@@ -105,21 +105,48 @@ inline std::vector<std::string> sourceValueKeys(SourceMode mode) {
     return { "dc" };
 }
 
-/// The two resistances of an SPDT throw. Celine's switch constants: a closed
+/// The two resistances of a switch throw. Celine's switch constants: a closed
 /// throw is ten milliohms, an open one is a gigaohm -- high enough to read as
 /// open, low enough to keep the node tied to something for the solver.
 inline constexpr double kSpdtClosedOhms = 0.01;
 inline constexpr double kSpdtOpenOhms = 1.0e9;
+inline constexpr int kMinSwitchThrows = 2;
+inline constexpr int kMaxSwitchThrows = 8;
+
+inline int switchResThrowCount(const SchematicComponent& part) {
+    const auto it = part.properties.find("throws");
+    if (it == part.properties.end())
+        return kMinSwitchThrows;
+    try {
+        return std::clamp(std::stoi(it->second), kMinSwitchThrows, kMaxSwitchThrows);
+    } catch (...) {
+        return kMinSwitchThrows;
+    }
+}
+
+inline int switchResPosition(const SchematicComponent& part) {
+    const auto it = part.properties.find("select");
+    if (it == part.properties.end())
+        return 0;
+    try {
+        return std::clamp(std::stoi(it->second), 0, switchResThrowCount(part) - 1);
+    } catch (...) {
+        return 0;
+    }
+}
+
+inline std::string switchResThrowPin(int position) {
+    return "out" + std::string(1, static_cast<char>('A' + position));
+}
 
 /// True when a `switch_res` is on throw B.
 ///
-/// The document stores `select` as "0" (throw A, the default) or "1" (throw B).
+/// The document stores `select` as a zero-based throw index.
 /// Celine's SPDT stores the complementary `closed` flag -- closed means throw A
 /// -- so the converter, the inspector and the plugin ask here rather than
 /// spelling the inversion out in several places.
 inline bool switchResSelectsB(const SchematicComponent& part) {
-    const auto it = part.properties.find("select");
-    return it != part.properties.end() && it->second == "1";
+    return switchResPosition(part) == 1;
 }
 
 struct WirePoint {
@@ -433,8 +460,10 @@ struct LiveWDFDocument {
                                            || it->second->type != "switch_res"
                                            || islands.count(entry.first) != 0)
                                            return false;
-                                       return entry.second == "outA"
-                                              || entry.second == "outB";
+                                       return entry.second.size() == 4
+                                              && entry.second.starts_with("out")
+                                              && entry.second[3] >= 'A'
+                                              && entry.second[3] < 'A' + switchResThrowCount(*it->second);
                                    }),
                     loose.end());
 

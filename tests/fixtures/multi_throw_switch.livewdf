@@ -1,0 +1,31 @@
+{
+  "author": "LiveWDF",
+  "category": "Test",
+  "components": [
+    {"id": "IN1", "properties": {}, "type": "in", "values": {},
+     "visual": {"flipped": false, "rotation": 0, "x": 0, "y": 0}},
+    {"id": "S1", "properties": {"label": "Route", "select": "0", "throws": "3"},
+     "type": "switch_res", "values": {},
+     "visual": {"flipped": false, "rotation": 0, "x": 2, "y": -2}},
+    {"id": "R1", "properties": {}, "type": "res", "values": {"value": 1000},
+     "visual": {"flipped": false, "rotation": 0, "x": 0, "y": -6}},
+    {"id": "R2", "properties": {}, "type": "res", "values": {"value": 2200},
+     "visual": {"flipped": false, "rotation": 0, "x": 2, "y": -6}},
+    {"id": "R3", "properties": {}, "type": "res", "values": {"value": 4700},
+     "visual": {"flipped": false, "rotation": 0, "x": 4, "y": -6}},
+    {"id": "RL", "properties": {}, "type": "res", "values": {"value": 1000},
+     "visual": {"flipped": false, "rotation": 90, "x": 8, "y": -8}},
+    {"id": "GND1", "properties": {}, "type": "gnd", "values": {},
+     "visual": {"flipped": false, "rotation": 0, "x": 10, "y": -6}},
+    {"id": "OUT1", "properties": {}, "type": "out", "values": {},
+     "visual": {"flipped": false, "rotation": 0, "x": 8, "y": -10}}
+  ],
+  "description": "Three-throw control regression fixture.",
+  "io": {"groundNode": "0", "inputNode": "in", "outputNode": "out"},
+  "name": "Multi Throw Switch",
+  "version": 3,
+  "wires": [
+    {"points": [{"x": 0, "y": -8}, {"x": 6, "y": -8}]},
+    {"points": [{"x": 6, "y": -8}, {"x": 6, "y": -10}]}
+  ]
+}

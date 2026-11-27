@@ -472,9 +472,12 @@ const SymbolArtwork* artworkForType(const std::string& type) {
 }
 
 const SymbolArtwork* artworkForPart(const wdf::SchematicComponent& part) {
-    if (part.type == "switch_res")
+    if (part.type == "switch_res" && wdf::switchResThrowCount(part) == 2)
         return &cached(wdf::switchResSelectsB(part) ? static_cast<int>(Asset::SpdtB)
                                                     : static_cast<int>(Asset::SpdtA));
+
+    if (part.type == "switch_res")
+        return nullptr;
 
     if (part.type == "bjt") {
         const bool pnp = wdf::transistorPolarity(part) ==

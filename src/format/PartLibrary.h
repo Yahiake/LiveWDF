@@ -196,6 +196,9 @@ int rotateSide(int side, int quarterTurns);
 /// where the part is placed, and nothing here may recompute it per call.
 const std::vector<PinOffsetSpec>& pinFrame(const std::string& type);
 
+const std::vector<std::string>& partPins(const wdf::SchematicComponent& part);
+const std::vector<PinOffsetSpec>& pinFrame(const wdf::SchematicComponent& part);
+
 /// The canvas point pin `pinIndex` of `part` is drawn at: the frame above,
 /// mirrored in the part's own frame first and then turned, which is Celine's
 /// order and the one that makes "flip" mean the same thing whichever way the

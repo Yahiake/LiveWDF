@@ -11,6 +11,7 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <numeric>
 
 namespace livewdf {
 
@@ -995,7 +996,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
             // The switch's starting throw is the one in the file. If a
             // hand-edited file has members of one group disagreeing, the first
             // member is the group's state.
-            switchGroupStates_.assign(switchGroupsInCircuit_.size(), false);
+            switchGroupStates_.assign(switchGroupsInCircuit_.size(), 0);
             for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
                 for (const auto& member : switchGroupsInCircuit_[i].members) {
                     const auto comp = std::find_if(doc.components.begin(), doc.components.end(),
@@ -1003,7 +1004,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
                                                        return c.id == member.id;
                                                    });
                     if (comp != doc.components.end()) {
-                        switchGroupStates_[i] = wdf::switchResSelectsB(*comp);
+                        switchGroupStates_[i] = wdf::switchResPosition(*comp);
                         break;
                     }
                 }
@@ -1043,15 +1044,22 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         switchTargets_.clear();
         for (size_t i = 0; i < switchGroupsInCircuit_.size(); ++i) {
             for (const auto& member : switchGroupsInCircuit_[i].members) {
-                const int resA = leftEngine_->resIndexByName(member.id + "_A");
-                const int resB = leftEngine_->resIndexByName(member.id + "_B");
-                if (resA >= 0 && resB >= 0)
-                    switchTargets_.push_back({i, resA, resB});
+                const auto comp = std::ranges::find(doc.components, member.id,
+                                                    &wdf::SchematicComponent::id);
+                if (comp == doc.components.end())
+                    continue;
+                std::vector<int> resistors;
+                for (int position = 0; position < wdf::switchResThrowCount(*comp); ++position)
+                    resistors.push_back(leftEngine_->resIndexByName(
+                        member.id + "_" + static_cast<char>('A' + position)));
+                switchTargets_.push_back({i, std::move(resistors)});
             }
         }
         potMoves_.reserve(potTargets_.size());
         varResMoves_.reserve(potTargets_.size());
-        resistorMoves_.reserve(2 * switchTargets_.size());
+        resistorMoves_.reserve(std::accumulate(
+            switchTargets_.begin(), switchTargets_.end(), size_t{},
+            [](size_t count, const SwitchTarget& target) { return count + target.resistors.size(); }));
 
         // A new document brings its own pot positions. This is a document load,
         // not a sample-rate rebuild, so the saved `pos` becomes the knob value;
@@ -1184,9 +1192,29 @@ std::vector<wdf::LiveControlGroup> LiveWDFPluginProcessor::getSwitchGroups() con
 }
 
 bool LiveWDFPluginProcessor::getSwitchGroupB(int index) const {
+    return getSwitchGroupPosition(index) == 1;
+}
+
+int LiveWDFPluginProcessor::getSwitchGroupPosition(int index) const {
     std::lock_guard<std::mutex> lock(controlMutex_);
     return index >= 0 && index < static_cast<int>(switchGroupStates_.size())
-           && switchGroupStates_[static_cast<size_t>(index)];
+               ? switchGroupStates_[static_cast<size_t>(index)]
+               : 0;
+}
+
+int LiveWDFPluginProcessor::getSwitchGroupThrowCount(int index) const {
+    std::lock_guard<std::mutex> lock(controlMutex_);
+    if (index < 0 || index >= static_cast<int>(switchGroupsInCircuit_.size())
+        || switchGroupsInCircuit_[static_cast<size_t>(index)].members.empty())
+        return wdf::kMinSwitchThrows;
+    int count = wdf::kMaxSwitchThrows;
+    for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
+        const auto comp = std::ranges::find(currentDoc_.components, member.id,
+                                            &wdf::SchematicComponent::id);
+        if (comp != currentDoc_.components.end())
+            count = std::min(count, wdf::switchResThrowCount(*comp));
+    }
+    return count;
 }
 
 std::map<std::string, double> LiveWDFPluginProcessor::getLivePotPositions() const {
@@ -1213,13 +1241,26 @@ std::map<std::string, bool> LiveWDFPluginProcessor::getLiveSwitchStates() const 
     std::map<std::string, bool> states;
     for (size_t i = 0; i < switchGroupsInCircuit_.size() && i < switchGroupStates_.size(); ++i) {
         for (const auto& member : switchGroupsInCircuit_[i].members)
-            states[member.id] = switchGroupStates_[i];
+            states[member.id] = switchGroupStates_[i] == 1;
     }
 
     return states;
 }
 
+std::map<std::string, int> LiveWDFPluginProcessor::getLiveSwitchPositions() const {
+    std::lock_guard<std::mutex> lock(controlMutex_);
+    std::map<std::string, int> states;
+    for (size_t i = 0; i < switchGroupsInCircuit_.size() && i < switchGroupStates_.size(); ++i)
+        for (const auto& member : switchGroupsInCircuit_[i].members)
+            states[member.id] = switchGroupStates_[i];
+    return states;
+}
+
 void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
+    setSwitchGroupPosition(index, throwB ? 1 : 0);
+}
+
+void LiveWDFPluginProcessor::setSwitchGroupPosition(int index, int position) {
     std::lock_guard<std::recursive_mutex> loadLock(loadMutex_);
     std::lock_guard<std::mutex> lock(engineMutex_);
 
@@ -1230,15 +1271,17 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
     // The editor reads the throws through `controlMutex_`; the audio thread
     // reads them under the engine lock, which we already hold. Lock order is
     // engine -> control everywhere, so the two cannot deadlock.
-    const bool changed = switchGroupStates_[static_cast<size_t>(index)] != throwB;
+    position = std::clamp(position, 0, getSwitchGroupThrowCount(index) - 1);
+    const int previous = switchGroupStates_[static_cast<size_t>(index)];
+    const bool changed = previous != position;
     {
         std::lock_guard<std::mutex> controlLock(controlMutex_);
-        switchGroupStates_[static_cast<size_t>(index)] = throwB;
+        switchGroupStates_[static_cast<size_t>(index)] = position;
     }
 
     // Keep the document in step, so the plugin's saved state carries the throw
     // the user is looking at. The group is the label, so every member moves.
-    const std::string select = throwB ? "1" : "0";
+    const std::string select = std::to_string(position);
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
         for (auto& comp : currentDoc_.components) {
             if (comp.id == member.id)
@@ -1246,7 +1289,8 @@ void LiveWDFPluginProcessor::setSwitchGroupB(int index, bool throwB) {
         }
     }
     for (const auto& member : switchGroupsInCircuit_[static_cast<size_t>(index)].members) {
-        if (changed && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
+        if (changed && (previous == 1) != (position == 1)
+            && std::ranges::any_of(currentDoc_.components, [&](const auto& comp) {
                 const auto gate = comp.properties.find("enabledBy");
                 return gate != comp.properties.end() && (gate->second == member.id || gate->second == "!" + member.id);
             }))
@@ -1321,9 +1365,12 @@ void LiveWDFPluginProcessor::applyLiveControlsToEngines(bool pots, bool switches
     }
     if (switches) {
         for (const auto& t : switchTargets_) {
-            const bool throwB = switchGroupStates_[t.group];
-            resistorMoves_.emplace_back(t.resA, throwB ? wdf::kSpdtOpenOhms : wdf::kSpdtClosedOhms);
-            resistorMoves_.emplace_back(t.resB, throwB ? wdf::kSpdtClosedOhms : wdf::kSpdtOpenOhms);
+            const int selected = switchGroupStates_[t.group];
+            for (size_t position = 0; position < t.resistors.size(); ++position)
+                if (t.resistors[position] >= 0)
+                    resistorMoves_.emplace_back(t.resistors[position],
+                        static_cast<int>(position) == selected ? wdf::kSpdtClosedOhms
+                                                               : wdf::kSpdtOpenOhms);
         }
     }
 
