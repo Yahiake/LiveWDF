@@ -194,6 +194,33 @@ public:
     void prepareSlowLag();
     void prepareLampReplay();
     void stepLampReplay();
+    /// Make this clone stage 1 (the blocks before the first power-tube block) or
+    /// stage 2 (the rest) of a two-core Preview. False when the partition has no such cut.
+    bool preparePipelineStage(int stage);
+    bool pipelineReady() const noexcept {
+        return pipe_.stage && pipe_.revision == linearRebuilds() && pipe_.lagView == slowLagActive() && !lamp_.period;
+    }
+    void stopPipeline() noexcept { pipe_.stage = 0; }
+    /// The other stage's port currents, then its port voltages.
+    double* pipelineInput() noexcept { return pipe_.input.data(); }
+    size_t pipelineInputSize() const noexcept { return pipe_.input.size(); }
+    size_t pipelineOutputSize() const noexcept { return 2 * pipe_.ownPorts.size(); }
+    void pipelineOutput(double* out) const noexcept {
+        const size_t n = pipe_.ownPorts.size();
+        for (size_t k = 0; k < n; ++k) {
+            out[k] = ii_[static_cast<size_t>(pipe_.ownPorts[k])];
+            out[n + k] = vv_[static_cast<size_t>(pipe_.ownPorts[k])];
+        }
+    }
+    void copyStateFrom(const EngineStep& other) {
+        capState_ = other.capState_;
+        indState_ = other.indState_;
+        vv_ = other.vv_;
+        ii_ = other.ii_;
+        vvPrev_ = other.vvPrev_;
+        vvPrev2_ = other.vvPrev2_;
+        triodeDomainPin_ = other.triodeDomainPin_;
+    }
     bool slowLagActive() const noexcept {
         return (loadedJunctionEnabled_ || slowLagEnabled_) && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&
                !fineBlockSolver_;

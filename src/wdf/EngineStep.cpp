@@ -262,14 +262,15 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     tock(prof_.network);
 
     const long long fallbacksBefore = blockFallbacks_;
-    const bool loadedRoot = loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
-    const bool movingAffine = !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
+    const bool pipeline = pipelineReady();
+    const bool loadedRoot = !pipeline && loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
+    const bool movingAffine = !pipeline && !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
                               affineNodes_.revision == linearRebuilds() && tryAffineMotion(tol);
-    const bool compiledRoot = movingAffine || (!loadedRoot && compiled && maxIter >= 4 &&
+    const bool compiledRoot = movingAffine || (!pipeline && !loadedRoot && compiled && maxIter >= 4 &&
                               (!rootFactors_.empty() || !affineRoot_.rows.empty()) && explicitRootsAllowed_ &&
                               !explicitRootsActive_ && tryCompiledRoot(tol));
     bool triodePreview = false;
-    if (!loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
+    if (!pipeline && !loadedRoot && !compiledRoot && triodePreviewEnabled_ && !explicitRootsActive_ &&
         nTri_ > 2 && static_cast<size_t>(nTri_) == rootDevices_.size()) {
         if (triodePreviewCooldown_ == 0) {
             triodePreview = tryTriodePreview();
@@ -304,7 +305,9 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             --runtimeGateCooldown_;
         }
 
-        if (explicitRootsActive_ && !adjustedTransfer)
+        if (pipeline && blockFallbackCooldown_ == 0)
+            solvePipelineStage(maxIter, tol, adjustedTransfer);
+        else if (explicitRootsActive_ && !adjustedTransfer)
             solveRootGroups(maxIter, tol);
         else if (useRuntime)
             solveRootBlocksRuntime(maxIter, tol);

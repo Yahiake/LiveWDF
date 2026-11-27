@@ -184,19 +184,24 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     // Stereo needs a live right engine. Mono deliberately leaves it untouched,
     // which is where the CPU saving comes from: one engine instead of two.
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
+    // Two cores needs the worker: one engine step per hand-over, at most two in a host sample.
+    const int pipeSteps = activeOversampler ? currentOversamplingFactor_ : 1;
+    const bool twoCores = !processStereo && numChannels > 1 && compiledPreview && rightEngine_ && !useHalfBand_ && pipeSteps <= 2 &&
+        *apvts_.getRawParameterValue("two_cores") > 0.5f;
+    const bool secondEngine = processStereo || twoCores;
 
     // In Fast Live, finish a gesture in the callback that first receives it.
     // Measure the ramp in host frames for every oversampling setting.
     const int normalRamp = std::max(1, static_cast<int>(sampleRate_ * .015));
     const int rampSamples = fastLive && !isNonRealtime() ? std::min(numSamples, normalRamp) : normalRamp;
     readLivePotTargets(rampSamples);
-    applySettledLiveTransfer(processStereo);
+    applySettledLiveTransfer(secondEngine);
     audioTransferRevision_.store(potsMoving_ || leftEngine_->hasAdjustedLiveTransfer()
         ? adjustedAudioTransfer : leftEngine_->linearRebuilds(), std::memory_order_relaxed);
     captureSettledTransferIfRequested();
     leftEngine_->useCompiledOptical(compiledPreview);
-    if (processStereo) rightEngine_->useCompiledOptical(compiledPreview);
-    const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_;
+    if (secondEngine) rightEngine_->useCompiledOptical(compiledPreview);
+    const bool tryBipolar = compiledPreview && previewPrepared_ && outputOnlyPreviewAllowed_ && !twoCores;
     if (!tryBipolar) {
         leftEngine_->releaseBipolarPreview();
         if (rightEngine_) rightEngine_->releaseBipolarPreview();
@@ -205,7 +210,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     leftEngine_->useLoadedJunctionPreview(compiledPreview);
     leftEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
     leftEngine_->keepBlockAnswer(keepBlockAnswer);
-    if (processStereo) {
+    if (secondEngine) {
         rightEngine_->useLoadedJunctionPreview(compiledPreview);
         rightEngine_->useTriodePreview(compiledPreview && !isNonRealtime());
         rightEngine_->keepBlockAnswer(keepBlockAnswer);
@@ -214,7 +219,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     leftEngine_->useCircuitPlan(fastLive);
     leftEngine_->useSlowLag(fastLive);
     leftEngine_->usePreviewPentodes(compiledPreview);
-    if (processStereo) {
+    if (secondEngine) {
         rightEngine_->useMixedAffineReduction(fastLive);
         rightEngine_->useCircuitPlan(fastLive);
         rightEngine_->useSlowLag(fastLive);
@@ -222,7 +227,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
-    if (processStereo)
+    if (secondEngine)
         std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svRight_.begin());
     const double targetPad = compiledPreview && *apvts_.getRawParameterValue("preview_pad") > 0.5f
         ? previewPadScale_ : 1.;
@@ -287,7 +292,8 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
 
     // One channel over host samples [from, to). `controls` runs before each host sample.
     const auto runChannel = [&](wdf::Engine& engine, std::vector<double>& sources, wdf::HalfBandOversampler& halfBand,
-                                float* data, int from, int to, long long& acSample, OutputSample* last, auto&& controls) {
+                                float* data, int from, int to, long long& acSample, OutputSample* last, auto&& controls,
+                                auto&& solveStep) {
         float peak = 0.0f;
         double scale = paddedInputScale, gainMakeup = makeup;
         const auto setAcSources = [&] {
@@ -306,7 +312,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), sources.begin());
                     if (!acSources_.empty())
                         setAcSources();
-                    const auto result = solve(engine, sources, osIn, scale);
+                    const auto result = solveStep(engine, sources, osIn, scale);
                     if (last) *last = result;
                     return compensate(result.volts, gainMakeup) * outputScale;
                 });
@@ -320,7 +326,7 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
                 controls(static_cast<int>(s) / oversampling, scale, gainMakeup);
             if (!acSources_.empty())
                 setAcSources();
-            const auto result = solve(engine, sources, data[s], scale);
+            const auto result = solveStep(engine, sources, data[s], scale);
             if (last) *last = result;
             data[s] = static_cast<float>(compensate(result.volts, gainMakeup)) * outputScale;
             peak = std::max(peak, std::abs(data[s]));
@@ -328,17 +334,37 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         return peak;
     };
 
-    if (!processStereo) {
+    bool pipelined = false;
+    if (twoCores && !(leftEngine_->pipelineReady() && rightEngine_->pipelineReady()) &&
+        pipeTried_ != leftEngine_->linearRebuilds()) {
+        pipeTried_ = leftEngine_->linearRebuilds();
+        rightEngine_->copyStateFrom(*leftEngine_);
+        std::copy(svLeft_.begin(), svLeft_.end(), svRight_.begin());
+        if (!(leftEngine_->preparePipelineStage(2) && rightEngine_->preparePipelineStage(1) &&
+              leftEngine_->pipelineOutputSize() <= kPipePorts && rightEngine_->pipelineOutputSize() <= kPipePorts))
+            leftEngine_->stopPipeline();
+        pipeStart_ = pipeStep_;
+        pipeEarlyDone_.store(pipeStep_, std::memory_order_relaxed);
+        pipeLateDone_.store(pipeStep_, std::memory_order_relaxed);
+    }
+    if (twoCores && leftEngine_->pipelineReady() && rightEngine_->pipelineReady()) {
+        pipelined = true;
+    } else {
+        leftEngine_->stopPipeline();
+        if (rightEngine_) rightEngine_->stopPipeline();
+        if (!twoCores) pipeTried_ = -1;
+    }
+    if (!processStereo && !pipelined) {
         maxAbsOut = runChannel(*leftEngine_, svLeft_, halfBandOversamplerL_, leftData, 0, numSamples, acSampleCounter_,
                                &lastLeft, [&](int, double& scale, double& gainMakeup) {
             advanceControls(true);
             scale = paddedInputScale;
             gainMakeup = makeup;
-        });
+        }, solve);
         if (rightData)
             std::copy(leftData, leftData + processed.getNumSamples(), rightData);
     }
-    for (int from = 0; processStereo && from < numSamples; from += kControlChunk) {
+    for (int from = 0; secondEngine && pipelined != processStereo && from < numSamples; from += kControlChunk) {
         const int to = std::min(numSamples, from + kControlChunk);
         int potRows = 0;
         for (int s = from; s < to; ++s) {
@@ -366,15 +392,78 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
         };
         long long rightAcSample = acSampleCounter_;
         float leftPeak = 0.0f, rightPeak = 0.0f;
-        rightWorker_.runBeside([&] {
-            leftPeak = runChannel(*leftEngine_, svLeft_, halfBandOversamplerL_, leftData, from, to, acSampleCounter_, &lastLeft,
-                                  [&](int s, double& scale, double& gainMakeup) { replay(*leftEngine_, potMoves_, varResMoves_, s, scale, gainMakeup); });
-        }, [&] {
-            rightPeak = runChannel(*rightEngine_, svRight_, halfBandOversamplerR_, rightData, from, to, rightAcSample, nullptr,
-                                   [&](int s, double& scale, double& gainMakeup) { replay(*rightEngine_, rightPotMoves_, rightVarResMoves_, s, scale, gainMakeup); });
-        });
-        maxAbsOut = std::max({maxAbsOut, leftPeak, rightPeak});
+        const long long firstStep = pipeStep_;
+        long long earlyStep = firstStep, lateStep = firstStep;
+        const auto spinUntil = [](const std::atomic<long long>& done, long long step) {
+            while (done.load(std::memory_order_acquire) < step)
+                cpuRelax();
+        };
+        // Stage 1 reads stage 2's currents two steps back, so the two run one step apart.
+        const auto earlyStage = [&](wdf::Engine& engine, std::vector<double>& sources, double sample, double scale) {
+            const long long n = earlyStep++;
+            if (n - 2 >= pipeStart_) {
+                spinUntil(pipeLateDone_, n - 1);
+                const auto& late = pipeLate_[static_cast<size_t>(n - 2) & 3];
+                std::copy_n(late.begin(), engine.pipelineInputSize(), engine.pipelineInput());
+            }
+            const auto result = solve(engine, sources, sample, scale);
+            engine.pipelineOutput(pipeEarly_[static_cast<size_t>(n) & 3].data());
+            pipeEarlyDone_.store(n + 1, std::memory_order_release);
+            return result;
+        };
+        const auto lateStage = [&](wdf::Engine& engine, std::vector<double>& sources, double sample, double scale) {
+            const long long n = lateStep++;
+            spinUntil(pipeEarlyDone_, n + 1);
+            const auto& early = pipeEarly_[static_cast<size_t>(n) & 3];
+            std::copy_n(early.begin(), engine.pipelineInputSize(), engine.pipelineInput());
+            const auto result = solve(engine, sources, sample, scale);
+            engine.pipelineOutput(pipeLate_[static_cast<size_t>(n) & 3].data());
+            pipeLateDone_.store(n + 1, std::memory_order_release);
+            return result;
+        };
+        const auto runLeft = [&](int a, int b) {
+            const auto step = [&](wdf::Engine& e, std::vector<double>& src, double x, double sc) {
+                return pipelined ? lateStage(e, src, x, sc) : solve(e, src, x, sc);
+            };
+            leftPeak = std::max(leftPeak, runChannel(*leftEngine_, svLeft_, halfBandOversamplerL_, leftData, a, b, acSampleCounter_, &lastLeft,
+                                  [&](int s, double& scale, double& gainMakeup) { replay(*leftEngine_, potMoves_, varResMoves_, s, scale, gainMakeup); }, step));
+        };
+        const auto runRight = [&](int a, int b) {
+            const auto step = [&](wdf::Engine& e, std::vector<double>& src, double x, double sc) {
+                return pipelined ? earlyStage(e, src, x, sc) : solve(e, src, x, sc);
+            };
+            rightPeak = std::max(rightPeak, runChannel(*rightEngine_, svRight_, halfBandOversamplerR_, rightData, a, b, rightAcSample, nullptr,
+                                   [&](int s, double& scale, double& gainMakeup) { replay(*rightEngine_, rightPotMoves_, rightVarResMoves_, s, scale, gainMakeup); }, step));
+        };
+        auto runRightBlock = [&] { runRight(from, to); };
+        // Spin only against a realtime worker that takes the block at once; otherwise run both stages here.
+        const auto pipePosted = [&](auto& job) {
+            if (!rightWorker_.post(job))
+                return false;
+            const auto deadline = std::chrono::steady_clock::now() + std::chrono::microseconds(200);
+            while (rightWorker_.realtime() && !rightWorker_.claimed() && std::chrono::steady_clock::now() < deadline)
+                cpuRelax();
+            if (!rightWorker_.takeBack())
+                return true;
+            rightWorker_.join();
+            return false;
+        };
+        if (!pipelined) {
+            rightWorker_.runBeside([&] { runLeft(from, to); }, runRightBlock);
+        } else if (pipePosted(runRightBlock)) {
+            runLeft(from, to);
+            rightWorker_.join();
+        } else {
+            for (int s = from; s < to; ++s) {
+                runRight(s, s + 1);
+                runLeft(s, s + 1);
+            }
+        }
+        pipeStep_ = lateStep;
+        maxAbsOut = std::max({maxAbsOut, leftPeak, pipelined ? 0.0f : rightPeak});
     }
+    if (pipelined && rightData)
+        std::copy(leftData, leftData + processed.getNumSamples(), rightData);
 
     // Read live node probe voltages for UI from the last processed sample.
     // **Do not step again here.** An extra step advances the engine's state and

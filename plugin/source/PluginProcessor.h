@@ -360,6 +360,14 @@ private:
     std::array<std::array<double, kMaxPotKnobs + numPorts>, kControlChunk / 8 + 2> potLog_;
     std::vector<std::pair<int, double>> rightPotMoves_, rightVarResMoves_;
     BlockWorker rightWorker_;
+    /// Two-core Preview of one amp: the right engine is stage 1 (before the power
+    /// tubes) on the worker, the left engine stage 2. Each publishes its port
+    /// currents per engine step; stage 1 reads stage 2's from two steps back.
+    static constexpr size_t kPipePorts = 128;
+    std::array<std::array<double, kPipePorts>, 4> pipeEarly_{}, pipeLate_{};
+    alignas(64) std::atomic<long long> pipeEarlyDone_{0};
+    alignas(64) std::atomic<long long> pipeLateDone_{0};
+    long long pipeStep_ = 0, pipeStart_ = 0, pipeTried_ = -1;
 
     /// A source that is running an AC signal: which source, how big, how fast.
     ///
