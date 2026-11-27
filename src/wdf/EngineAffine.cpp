@@ -60,7 +60,20 @@ void Engine::MixedAffineSetup::build(std::optional<std::span<const unsigned>> ca
         engine.compileMixedAffinePlans(*cachedMasks);
     else
         engine.prepareMixedAffineReduction(input_);
-    plans_ = std::move(engine.newtonBlocks_[static_cast<size_t>(engine.mixedAffineBlock())].alternateLinearSlopes);
+    // On a multi-block root a failed reduction costs a block solve on top. Fast uses the
+    // reduction there only if replaying the calibration never fails one and saves evaluations.
+    // The replay leaves solver state in the plans, so they are copied before it.
+    plans_ = engine.newtonBlocks_[static_cast<size_t>(engine.mixedAffineBlock())].alternateLinearSlopes;
+    if (engine.blockCount_ > 1) {
+        long long plain = 0, reduced = 0;
+        engine.reset();
+        engine.measureAffineSlopes(input_, 0.36, kFastLiveTolerance, &plain);
+        engine.reset();
+        engine.mixedAffineHolds_ = true;
+        const long long tried = engine.mixedAffineAttempts_, held = engine.mixedAffineAccepted_;
+        engine.measureAffineSlopes(input_, 0.36, kFastLiveTolerance, &reduced);
+        holds_ = engine.mixedAffineAttempts_ - tried == engine.mixedAffineAccepted_ - held && reduced < 0.9 * plain;
+    }
 }
 
 std::vector<unsigned> Engine::MixedAffineSetup::slopeMasks() const {
@@ -82,6 +95,7 @@ bool Engine::installMixedAffineSetup(MixedAffineSetup& setup) {
         circuitPlanRevision_ = -1; // Reprice against the new Fast Live baseline.
     }
     live.swap(setup.plans_);
+    mixedAffineHolds_ = setup.holds_;
     return true;
 }
 
@@ -128,7 +142,8 @@ void Engine::compileMixedAffinePlans(std::span<const unsigned> masks) {
     }
 }
 
-std::vector<std::pair<unsigned, int>> Engine::measureAffineSlopes(size_t inputSource, double peakVolts) {
+std::vector<std::pair<unsigned, int>> Engine::measureAffineSlopes(size_t inputSource, double peakVolts, double tol,
+                                                                 long long* evaluations) {
     const int index = mixedAffineBlock();
     if (index < 0)
         return {};
@@ -148,7 +163,9 @@ std::vector<std::pair<unsigned, int>> Engine::measureAffineSlopes(size_t inputSo
                               0.13 * std::sin(1921.0 * phase);
         sources[inputSource] = dcValues_[inputSource] + peakVolts * levels[i / segment] * envelope * signal;
         std::copy(opAmpVp_.begin(), opAmpVp_.end(), previous.begin());
-        step(sources);
+        step(sources, kDefaultMaxIterations, tol);
+        if (evaluations)
+            *evaluations += deviceEvals_;
         if (lastStateRejected() || !lastConverged())
             continue;
         unsigned mask = 0;
