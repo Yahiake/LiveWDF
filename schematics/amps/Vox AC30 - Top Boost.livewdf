@@ -1087,13 +1087,17 @@
     {
       "id": "OT1",
       "properties": {
-        "model": "Real — Auto",
+        "model": "Real — Manual",
         "powerAmp": "1"
       },
       "type": "transformer_ct",
       "values": {
+        "Lm": 13.8,
+        "dcrPrimary": 140.67,
+        "dcrSecondary": 0.72,
+        "leakage": 0.002570239,
         "turnsPrimary": 15.811388300841896,
-        "turnsSecondary": 1
+        "turnsSecondary": 1.0
       },
       "visual": {
         "flipped": false,
@@ -1137,7 +1141,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 422.69184
+        "fullScaleVolts": 420.6855
       },
       "visual": {
         "flipped": false,
