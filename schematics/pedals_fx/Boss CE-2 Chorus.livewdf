@@ -568,7 +568,11 @@
         "outputBias": -0.72,
         "inputSwing": 1.15,
         "outputOhms": 5200,
-        "gain": 1.0
+        "gain": 1.0,
+        "transferLoss": 3.4e-5,
+        "kneeWidth": 0.077,
+        "evenOrder": 0.017,
+        "slowClockLossDb": 1.0
       },
       "properties": {},
       "visual": {
@@ -1009,7 +1013,7 @@
       "id": "OUT1",
       "type": "out",
       "values": {
-        "fullScaleVolts": 1.0230217
+        "fullScaleVolts": 1.0171396
       },
       "properties": {},
       "visual": {
