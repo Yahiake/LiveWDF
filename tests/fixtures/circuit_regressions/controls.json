@@ -4492,8 +4492,8 @@
     }
   },
   "provenance": {
-    "declared_core_revision": "c5e6212022a0230e27ac2b0a94104eb32cb411d2",
-    "renderer_sha256": "1f416c2a3aee08f1ffd38bae89c2c90bb02a152667bee9e461dbc0f9d1f3a648",
+    "declared_core_revision": "e424760c90901f02862d28d8ae917b6b4bcdf974",
+    "renderer_sha256": "972127322d0f3f5f5175479b53880ca9d6bf446ae1377ea11b51bd28765b01f4",
     "sample_rate": 48000,
     "block_size": 128,
     "oversampling": 1,
