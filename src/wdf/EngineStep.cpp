@@ -298,14 +298,12 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             --runtimeGateCooldown_;
         }
 
-        if (adjustedTransfer)
-            solveRootsNewton(maxIter, tol);
-        else if (explicitRootsActive_)
+        if (explicitRootsActive_ && !adjustedTransfer)
             solveRootGroups(maxIter, tol);
         else if (useRuntime)
             solveRootBlocksRuntime(maxIter, tol);
-        else if (blockRoots() && blockFallbackCooldown_ == 0)
-            solveRootBlocks(maxIter, tol, slowLagActive());
+        else if ((explicitRootsActive_ || blockRoots()) && blockFallbackCooldown_ == 0)
+            solveRootBlocks(maxIter, tol, slowLagActive(), adjustedTransfer);
         else
             solveRootsNewton(maxIter, tol);
     } else if (K_ == 0) {

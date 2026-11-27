@@ -771,6 +771,28 @@ public:
             }
         }
     }
+
+    /// Re-read the gathered Z values of a compiled partition after a live
+    /// transfer update. The couplings stay as compiled, so no allocation.
+    static inline void refreshBlockZValues(std::vector<NewtonBlock>& blocks, int nb, const RootDevice* rootDevices,
+                                           const double* zData, int K) noexcept
+    {
+        for (int b = 0; b < nb; ++b) {
+            NewtonBlock& block = blocks[static_cast<size_t>(b)];
+            const size_t n = block.ports.size();
+            size_t row = 0;
+            for (int di : block.devices)
+                for (int q = 0; q < rootDevices[di].numPorts; ++q, ++row) {
+                    const double* zRow = zData + static_cast<size_t>(rootDevices[di].portBase + q) * K;
+                    for (size_t j = 0; j < n; ++j)
+                        block.blockZ[row * n + j] = zRow[block.ports[j]];
+                    for (auto& d : block.predFold[row]) d.z = zRow[d.col];
+                    for (auto& d : block.allFold[row]) d.z = zRow[d.col];
+                }
+            for (auto& [r, d] : block.lagged)
+                d.z = zData[static_cast<size_t>(r) * K + d.col];
+        }
+    }
 };
 
 } // namespace wdf::solver
