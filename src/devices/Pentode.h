@@ -69,7 +69,7 @@ struct QuadricEmission {
     }
 };
 
-// Fitted to the Reefman cards below; EL84 keeps Reefman until a fit is close enough.
+// Fitted emission laws for the Reefman cards below.
 // Regenerate with gen_table.py from the coefficient JSON files.
 inline constexpr QuadricEmission kQuadricEL34{
     {0.146270568032, 0.120203389709, 0.0927705047465, 0.189615508236, 0.0553450489352},
@@ -82,10 +82,10 @@ inline constexpr QuadricEmission kQuadric6L6GC{
     {0.00346625766973, 0.0105724907037, 0.0233999810999, 0.000529542856001, 0.0280165437189},
     0.069, 0.00208927130543, 1.1e-06, 0.000149868864743, 0.00121393780442};
 inline constexpr QuadricEmission kQuadric6V6S{
-    {0.13245251316, 0.103506792147, 0.159397472203, 0.205583002114, 0.0635950285451},
-    {-4.68755583824, -6.14124219061, -4.67874389284, -4.37719603098, -9.17898712588},
-    {0.0102649284249, 0.024965769563, 0.00304125166826, 0.000428734698274, 0.0307164191188},
-    0.068, 0.00158196899481, 5.7e-07, 5.79129336955e-05, 0.00108413011878};
+    {0.0169034781267, 0.0848598188264, 0.0817728891547, 0.084768417047, 0.00500004220712},
+    {2.27658629643, -13.2206826499, -13.8497094782, -13.2330748008, -6.21553687889},
+    {1.15524924862e-12, 0.000104884956687, 1.88954587313e-08, 2.97952431821e-07, 0.000443652616513},
+    0.0319861402935, 1.0, 1.00913065136e-08, 0.0734887664834, 0.138358387857};
 inline constexpr QuadricEmission kQuadricEL84{
     {0.0517005884028, 0.0515018852113, 0.051499877391, 0.0717704163969, 0.0357177251847},
     {-2.95930771384, -2.98612383167, -2.98559010944, -35.3285120241, 0.00780446244687},
@@ -199,6 +199,7 @@ struct ReefmanPentode {
         r.wv = 58.0;
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
+        r.quadric = &kQuadricEL84;
         r.count = count;
         return r;
     }
@@ -481,12 +482,6 @@ struct ReefmanPentode {
         return vnew;
     }
 };
-
-/// The EL84 fit is cheaper but further from its Reefman card, so only Fast and Preview take it.
-inline const QuadricEmission* fastQuadricFor(ReefmanPentode r) noexcept {
-    r.count = 1.0;
-    return r == ReefmanPentode::el84() ? &kQuadricEL84 : r.quadric;
-}
 
 /// Authentic three-port Norman Koren (1996/2001) pentode model with active screen conduction:
 ///
