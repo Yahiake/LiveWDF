@@ -213,6 +213,40 @@ TEST_CASE("prepared affine regions preserve a coupled root through clipping and 
     CHECK(reduced.mixedAffineAttempts() > attempts);
 }
 
+TEST_CASE("prepared affine regions reduce one block of a two-block Preview root",
+          "[engine][blocksolve][affine]") {
+    auto model = wdf::OpAmpModel::fromType(wdf::OpAmpType::Tl072);
+    model.setVRails(7.0, 7.0);
+    wdf::Circuit c;
+    c.addSrc("in", "0", 0.0);
+    c.addRes("in", "sum", 10e3);
+    c.addRes("out", "sum", 100e3);
+    c.addOpAmp("out", "sum", "0", "0", "0", model, "U1");
+    c.addDiode("out", "sum", wdf::DiodeModel(1e-11, 2.0, 10.0), "D1");
+    c.addDiode("sum", "out", wdf::DiodeModel(1e-11, 2.0, 10.0), "D2");
+    c.addRes("out", "load", 1e3);
+    c.addDiode("load", "0", wdf::DiodeModel(1e-11, 2.0, 10.0), "D3");
+    c.addOpAmp("buffer", "buffer", "load", "0", "0", model, "U2");
+    c.addRes("buffer", "0", 10e3);
+
+    wdf::Engine full(c, kFs);
+    wdf::Engine reduced(c, kFs);
+    REQUIRE(reduced.rootBlockCount() == 2);
+    REQUIRE(reduced.prepareMixedAffineReduction(0) > 0);
+    reduced.useLoadedJunctionPreview(true);
+    std::vector<double> input(1);
+    double peakDifference = 0.0;
+    for (int n = 0; n < 3000; ++n) {
+        input[0] = (n < 1000 ? 0.02 : (n < 2500 ? 2.0 : 0.35)) * sine(1.0, n);
+        const auto& expected = full.step(input);
+        const auto& actual = reduced.step(input);
+        for (size_t node = 0; node < expected.size(); ++node)
+            peakDifference = std::max(peakDifference, std::abs(expected[node] - actual[node]));
+    }
+    CHECK(peakDifference < 1e-7);
+    CHECK(reduced.mixedAffineAccepted() > 0);
+}
+
 TEST_CASE("block solve stands down where the joint Newton measured no win",
           "[blocksolve]") {
     // Two blocks, only one of them scalar-capable: the joint matrix is still

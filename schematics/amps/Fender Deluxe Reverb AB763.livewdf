@@ -1141,7 +1141,7 @@
       "properties": {},
       "type": "out",
       "values": {
-        "fullScaleVolts": 142.20394
+        "fullScaleVolts": 182.93778
       },
       "visual": {
         "flipped": true,
@@ -1805,13 +1805,139 @@
       },
       "type": "res",
       "values": {
-        "value": 8
+        "value": 6.5
       },
       "visual": {
-        "flipped": true,
+        "flipped": false,
         "rotation": 0,
-        "x": 29,
+        "x": 13,
+        "y": 116
+      }
+    },
+    {
+      "id": "PA Speaker Coil L1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.0004593
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
         "y": 120
+      }
+    },
+    {
+      "id": "PA Speaker Coil R1",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 53.44
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 16,
+        "y": 120
+      }
+    },
+    {
+      "id": "PA Speaker Coil L2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.001272
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
+        "y": 124
+      }
+    },
+    {
+      "id": "PA Speaker Coil R2",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 7.31
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 16,
+        "y": 124
+      }
+    },
+    {
+      "id": "PA Speaker Resonance L",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "ind",
+      "values": {
+        "value": 0.008797
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
+        "y": 128
+      }
+    },
+    {
+      "id": "PA Speaker Resonance R",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "res",
+      "values": {
+        "value": 43.4
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 16,
+        "y": 128
+      }
+    },
+    {
+      "id": "PA Speaker Resonance C",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "cap",
+      "values": {
+        "value": 0.0002296
+      },
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 19,
+        "y": 128
+      }
+    },
+    {
+      "id": "PA Speaker Ground",
+      "properties": {
+        "powerAmp": "1"
+      },
+      "type": "gnd",
+      "values": {},
+      "visual": {
+        "flipped": false,
+        "rotation": 0,
+        "x": 13,
+        "y": 132
       }
     },
     {
@@ -1845,7 +1971,7 @@
       }
     }
   ],
-  "description": "Black-panel Deluxe Reverb dry Vibrato channel, high input, 47 pF volume bright cap and reverb mixer recovery triode. The dry Vibrato path feeds the AB763 12AT7 phase inverter, fixed-bias 6V6 pair and 8 Ω speaker output.",
+  "description": "Black-panel Deluxe Reverb dry Vibrato channel, high input, 47 pF volume bright cap and reverb mixer recovery triode. The dry Vibrato path feeds the AB763 12AT7 phase inverter, fixed-bias 6V6 pair and an 8 Ω Jensen C12N.",
   "io": {
     "groundNode": "0",
     "inputNode": "in",
@@ -4161,30 +4287,6 @@
       "points": [
         {
           "x": 29,
-          "y": 111
-        },
-        {
-          "x": 29,
-          "y": 118
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 29,
-          "y": 122
-        },
-        {
-          "x": 29,
-          "y": 124
-        }
-      ]
-    },
-    {
-      "points": [
-        {
-          "x": 29,
           "y": 122
         },
         {
@@ -4266,6 +4368,94 @@
         {
           "x": 23,
           "y": 111
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 23,
+          "y": 111
+        },
+        {
+          "x": 23,
+          "y": 114
+        },
+        {
+          "x": 13,
+          "y": 114
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 118
+        },
+        {
+          "x": 16,
+          "y": 118
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 122
+        },
+        {
+          "x": 16,
+          "y": 122
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 126
+        },
+        {
+          "x": 16,
+          "y": 126
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 16,
+          "y": 126
+        },
+        {
+          "x": 19,
+          "y": 126
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 13,
+          "y": 130
+        },
+        {
+          "x": 16,
+          "y": 130
+        }
+      ]
+    },
+    {
+      "points": [
+        {
+          "x": 16,
+          "y": 130
+        },
+        {
+          "x": 19,
+          "y": 130
         }
       ]
     }
