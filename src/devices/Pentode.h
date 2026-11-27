@@ -24,6 +24,12 @@ struct PentodeCurrents {
     }
 };
 
+/// Knee formulation for the Reefman pentode model.
+enum class PentodeKneeType {
+    DerkD,  ///< Tier 2A: rational knee, kappa = 1 / (1 + beta * Vp)
+    DerkE   ///< Tier 2B: exponential knee, kappa = exp(-(beta * Vp)^1.5)
+};
+
 /// Emission as a sum of squared hinges of (Vgk + av*Vsk - knot), split between
 /// plate and screen by the knee K = 1/(1 + beta*Vpk):
 ///   Ip = E*(plate*(1 - K) + lambda*Vpk),  Is = E*(rho + sigma*K).
