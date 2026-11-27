@@ -40,13 +40,12 @@ TEST_CASE("BBD samples every clock event above the host rate", "[bbd][dsp]") {
     wdf::BucketBrigadeState state(model);
     constexpr double slope = 20.0;
 
-    // 25 clock periods per 12 host frames. For a linear ramp, interpolation
-    // at the clock event recovers the exact input value at that event.
+    // 25 clock periods per 12 host frames. Past the ramp's corner the
+    // band-limited staircase is the ramp delayed by 512.5 clock periods.
     for (int frame = 1; frame <= 1200; ++frame) {
-        const auto clockEdge = (25 * frame) / 12;
-        const auto expected = std::max(0.0, slope * (clockEdge - 512.0) / kClock);
         const auto actual = state.step(slope * frame / kSampleRate, 0.0, 1.0 / kSampleRate);
-        REQUIRE(actual == Approx(expected).margin(1e-12));
+        if (frame >= 300)
+            REQUIRE(actual == Approx(slope * (frame / kSampleRate - 512.5 / kClock)).margin(1e-7));
     }
 
     state.reset(0.0);
@@ -60,8 +59,9 @@ TEST_CASE("BBD samples every clock event above the host rate", "[bbd][dsp]") {
             break;
         }
     }
-    // The first shifted charge reaches output on edge 513.
-    REQUIRE(firstWetFrame == static_cast<int>(std::ceil(513.0 * 13e-6 * kSampleRate)));
+    // The first shifted charge reaches output on edge 513, the band-limited
+    // step crossing half way within a frame of it.
+    REQUIRE(std::abs(firstWetFrame - 513.0 * 13e-6 * kSampleRate) < 1.0);
 }
 
 TEST_CASE("MN3005 transfer loss matches the data sheet's treble loss at a 40 kHz clock", "[bbd][dsp]") {
@@ -69,9 +69,8 @@ TEST_CASE("MN3005 transfer loss matches the data sheet's treble loss at a 40 kHz
     model.clockHz = 40000.0;
     model.inputBias = model.outputBias = 0.0;
     model.gain = 1.0;
-    // One host sample per clock period reads the charge sequence without the
-    // held output's sinc, which the data sheet's -1.9 dB at 10 kHz includes
-    // as -0.9 dB.
+    // The output is the band-limited staircase, so the data sheet's -1.9 dB
+    // at 10 kHz includes the held output's -0.9 dB.
     const auto level = [&](double hz) {
         wdf::BucketBrigadeState state(model);
         std::complex<double> sum;
@@ -83,7 +82,7 @@ TEST_CASE("MN3005 transfer loss matches the data sheet's treble loss at a 40 kHz
         }
         return std::abs(sum);
     };
-    REQUIRE(20.0 * std::log10(level(10000.0) / level(1000.0)) == Approx(-1.0).margin(0.1));
+    REQUIRE(20.0 * std::log10(level(10000.0) / level(1000.0)) == Approx(-1.9).margin(0.1));
 }
 
 TEST_CASE("MN3005 transfer has the data sheet's distortion at its rated input", "[bbd][dsp]") {
@@ -100,6 +99,22 @@ TEST_CASE("MN3005 transfer has the data sheet's distortion at its rated input", 
     for (std::size_t h = 1; h < harmonics.size(); ++h)
         distortion += std::norm(harmonics[h]);
     REQUIRE(std::sqrt(distortion) / std::abs(harmonics[0]) == Approx(0.0035).margin(0.001));
+}
+
+TEST_CASE("BBD output keeps the clock images of a tone out of the host band", "[bbd][dsp]") {
+    auto model = clockedModel();
+    model.clockHz = 41800.0;
+    wdf::BucketBrigadeState state(model);
+    // A 3 kHz tone's image at fcp - f = 38.8 kHz folds to 9.2 kHz at 48 kHz.
+    std::complex<double> tone, image;
+    for (int n = 0; n < 60000; ++n) {
+        const auto out = state.step(0.5 * std::sin(2.0 * M_PI * 3000.0 * n / kSampleRate), 0.0, 1.0 / kSampleRate);
+        if (n >= 12000) {
+            tone += out * std::polar(1.0, -2.0 * M_PI * 3000.0 * n / kSampleRate);
+            image += out * std::polar(1.0, -2.0 * M_PI * 9200.0 * n / kSampleRate);
+        }
+    }
+    REQUIRE(20.0 * std::log10(std::abs(image) / std::abs(tone)) < -60.0);
 }
 
 TEST_CASE("engine BBD resets its wet path and recirculates delayed audio", "[bbd][engine]") {
@@ -126,15 +141,15 @@ TEST_CASE("engine BBD resets its wet path and recirculates delayed audio", "[bbd
                 frame >= 30 && frame < 51 ? 0.6 : 0.0, 0.0
             };
             const auto actual = std::abs(engine.step(sourceValues.data(), sourceValues.size())[wet]);
-            if (firstWetFrame < 0 && actual > 1e-4)
+            if (firstWetFrame < 0 && actual > 0.2)
                 firstWetFrame = frame;
             for (int echo = 0; echo < 3; ++echo) {
                 if (frame >= 30 + 240 * (echo + 1) && frame < 51 + 265 * (echo + 1))
                     peaks[echo] = std::max(peaks[echo], actual);
             }
         }
-        // Capturing a charge and presenting the held output to the following
-        // electrical solve quantizes the onset to one host frame.
+        // The band-limited pulse crosses half height at the delayed edge,
+        // quantized to one host frame.
         REQUIRE(firstWetFrame >= 30 + 246);
         REQUIRE(firstWetFrame <= 30 + 247);
         REQUIRE(peaks[0] > 0.4);

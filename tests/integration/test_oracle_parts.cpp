@@ -143,7 +143,7 @@ TEST_CASE("MN3005 held-charge delay follows the factory clock-to-delay curve",
         constexpr double duration = 0.25;
         double observed = duration;
         for (int n = 1; n <= static_cast<int>(duration * sampleRate); ++n) {
-            if (bbd.step(1.0, 0.0, 1.0 / sampleRate) > 0.0) {
+            if (bbd.step(1.0, 0.0, 1.0 / sampleRate) > 0.5) {
                 observed = n / sampleRate;
                 break;
             }
