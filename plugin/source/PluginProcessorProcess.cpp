@@ -186,8 +186,9 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     const bool processStereo = wantStereo && rightEngine_ != nullptr;
     // Two cores needs the worker: one engine step per hand-over, at most two in a host sample.
     const int pipeSteps = activeOversampler ? currentOversamplingFactor_ : 1;
+    // Only a circuit with power tubes has a cut; anything else keeps its one-core Preview routes.
     const bool twoCores = !processStereo && numChannels > 1 && compiledPreview && rightEngine_ && !useHalfBand_ && pipeSteps <= 2 &&
-        *apvts_.getRawParameterValue("two_cores") > 0.5f;
+        leftEngine_->pentodeCount() > 0 && *apvts_.getRawParameterValue("two_cores") > 0.5f;
     const bool secondEngine = processStereo || twoCores;
 
     // In Fast Live, finish a gesture in the callback that first receives it.

@@ -197,6 +197,21 @@ TEST_CASE("Ctrl+F flips every selected component") {
     CHECK_FALSE(editor.schematic().findPart(triode)->visual.flipped);
 }
 
+TEST_CASE("Space rotates selected and pending components") {
+    SelectionFixture fixture;
+    SchematicEditor editor;
+    editor.setDocument(fixture.sheet.toDocument());
+    editor.setSelection(fixture.first);
+
+    CHECK(editor.keyPressed(juce::KeyPress(juce::KeyPress::spaceKey)));
+    CHECK(editor.schematic().findPart(fixture.first)->visual.rotation == 90);
+
+    editor.armPlacement("res");
+    CHECK(editor.keyPressed(juce::KeyPress(juce::KeyPress::spaceKey)));
+    REQUIRE(editor.placePartAt(40, 10));
+    CHECK(editor.schematic().getParts().back().visual.rotation == 90);
+}
+
 TEST_CASE("A mixed selection deletes both parts and wires") {
     SelectionFixture fixture;
     SchematicEditor editor;
