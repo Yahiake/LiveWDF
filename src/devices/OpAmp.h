@@ -873,6 +873,17 @@ struct OpAmpRoot {
 /// clamp is active the derivative with respect to `vDiff` is zero, so the
 /// Newton Jacobian remains exact for the active piece.
 struct OpAmpEngineLaw {
+    static bool oppositeRailTarget(const OpAmpModel& model, double previous,
+                                   double target) noexcept {
+        const double scale = std::max({1.0, std::abs(model.railLow()),
+                                       std::abs(model.railHigh())});
+        const double tolerance = 16.0 * std::numeric_limits<double>::epsilon() * scale;
+        const bool atLow = std::abs(previous - model.railLow()) <= tolerance;
+        const bool atHigh = std::abs(previous - model.railHigh()) <= tolerance;
+        return (atLow && target >= model.railHigh() - tolerance) ||
+               (atHigh && target <= model.railLow() + tolerance);
+    }
+
     /// Which piece of the static output clamp a differential input selects.
     /// A zero derivative on a rail is correct for the active piece, but a
     /// Newton step is only meaningful on that piece; callers use this to keep

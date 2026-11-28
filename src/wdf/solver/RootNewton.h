@@ -334,6 +334,22 @@ public:
             }
         }
 
+        static const bool opRailStart = livewdfPpTry("oprail2");
+        if (opRailStart && !ctx.staticMode) {
+            for (const auto& dev : ctx.rootDevices) {
+                if (dev.kind != DeviceKind::OpAmp)
+                    continue;
+                const size_t ci = dev.compIndex;
+                const size_t o = static_cast<size_t>(dev.portBase);
+                double derivative = 0.0;
+                const double target = OpAmpEngineLaw::sourceVoltage(
+                    ctx.opAmps[ci], vCur[o + 1] - vCur[o + 2], ctx.opAmpVp[ci],
+                    ctx.opAmpAlpha[ci], ctx.opAmpMaxDv[ci], false, &derivative);
+                if (OpAmpEngineLaw::oppositeRailTarget(ctx.opAmps[ci], ctx.opAmpVp[ci], target))
+                    vCur[o] = target;
+            }
+        }
+
         for (const auto& gl : ctx.gridJunctionLimiters) {
             const int r = gl.port;
             bool limited = false;
@@ -419,7 +435,7 @@ public:
             if (!solved)
                 break;
 
-            static const bool opRail = livewdfPpTry("oprail");
+            static const bool opRail = livewdfPpTry("oprail") || livewdfPpTry("oprail2");
             if (opRail) {
                 for (const auto& dev : ctx.rootDevices) {
                     if (dev.kind != DeviceKind::OpAmp)
