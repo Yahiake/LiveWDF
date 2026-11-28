@@ -9,6 +9,8 @@
 #include "wdf/solver/PushPullTries.h"
 
 #include <optional>
+#include <span>
+#include <type_traits>
 
 namespace wdf {
 
@@ -195,6 +197,22 @@ public:
             pentodes_[i].reefman.quadric = livewdfTableTry() ? quadricTableFromFile(quadric) : quadric;
         }
     }
+    bool usePentodeTableFile(const char* path, bool preview) {
+        std::array<bool, 5> loaded{};
+        if (!loadQuadricTables(path, replayPentodeTables_, loaded))
+            return false;
+        const QuadricEmission* keys[5] = {&kQuadricEL34, &kQuadric6L6GC,
+            &kQuadric6L6GCPreview, &kQuadric6V6S, &kQuadricEL84};
+        for (size_t i = 0; i < pentodes_.size(); ++i) {
+            const auto& card = comp_.pent[i].model.reefman;
+            const auto* selected = preview && card.previewQuadric ? card.previewQuadric : card.quadric;
+            pentodes_[i].reefman.quadric = selected;
+            for (int k = 0; k < 5; ++k)
+                if (selected == keys[k] && loaded[static_cast<size_t>(k)])
+                    pentodes_[i].reefman.quadric = &replayPentodeTables_[static_cast<size_t>(k)];
+        }
+        return true;
+    }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
     void keepBlockAnswer(bool enabled) noexcept { keepBlockAnswer_ = enabled; }
     void useSlowLag(bool enabled) noexcept { slowLagEnabled_ = enabled; }
@@ -241,6 +259,57 @@ public:
         vvPrev_ = other.vvPrev_;
         vvPrev2_ = other.vvPrev2_;
         triodeDomainPin_ = other.triodeDomainPin_;
+    }
+    std::vector<double> captureReplayState() const {
+        std::vector<double> state;
+        const auto append = [&](const auto& values) {
+            for (const auto value : values) state.push_back(static_cast<double>(value));
+        };
+        append(capState_); append(indState_); append(node_); append(vv_); append(ii_);
+        append(vvPrev_); append(vvPrev2_); append(vvSafe_); append(iiSafe_);
+        append(opAmpVp_); append(triodeDomainPin_); append(gridLag_); append(lagHeld_);
+        for (const auto& rail : heldRails_) {
+            state.push_back(rail.volts); state.push_back(rail.current); state.push_back(rail.total);
+        }
+        state.insert(state.end(), {static_cast<double>(runtimeGateCooldown_),
+            static_cast<double>(blockFallbackCooldown_), static_cast<double>(triodePreviewCooldown_),
+            static_cast<double>(jointLastIters_), static_cast<double>(jointLastTrials_),
+            static_cast<double>(loadedJunction_.misses), static_cast<double>(loadedJunction_.cooldown),
+            static_cast<double>(loadedJunction_.seed), static_cast<double>(affineRootCooldown_),
+            static_cast<double>(affineRootRetry_), static_cast<double>(circuitPlanCooldown_),
+            static_cast<double>(circuitPlanRetry_)});
+        append(loadedJunction_.q);
+        return state;
+    }
+    bool restoreReplayState(std::span<const double> state) {
+        size_t at = 0;
+        const auto take = [&](auto& values) {
+            if (at + values.size() > state.size()) return false;
+            for (auto& value : values) value = static_cast<std::remove_reference_t<decltype(value)>>(state[at++]);
+            return true;
+        };
+        if (!take(capState_) || !take(indState_) || !take(node_) || !take(vv_) || !take(ii_) ||
+            !take(vvPrev_) || !take(vvPrev2_) || !take(vvSafe_) || !take(iiSafe_) ||
+            !take(opAmpVp_) || !take(triodeDomainPin_) || !take(gridLag_) || !take(lagHeld_))
+            return false;
+        for (auto& rail : heldRails_) {
+            if (at + 3 > state.size()) return false;
+            rail.volts = state[at++]; rail.current = state[at++]; rail.total = state[at++];
+        }
+        if (at + 12 > state.size()) return false;
+        runtimeGateCooldown_ = static_cast<int>(state[at++]);
+        blockFallbackCooldown_ = static_cast<int>(state[at++]);
+        triodePreviewCooldown_ = static_cast<int>(state[at++]);
+        jointLastIters_ = static_cast<long long>(state[at++]);
+        jointLastTrials_ = static_cast<long long>(state[at++]);
+        loadedJunction_.misses = static_cast<int>(state[at++]);
+        loadedJunction_.cooldown = static_cast<int>(state[at++]);
+        loadedJunction_.seed = state[at++] != 0.0;
+        affineRootCooldown_ = static_cast<int>(state[at++]);
+        affineRootRetry_ = static_cast<int>(state[at++]);
+        circuitPlanCooldown_ = static_cast<int>(state[at++]);
+        circuitPlanRetry_ = static_cast<int>(state[at++]);
+        return take(loadedJunction_.q) && at == state.size();
     }
     bool slowLagActive() const noexcept {
         return (loadedJunctionEnabled_ || slowLagEnabled_) && lagCount_ > 1 && lagRevision_ == linearRebuilds() && blockCount_ > 1 &&

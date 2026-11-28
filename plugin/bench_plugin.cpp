@@ -31,6 +31,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <random>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -99,6 +100,11 @@ bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<f
 }
 
 }  // namespace livewdf
+
+namespace livewdf {
+wdf::Engine* benchEngine(LiveWDFPluginProcessor& processor) { return processor.leftEngine_.get(); }
+const std::vector<double>& benchSources(const LiveWDFPluginProcessor& processor) { return processor.svLeft_; }
+}
 
 namespace {
 
@@ -312,6 +318,238 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     missed.print(wall.size());
     if (const auto [unclaimed, late] = processor.twoCoreMisses(); unclaimed || late)
         std::printf("two cores: %lld blocks not taken by the worker, %lld blocks it fell behind in\n", unclaimed, late);
+    return 0;
+}
+
+struct ReplayCount {
+    long long fallbacks = 0, cap = 0, line = 0, residual = 0, iterations = 0;
+};
+
+static ReplayCount replayCounters(wdf::Engine& engine) {
+    return {engine.blockFallbackCount(), wdf::ppdiag::cap, wdf::ppdiag::line,
+            wdf::ppdiag::residual, wdf::ppdiag::totalBlockIterations};
+}
+
+static ReplayCount operator-(const ReplayCount& a, const ReplayCount& b) {
+    return {a.fallbacks - b.fallbacks, a.cap - b.cap, a.line - b.line,
+            a.residual - b.residual, a.iterations - b.iterations};
+}
+
+struct ReplaySample { ReplayCount count; };
+enum class ReplayClass { failing, difficult, ordinary };
+struct ReplayWindow {
+    ReplayClass type;
+    int target = 0, start = 0, end = 0;
+    std::vector<double> state;
+};
+
+static std::vector<int> spreadSamples(const std::vector<int>& samples, int limit) {
+    if (limit <= 0 || static_cast<int>(samples.size()) <= limit)
+        return samples;
+    std::vector<int> result;
+    result.reserve(static_cast<size_t>(limit));
+    for (int i = 0; i < limit; ++i)
+        result.push_back(samples[static_cast<size_t>(i) * samples.size() / static_cast<size_t>(limit)]);
+    return result;
+}
+
+int runReplay(const juce::File& file, const juce::File& wav, const std::string& name,
+              const std::string& baselineTable, const std::string& alternateTable,
+              int lead, int tail, int failureLimit, int difficultLimit, int difficultThreshold) {
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
+    if (!reader || reader->lengthInSamples > std::numeric_limits<int>::max())
+        return 1;
+    const int frames = static_cast<int>(reader->lengthInSamples);
+    juce::AudioBuffer<float> input(1, frames);
+    reader->read(&input, 0, frames, 0, true, false);
+
+    livewdf::LiveWDFPluginProcessor processor;
+    selectGridCurrent(processor, true);
+    selectMode(processor, BenchMode::CompiledPreview);
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(0.0f);
+    processor.prepareToPlay(reader->sampleRate, 1);
+    if (!processor.loadCircuitFromFile(file)) {
+        std::fprintf(stderr, "%s\n", processor.lastError().c_str());
+        return 1;
+    }
+    juce::AudioBuffer<float> buffer(2, 1);
+    juce::MidiBuffer midi;
+    if (!waitForBenchmarkPlan(processor, buffer, midi, true))
+        return 1;
+    auto& engine = *livewdf::benchEngine(processor);
+    if (!engine.usePentodeTableFile(baselineTable.c_str(), true)) {
+        std::fprintf(stderr, "cannot load baseline table %s\n", baselineTable.c_str());
+        return 1;
+    }
+    const auto initial = engine.captureReplayState();
+    std::vector<std::vector<double>> sources(static_cast<size_t>(frames));
+    std::vector<ReplaySample> baseline(static_cast<size_t>(frames));
+    for (int sample = 0; sample < frames; ++sample) {
+        buffer.setSample(0, 0, input.getSample(0, sample));
+        buffer.setSample(1, 0, input.getSample(0, sample));
+        const auto before = replayCounters(engine);
+        processor.processBlock(buffer, midi);
+        baseline[static_cast<size_t>(sample)].count = replayCounters(engine) - before;
+        sources[static_cast<size_t>(sample)] = livewdf::benchSources(processor);
+    }
+
+    std::set<int> failingSet;
+    for (int sample = 0; sample < frames; ++sample)
+        if (baseline[static_cast<size_t>(sample)].count.fallbacks)
+            failingSet.insert(sample);
+    if (!alternateTable.empty()) {
+        engine.restoreReplayState(initial);
+        if (!engine.usePentodeTableFile(alternateTable.c_str(), true))
+            return 1;
+        for (int sample = 0; sample < frames; ++sample) {
+            const auto before = replayCounters(engine);
+            engine.step(sources[static_cast<size_t>(sample)].data(), sources[static_cast<size_t>(sample)].size(),
+                        wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+            if ((replayCounters(engine) - before).fallbacks)
+                failingSet.insert(sample);
+        }
+    }
+    std::vector<int> failing(failingSet.begin(), failingSet.end());
+    failing = spreadSamples(failing, failureLimit);
+
+    std::vector<int> difficult;
+    for (int sample = 0; sample < frames; ++sample) {
+        const auto& count = baseline[static_cast<size_t>(sample)].count;
+        if (!count.fallbacks && count.iterations >= difficultThreshold && !failingSet.contains(sample))
+            difficult.push_back(sample);
+    }
+    std::ranges::sort(difficult, [&](int a, int b) {
+        const auto ai = baseline[static_cast<size_t>(a)].count.iterations;
+        const auto bi = baseline[static_cast<size_t>(b)].count.iterations;
+        return ai != bi ? ai > bi : a < b;
+    });
+    if (difficultLimit > 0 && static_cast<int>(difficult.size()) > difficultLimit)
+        difficult.resize(static_cast<size_t>(difficultLimit));
+    std::ranges::sort(difficult);
+
+    std::vector<int> ordinary;
+    for (int sample = 0; sample < frames; ++sample) {
+        const auto& count = baseline[static_cast<size_t>(sample)].count;
+        if (!count.fallbacks && count.iterations < difficultThreshold && !failingSet.contains(sample))
+            ordinary.push_back(sample);
+    }
+    std::mt19937 random(0x4c574446u);
+    std::shuffle(ordinary.begin(), ordinary.end(), random);
+    ordinary.resize(std::min(ordinary.size(), failing.size() + difficult.size()));
+    std::ranges::sort(ordinary);
+
+    std::vector<ReplayWindow> windows;
+    const auto add = [&](ReplayClass type, const std::vector<int>& targets) {
+        for (const int target : targets)
+            windows.push_back({type, target, std::max(0, target - lead),
+                               std::min(frames, target + tail + 1), {}});
+    };
+    add(ReplayClass::failing, failing);
+    add(ReplayClass::difficult, difficult);
+    add(ReplayClass::ordinary, ordinary);
+    std::ranges::sort(windows, {}, &ReplayWindow::start);
+
+    engine.restoreReplayState(initial);
+    engine.usePentodeTableFile(baselineTable.c_str(), true);
+    size_t next = 0;
+    for (int sample = 0; sample < frames; ++sample) {
+        while (next < windows.size() && windows[next].start == sample)
+            windows[next++].state = engine.captureReplayState();
+        const auto before = replayCounters(engine);
+        engine.step(sources[static_cast<size_t>(sample)].data(), sources[static_cast<size_t>(sample)].size(),
+                    wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+        const auto replayed = replayCounters(engine) - before;
+        const auto expected = baseline[static_cast<size_t>(sample)].count;
+        if (replayed.fallbacks != expected.fallbacks || replayed.cap != expected.cap ||
+            replayed.line != expected.line || replayed.residual != expected.residual ||
+            replayed.iterations != expected.iterations) {
+            std::fprintf(stderr, "direct replay diverged at sample %d\n", sample);
+            return 1;
+        }
+    }
+    for (const auto& window : windows) {
+        if (!engine.restoreReplayState(window.state))
+            return 1;
+        for (int sample = window.start; sample <= window.target; ++sample) {
+            const auto before = replayCounters(engine);
+            engine.step(sources[static_cast<size_t>(sample)].data(), sources[static_cast<size_t>(sample)].size(),
+                        wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+            if (sample == window.target) {
+                const auto actual = replayCounters(engine) - before;
+                const auto expected = baseline[static_cast<size_t>(sample)].count;
+                if (actual.fallbacks != expected.fallbacks || actual.cap != expected.cap ||
+                    actual.line != expected.line || actual.residual != expected.residual ||
+                    actual.iterations != expected.iterations) {
+                    std::fprintf(stderr, "window replay diverged at sample %d\n", sample);
+                    return 1;
+                }
+            }
+        }
+    }
+    std::printf("READY {\"amp\":\"%s\",\"frames\":%d,\"lead\":%d,\"tail\":%d,"
+                "\"failing\":%zu,\"difficult\":%zu,\"ordinary\":%zu}\n",
+                name.c_str(), frames, lead, tail, failing.size(), difficult.size(), ordinary.size());
+    std::fflush(stdout);
+
+    struct Aggregate {
+        ReplayCount window, target;
+        std::vector<long long> iterations;
+    };
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.empty()) continue;
+        const auto tab = line.find('\t');
+        const std::string label = tab == std::string::npos ? line : line.substr(0, tab);
+        const std::string table = tab == std::string::npos ? line : line.substr(tab + 1);
+        Aggregate stats[3];
+        const auto started = std::chrono::steady_clock::now();
+        if (!engine.usePentodeTableFile(table.c_str(), true))
+            return 1;
+        for (const auto& window : windows) {
+            if (!engine.restoreReplayState(window.state))
+                return 1;
+            const auto windowBefore = replayCounters(engine);
+            ReplayCount targetCount;
+            for (int sample = window.start; sample < window.end; ++sample) {
+                const auto before = replayCounters(engine);
+                engine.step(sources[static_cast<size_t>(sample)].data(), sources[static_cast<size_t>(sample)].size(),
+                            wdf::Engine::kDefaultMaxIterations, wdf::Engine::kFastLiveTolerance);
+                if (sample == window.target)
+                    targetCount = replayCounters(engine) - before;
+            }
+            auto& out = stats[static_cast<int>(window.type)];
+            const auto count = replayCounters(engine) - windowBefore;
+            out.window.fallbacks += count.fallbacks; out.window.cap += count.cap;
+            out.window.line += count.line; out.window.residual += count.residual;
+            out.window.iterations += count.iterations;
+            out.target.fallbacks += targetCount.fallbacks; out.target.cap += targetCount.cap;
+            out.target.line += targetCount.line; out.target.residual += targetCount.residual;
+            out.target.iterations += targetCount.iterations;
+            out.iterations.push_back(count.iterations);
+        }
+        const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - started).count();
+        const char* names[] = {"failing", "difficult", "ordinary"};
+        std::printf("{\"amp\":\"%s\",\"candidate\":\"%s\",\"seconds\":%.6f,\"classes\":{",
+                    name.c_str(), label.c_str(), seconds);
+        for (int c = 0; c < 3; ++c) {
+            auto& out = stats[c];
+            std::ranges::sort(out.iterations);
+            const long long p90 = out.iterations.empty() ? 0 : out.iterations[(out.iterations.size() - 1) * 9 / 10];
+            const long long maximum = out.iterations.empty() ? 0 : out.iterations.back();
+            if (c) std::printf(",");
+            std::printf("\"%s\":{\"windows\":%zu,\"fallbacks\":%lld,\"cap\":%lld,\"line\":%lld,"
+                        "\"residual\":%lld,\"block_iterations\":%lld,\"p90_window_iterations\":%lld,"
+                        "\"max_window_iterations\":%lld,\"target_fallbacks\":%lld,\"target_cap\":%lld,"
+                        "\"target_line\":%lld,\"target_residual\":%lld,\"target_block_iterations\":%lld}",
+                        names[c], out.iterations.size(), out.window.fallbacks, out.window.cap, out.window.line,
+                        out.window.residual, out.window.iterations, p90, maximum, out.target.fallbacks,
+                        out.target.cap, out.target.line, out.target.residual, out.target.iterations);
+        }
+        std::printf("}}\n");
+        std::fflush(stdout);
+    }
     return 0;
 }
 
@@ -2743,6 +2981,9 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
+                    "[--replay <wav> --replay-name <name> --replay-baseline-table <file> [--replay-alternate-table <file>] "
+                    "[--replay-lead <n>] [--replay-tail <n>] [--replay-failure-limit <n>] "
+                    "[--replay-difficult-limit <n>] [--replay-difficult-threshold <n>]] "
                     "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
@@ -2794,6 +3035,9 @@ int main(int argc, char** argv) {
     std::string probeCsv;
     std::string pluginProbeCsv;
     std::string wavPath;
+    std::string replayPath, replayName, replayBaselineTable, replayAlternateTable;
+    int replayLead = 32, replayTail = 3, replayFailureLimit = 256;
+    int replayDifficultLimit = 256, replayDifficultThreshold = 12;
     int wavBlock = 128;
     bool gridCurrent = true;
     double probeRate = kSampleRate;
@@ -2833,6 +3077,24 @@ int main(int argc, char** argv) {
             pluginProbeCsv = argv[++i];
         else if (arg == "--wav" && i + 1 < argc)
             wavPath = argv[++i];
+        else if (arg == "--replay" && i + 1 < argc)
+            replayPath = argv[++i];
+        else if (arg == "--replay-name" && i + 1 < argc)
+            replayName = argv[++i];
+        else if (arg == "--replay-baseline-table" && i + 1 < argc)
+            replayBaselineTable = argv[++i];
+        else if (arg == "--replay-alternate-table" && i + 1 < argc)
+            replayAlternateTable = argv[++i];
+        else if (arg == "--replay-lead" && i + 1 < argc)
+            replayLead = std::stoi(argv[++i]);
+        else if (arg == "--replay-tail" && i + 1 < argc)
+            replayTail = std::stoi(argv[++i]);
+        else if (arg == "--replay-failure-limit" && i + 1 < argc)
+            replayFailureLimit = std::stoi(argv[++i]);
+        else if (arg == "--replay-difficult-limit" && i + 1 < argc)
+            replayDifficultLimit = std::stoi(argv[++i]);
+        else if (arg == "--replay-difficult-threshold" && i + 1 < argc)
+            replayDifficultThreshold = std::stoi(argv[++i]);
         else if (arg == "--grid-current") {
             if (i + 1 >= argc) {
                 std::printf("--grid-current requires on or off\n");
@@ -2870,6 +3132,13 @@ int main(int argc, char** argv) {
         return runProbe(file, probeCsv, probeRate, probeDrive, probeFreq);
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
+    if (!replayPath.empty()) {
+        if (replayName.empty() || replayBaselineTable.empty() || replayLead < 0 || replayTail < 0)
+            return 1;
+        return runReplay(file, juce::File(replayPath), replayName, replayBaselineTable,
+                         replayAlternateTable, replayLead, replayTail, replayFailureLimit,
+                         replayDifficultLimit, replayDifficultThreshold);
+    }
     if (!wavPath.empty())
         return runWav(file, juce::File(wavPath), wavBlock, gridCurrent, mode.value_or(BenchMode::FastLive));
 

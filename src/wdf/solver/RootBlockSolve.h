@@ -25,6 +25,12 @@
 #define LIVEWDF_RESTRICT
 #endif
 
+namespace wdf::ppdiag {
+inline long long cap = 0, line = 0, residual = 0, totalBlockIterations = 0;
+inline bool atCap = true;
+inline double lastStep = 1.0;
+}
+
 namespace wdf::solver {
 
 struct BlockSolveContext {
@@ -329,12 +335,15 @@ public:
                 bestI[j] = ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
             }
         };
+        ppdiag::atCap = true;
+        ppdiag::lastStep = 1.0;
         for (int it = 0; it < localMax; ++it) {
             if constexpr (!Reduced) {
                 if (it >= (cap48 && pushPullPreview ? 40 : 24) && fullDescent < 2)
                     break;
             }
             ++ctx.newtonIters;
+            ++ppdiag::totalBlockIterations;
             if (!curValid) {
                 for (int di : devices) {
                     RootResidual::currentsForDevice(
@@ -671,6 +680,7 @@ public:
                     }
                 }
                 if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV)) {
+                    ppdiag::atCap = false;
                     // A collapsed step with a residual above the gate is not
                     // convergence.  Let the caller try the exact full block /
                     // joint solve instead of accepting a point the verifier
@@ -794,6 +804,7 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
 
+                ppdiag::lastStep = stepSize;
                 fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
                     ? fullDescent + 1 : 0;
 
@@ -820,6 +831,7 @@ public:
                 }
                 landing = maxF < effTol;
                 if (it > 0 && maxStep < 1e-11 * std::max(1.0, maxV)) {
+                    ppdiag::atCap = false;
                     // Same rule as the small-block path: a stalled step above
                     // the gate is a failed solve, not a converged one.
                     break;
@@ -1542,6 +1554,14 @@ public:
         }
 
         ctx.lastBlockFallback = true;
+        if (failed) {
+            if (ppdiag::atCap && ppdiag::lastStep == 1.0)
+                ++ppdiag::cap;
+            else
+                ++ppdiag::line;
+        } else {
+            ++ppdiag::residual;
+        }
         ++ctx.blockFallbacks;
         ctx.lastConverged = false;
         if (failed)
