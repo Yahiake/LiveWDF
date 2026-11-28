@@ -18,6 +18,7 @@
 #include "wdf/solver/RootNewton.h"
 #include "wdf/solver/PushPullPairSolve.h"
 #include "wdf/solver/QuadricKnotStep.h"
+#include "wdf/solver/BlockDump.h"
 
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
@@ -28,7 +29,7 @@
 #endif
 
 namespace wdf::ppdiag {
-inline long long cap = 0, line = 0, residual = 0, sample = 0, totalBlockIterations = 0;
+inline long long cap = 0, line = 0, residual = 0, totalBlockIterations = 0;
 inline long long predicted = 0, predictedConverged = 0, predictedIterations[49]{};
 inline long long predictedGridEnds[4001]{}, predictedGridEndCount = 0;
 inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIterations[49]{};
@@ -43,6 +44,7 @@ inline int walkCount = 0;
 inline long long walksDumped = 0;
 inline long long deviceWalkSolves = 0;
 inline double walkTrace[64][28]{};
+
 inline std::FILE* walkLog() {
     static std::FILE* file = [] {
         const char* path = std::getenv("LWDF_ITLOG");
@@ -162,6 +164,112 @@ struct BlockSolveContext {
 };
 
 class RootBlockSolve {
+    static const char* deviceKindName(DeviceKind kind) {
+        static constexpr const char* names[] = {"triode", "diode", "controlled_resistor", "pentode", "jfet", "mosfet", "bjt", "opamp"};
+        return names[static_cast<int>(kind)];
+    }
+
+    static std::string deviceName(const RootDevice& dev, const Compiled& comp) {
+        switch (dev.kind) {
+        case DeviceKind::Diode: return comp.diodeNames[dev.compIndex];
+        case DeviceKind::Pentode: return comp.pent[dev.compIndex].name;
+        case DeviceKind::Jfet: return comp.jfet[dev.compIndex].name;
+        case DeviceKind::Mosfet: return comp.mosfet[dev.compIndex].name;
+        case DeviceKind::Bjt: return comp.bjt[dev.compIndex].name;
+        case DeviceKind::OpAmp: return comp.opamp[dev.compIndex].name;
+        default: return std::string(deviceKindName(dev.kind)) + std::to_string(dev.compIndex);
+        }
+    }
+
+public:
+    static void captureBlockDump(
+        ppdiag::BlockDumpRecord& out,
+        const std::vector<int>& devices, const std::vector<int>& ports,
+        const std::vector<double>& networkZ, int b, BlockSolveContext& ctx)
+    {
+        const char* run = std::getenv("LWDF_BLOCK_DUMP_RUN");
+        const char* circuit = std::getenv("LWDF_BLOCK_DUMP_CIRCUIT");
+        if (!run) run = std::getenv("LWDF_WALK_RUN");
+        if (!circuit) circuit = std::getenv("LWDF_WALK_CIRCUIT");
+        out.run = run ? run : "";
+        out.circuit = circuit ? circuit : "";
+        out.scope = "block";
+        out.sample = ppdiag::sample - 256;
+        out.solve = ++ppdiag::blockDumpSolves;
+        out.block = b;
+        out.n = static_cast<int>(ports.size());
+        out.ports = ports;
+        out.vOc.reserve(ports.size());
+        out.z.reserve(ports.size() * ports.size());
+        std::vector<int> rowOf(static_cast<size_t>(ctx.K), -1);
+        int row = 0;
+        for (int di : devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int p = dev.portBase; p < dev.portBase + dev.numPorts; ++p)
+                rowOf[static_cast<size_t>(p)] = row++;
+        }
+        for (int p : ports) {
+            out.vOc.push_back(ctx.blockBase[static_cast<size_t>(p)]);
+            for (int q : ports) {
+                const int localRow = rowOf[static_cast<size_t>(p)];
+                out.z.push_back(networkZ.empty() ? ctx.Z[static_cast<size_t>(p) * ctx.K + q]
+                                                 : networkZ[static_cast<size_t>(localRow) * ports.size() +
+                                                            static_cast<size_t>(std::ranges::find(ports, q) - ports.begin())]);
+            }
+        }
+
+        std::vector<double> currents(static_cast<size_t>(ctx.K), 0.0);
+        std::vector<double> jacobian(static_cast<size_t>(ctx.K) * ctx.K, 0.0);
+        long long diagnosticEvals = 0;
+        for (int di : devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            std::ranges::fill(jacobian, 0.0);
+            RootResidual::currentsForDevice(
+                dev, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(), ctx.bjts.data(),
+                ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                ctx.K, ctx.blockV.data(), currents.data(), jacobian.data(), diagnosticEvals);
+            ppdiag::BlockDumpRecord::Device item;
+            item.group = di;
+            item.component = static_cast<int>(dev.compIndex);
+            item.portBase = dev.portBase;
+            item.portCount = dev.numPorts;
+            item.kind = deviceKindName(dev.kind);
+            item.name = deviceName(dev, ctx.comp);
+            for (int p = dev.portBase; p < dev.portBase + dev.numPorts; ++p) {
+                item.global.push_back(p);
+                const auto local = std::ranges::find(ports, p);
+                item.local.push_back(local == ports.end() ? -1 : static_cast<int>(local - ports.begin()));
+                for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
+                    item.g.push_back(jacobian[static_cast<size_t>(p) * ctx.K + q]);
+            }
+            out.devices.push_back(std::move(item));
+        }
+    }
+
+    static void captureBlockEntries(const BlockView& view, BlockSolveContext& ctx,
+                                    std::vector<ppdiag::BlockDumpRecord>& records) {
+        for (int s = 0; s < view.count; ++s) {
+            const int b = (*view.order)[static_cast<size_t>(s)];
+            const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+            if (!ppdiag::blockDump().wants(static_cast<int>(block.ports.size())))
+                continue;
+            int local = 0;
+            for (int di : block.devices) {
+                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++local) {
+                    ctx.blockBase[static_cast<size_t>(r)] = RootClosedForms::foldPort(
+                        view, block, local, r, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
+                    ctx.blockV[static_cast<size_t>(r)] = ctx.vv[static_cast<size_t>(r)];
+                }
+            }
+            records.emplace_back();
+            captureBlockDump(records.back(), block.devices, block.ports, block.blockZ, b, ctx);
+            records.back().scope = "block_entry";
+        }
+    }
+
+private:
     static void logDeviceWalk(const NewtonBlock& block, BlockSolveContext& ctx,
                               const double* oldV, int iteration, long long solveId,
                               const char* trigger, double lineFactor) {
@@ -624,6 +732,21 @@ public:
                 }
             }
         }
+        ppdiag::BlockDumpRecord dumpRecord;
+        bool dumpActive = false;
+        if constexpr (!Reduced) {
+            dumpActive = ppdiag::blockDump().wants(n);
+            if (dumpActive)
+                captureBlockDump(dumpRecord, devices, ports, networkZ, b, ctx);
+        }
+        const auto finishDump = [&](const char* result, int iterations, bool failed) {
+            if (!dumpActive) return;
+            dumpRecord.result = result;
+            dumpRecord.iterations = iterations;
+            dumpRecord.failed = failed;
+            ppdiag::blockDump().offer(std::move(dumpRecord));
+            dumpActive = false;
+        };
         if (!hasOpAmp) {
             for (int c : ports) {
                 const double prev = ctx.ii[static_cast<size_t>(c)];
@@ -637,6 +760,7 @@ public:
                         ctx.vv[static_cast<size_t>(r)] = ctx.blockV[static_cast<size_t>(r)];
                     }
                 }
+                finishDump("converged", 0, false);
                 return true;
             }
         }
@@ -655,6 +779,7 @@ public:
         bool knot3Solve = false;
         bool roleSwapTriggered = false;
         bool hardFailure = false;
+        bool keptDump = false;
         bool doglegSolve = false;
         const long long deviceWalkSolve = ppdiag::deviceWalkLog() ? ++ppdiag::deviceWalkSolves : 0;
         double doglegRadius = 1.0;
@@ -1578,13 +1703,16 @@ public:
             return converged || landing; // Caller reconstructs and certifies the original block.
         } else if (hardFailure || (!converged && !landing)) {
             // A kept block answer takes a stalled block's best iterate; the full-residual guard still sends a gross miss to the joint solve.
-            if (!ctx.keepBlockAnswer || !std::isfinite(bestF))
+            if (!ctx.keepBlockAnswer || !std::isfinite(bestF)) {
+                finishDump("failed", completedIterations, true);
                 return false;
+            }
             for (int j = 0; j < n; ++j) {
                 ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestV[j];
                 ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestI[j];
             }
             ctx.keptBest = true;
+            keptDump = true;
         }
 
 
@@ -1602,6 +1730,8 @@ public:
             ++ctx.knotConvergedSolves;
             ctx.knotConvergedIterations += ctx.newtonIters - solveStartIters;
         }
+        finishDump(keptDump ? "kept" : converged ? "converged" : "landing",
+                   completedIterations, false);
         return true;
     }
 

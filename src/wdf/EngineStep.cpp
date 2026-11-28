@@ -283,6 +283,12 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
 
     const long long fallbacksBefore = blockFallbacks_;
     const bool pipeline = pipelineReady();
+    std::vector<ppdiag::BlockDumpRecord> blockEntries;
+    const long long blockEntryIters = newtonIters_;
+    if (ppdiag::blockDump().enabled()) {
+        auto dumpCtx = makeBlockSolveContext();
+        solver::RootBlockSolve::captureBlockEntries(staticBlockView(), dumpCtx, blockEntries);
+    }
     const bool loadedRoot = !pipeline && !folded && loadedJunctionEnabled_ && hasLoadedJunctionPreview() && tryLoadedJunctionRoot();
     const bool movingAffine = !pipeline && !folded && !loadedRoot && adjustedTransfer && loadedJunctionEnabled_ && affineNodes_.motion &&
                               affineNodes_.revision == linearRebuilds() && tryAffineMotion(tol);
@@ -346,6 +352,12 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         keptBest_ = false;
         newtonIters_ = 0;
         deviceEvals_ = 0;
+    }
+    for (auto& record : blockEntries) {
+        record.iterations = static_cast<int>(newtonIters_ - blockEntryIters);
+        record.failed = !lastConverged_;
+        record.result = !lastConverged_ ? "failed" : keptBest_ ? "kept" : "converged";
+        ppdiag::blockDump().offer(std::move(record));
     }
     if (folded) {
         auto& L = lamp_;

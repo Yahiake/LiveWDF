@@ -260,6 +260,12 @@ bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurr
 // spread of callback cost against the block's real-time budget (--wav).
 int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent, BenchMode mode,
            bool twoCores, const std::string& currentCsv, const std::string& deviceNames) {
+    if (std::getenv("LWDF_BLOCK_DUMP")) {
+        const std::string circuit = file.getFileName().toStdString();
+        const std::string run = wav.getFileName().toStdString();
+        if (!std::getenv("LWDF_BLOCK_DUMP_CIRCUIT")) setenv("LWDF_BLOCK_DUMP_CIRCUIT", circuit.c_str(), 0);
+        if (!std::getenv("LWDF_BLOCK_DUMP_RUN")) setenv("LWDF_BLOCK_DUMP_RUN", run.c_str(), 0);
+    }
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
