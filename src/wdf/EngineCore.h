@@ -1240,6 +1240,7 @@ protected:
     int runtimeBlockCount_ = 0;
     int runtimeGateCooldown_ = 0;
     int blockFallbackCooldown_ = 0;  // joint samples after a static-block fallback
+    int blockFallbackCooldownHoldoff_ = 0;
     int blockFallbackCooldownLimit_ = 16;  // env-overridable A/B knob (0..64)
     /// Experimental relaxed stage partition: non-scalar SCC blocks are split by
     /// the directed signal-flow analysis and solved with residual-verified
@@ -1249,6 +1250,9 @@ protected:
     bool fineBlockSolver_ = false;
     long long jointLastIters_ = 0;
     long long jointLastTrials_ = 0;
+    long long jointStepIters_ = 0;
+    long long jointStepTrials_ = 0;
+    long long jointStepPasses_ = 0;
     bool lastConverged_ = false;
     bool lastStateRejected_ = false;
     long long stateRejections_ = 0;

@@ -338,7 +338,7 @@ protected:
         // A reset starts a new solve history: the runtime gate's evidence from
         // the old history would describe a different operating point.
         runtimeGateCooldown_ = runtimeBlockEnabled_ ? 1 : 0;
-        blockFallbackCooldown_ = 0;
+        blockFallbackCooldown_ = blockFallbackCooldownHoldoff_ = 0;
         triodePreviewCooldown_ = 0;
         jointLastIters_ = 0;
         jointLastTrials_ = 0;
