@@ -189,7 +189,6 @@ public:
         }
     }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
-    void keepBlockAnswer(bool enabled) noexcept { keepBlockAnswer_ = enabled; }
     void useSlowLag(bool enabled) noexcept { slowLagEnabled_ = enabled; }
     void prepareSlowLag();
     void prepareLampReplay();
