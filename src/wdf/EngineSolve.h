@@ -24,6 +24,7 @@
 #include "wdf/solver/RootClosedForms.h"
 #include "wdf/solver/RootNewton.h"
 #include "wdf/solver/RootBlockSolve.h"
+#include "wdf/solver/PushPullTries.h"
 #include "wdf/solver/RootGroups.h"
 #include "wdf/solver/RootLinearPlan.h"
 
@@ -248,6 +249,7 @@ protected:
     }
 
     solver::BlockSolveContext makeBlockSolveContext() {
+        static const bool acceptPushPull = livewdfPpTry("accept");
         return solver::BlockSolveContext{
             blockBase_, blockI_, blockJ_, blockF_, blockV_, blockVOld_,
             blockDv_, blockM_, blockRhs_,
@@ -265,7 +267,8 @@ protected:
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
-            triodePreviewEnabled_ && nPent_ > 0, keepBlockAnswer_
+            triodePreviewEnabled_ && nPent_ > 0,
+            keepBlockAnswer_ || (acceptPushPull && triodePreviewEnabled_ && nPent_ == 2)
         };
     }
 
