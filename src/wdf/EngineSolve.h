@@ -254,7 +254,7 @@ protected:
         static const bool slewPushPull = livewdfPpTry("slew");
         return solver::BlockSolveContext{
             blockBase_, blockI_, blockJ_, blockF_, blockV_, blockVOld_,
-            blockDv_, blockM_, blockRhs_,
+            blockDv_, blockM_, blockRhs_, blockNeighbourZ_,
             vv_, ii_, iv_, J_, F_, vOc_, Z_, Zred_, vvPrev_, vvPrev2_,
             stepUp_, stepDown_, redCol_,
             K_, nRed_,
@@ -273,7 +273,8 @@ protected:
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
             triodePreviewEnabled_ && nPent_ > 0,
-            keepBlockAnswer_ || ((acceptPushPull || slewPushPull) && triodePreviewEnabled_ && nPent_ == 2)
+            keepBlockAnswer_ || ((acceptPushPull || slewPushPull) && triodePreviewEnabled_ && nPent_ == 2),
+            livewdfPpTry("nslope")
         };
     }
 
