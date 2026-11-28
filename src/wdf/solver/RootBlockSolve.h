@@ -640,6 +640,8 @@ public:
                                 const double f = balance(v, derivative);
                                 if (!std::isfinite(f) || !std::isfinite(derivative) || derivative <= 0.0)
                                     break;
+                                if (std::abs(f) <= 1e-9)
+                                    break;
                                 if (f <= 0.0) lo = v; else hi = v;
                                 const double next = v - f / derivative;
                                 v = next > lo && next < hi ? next : 0.5 * (lo + hi);
