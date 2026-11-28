@@ -3,6 +3,7 @@
 #include <juce_audio_basics/juce_audio_basics.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <thread>
 #include <type_traits>
 #if !JUCE_WINDOWS
@@ -98,7 +99,10 @@ public:
     }
 
     // The worker runs at realtime priority just below the audio thread.
-    bool realtime() const noexcept { return realtime_; }
+    bool realtime() const noexcept {
+        static const bool benchTwoCores = std::getenv("LWDF_TWO_CORES") != nullptr;
+        return realtime_ || benchTwoCores;
+    }
 
 private:
     enum : int { idle, posted, running, callerRuns, done, stopping };
