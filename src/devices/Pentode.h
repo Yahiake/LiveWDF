@@ -6,8 +6,29 @@
 #include <string>
 
 #include "devices/Triode.h"
+#include "wdf/solver/PushPullTries.h"
 
 namespace wdf {
+
+inline bool livewdfGridLawEnabled() noexcept {
+    static const bool enabled = livewdfPpTry("gridlaw");
+    return enabled;
+}
+
+inline void evalGridLaw(double vgk, double& ig, double& dig_dvgk) noexcept {
+    // Unfitted least-squares approximation to V^1.5 over 0..20 V.
+    constexpr double knots[] = {0.0, 2.56};
+    constexpr double coefs[] = {5.0474394831736653e-05, -3.9847576135144427e-05};
+    ig = 0.0;
+    dig_dvgk = 0.0;
+    for (int j = 0; j < 2; ++j) {
+        const double h = vgk - knots[j];
+        if (h > 0.0) {
+            ig += coefs[j] * h * h;
+            dig_dvgk += 2.0 * coefs[j] * h;
+        }
+    }
+}
 
 /// Currents of one pentode (or a matched pair) and their derivatives with
 /// respect to the port voltages (control grid G1 = g-k, screen S = s-k, plate P = p-k).
@@ -260,6 +281,7 @@ struct ReefmanPentode {
     /// Evaluates control grid current and derivative using the established
     /// exponential diode law.
     void evalGrid(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        if (livewdfGridLawEnabled()) return evalGridLaw(vgk, ig, dig_dvgk);
         const double inv_grid_vt = (grid_vt > 0.0) ? (1.0 / grid_vt) : 0.0;
         const double grid_is_over_vt = (grid_vt > 0.0) ? (grid_is / grid_vt) : 0.0;
         const double x = vgk * inv_grid_vt;
@@ -586,6 +608,7 @@ struct KorenPentode {
     }
 
     void evalGrid(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        if (livewdfGridLawEnabled()) return evalGridLaw(vgk, ig, dig_dvgk);
         const double x = vgk / grid_vt;
         if (x < -37.0) {
             ig = -grid_is;
@@ -757,6 +780,7 @@ struct Pentode {
     }
 
     double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (livewdfGridLawEnabled()) return vnew;
         if (modelKind == PentodeModelKind::Reefman && useReefman) {
             return reefman.limitGrid(vold, vnew, limited);
         }
