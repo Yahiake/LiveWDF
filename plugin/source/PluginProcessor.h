@@ -306,6 +306,7 @@ private:
     ///
     /// 1 when the document has not said, which scales nothing.
     std::atomic<double> outputFullScaleVolts_{1.0}, outputFastTrim_{1.0}, outputPreviewTrim_{1.0};
+    std::atomic<bool> previewKeepsBlockAnswer_{false};
     std::atomic<bool> outputAtSpeakerLevel_{false};
     std::atomic<double> inputVoltsPerFullScale_{1.0};
     std::atomic<double> previewPeakVolts_{2.0};

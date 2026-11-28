@@ -639,6 +639,15 @@ struct LiveWDFDocument {
         return it != out->values.end() && std::isfinite(it->second) && it->second > 0.0 ? it->second : 1.0;
     }
 
+    /// Preview keeps the block answer on a residual miss instead of solving the whole circuit again.
+    bool previewKeepsBlockAnswer() const {
+        const auto* out = terminal("out");
+        if (out == nullptr)
+            return false;
+        const auto it = out->values.find("previewBlockAnswer");
+        return it != out->values.end() && it->second > 0.0;
+    }
+
     const SchematicComponent* preampTap() const;
     bool makePreampDocument(LiveWDFDocument& preamp, std::string& error) const;
     bool makePowerAmpDocument(LiveWDFDocument& powerAmp, std::string& error) const;
