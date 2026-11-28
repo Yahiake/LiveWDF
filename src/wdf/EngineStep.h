@@ -189,7 +189,7 @@ public:
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     void usePreviewPentodes(bool enabled) noexcept {
-        static const bool usePolyknee = livewdfPpTry("polyknee");
+        static const bool usePolyknee = livewdfPpTry("polyknee") || livewdfPpTry("knots2");
         for (size_t i = 0; i < pentodes_.size(); ++i) {
             const auto& card = comp_.pent[i].model.reefman;
             const auto* quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;

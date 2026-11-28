@@ -15,6 +15,8 @@ public:
     mutable long long knotTriggeredSolves_ = 0;
     mutable long long knotConvergedSolves_ = 0;
     mutable long long knotConvergedIterations_ = 0;
+    mutable double knotPredictedResidual_ = 0.0;
+    mutable double knotActualResidual_ = 0.0;
 
     mutable long long jfetFallbacks_ = 0;
     bool jfetSolveFailed_ = false;
@@ -32,6 +34,12 @@ public:
         lineTrials_ = 0;
         limitHits_ = 0;
         gridLimitHits_ = 0;
+        knotStepChoices_ = 0;
+        knotTriggeredSolves_ = 0;
+        knotConvergedSolves_ = 0;
+        knotConvergedIterations_ = 0;
+        knotPredictedResidual_ = 0.0;
+        knotActualResidual_ = 0.0;
         jfetFallbacks_ = 0;
         jfetSolveFailed_ = false;
         mosfetFallbacks_ = 0;
