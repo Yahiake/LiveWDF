@@ -536,12 +536,12 @@ protected:
             t.model.gridConducts = gridCurrent;
             if (islandTry) {
                 if (std::memcmp(&t.model.p, &kQuadric12AX7, sizeof(t.model.p)) == 0)
-                    t.model.prepareChildIslands();
+                    t.model.preparePieceQuadric();
                 else {
                     const QuadricTriodeParams parallel{2.0 * kQuadric12AX7.kP2,
                         2.0 * kQuadric12AX7.kPg, 2.0 * kQuadric12AX7.kP};
                     if (std::memcmp(&t.model.p, &parallel, sizeof(t.model.p)) == 0)
-                        t.model.prepareChildIslands(2.0);
+                        t.model.preparePieceQuadric(2.0);
                 }
             }
             if (tableTry) {
