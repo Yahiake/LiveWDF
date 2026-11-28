@@ -71,12 +71,23 @@ struct TriodeModel {
     double cg = p.kPg / (2.0 * p.kP2);  // kPg/(2*kP2)
     double c0 = p.kP / (2.0 * p.kP2);   // kP/(2*kP2)
     double two_kP2 = 2.0 * p.kP2;
+    struct Island {
+        double k, mu, offset;
+    };
+    Island islands[2]{};
+    bool childIslands = false;
     bool gridConducts = true;
 
     void prepareQuadric() noexcept {
         cg = p.kPg / (2.0 * p.kP2);
         c0 = p.kP / (2.0 * p.kP2);
         two_kP2 = 2.0 * p.kP2;
+    }
+
+    void prepareChildIslands(double scale = 1.0) noexcept {
+        islands[0] = {scale * 1.0457752637487525e-6, 112.43163064021616, 48.00027047240511};
+        islands[1] = {scale * 1.2817948496690463e-7, 53.47077384001171, 130.79346538882027};
+        childIslands = true;
     }
 
     /// Currents into the tube and their derivatives w.r.t. the port voltages.
@@ -145,6 +156,19 @@ struct TriodeModel {
     /// above is the device-level spelling of the paper's test.
     Currents evaluateQuadric(double vgk, double vpk) const noexcept {
         Currents c;
+        if (childIslands) {
+            for (const auto& island : islands) {
+                const double q = vpk + island.mu * vgk + island.offset;
+                if (q > 0.0) {
+                    const double root = std::sqrt(q);
+                    const double slope = 1.5 * island.k * root;
+                    c.ip += island.k * q * root;
+                    c.dvpk += slope;
+                    c.dvgk += island.mu * slope;
+                }
+            }
+            return c;
+        }
         const double q = vpk + cg * vgk + c0;
         if (q > 0.0) {
             c.ip = p.kP2 * q * q;

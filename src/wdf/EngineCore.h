@@ -531,8 +531,19 @@ protected:
             blockFallbackCooldownLimit_ = std::clamp(std::atoi(cd), 0, 64);
         comp_ = compile(circuit_, {});
         static const bool tableTry = livewdfPpTry("table");
+        static const bool islandTry = livewdfPpTry("triisland");
         for (auto& t : comp_.tri) {
             t.model.gridConducts = gridCurrent;
+            if (islandTry) {
+                if (std::memcmp(&t.model.p, &kQuadric12AX7, sizeof(t.model.p)) == 0)
+                    t.model.prepareChildIslands();
+                else {
+                    const QuadricTriodeParams parallel{2.0 * kQuadric12AX7.kP2,
+                        2.0 * kQuadric12AX7.kPg, 2.0 * kQuadric12AX7.kP};
+                    if (std::memcmp(&t.model.p, &parallel, sizeof(t.model.p)) == 0)
+                        t.model.prepareChildIslands(2.0);
+                }
+            }
             if (tableTry) {
                 t.model.p = quadricTriodeFromFile(t.model.p);
                 t.model.prepareQuadric();
