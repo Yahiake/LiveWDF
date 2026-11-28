@@ -36,6 +36,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 struct ThreadUsage {
     double cpuNs = 0.0;
@@ -97,6 +100,8 @@ bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<f
     std::fprintf(stderr, "%s worker did not install within 30 s\n", mode);
     return false;
 }
+
+wdf::Engine* benchEngine(LiveWDFPluginProcessor& processor) { return processor.leftEngine_.get(); }
 
 }  // namespace livewdf
 
@@ -269,6 +274,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
     std::printf("quality=%s\n", selectMode(processor, mode));
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(0.0f);
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -282,11 +288,38 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     const double budgetNs = blockSize / fs * 1.0e9;
     DeadlineMisses missed;
     std::vector<double> wall, cpu;
+    perf_event_attr attr{};
+    attr.type = PERF_TYPE_HARDWARE;
+    attr.size = sizeof(attr);
+    attr.config = PERF_COUNT_HW_INSTRUCTIONS | (10ull << 32);
+    attr.exclude_kernel = 1;
+    attr.exclude_hv = 1;
+    const int perf = static_cast<int>(syscall(SYS_perf_event_open, &attr, 0, -1, -1, 0));
+    const auto instructions = [&] {
+        long long count = 0;
+        return read(perf, &count, sizeof(count)) == sizeof(count) ? count : 0;
+    };
+    std::vector<double> instructionCounts;
+    std::FILE* output = std::getenv("LWDF_OUT") ? std::fopen(std::getenv("LWDF_OUT"), "wb") : nullptr;
+    auto* engine = livewdf::benchEngine(processor);
+    const long long fallbacksBefore = engine->blockFallbackCount();
+    long long fallbacksPrevious = fallbacksBefore;
+    long long fallbackBlocks2 = 0, fallbackBlocks3 = 0, fallbackBlocks4 = 0, maxFallbacksPerBlock = 0;
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
     for (int start = 0; start <= frames - blockSize; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
+        const long long before = instructions();
         const auto cost = measureBlock(processor, buffer, midi);
+        instructionCounts.push_back(static_cast<double>(instructions() - before));
+        const long long blockFallbacks = engine->blockFallbackCount() - fallbacksPrevious;
+        fallbacksPrevious += blockFallbacks;
+        fallbackBlocks2 += blockFallbacks == 2;
+        fallbackBlocks3 += blockFallbacks == 3;
+        fallbackBlocks4 += blockFallbacks >= 4;
+        maxFallbacksPerBlock = std::max(maxFallbacksPerBlock, blockFallbacks);
+        if (output)
+            std::fwrite(buffer.getReadPointer(0), sizeof(float), static_cast<size_t>(blockSize), output);
         missed.count(cost, budgetNs);
         wall.push_back(100.0 * cost.wallNs / budgetNs);
         cpu.push_back(100.0 * cost.cpuNs / budgetNs);
@@ -310,6 +343,23 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 #endif
     std::printf("\n");
     missed.print(wall.size());
+    std::sort(instructionCounts.rbegin(), instructionCounts.rend());
+    const size_t worstCount = std::max<size_t>(instructionCounts.size() / 100, 1);
+    double mean = 0.0, worst = 0.0;
+    for (double value : instructionCounts) mean += value;
+    for (size_t i = 0; i < worstCount; ++i) worst += instructionCounts[i];
+    std::printf("Minstr mean %.2f worst1%% %.2f max %.2f\n",
+                mean / instructionCounts.size() / 1e6, worst / worstCount / 1e6,
+                instructionCounts.front() / 1e6);
+    std::printf("fallbacks %lld cap %lld line %lld residual %lld\n",
+                engine->blockFallbackCount() - fallbacksBefore, wdf::neighbourdiag::cap,
+                wdf::neighbourdiag::line, wdf::neighbourdiag::residual);
+    std::printf("initial residual misses %lld sweeps %lld fallback blocks 2=%lld 3=%lld 4+=%lld max=%lld\n",
+                wdf::neighbourdiag::initialMisses, wdf::neighbourdiag::sweeps,
+                fallbackBlocks2, fallbackBlocks3, fallbackBlocks4, maxFallbacksPerBlock);
+    std::printf("block solves %lld iterations %lld neighbour loads %lld\n",
+                wdf::neighbourdiag::blockSolves, wdf::neighbourdiag::blockIterations,
+                wdf::neighbourdiag::neighbourLoads);
     if (const auto [unclaimed, late] = processor.twoCoreMisses(); unclaimed || late)
         std::printf("two cores: %lld blocks not taken by the worker, %lld blocks it fell behind in\n", unclaimed, late);
     return 0;

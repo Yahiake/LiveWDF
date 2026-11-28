@@ -175,6 +175,7 @@ public:
 private:
     friend bool waitForBenchmarkPlan(LiveWDFPluginProcessor&, juce::AudioBuffer<float>&,
                                      juce::MidiBuffer&, bool preview);
+    friend wdf::Engine* benchEngine(LiveWDFPluginProcessor&);
     friend bool checkLivePreviewCapture(const juce::File& file);
     friend bool checkPowerAmp(const juce::File& file);
     friend bool checkLivePreviewPotMotion(const juce::File& file);

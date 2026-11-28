@@ -6,6 +6,8 @@
 #include <chrono>
 #include <limits>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 
 #include "wdf/DenseTopology.h"
 #include "wdf/DenseSolve.h"
@@ -21,6 +23,12 @@
 #else
 #define LIVEWDF_RESTRICT
 #endif
+
+namespace wdf::neighbourdiag {
+inline long long cap = 0, line = 0, residual = 0, initialMisses = 0, sweeps = 0;
+inline long long blockSolves = 0, blockIterations = 0, neighbourLoads = 0;
+inline bool failedAtCap = false;
+}
 
 namespace wdf::solver {
 
@@ -105,6 +113,19 @@ class RootBlockSolve {
 public:
     static constexpr int kCostlyJointRootPorts = 30;
 
+    static inline bool neighbourGridPort(const NewtonBlock& block, int port,
+                                         const BlockSolveContext& ctx) noexcept
+    {
+        for (size_t k = 0; k < block.ports.size(); ++k) {
+            if (block.ports[k] != port)
+                continue;
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(block.portDevice[k])];
+            return dev.kind == DeviceKind::Triode && port == dev.portBase + 2 &&
+                   ctx.comp.tri[dev.compIndex].model.gridConducts;
+        }
+        return false;
+    }
+
     static inline bool neighbourCoupled(const BlockView& view, int b, int s,
                                         const BlockSolveContext& ctx) noexcept
     {
@@ -118,14 +139,55 @@ public:
         for (int r : a.ports) {
             const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
             for (int c : a.ports) selfA = std::max(selfA, std::abs(z[c]));
-            for (int c : next.ports) ab = std::max(ab, std::abs(z[c]));
+            for (int c : next.ports)
+                if (neighbourGridPort(next, c, ctx)) ab = std::max(ab, std::abs(z[c]));
         }
         for (int r : next.ports) {
+            if (!neighbourGridPort(next, r, ctx))
+                continue;
             const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-            for (int c : next.ports) selfB = std::max(selfB, std::abs(z[c]));
+            for (int c : next.ports)
+                if (neighbourGridPort(next, c, ctx)) selfB = std::max(selfB, std::abs(z[c]));
             for (int c : a.ports) ba = std::max(ba, std::abs(z[c]));
         }
         return ab * ba > 1e-8 * selfA * selfB;
+    }
+
+    static inline bool neighbourNeedsLoad(const BlockView& view, int b, int s,
+                                          BlockSolveContext& ctx) noexcept
+    {
+        if (!neighbourCoupled(view, b, s, ctx))
+            return false;
+        const NewtonBlock& a = (*view.blocks)[static_cast<size_t>(b)];
+        const NewtonBlock& next = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s + 1)])];
+        for (int di : next.devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                double v = ctx.vOc[static_cast<size_t>(r)];
+                const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                for (int c : ctx.redCol)
+                    v -= z[c] * ctx.ii[static_cast<size_t>(c)];
+                ctx.blockVOld[static_cast<size_t>(r)] = v;
+            }
+            RootResidual::currentsForDevice(
+                dev, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(), ctx.bjts.data(),
+                ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(),
+                ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
+                ctx.blockVOld.data(), ctx.iv.data(), nullptr, ctx.deviceEvals);
+        }
+        for (int di : a.devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                double change = 0.0;
+                for (int c : next.ports)
+                    if (neighbourGridPort(next, c, ctx))
+                        change += z[c] * (ctx.iv[static_cast<size_t>(c)] - ctx.ii[static_cast<size_t>(c)]);
+                if (std::abs(change) >= 3e-3)
+                    return true;
+            }
+        }
+        return false;
     }
 
     /// Replace the next block by its current-sample small-signal Norton load.
@@ -137,7 +199,12 @@ public:
         const NewtonBlock& a = (*view.blocks)[static_cast<size_t>(b)];
         const NewtonBlock& next = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s + 1)])];
         const int nA = static_cast<int>(a.ports.size());
-        const int nB = static_cast<int>(next.ports.size());
+        int loadPorts[16], loadDevices[16], nB = 0;
+        for (size_t k = 0; k < next.ports.size() && nB < 16; ++k)
+            if (neighbourGridPort(next, next.ports[k], ctx)) {
+                loadPorts[nB] = next.ports[k];
+                loadDevices[nB++] = next.portDevice[k];
+            }
         int rowsA = 0;
         for (int di : a.devices) rowsA += ctx.rootDevices[static_cast<size_t>(di)].numPorts;
         if (nA > ctx.nRed || nB > ctx.nRed || rowsA * nA > static_cast<int>(ctx.blockNeighbourZ.size()))
@@ -158,11 +225,27 @@ public:
                 ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
                 ctx.blockVOld.data(), ctx.iv.data(), ctx.J.data(), ctx.deviceEvals);
         }
+        bool material = false;
+        for (int di : a.devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                double change = 0.0;
+                for (int k = 0; k < nB; ++k) {
+                    const int c = loadPorts[k];
+                    change += z[c] * (ctx.iv[static_cast<size_t>(c)] - ctx.ii[static_cast<size_t>(c)]);
+                }
+                material |= std::abs(change) >= 3e-3;
+            }
+        }
+        if (!material)
+            return false;
+        ++neighbourdiag::neighbourLoads;
 
         std::fill_n(ctx.blockM.data(), static_cast<size_t>(nB) * nB, 0.0);
         for (int row = 0; row < nB; ++row) {
-            const int rp = next.ports[static_cast<size_t>(row)];
-            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(next.portDevice[static_cast<size_t>(row)])];
+            const int rp = loadPorts[row];
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(loadDevices[row])];
             double* m = ctx.blockM.data() + static_cast<size_t>(row) * nB;
             for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q) {
                 const double jq = ctx.J[static_cast<size_t>(rp) * ctx.K + q];
@@ -170,7 +253,7 @@ public:
                     continue;
                 const double* z = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
                 for (int col = 0; col < nB; ++col)
-                    m[col] += jq * z[next.ports[static_cast<size_t>(col)]];
+                    m[col] += jq * z[loadPorts[col]];
             }
             m[row] += 1.0;
         }
@@ -179,8 +262,8 @@ public:
             return false;
         for (int col = 0; col < nA; ++col) {
             for (int row = 0; row < nB; ++row) {
-                const int rp = next.ports[static_cast<size_t>(row)];
-                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(next.portDevice[static_cast<size_t>(row)])];
+                const int rp = loadPorts[row];
+                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(loadDevices[row])];
                 double d = 0.0;
                 for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q)
                     d += ctx.J[static_cast<size_t>(rp) * ctx.K + q] *
@@ -191,6 +274,55 @@ public:
             for (int row = 0; row < nB; ++row)
                 ctx.blockJ[static_cast<size_t>(row) * nA + col] = ctx.blockRhs[static_cast<size_t>(row)];
         }
+        for (int row = 0; row < nB; ++row) {
+            const int rp = loadPorts[row];
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(loadDevices[row])];
+            double rhs = ctx.iv[static_cast<size_t>(rp)];
+            for (int q = dev.portBase; q < dev.portBase + dev.numPorts; ++q) {
+                double offset = 0.0;
+                const double* z = ctx.Z.data() + static_cast<size_t>(q) * ctx.K;
+                for (int c : a.ports) offset += z[c] * ctx.ii[static_cast<size_t>(c)];
+                for (int k = 0; k < nB; ++k) offset += z[loadPorts[k]] * ctx.ii[static_cast<size_t>(loadPorts[k])];
+                rhs += ctx.J[static_cast<size_t>(rp) * ctx.K + q] * offset;
+            }
+            ctx.blockRhs[static_cast<size_t>(row)] = rhs;
+        }
+        detail::solveLUData(ctx.blockM.data(), piv, ctx.blockRhs.data(), nB);
+        for (int row = 0; row < nB; ++row)
+            ctx.blockI[static_cast<size_t>(loadPorts[row])] =
+                ctx.blockRhs[static_cast<size_t>(row)];
+
+        static const bool checkFiniteDifference = std::getenv("LIVEWDF_NEIGHBOUR_FD") != nullptr;
+        static bool checkedFiniteDifference = false;
+        if (checkFiniteDifference && !checkedFiniteDifference) {
+            checkedFiniteDifference = true;
+            constexpr double epsilon = 1e-8;
+            for (int di : next.devices) {
+                const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+                for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                    double dv = -ctx.Z[static_cast<size_t>(r) * ctx.K + a.ports.front()] * epsilon;
+                    for (int k = 0; k < nB; ++k)
+                        dv += ctx.Z[static_cast<size_t>(r) * ctx.K + loadPorts[k]] *
+                              ctx.blockJ[static_cast<size_t>(k) * nA] * epsilon;
+                    ctx.blockV[static_cast<size_t>(r)] = ctx.blockVOld[static_cast<size_t>(r)] + dv;
+                }
+                RootResidual::currentsForDevice(
+                    dev, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(), ctx.bjts.data(),
+                    ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(), ctx.opAmpMaxDv.data(),
+                    ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
+                    ctx.blockV.data(), ctx.blockF.data(), nullptr, ctx.deviceEvals);
+            }
+            double error = 0.0, scale = 0.0;
+            for (int k = 0; k < nB; ++k) {
+                const double predicted = -ctx.blockJ[static_cast<size_t>(k) * nA] * epsilon;
+                const double measured = ctx.blockF[static_cast<size_t>(loadPorts[k])] -
+                                        ctx.iv[static_cast<size_t>(loadPorts[k])];
+                error = std::max(error, std::abs(measured - predicted));
+                scale = std::max(scale, std::abs(predicted));
+            }
+            std::fprintf(stderr, "neighbour finite difference abs %.9g rel %.9g\n",
+                         error, error / std::max(scale, 1e-30));
+        }
 
         int localRow = 0;
         for (int di : a.devices) {
@@ -199,17 +331,13 @@ public:
                 const double* zab = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
                 double intercept = 0.0;
                 for (int k = 0; k < nB; ++k) {
-                    double current = ctx.iv[static_cast<size_t>(next.ports[static_cast<size_t>(k)])];
-                    for (int j = 0; j < nA; ++j)
-                        current += ctx.blockJ[static_cast<size_t>(k) * nA + j] *
-                                   ctx.ii[static_cast<size_t>(a.ports[static_cast<size_t>(j)])];
-                    intercept += zab[next.ports[static_cast<size_t>(k)]] * current;
+                    intercept += zab[loadPorts[k]] * ctx.blockI[static_cast<size_t>(loadPorts[k])];
                 }
                 ctx.blockBase[static_cast<size_t>(r)] -= intercept;
                 for (int j = 0; j < nA; ++j) {
                     double z = a.blockZ[static_cast<size_t>(localRow) * nA + j];
                     for (int k = 0; k < nB; ++k)
-                        z -= zab[next.ports[static_cast<size_t>(k)]] *
+                        z -= zab[loadPorts[k]] *
                              ctx.blockJ[static_cast<size_t>(k) * nA + j];
                     ctx.blockNeighbourZ[static_cast<size_t>(localRow) * nA + j] = z;
                 }
@@ -300,6 +428,8 @@ public:
         const int n = static_cast<int>(ports.size());
         if (n <= 0 || n > ctx.nRed)
             return false;
+        ++neighbourdiag::blockSolves;
+        neighbourdiag::failedAtCap = false;
 
         using clk = std::chrono::steady_clock;
         const auto tick = [&] { return ctx.profileOn ? clk::now() : clk::time_point{}; };
@@ -406,12 +536,15 @@ public:
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
         const int localMax = Reduced ? std::min(maxIter, 10) :
             std::min(maxIter, pushPullPreview ? 48 : 24);
+        int completedIterations = 0;
         for (int it = 0; it < localMax; ++it) {
             if constexpr (!Reduced) {
                 if (it >= (pushPullPreview ? 40 : 24) && fullDescent < 2)
                     break;
             }
             ++ctx.newtonIters;
+            ++completedIterations;
+            ++neighbourdiag::blockIterations;
             if (!curValid) {
                 for (int di : devices) {
                     RootResidual::currentsForDevice(
@@ -800,6 +933,7 @@ public:
         if constexpr (Reduced) {
             return converged || landing; // Caller reconstructs and certifies the original block.
         } else if (!converged && !landing) {
+            neighbourdiag::failedAtCap = completedIterations >= localMax;
             return false;
         }
 
@@ -1302,7 +1436,7 @@ public:
         // Later stages amplify an error left in a block without a pentode, so only power tubes get the loose Preview tolerance.
         if (std::ranges::none_of(block.devices, [&](int d) { return ctx.rootDevices[static_cast<size_t>(d)].kind == DeviceKind::Pentode; }))
             tol = std::min(tol, ctx.modeTol);
-        if (!relaxed && neighbourCoupled(view, b, s, ctx))
+        if (!relaxed && neighbourNeedsLoad(view, b, s, ctx))
             return solveBlockNewton(view, b, s, maxIter, tol, false, ctx, nullptr, acceptedDeviceCurrents);
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
             return solveScalarBlock(view, b, s, relaxed, ctx);
@@ -1345,6 +1479,7 @@ public:
         ctx.mosfetSolveFailed = false;
         ctx.newtonIters = 0;
         ctx.deviceEvals = 0;
+        neighbourdiag::failedAtCap = false;
         ctx.keptBest = false;
 
         bool failed = false;
@@ -1386,6 +1521,8 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
+        if (!failed && ctx.lastBlockResidual > effTol)
+            ++neighbourdiag::initialMisses;
         const bool resweepWorthwhile = ctx.previewMode &&
             ctx.K >= kCostlyJointRootPorts && view.count > 1;
 
@@ -1462,6 +1599,7 @@ public:
                 }
                 if (!tried || failed)
                     break;
+                ++neighbourdiag::sweeps;
                 for (int r = 0; view.frozen && r < ctx.K; ++r)
                     ctx.F[static_cast<size_t>(r)] = ctx.ii[static_cast<size_t>(r)];
                 RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
@@ -1493,6 +1631,10 @@ public:
         }
 
         ctx.lastBlockFallback = true;
+        if (failed)
+            ++(neighbourdiag::failedAtCap ? neighbourdiag::cap : neighbourdiag::line);
+        else
+            ++neighbourdiag::residual;
         ++ctx.blockFallbacks;
         ctx.lastConverged = false;
         if (failed)
