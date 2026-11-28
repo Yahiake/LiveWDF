@@ -34,7 +34,8 @@ inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIteration
 inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, knot3Iterations[49]{};
 inline bool atCap = true;
 inline double lastStep = 1.0;
-inline int walkCount = 0, walksDumped = 0;
+inline int walkCount = 0;
+inline long long walksDumped = 0;
 inline double walkTrace[64][28]{};
 inline std::FILE* walkLog() {
     static std::FILE* file = [] {
@@ -336,6 +337,8 @@ public:
         bool predictedStart = false;
         bool ordinaryTrigger = false;
         bool knot3Solve = false;
+        bool walkRoleTrigger = false;
+        bool hardFailure = false;
         int completedIterations = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
@@ -505,8 +508,10 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->lu);
             }
-            if (!solveOk)
-                return false;
+            if (!solveOk) {
+                hardFailure = true;
+                break;
+            }
 
             int localR = 0;
             const double* LIVEWDF_RESTRICT rhsData = ctx.blockRhs.data();
@@ -548,6 +553,8 @@ public:
                 }
                 if (knot3Enabled && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0)
                     triggerKnot3();
+                if (it == 0 && pushPullPreview && pairCount == 2 && rising >= 0)
+                    walkRoleTrigger = true;
                 if ((predict || predictControl) && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
                     if (predictControl && !predict) {
                         ordinaryTrigger = true;
@@ -622,6 +629,8 @@ public:
             }
             if (knot3Enabled && it == 0 && pushPullPreview && powerPentodeLimited)
                 triggerKnot3();
+            if (it == 0 && pushPullPreview && powerPentodeLimited)
+                walkRoleTrigger = true;
             const bool knotActive = knotSteps.active && (!knotSteps.safeguarded || knot3Solve);
             if constexpr (!Reduced) {
                 static const bool sumdiff = livewdfPpTry("sumdiff");
@@ -1019,13 +1028,37 @@ public:
         }
         if (knot3Solve && (converged || landing))
             ++ppdiag::knot3Iterations[std::clamp(completedIterations, 0, 48)];
+        if constexpr (!Reduced) {
+            if (ppdiag::walkLog() && ppdiag::walkCount &&
+                (walkRoleTrigger || completedIterations >= 12)) {
+                std::FILE* log = ppdiag::walkLog();
+                if (!ppdiag::walksDumped)
+                    std::fprintf(log, "fallback,sample,iteration,residual_norm,max_dv,step_limit_scale,line_search_factor,largest_step_device,largest_step_port,A_vgk,A_vsk,A_vpk,A_ip,A_is,A_ig,B_vgk,B_vsk,B_vpk,B_ip,B_is,B_ig,T1_vgk,T1_vpk,T2_vgk,T2_vpk,T3_vgk,T3_vpk,T4_vgk,T4_vpk,solve_id,trigger,result\n");
+                const long long solve = ++ppdiag::walksDumped;
+                static constexpr char deviceKinds[] = "TDCPJMBO";
+                const char* result = hardFailure ? "failed" : converged ? "converged" : landing ? "landing" : "failed";
+                for (int k = 0; k < ppdiag::walkCount; ++k) {
+                    const double* trace = ppdiag::walkTrace[k];
+                    const auto& device = ctx.rootDevices[static_cast<size_t>(static_cast<int>(trace[25]))];
+                    std::fprintf(log, "%lld,%lld,%d,%.6g,%.6g,%.4g,%.4g,%c%zu,%d", solve,
+                                 ppdiag::sample - 256, static_cast<int>(trace[0]), trace[1], trace[2],
+                                 trace[3], trace[4], deviceKinds[static_cast<int>(device.kind)],
+                                 device.compIndex, static_cast<int>(trace[26]));
+                    for (int c = 5; c < 25; ++c)
+                        std::fprintf(log, ",%.6g", trace[c]);
+                    std::fprintf(log, ",%lld,%s,%s\n", solve,
+                                 walkRoleTrigger ? "role" : "iterations", result);
+                }
+                std::fflush(log);
+            }
+        }
         if constexpr (Reduced) {
             if ((converged || landing) && knotTriggered) {
                 ++ctx.knotConvergedSolves;
                 ctx.knotConvergedIterations += ctx.newtonIters - solveStartIters;
             }
             return converged || landing; // Caller reconstructs and certifies the original block.
-        } else if (!converged && !landing) {
+        } else if (hardFailure || (!converged && !landing)) {
             // A kept block answer takes a stalled block's best iterate; the full-residual guard still sends a gross miss to the joint solve.
             if (!ctx.keepBlockAnswer || !std::isfinite(bestF))
                 return false;
@@ -1767,25 +1800,6 @@ public:
         }
 
         ctx.lastBlockFallback = true;
-        if (failed && ppdiag::walkLog() && ppdiag::walkCount && ppdiag::walksDumped < 30) {
-            std::FILE* log = ppdiag::walkLog();
-            if (!ppdiag::walksDumped)
-                std::fprintf(log, "fallback,sample,iteration,residual_norm,max_dv,step_limit_scale,line_search_factor,largest_step_device,largest_step_port,A_vgk,A_vsk,A_vpk,A_ip,A_is,A_ig,B_vgk,B_vsk,B_vpk,B_ip,B_is,B_ig,T1_vgk,T1_vpk,T2_vgk,T2_vpk,T3_vgk,T3_vpk,T4_vgk,T4_vpk\n");
-            const int fallback = ++ppdiag::walksDumped;
-            static constexpr char deviceKinds[] = "TDCPJMBO";
-            for (int k = 0; k < ppdiag::walkCount; ++k) {
-                const double* trace = ppdiag::walkTrace[k];
-                const auto& device = ctx.rootDevices[static_cast<size_t>(static_cast<int>(trace[25]))];
-                std::fprintf(log, "%d,%lld,%d,%.6g,%.6g,%.4g,%.4g,%c%zu,%d", fallback,
-                             ppdiag::sample - 256, static_cast<int>(trace[0]), trace[1], trace[2],
-                             trace[3], trace[4], deviceKinds[static_cast<int>(device.kind)],
-                             device.compIndex, static_cast<int>(trace[26]));
-                for (int c = 5; c < 25; ++c)
-                    std::fprintf(log, ",%.6g", trace[c]);
-                std::fprintf(log, "\n");
-            }
-            std::fflush(log);
-        }
         if (failed) {
             if (ppdiag::atCap && ppdiag::lastStep == 1.0)
                 ++ppdiag::cap;
