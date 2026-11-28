@@ -222,7 +222,7 @@ public:
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localRow) {
                         if (dev.kind != DeviceKind::Pentode || r != dev.portBase + 1)
                             continue;
-                        double previousDrive = ctx.vv[static_cast<size_t>(r)];
+                        double previousDrive = ctx.vvPrev[static_cast<size_t>(r)];
                         const double* z = networkZ.data() + static_cast<size_t>(localRow) * n;
                         for (int j = 0; j < n; ++j)
                             previousDrive += z[j] * ctx.ii[static_cast<size_t>(ports[static_cast<size_t>(j)])];
@@ -695,6 +695,7 @@ public:
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
+
 
                 fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
                     ? fullDescent + 1 : 0;
