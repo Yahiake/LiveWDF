@@ -15,7 +15,6 @@
 #include "wdf/solver/RootClosedForms.h"
 #include "wdf/solver/RootNewton.h"
 #include "wdf/solver/PushPullPairSolve.h"
-#include "wdf/solver/PushPullTries.h"
 
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
@@ -707,7 +706,6 @@ public:
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
-
 
                 fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
                     ? fullDescent + 1 : 0;
