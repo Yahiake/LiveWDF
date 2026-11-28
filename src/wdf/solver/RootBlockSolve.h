@@ -13,6 +13,8 @@
 #include "wdf/solver/RootJacobian.h"
 #include "wdf/solver/RootClosedForms.h"
 #include "wdf/solver/RootNewton.h"
+#include "wdf/solver/PushPullPairSolve.h"
+#include "wdf/solver/PushPullTries.h"
 
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
@@ -491,6 +493,16 @@ public:
                     }
                     if (mag > 0.0 && mag * scale > lim)
                         scale = lim / mag;
+                }
+            }
+            if constexpr (!Reduced) {
+                static const bool sumdiff = livewdfPpTry("sumdiff");
+                if (sumdiff && it == 0 && limitedPorts > 0 && pushPullPreview &&
+                    solvePushPullDifference(block, ctx, networkZ, n)) {
+                    ++ctx.limitHits;
+                    luValid = false;
+                    fullDescent = 0;
+                    continue;
                 }
             }
             if (limitedPorts > 0 && onlyTubePlatesLimited) {
