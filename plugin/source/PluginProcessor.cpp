@@ -938,6 +938,7 @@ bool LiveWDFPluginProcessor::loadCircuitDocument(const wdf::LiveWDFDocument& doc
         outputFullScaleVolts_.store(playbackDoc.outputFullScaleVolts(), std::memory_order_relaxed);
         outputFastTrim_.store(playbackDoc.outputTrim(false), std::memory_order_relaxed);
         outputPreviewTrim_.store(playbackDoc.outputTrim(true), std::memory_order_relaxed);
+        previewKeepsBlockAnswer_.store(playbackDoc.previewKeepsBlockAnswer(), std::memory_order_relaxed);
         outputAtSpeakerLevel_.store(hasPowerAmp && section != AmpSection::preamp, std::memory_order_relaxed);
         previewPadScale_ = playbackDoc.validPreviewPadDb(playbackDoc.previewPadDb)
             ? juce::Decibels::decibelsToGain(-playbackDoc.previewPadDb) : 1.;
