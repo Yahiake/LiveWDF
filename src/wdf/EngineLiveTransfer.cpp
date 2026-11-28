@@ -182,6 +182,10 @@ void EngineStep::prepareLampReplay() {
             lamp_.held = 0.0;
             return;
         }
+        if (livewdfPpTry("tremrank")) {
+            lamp_.held = 0.0;
+            return;
+        }
         lamp_.frozen[size_t(r)] = 1;
         lamp_.devices = rootDevices_;
         for (auto& d : lamp_.devices) {
