@@ -97,6 +97,7 @@ struct BlockSolveContext {
     long long& mixedAccepted;
     double modeTol;
     bool previewMode;
+    bool repairEnabled;
     bool keepBlockAnswer = false;
     bool reductions = true;
 };
@@ -1279,7 +1280,7 @@ public:
     static inline bool repairWorthwhile(const BlockSolveContext& ctx, const BlockView& view) noexcept
     {
         // A closed-form pass makes a selective retry cheaper than a joint fallback even in a small circuit.
-        return ctx.previewMode && !ctx.keepBlockAnswer && view.count > 1 &&
+        return ctx.repairEnabled && !ctx.keepBlockAnswer && view.count > 1 &&
             (ctx.K >= kCostlyJointRootPorts || ctx.newtonIters == 0);
     }
 
