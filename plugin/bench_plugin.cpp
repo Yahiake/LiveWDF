@@ -274,7 +274,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
     std::printf("quality=%s\n", selectMode(processor, mode));
-    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(0.0f);
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(std::getenv("LWDF_TWO_CORES") ? 1.0f : 0.0f);
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
