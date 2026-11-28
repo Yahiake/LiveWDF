@@ -17,6 +17,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <barrier>
 #include <bit>
@@ -453,6 +454,26 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
         std::printf("ordinary trigger starts %lld converged %lld iterations median %d p90 %d max %d\n",
                     wdf::ppdiag::ordinaryTriggered, wdf::ppdiag::ordinaryConverged,
                     median, p90, maximum);
+    }
+    if (wdf::ppdiag::roleFinished) {
+        const auto quantiles = [](const long long* histogram, int maximumBin, long long total) {
+            std::array<int, 3> result{};
+            long long seen = 0;
+            for (int i = 0; i <= maximumBin; ++i) {
+                seen += histogram[i];
+                if (!result[0] && 2 * seen >= total) result[0] = i;
+                if (!result[1] && 10 * seen >= 9 * total) result[1] = i;
+                if (histogram[i]) result[2] = i;
+            }
+            return result;
+        };
+        const auto iterations = quantiles(wdf::ppdiag::roleIterations, 48, wdf::ppdiag::roleFinished);
+        const auto evaluations = quantiles(wdf::ppdiag::roleResidualEvals, 128, wdf::ppdiag::roleFinished);
+        std::printf("role trigger starts %lld finished %lld iterations median %d p90 %d max %d residual evaluations median %d p90 %d max %d\n",
+                    wdf::ppdiag::roleTriggered, wdf::ppdiag::roleFinished,
+                    iterations[0], iterations[1], iterations[2], evaluations[0], evaluations[1], evaluations[2]);
+        std::printf("dogleg trials %lld rejected %lld radius shrinks %lld\n",
+                    wdf::ppdiag::doglegTrials, wdf::ppdiag::doglegRejected, wdf::ppdiag::doglegShrinks);
     }
     if (wdf::ppdiag::knot3RatioCount) {
         const auto ratioQuantile = [](long long target) {

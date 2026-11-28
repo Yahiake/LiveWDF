@@ -32,6 +32,8 @@ inline long long cap = 0, line = 0, residual = 0, sample = 0, totalBlockIteratio
 inline long long predicted = 0, predictedConverged = 0, predictedIterations[49]{};
 inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIterations[49]{};
 inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, knot3Iterations[49]{};
+inline long long roleTriggered = 0, roleFinished = 0, roleIterations[49]{}, roleResidualEvals[129]{};
+inline long long doglegTrials = 0, doglegRejected = 0, doglegShrinks = 0;
 inline bool atCap = true;
 inline double lastStep = 1.0;
 inline int walkCount = 0;
@@ -216,6 +218,11 @@ public:
         const auto& ports = Reduced ? block.reducedPorts : block.ports;
         const auto& networkZ = Reduced ? block.reducedZ : block.blockZ;
         const int n = static_cast<int>(ports.size());
+        int residualEvaluations = 0;
+        const auto residualNorm = [&] {
+            ++residualEvaluations;
+            return blockResidual<Reduced>(block, ctx, n);
+        };
         if (n <= 0 || n > ctx.nRed)
             return false;
 
@@ -314,7 +321,7 @@ public:
                 const double prev = ctx.ii[static_cast<size_t>(c)];
                 ctx.blockI[static_cast<size_t>(c)] = std::isfinite(prev) ? prev : 0.0;
             }
-            if (blockResidual<Reduced>(block, ctx, n) < landTol) {
+            if (residualNorm() < landTol) {
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
                     for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -337,8 +344,10 @@ public:
         bool predictedStart = false;
         bool ordinaryTrigger = false;
         bool knot3Solve = false;
-        bool walkRoleTrigger = false;
+        bool roleSwapTriggered = false;
         bool hardFailure = false;
+        bool doglegSolve = false;
+        double doglegRadius = 1.0;
         int completedIterations = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
@@ -349,6 +358,7 @@ public:
         double bestF = std::numeric_limits<double>::infinity();
         const bool knotsEnabled = quadricKnotStepEnabled();
         const bool knot3Enabled = safeguardedKnotStepEnabled();
+        static const bool doglegEnabled = livewdfPpTry("dogleg");
         const long long solveStartIters = knotsEnabled ? ctx.newtonIters : 0;
         alignas(32) double modelDv[64]{};
         const auto keepBest = [&] {
@@ -365,6 +375,13 @@ public:
                 knot3Solve = true;
                 knotTriggered = true;
                 ++ctx.knotTriggeredSolves;
+            }
+        };
+        const auto triggerRoleSwap = [&] {
+            if (!roleSwapTriggered) {
+                roleSwapTriggered = true;
+                doglegSolve = doglegEnabled && ctx.previewMode && pushPullPreview;
+                ++ppdiag::roleTriggered;
             }
         };
         ppdiag::atCap = true;
@@ -388,7 +405,7 @@ public:
                 if (ctx.prof)
                     tock(ctx.prof->device);
 
-                maxF = blockResidual<Reduced>(block, ctx, n);
+                maxF = residualNorm();
                 keepBest();
                 if (ctx.prof)
                     tock(ctx.prof->device);
@@ -401,7 +418,8 @@ public:
             curValid = false;
 
             const double kappa = (prevF > 1e-15) ? (maxF / prevF) : 1.0;
-            const bool canReuse = (n >= 3) && (n <= 64) && luValid && (landing || ((luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05)));
+            const bool canReuse = !doglegSolve && (n >= 3) && (n <= 64) && luValid &&
+                (landing || ((luReuseCount < 2) && (kappa < 0.4) && (maxF < 0.05)));
 
             bool solveOk = false;
             if (canReuse) {
@@ -554,7 +572,7 @@ public:
                 if (knot3Enabled && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0)
                     triggerKnot3();
                 if (it == 0 && pushPullPreview && pairCount == 2 && rising >= 0)
-                    walkRoleTrigger = true;
+                    triggerRoleSwap();
                 if ((predict || predictControl) && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
                     if (predictControl && !predict) {
                         ordinaryTrigger = true;
@@ -630,7 +648,7 @@ public:
             if (knot3Enabled && it == 0 && pushPullPreview && powerPentodeLimited)
                 triggerKnot3();
             if (it == 0 && pushPullPreview && powerPentodeLimited)
-                walkRoleTrigger = true;
+                triggerRoleSwap();
             const bool knotActive = knotSteps.active && (!knotSteps.safeguarded || knot3Solve);
             if constexpr (!Reduced) {
                 static const bool sumdiff = livewdfPpTry("sumdiff");
@@ -642,7 +660,9 @@ public:
                     continue;
                 }
             }
-            if ((!knotActive || knotSteps.safeguarded) && limitedPorts > 0 && onlyTubePlatesLimited) {
+            if (doglegSolve) {
+                scale = 1.0;
+            } else if ((!knotActive || knotSteps.safeguarded) && limitedPorts > 0 && onlyTubePlatesLimited) {
                 ++ctx.limitHits;
                 // Bound each plate's excursion through cutoff/reverse regions
                 // without throttling the grids that move a push-pull stage across.
@@ -791,7 +811,137 @@ public:
                 const double baseF = maxF;
                 double stepSize = 1.0;
                 double ftNorm = 0.0;
-                if (knotActive && knotSteps.polynomial && !knotSteps.safeguarded) {
+                bool doglegAccepted = false;
+                if (doglegSolve) {
+                    alignas(32) double a[64 * 64], f[64], swing[64], zNewton[64], gradient[64];
+                    double baseSquared = 0.0;
+                    for (int r = 0; r < n; ++r) {
+                        const int rp = ports[static_cast<size_t>(r)];
+                        f[r] = ctx.blockF[static_cast<size_t>(rp)];
+                        baseSquared += f[r] * f[r];
+                        swing[r] = std::max(ctx.stepUp[static_cast<size_t>(rp)],
+                                            ctx.stepDown[static_cast<size_t>(rp)]);
+                        if (!std::isfinite(swing[r]))
+                            swing[r] = std::max(1.0, std::abs(ctx.blockV[static_cast<size_t>(rp)]));
+                        swing[r] = std::clamp(swing[r], 1e-3, 1e6);
+                        zNewton[r] = ctx.blockDv[static_cast<size_t>(rp)] / swing[r];
+                    }
+                    for (int r = 0; r < n; ++r) {
+                        for (int j = 0; j < n; ++j) {
+                            double value = r == j ? 1.0 : 0.0;
+                            for (int c = 0; c < n; ++c) {
+                                const int rp = ports[static_cast<size_t>(r)];
+                                const int cp = ports[static_cast<size_t>(c)];
+                                const int jp = ports[static_cast<size_t>(j)];
+                                const double z = networkZ.empty()
+                                    ? ctx.Z[static_cast<size_t>(rp) * ctx.K + cp]
+                                    : networkZ[static_cast<size_t>(r) * n + c];
+                                value += z * ctx.blockJ[static_cast<size_t>(cp) * ctx.K + jp];
+                            }
+                            a[static_cast<size_t>(r) * n + j] = value;
+                        }
+                    }
+                    double gradientSquared = 0.0;
+                    for (int j = 0; j < n; ++j) {
+                        double value = 0.0;
+                        for (int r = 0; r < n; ++r)
+                            value += a[static_cast<size_t>(r) * n + j] * f[r];
+                        gradient[j] = swing[j] * value;
+                        gradientSquared += gradient[j] * gradient[j];
+                    }
+                    double bgSquared = 0.0;
+                    for (int r = 0; r < n; ++r) {
+                        double value = 0.0;
+                        for (int j = 0; j < n; ++j)
+                            value += a[static_cast<size_t>(r) * n + j] * swing[j] * gradient[j];
+                        bgSquared += value * value;
+                    }
+                    const double alpha = gradientSquared / bgSquared;
+                    alignas(32) double zCauchy[64], zStep[64];
+                    double cauchySquared = 0.0;
+                    for (int j = 0; j < n; ++j) {
+                        zCauchy[j] = -alpha * gradient[j];
+                        cauchySquared += zCauchy[j] * zCauchy[j];
+                    }
+                    for (int retry = 0; retry < 8 && doglegRadius >= 1e-6; ++retry) {
+                        double stepSquared = 0.0;
+                        double newtonSquared = 0.0;
+                        for (int j = 0; j < n; ++j)
+                            newtonSquared += zNewton[j] * zNewton[j];
+                        if (newtonSquared <= doglegRadius * doglegRadius) {
+                            std::copy_n(zNewton, n, zStep);
+                            stepSquared = newtonSquared;
+                        } else if (cauchySquared >= doglegRadius * doglegRadius) {
+                            const double factor = -doglegRadius / std::sqrt(gradientSquared);
+                            for (int j = 0; j < n; ++j) {
+                                zStep[j] = factor * gradient[j];
+                                stepSquared += zStep[j] * zStep[j];
+                            }
+                        } else {
+                            double dd = 0.0, cd = 0.0;
+                            for (int j = 0; j < n; ++j) {
+                                const double d = zNewton[j] - zCauchy[j];
+                                dd += d * d;
+                                cd += zCauchy[j] * d;
+                            }
+                            const double tau = (-cd + std::sqrt(std::max(0.0,
+                                cd * cd + dd * (doglegRadius * doglegRadius - cauchySquared)))) / dd;
+                            for (int j = 0; j < n; ++j) {
+                                zStep[j] = zCauchy[j] + tau * (zNewton[j] - zCauchy[j]);
+                                stepSquared += zStep[j] * zStep[j];
+                            }
+                        }
+                        double predictedSquared = 0.0;
+                        for (int r = 0; r < n; ++r) {
+                            double value = f[r];
+                            for (int j = 0; j < n; ++j)
+                                value += a[static_cast<size_t>(r) * n + j] * swing[j] * zStep[j];
+                            predictedSquared += value * value;
+                        }
+                        const double predictedReduction = 0.5 * (baseSquared - predictedSquared);
+                        bool finite = std::isfinite(predictedReduction) && predictedReduction > 0.0;
+                        for (int j = 0; j < n; ++j) {
+                            const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                            ctx.blockV[p] = ctx.blockVOld[p] + swing[j] * zStep[j];
+                            finite &= std::isfinite(ctx.blockV[p]);
+                        }
+                        if (finite) {
+                            for (int di : devices)
+                                RootResidual::currentsForDevice(
+                                    ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                                    ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                                    ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                                    ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
+                            ftNorm = residualNorm();
+                        }
+                        ++ppdiag::doglegTrials;
+                        double actualSquared = 0.0;
+                        for (int j = 0; finite && j < n; ++j) {
+                            const double value = ctx.blockF[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                            finite &= std::isfinite(value);
+                            actualSquared += value * value;
+                        }
+                        const double actualReduction = 0.5 * (baseSquared - actualSquared);
+                        const double ratio = actualReduction / predictedReduction;
+                        if (finite && actualReduction > 0.0 && std::isfinite(ratio) && ratio > 1e-4) {
+                            doglegAccepted = true;
+                            if (ratio < 0.25) {
+                                doglegRadius *= 0.25;
+                                ++ppdiag::doglegShrinks;
+                            } else if (ratio > 0.75 && std::sqrt(stepSquared) > 0.9 * doglegRadius) {
+                                doglegRadius = std::min(16.0, 2.0 * doglegRadius);
+                            }
+                            break;
+                        }
+                        ++ppdiag::doglegRejected;
+                        ++ppdiag::doglegShrinks;
+                        doglegRadius *= 0.25;
+                    }
+                    if (!doglegAccepted) {
+                        ppdiag::lastStep = 0.0;
+                        break;
+                    }
+                } else if (knotActive && knotSteps.polynomial && !knotSteps.safeguarded) {
                     const auto evaluateRay = [&](double t, double* residual) {
                         for (int di : devices) {
                             const RootDevice& dev = ctx.rootDevices[di];
@@ -806,7 +956,7 @@ public:
                                 ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
                                 ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                         }
-                        const double norm = blockResidual<Reduced>(block, ctx, n);
+                        const double norm = residualNorm();
                         if (residual)
                             for (int j = 0; j < n; ++j)
                                 residual[j] = ctx.blockF[static_cast<size_t>(ports[static_cast<size_t>(j)])];
@@ -824,7 +974,7 @@ public:
                         ++ctx.knotTriggeredSolves;
                     }
                 }
-                const int maxLineTrials = knotActive && knotSteps.polynomial && !knotSteps.safeguarded
+                const int maxLineTrials = doglegSolve ? 0 : knotActive && knotSteps.polynomial && !knotSteps.safeguarded
                     ? 0 : knotActive && !knotSteps.safeguarded ? knotSteps.knots + 1 : 4;
                 double bestTrialF = std::numeric_limits<double>::infinity();
                 double bestTrialStep = 1.0;
@@ -892,7 +1042,7 @@ public:
                             ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                     }
 
-                    ftNorm = blockResidual<Reduced>(block, ctx, n);
+                    ftNorm = residualNorm();
 
                     if (knotActive && !knotSteps.safeguarded) {
                         if (ftNorm < bestTrialF) {
@@ -927,7 +1077,7 @@ public:
                         stepSize *= 0.5;
                     }
                 }
-                if (knotActive && knotSteps.safeguarded) {
+                if (!doglegSolve && knotActive && knotSteps.safeguarded) {
                     bestTrialF = ftNorm;
                     bestTrialStep = stepSize;
                     for (int j = 0; j < n; ++j) {
@@ -948,7 +1098,7 @@ public:
                                 ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
                                 ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                         }
-                        const double norm = blockResidual<Reduced>(block, ctx, n);
+                        const double norm = residualNorm();
                         if (residual)
                             for (int j = 0; j < n; ++j)
                                 residual[j] = ctx.blockF[static_cast<size_t>(ports[static_cast<size_t>(j)])];
@@ -1018,6 +1168,11 @@ public:
                 curValid = true;
             }
         }
+        if (roleSwapTriggered) {
+            ++ppdiag::roleFinished;
+            ++ppdiag::roleIterations[std::clamp(completedIterations, 0, 48)];
+            ++ppdiag::roleResidualEvals[std::clamp(residualEvaluations, 0, 128)];
+        }
         if (predictedStart && (converged || landing)) {
             ++ppdiag::predictedConverged;
             ++ppdiag::predictedIterations[std::clamp(completedIterations - 1, 0, 48)];
@@ -1030,7 +1185,7 @@ public:
             ++ppdiag::knot3Iterations[std::clamp(completedIterations, 0, 48)];
         if constexpr (!Reduced) {
             if (ppdiag::walkLog() && ppdiag::walkCount &&
-                (walkRoleTrigger || completedIterations >= 12)) {
+                (roleSwapTriggered || completedIterations >= 12)) {
                 std::FILE* log = ppdiag::walkLog();
                 if (!ppdiag::walksDumped)
                     std::fprintf(log, "fallback,sample,iteration,residual_norm,max_dv,step_limit_scale,line_search_factor,largest_step_device,largest_step_port,A_vgk,A_vsk,A_vpk,A_ip,A_is,A_ig,B_vgk,B_vsk,B_vpk,B_ip,B_is,B_ig,T1_vgk,T1_vpk,T2_vgk,T2_vpk,T3_vgk,T3_vpk,T4_vgk,T4_vpk,solve_id,trigger,result\n");
@@ -1047,7 +1202,7 @@ public:
                     for (int c = 5; c < 25; ++c)
                         std::fprintf(log, ",%.6g", trace[c]);
                     std::fprintf(log, ",%lld,%s,%s\n", solve,
-                                 walkRoleTrigger ? "role" : "iterations", result);
+                                 roleSwapTriggered ? "role" : "iterations", result);
                 }
                 std::fflush(log);
             }
