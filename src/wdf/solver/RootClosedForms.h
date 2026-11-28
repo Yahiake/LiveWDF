@@ -3,6 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <cstddef>
+#include <limits>
 #include <vector>
 
 #include "wdf/DenseTopology.h"
@@ -169,6 +170,7 @@ public:
             constexpr double h = -7.98593702, jointV = 100.43918363;
             const double x0 = pv / 250.0, y0 = gv / 2.0;
             const double xz = pz / 250.0, yz = gz / 2.0;
+            double best = std::numeric_limits<double>::infinity();
             const auto solveRegion = [&](bool upper) noexcept {
                 const double joint = jointV / 250.0;
                 const double q0 = a * x0 * x0 + b * x0 * y0 + cc * y0 * y0 +
@@ -185,29 +187,25 @@ public:
                     const double candidate = -c0 / c1;
                     const double vpk = pv - pz * candidate;
                     if (candidate >= 0.0 && ((upper && vpk > jointV) || (!upper && vpk <= jointV))) {
-                        ip = candidate;
-                        return true;
+                        best = std::min(best, candidate);
                     }
-                    return false;
+                    return;
                 }
                 const double discriminant = c1 * c1 - 4.0 * c2 * c0;
                 if (discriminant < 0.0)
-                    return false;
+                    return;
                 const double root = std::sqrt(discriminant);
                 const double roots[2] = {(-c1 - root) / (2.0 * c2), (-c1 + root) / (2.0 * c2)};
                 for (double candidate : roots) {
                     const double vpk = pv - pz * candidate;
                     if (candidate >= 0.0 && ((upper && vpk > jointV) || (!upper && vpk <= jointV))) {
-                        ip = candidate;
-                        return true;
+                        best = std::min(best, candidate);
                     }
                 }
-                return false;
             };
-            ip = 0.0;
-            const bool upperFirst = pv > jointV;
-            if (!solveRegion(upperFirst))
-                solveRegion(!upperFirst);
+            solveRegion(false);
+            solveRegion(true);
+            ip = std::isfinite(best) ? best : 0.0;
             if (pv - pz * ip >= 0.0)
                 return 0;
             if (pz > 0.0 && pv > 0.0) {
