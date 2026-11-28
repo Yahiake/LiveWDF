@@ -45,7 +45,6 @@ inline double lastStep = 1.0;
 inline int walkCount = 0;
 inline long long walksDumped = 0;
 inline long long deviceWalkSolves = 0;
-inline long long deviceWalkClasses[3]{};
 inline double walkTrace[64][28]{};
 
 inline std::FILE* walkLog() {
@@ -74,13 +73,6 @@ inline std::FILE* deviceWalkLog() {
         return f;
     }();
     return file;
-}
-inline int deviceWalkLimit() {
-    static const int limit = [] {
-        const char* value = std::getenv("LWDF_DEVICE_WALK_LIMIT");
-        return value ? std::clamp(std::atoi(value), 0, 256) : 64;
-    }();
-    return limit;
 }
 inline bool traceDevice(const std::string& name) {
     const char* list = std::getenv("LWDF_DEVICE_TRACE_NAMES");
@@ -399,13 +391,12 @@ private:
         }
     }
 
-    static void flushDeviceWalk(std::vector<DeviceWalkRow>& rows, const char* result,
-                                bool failed, bool difficult) {
+    static void flushDeviceWalk(std::vector<DeviceWalkRow>& rows, const char* result) {
         std::FILE* log = ppdiag::deviceWalkLog();
         if (!log || rows.empty()) return;
-        const int cls = failed ? 0 : difficult ? 1 : 2;
-        if (ppdiag::deviceWalkClasses[cls]++ >= ppdiag::deviceWalkLimit()) return;
-        for (const auto& row : rows) writeDeviceWalkRow(log, row, result);
+        const int last = rows.back().iteration;
+        for (const auto& row : rows)
+            writeDeviceWalkRow(log, row, row.iteration == last ? result : "continue");
         std::fflush(log);
     }
 public:
@@ -1815,12 +1806,10 @@ public:
         if (knot3Solve && (converged || landing))
             ++ppdiag::knot3Iterations[std::clamp(completedIterations, 0, 48)];
         const bool walkKept = !converged && !landing && ctx.keepBlockAnswer && std::isfinite(bestF);
-        const bool walkFailed = hardFailure || (!converged && !landing && !walkKept);
         const char* walkResult = hardFailure ? "lu" : converged ? "converged" :
             landing ? "landing" : walkKept ? "kept" :
             ppdiag::atCap && ppdiag::lastStep == 1.0 ? "cap" : "line";
-        flushDeviceWalk(deviceWalkRows, walkResult, walkFailed,
-                        roleSwapTriggered || completedIterations >= 12);
+        flushDeviceWalk(deviceWalkRows, walkResult);
         if constexpr (!Reduced) {
             if (ppdiag::walkLog() && ppdiag::walkCount &&
                 (roleSwapTriggered || completedIterations >= 12)) {
