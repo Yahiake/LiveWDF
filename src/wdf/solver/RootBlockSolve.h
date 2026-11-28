@@ -95,6 +95,7 @@ struct BlockSolveContext {
     long long& mixedAttempts;
     long long& mixedAccepted;
     double modeTol;
+    bool previewMode;
     bool keepBlockAnswer = false;
     bool reductions = true;
 };
@@ -231,12 +232,14 @@ public:
         // sample's state converged and never advance a slewing or railed
         // stage.
         bool hasOpAmp = Reduced;
+        int pentodeCount = 0;
         for (int di : devices) {
+            pentodeCount += ctx.rootDevices[di].kind == DeviceKind::Pentode;
             if (ctx.rootDevices[di].kind == DeviceKind::OpAmp) {
                 hasOpAmp = true;
-                break;
             }
         }
+        const bool pushPullPreview = ctx.previewMode && pentodeCount == 2;
         if (hasOpAmp && n >= 4 && !relaxed) {
             // In coupled stages the preceding two samples give a useful
             // first iterate. Keep the guess local to the last accepted
@@ -271,13 +274,14 @@ public:
 
         bool converged = false;
         bool curValid = false;
+        int fullDescent = 0;
         double maxF = 0.0;
         double prevF = 0.0;
         bool luValid = false;
         int luReuseCount = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
-        const int localMax = std::min(maxIter, Reduced ? 10 : 24);
+        const int localMax = std::min(maxIter, Reduced ? 10 : (pushPullPreview ? 32 : 24));
         alignas(32) double bestV[64], bestI[64];
         double bestF = std::numeric_limits<double>::infinity();
         const auto keepBest = [&] {
@@ -290,6 +294,10 @@ public:
             }
         };
         for (int it = 0; it < localMax; ++it) {
+            if constexpr (!Reduced) {
+                if (it >= 24 && fullDescent < 2)
+                    break;
+            }
             ++ctx.newtonIters;
             if (!curValid) {
                 for (int di : devices) {
@@ -467,6 +475,8 @@ public:
             }
 
             double scale = 1.0;
+            bool onlyTubePlatesLimited = pushPullPreview;
+            int limitedPorts = 0;
             for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -474,11 +484,31 @@ public:
                     const double lim = (d >= 0.0) ? ctx.stepUp[static_cast<size_t>(r)]
                                                   : ctx.stepDown[static_cast<size_t>(r)];
                     const double mag = std::abs(d);
+                    if (mag > lim) {
+                        ++limitedPorts;
+                        onlyTubePlatesLimited &= r == dev.portBase &&
+                            (dev.kind == DeviceKind::Triode || dev.kind == DeviceKind::Pentode);
+                    }
                     if (mag > 0.0 && mag * scale > lim)
                         scale = lim / mag;
                 }
             }
-            if (scale < 1.0) {
+            if (limitedPorts > 0 && onlyTubePlatesLimited) {
+                ++ctx.limitHits;
+                // Bound each plate's excursion through cutoff/reverse regions
+                // without throttling the grids that move a push-pull stage across.
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    if (dev.kind != DeviceKind::Triode && dev.kind != DeviceKind::Pentode)
+                        continue;
+                    const int r = dev.portBase;
+                    const double d = ctx.blockDv[static_cast<size_t>(r)];
+                    const double lim = d >= 0.0 ? ctx.stepUp[static_cast<size_t>(r)]
+                                                : ctx.stepDown[static_cast<size_t>(r)];
+                    ctx.blockDv[static_cast<size_t>(r)] = std::clamp(d, -lim, lim);
+                }
+                scale = 1.0;
+            } else if (scale < 1.0) {
                 ++ctx.limitHits;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -500,6 +530,7 @@ public:
             }
 
             if (n < 3) {
+                fullDescent = 0;
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -642,6 +673,9 @@ public:
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
+
+                fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
+                    ? fullDescent + 1 : 0;
 
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
