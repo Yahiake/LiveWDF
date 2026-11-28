@@ -11,6 +11,10 @@ public:
     mutable long long lineTrials_ = 0;
     mutable long long limitHits_ = 0;
     mutable long long gridLimitHits_ = 0;
+    mutable long long knotStepChoices_ = 0;
+    mutable long long knotTriggeredSolves_ = 0;
+    mutable long long knotConvergedSolves_ = 0;
+    mutable long long knotConvergedIterations_ = 0;
 
     mutable long long jfetFallbacks_ = 0;
     bool jfetSolveFailed_ = false;
