@@ -107,24 +107,21 @@ struct QuadricEmission {
             const double df_dvgk = donset * vgk / den
                 + onset * gridDelta * vsk / (den * den);
             const double df_dvsk = -onset * gridDelta * vgk / (den * den);
-            c.ig = e * fraction;
-            c.dig_dvgk = eg * fraction + e * df_dvgk;
-            c.dig_dvsk = es * fraction + e * df_dvsk;
-
             const double total = c.ip + c.is;
             const double dtotal_dvgk = c.dip_dvgk + c.dis_dvgk;
             const double dtotal_dvsk = c.dip_dvsk + c.dis_dvsk;
             const double dtotal_dvpk = c.dip_dvpk + c.dis_dvpk;
-            const double remain = 1.0 - c.ig / total;
-            const double dremain_dvgk = -c.dig_dvgk / total + c.ig * dtotal_dvgk / (total * total);
-            const double dremain_dvsk = -c.dig_dvsk / total + c.ig * dtotal_dvsk / (total * total);
-            const double dremain_dvpk = c.ig * dtotal_dvpk / (total * total);
-            c.dip_dvgk = c.dip_dvgk * remain + c.ip * dremain_dvgk;
-            c.dip_dvsk = c.dip_dvsk * remain + c.ip * dremain_dvsk;
-            c.dip_dvpk = c.dip_dvpk * remain + c.ip * dremain_dvpk;
-            c.dis_dvgk = c.dis_dvgk * remain + c.is * dremain_dvgk;
-            c.dis_dvsk = c.dis_dvsk * remain + c.is * dremain_dvsk;
-            c.dis_dvpk = c.dis_dvpk * remain + c.is * dremain_dvpk;
+            c.ig = total * fraction;
+            c.dig_dvgk = dtotal_dvgk * fraction + total * df_dvgk;
+            c.dig_dvsk = dtotal_dvsk * fraction + total * df_dvsk;
+            c.dig_dvpk = dtotal_dvpk * fraction;
+            const double remain = 1.0 - fraction;
+            c.dip_dvgk = c.dip_dvgk * remain - c.ip * df_dvgk;
+            c.dip_dvsk = c.dip_dvsk * remain - c.ip * df_dvsk;
+            c.dip_dvpk *= remain;
+            c.dis_dvgk = c.dis_dvgk * remain - c.is * df_dvgk;
+            c.dis_dvsk = c.dis_dvsk * remain - c.is * df_dvsk;
+            c.dis_dvpk *= remain;
             c.ip *= remain;
             c.is *= remain;
         }
@@ -356,8 +353,8 @@ struct ReefmanPentode {
     const PolyKneeEmission* polyknee = nullptr;
     const PolyKneeEmission* previewPolyknee = nullptr;
     bool gridPhysics = false;
-    // 807-calibrated 6L6-family geometry; EL34, EL84, and 6V6 are UNFITTED.
-    double gridDelta = 561.066966019585;
+    // RCA 807/6L6-calibrated geometry; EL34, EL84, and 6V6 are UNFITTED.
+    double gridDelta = 1.36244251749747;
 
     static constexpr double gridPowerCrossoverCurrent = 1e-5;
     static constexpr double gridPowerCrossoverVoltage = 0.23026100917441295;
