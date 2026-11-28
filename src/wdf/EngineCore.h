@@ -49,6 +49,7 @@
 #include "spice/Net.h"
 #include "wdf/DenseTopology.h"
 #include "wdf/RuntimeKernels.h"
+#include "wdf/solver/PushPullTries.h"
 #include "wdf/state/DenseDiagnostics.h"
 #include "wdf/state/DenseState.h"
 
@@ -619,8 +620,11 @@ protected:
         for (size_t i = 0; i < circuit_.varRes.size(); ++i)
             varResResIndex_[i] = resIndexByNameCore(circuit_.varRes[i].name);
         pentodes_.clear();
+        static const bool tableTry = livewdfPpTry("table");
         for (const auto& cp : comp_.pent) {
             pentodes_.push_back(cp.model);
+            if (tableTry && pentodes_.back().modelKind == PentodeModelKind::Reefman)
+                pentodes_.back().reefman.quadric = quadricTableFromFile(pentodes_.back().reefman.quadric);
             pentodes_.back().ensureTable();
         }
 
