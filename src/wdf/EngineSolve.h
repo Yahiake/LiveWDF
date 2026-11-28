@@ -199,6 +199,7 @@ protected:
     std::vector<double> lagHeld_;
     int lagCount_ = 0;
     long long lagRevision_ = -1;
+    double plateLagGain_ = 0.0;
     double modeTol_ = 0.0;
     /// Preview: a lamp side with no coupling to the rest, replayed from one recorded period of its port currents.
     /// Where the watched cell shunts a node to ground ahead of tube inputs, it is folded into Z at a held value
