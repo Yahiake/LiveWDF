@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 
 #include "devices/QuadricTriode.h"
@@ -66,6 +67,7 @@ struct TriodeModel {
     };
     // Dempwolf RSD-1 12AX7 grid curve fitted over -0.25..1.05 V where amp grids sit on a DI, the last line over 0.25..2.5 V.
     static constexpr GridLine kGridLines[] = {{-0.0745, 3494.0}, {0.0941, 1550.0}, {0.3, 1100.0}};
+    std::array<GridLine, 3> gridLines = {kGridLines[0], kGridLines[1], kGridLines[2]};
 
     QuadricTriodeParams p{};
     double cg = p.kPg / (2.0 * p.kP2);  // kPg/(2*kP2)
@@ -91,9 +93,9 @@ struct TriodeModel {
     double gridCurrent(double vgk, double& slope) const noexcept {
         double ig = 0.0;
         slope = 0.0;
-        if (!gridConducts || vgk <= kGridLines[0].on)
+        if (!gridConducts || vgk <= gridLines[0].on)
             return 0.0;
-        for (const GridLine& l : kGridLines)
+        for (const GridLine& l : gridLines)
             if (gridConducts && vgk - l.on > l.r * ig) {
                 ig = (vgk - l.on) / l.r;
                 slope = 1.0 / l.r;
@@ -111,7 +113,7 @@ struct TriodeModel {
     double limitGrid(double vold, double vnew, bool& limited) const noexcept {
         if (!gridConducts)
             return vnew;
-        constexpr double on0 = kGridLines[0].on;
+        const double on0 = gridLines[0].on;
         constexpr double vt = 0.05;
         if (vold <= on0) {
             // Crossing into forward conduction from cutoff:

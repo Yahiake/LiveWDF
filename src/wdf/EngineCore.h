@@ -523,6 +523,7 @@ protected:
         for (auto& t : comp_.tri) {
             t.model.gridConducts = gridCurrent;
             if (tableTry) {
+                quadricTriodeGridFromFile(t.model);
                 t.model.p = quadricTriodeFromFile(t.model.p);
                 t.model.prepareQuadric();
             }

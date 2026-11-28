@@ -203,7 +203,7 @@ public:
         const double* zg = zData + static_cast<size_t>(o + 2) * K;
         unsigned char pin = solvePlate(m, voPk, zp[o], voGik, zg[o], ip);
         ig = 0.0;
-        for (const TriodeModel::GridLine& l : TriodeModel::kGridLines) {
+        for (const TriodeModel::GridLine& l : m.gridLines) {
             if (!m.gridConducts || voGik - zg[o] * ip - zg[o + 2] * ig - l.on <= l.r * ig)
                 break;
             const double a = 1.0 / (l.r + zg[o + 2]);
