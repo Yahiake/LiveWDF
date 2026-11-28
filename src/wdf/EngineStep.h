@@ -12,6 +12,11 @@
 
 namespace wdf {
 
+inline bool livewdfTableTry() noexcept {
+    static const bool enabled = livewdfPpTry("table");
+    return enabled;
+}
+
 class EngineStep : public EngineCompile {
 public:
     bool hasCompiledOptical() const noexcept { return sharedLamps_; }
@@ -184,11 +189,10 @@ public:
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     void usePreviewPentodes(bool enabled) noexcept {
-        static const bool table = livewdfPpTry("table");
         for (size_t i = 0; i < pentodes_.size(); ++i) {
             const auto& card = comp_.pent[i].model.reefman;
             const auto* quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
-            pentodes_[i].reefman.quadric = table ? quadricTableFromFile(quadric) : quadric;
+            pentodes_[i].reefman.quadric = livewdfTableTry() ? quadricTableFromFile(quadric) : quadric;
         }
     }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }

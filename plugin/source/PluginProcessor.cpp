@@ -182,6 +182,8 @@ LiveWDFPluginProcessor::LiveWDFPluginProcessor()
     : AudioProcessor(BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true)
                                       .withOutput("Output", juce::AudioChannelSet::stereo(), true)),
       apvts_(*this, nullptr, "Parameters", createParameterLayout()) {
+    if (wdf::livewdfTableTry())
+        (void)wdf::quadricTableFromFile(nullptr);
     for (size_t i = 0; i < numPorts; ++i)
         ports_[i].parameter = apvts_.getRawParameterValue(portParameterIds[i]);
     startTimerHz(10);
