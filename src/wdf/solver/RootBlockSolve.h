@@ -313,7 +313,9 @@ public:
         int luReuseCount = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
-        const int localMax = std::min(maxIter, Reduced ? 10 : (pushPullPreview ? 32 : 24));
+        static const bool cap48 = livewdfPpTry("cap48");
+        const int localMax = Reduced ? std::min(maxIter, 10) :
+            pushPullPreview && cap48 ? 48 : std::min(maxIter, pushPullPreview ? 32 : 24);
         alignas(32) double bestV[64], bestI[64];
         double bestF = std::numeric_limits<double>::infinity();
         const bool knotsEnabled = quadricKnotStepEnabled();
@@ -329,7 +331,7 @@ public:
         };
         for (int it = 0; it < localMax; ++it) {
             if constexpr (!Reduced) {
-                if (it >= 24 && fullDescent < 2)
+                if (it >= (cap48 && pushPullPreview ? 40 : 24) && fullDescent < 2)
                     break;
             }
             ++ctx.newtonIters;
