@@ -1178,6 +1178,7 @@ protected:
     /// Resistor indices a pot/rheostat writes, resolved in the constructor.
     std::vector<int> potResA_, potResB_, varResResIndex_;
     std::vector<Pentode> pentodes_;
+    std::array<QuadricEmission, 5> replayPentodeTables_{};
     std::vector<OpAmpModel> opAmps_;
     // Runtime state for the op-amp three-port law. `opAmpVp_` is the internal
     // dominant-pole source voltage in port space (volts above `vee`).

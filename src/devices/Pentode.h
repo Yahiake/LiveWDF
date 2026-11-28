@@ -202,6 +202,26 @@ inline constexpr QuadricEmission kQuadricEL84{
     {3.41060925377e-07, 0.000110300864644, 0.000623071538105, 3.67939579773e-11, 3.69299380011e-05},
     0.0285128761724, 1.0, 5.7088672908e-05, 0.0844099160086, 0.143847084188};
 
+inline bool loadQuadricTables(const char* path, std::array<QuadricEmission, 5>& values,
+                              std::array<bool, 5>& loaded) {
+    const char* names[5] = {"EL34", "6L6GC", "6L6GCPREVIEW", "6V6S", "EL84"};
+    std::ifstream input(path ? path : "");
+    std::string name;
+    while (input >> name) {
+        int index = 0;
+        while (index < 5 && name != names[index]) ++index;
+        QuadricEmission value{};
+        for (double& x : value.av) input >> x;
+        for (double& x : value.knot) input >> x;
+        for (double& x : value.coef) input >> x;
+        input >> value.beta >> value.plate >> value.lambda >> value.rho >> value.sigma;
+        if (!input || index == 5) return false;
+        values[static_cast<size_t>(index)] = value;
+        loaded[static_cast<size_t>(index)] = true;
+    }
+    return std::ranges::any_of(loaded, std::identity{});
+}
+
 inline const QuadricEmission* quadricTableFromFile(const QuadricEmission* compiled) {
     struct Tables {
         const QuadricEmission* keys[5] = {&kQuadricEL34, &kQuadric6L6GC,
@@ -212,21 +232,9 @@ inline const QuadricEmission* quadricTableFromFile(const QuadricEmission* compil
         bool loaded[5]{};
 
         Tables() {
-            const char* path = std::getenv("LIVEWDF_PP_TABLE");
-            std::ifstream input(path ? path : "");
-            std::string name;
-            while (input >> name) {
-                int index = 0;
-                while (index < 5 && name != names[index]) ++index;
-                QuadricEmission value{};
-                for (double& x : value.av) input >> x;
-                for (double& x : value.knot) input >> x;
-                for (double& x : value.coef) input >> x;
-                input >> value.beta >> value.plate >> value.lambda >> value.rho >> value.sigma;
-                if (!input || index == 5) break;
-                values[static_cast<size_t>(index)] = value;
-                loaded[index] = true;
-            }
+            std::array<bool, 5> found{};
+            loadQuadricTables(std::getenv("LIVEWDF_PP_TABLE"), values, found);
+            std::copy(found.begin(), found.end(), loaded);
         }
 
         const QuadricEmission* get(const QuadricEmission* key) const noexcept {
