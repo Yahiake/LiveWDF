@@ -416,6 +416,36 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
                     wdf::ppdiag::ordinaryTriggered, wdf::ppdiag::ordinaryConverged,
                     median, p90, maximum);
     }
+    if (wdf::ppdiag::knot3RatioCount) {
+        const auto ratioQuantile = [](long long target) {
+            long long seen = 0;
+            for (int i = 0; i < 401; ++i) {
+                seen += wdf::ppdiag::knot3Ratios[i];
+                if (seen >= target)
+                    return std::exp2((i - 200) / 10.0);
+            }
+            return 0.0;
+        };
+        long long converged = 0;
+        for (long long count : wdf::ppdiag::knot3Iterations)
+            converged += count;
+        long long seen = 0;
+        int median = 0, p90 = 0, maximum = 0;
+        for (int i = 0; i <= 48; ++i) {
+            seen += wdf::ppdiag::knot3Iterations[i];
+            if (!median && 2 * seen >= converged)
+                median = i;
+            if (!p90 && 10 * seen >= 9 * converged)
+                p90 = i;
+            if (wdf::ppdiag::knot3Iterations[i])
+                maximum = i;
+        }
+        std::printf("knots3 models %lld ratio median %.4g p90 %.4g accepted %lld iterations median %d p90 %d max %d\n",
+                    wdf::ppdiag::knot3RatioCount,
+                    ratioQuantile((wdf::ppdiag::knot3RatioCount + 1) / 2),
+                    ratioQuantile((9 * wdf::ppdiag::knot3RatioCount + 9) / 10),
+                    wdf::ppdiag::knot3Accepted, median, p90, maximum);
+    }
     if (engine->knotTriggeredSolves())
         std::printf("knot steps %lld triggered %lld converged %lld iterations %lld residual predicted %.9g actual %.9g ratio %.9g\n",
                     engine->knotStepChoices(), engine->knotTriggeredSolves(), engine->knotConvergedSolves(),

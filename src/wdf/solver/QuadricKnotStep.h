@@ -11,12 +11,18 @@
 namespace wdf::solver {
 
 inline bool quadricKnotStepEnabled() noexcept {
-    static const bool enabled = livewdfPpTry("knots");
-    return enabled;
+    static const bool enabled = livewdfPpTry("knots") && !livewdfPpTry("knots3");
+    static const bool safeguarded = livewdfPpTry("knots3");
+    return enabled || safeguarded;
 }
 
 inline bool polynomialKnotStepEnabled() noexcept {
-    static const bool enabled = livewdfPpTry("knots2");
+    static const bool enabled = livewdfPpTry("knots2") || livewdfPpTry("knots3");
+    return enabled;
+}
+
+inline bool safeguardedKnotStepEnabled() noexcept {
+    static const bool enabled = livewdfPpTry("knots3");
     return enabled;
 }
 
@@ -25,6 +31,7 @@ struct QuadricKnotSteps {
     int knots = 0;
     bool active = false;
     bool polynomial = false;
+    bool safeguarded = false;
 };
 
 inline QuadricKnotSteps quadricKnotSteps(
@@ -39,6 +46,7 @@ inline QuadricKnotSteps quadricKnotSteps(
     constexpr double pastVolts = 0.1;
     QuadricKnotSteps result;
     result.polynomial = polynomialKnotStepEnabled();
+    result.safeguarded = safeguardedKnotStepEnabled();
     bool hasQuadric = false;
     bool hasPolynomialPentode = false;
     const auto add = [&](double x, double dx) {
@@ -100,7 +108,7 @@ inline QuadricKnotSteps quadricKnotSteps(
         result.values.begin(), result.values.begin() + result.knots,
         [](double a, double b) { return std::abs(a - b) < 1e-12; }) - result.values.begin());
     result.values[static_cast<size_t>(result.knots)] = 1.0;
-    result.active = result.polynomial ? hasPolynomialPentode : result.knots > 0;
+    result.active = result.safeguarded ? hasQuadric : result.polynomial ? hasPolynomialPentode : result.knots > 0;
     return result;
 }
 

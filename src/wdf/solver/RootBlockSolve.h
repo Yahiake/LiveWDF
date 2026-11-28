@@ -29,6 +29,7 @@ namespace wdf::ppdiag {
 inline long long cap = 0, line = 0, residual = 0, sample = 0, totalBlockIterations = 0;
 inline long long predicted = 0, predictedConverged = 0, predictedIterations[49]{};
 inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIterations[49]{};
+inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, knot3Iterations[49]{};
 inline bool atCap = true;
 inline double lastStep = 1.0;
 }
@@ -323,6 +324,7 @@ public:
         int luReuseCount = 0;
         bool predictedStart = false;
         bool ordinaryTrigger = false;
+        bool knot3Solve = false;
         int completedIterations = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
@@ -332,7 +334,9 @@ public:
         alignas(32) double bestV[64], bestI[64];
         double bestF = std::numeric_limits<double>::infinity();
         const bool knotsEnabled = quadricKnotStepEnabled();
+        const bool knot3Enabled = safeguardedKnotStepEnabled();
         const long long solveStartIters = knotsEnabled ? ctx.newtonIters : 0;
+        alignas(32) double modelDv[64]{};
         const auto keepBest = [&] {
             if (!ctx.keepBlockAnswer || !(maxF < bestF) || n > 64)
                 return;
@@ -340,6 +344,13 @@ public:
             for (int j = 0; j < n; ++j) {
                 bestV[j] = ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])];
                 bestI[j] = ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+            }
+        };
+        const auto triggerKnot3 = [&] {
+            if (!knot3Solve) {
+                knot3Solve = true;
+                knotTriggered = true;
+                ++ctx.knotTriggeredSolves;
             }
         };
         ppdiag::atCap = true;
@@ -524,6 +535,8 @@ public:
                     if (ctx.blockDv[static_cast<size_t>(dev.portBase + 1)] > 80.0)
                         rising = di;
                 }
+                if (knot3Enabled && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0)
+                    triggerKnot3();
                 if ((predict || predictControl) && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
                     if (predictControl && !predict) {
                         ordinaryTrigger = true;
@@ -571,9 +584,13 @@ public:
                 ? quadricKnotSteps(devices, ctx.rootDevices, ctx.comp, ctx.pentodes,
                                    ctx.triodeDomainPin, ctx.blockV.data(), ctx.blockDv.data())
                 : QuadricKnotSteps{};
+            if (knot3Enabled)
+                for (int j = 0; j < n; ++j)
+                    modelDv[j] = ctx.blockDv[static_cast<size_t>(ports[static_cast<size_t>(j)])];
 
             double scale = 1.0;
             bool onlyTubePlatesLimited = pushPullPreview;
+            bool powerPentodeLimited = false;
             int limitedPorts = 0;
             for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
@@ -584,6 +601,7 @@ public:
                     const double mag = std::abs(d);
                     if (mag > lim) {
                         ++limitedPorts;
+                        powerPentodeLimited |= dev.kind == DeviceKind::Pentode;
                         onlyTubePlatesLimited &= r == dev.portBase &&
                             (dev.kind == DeviceKind::Triode || dev.kind == DeviceKind::Pentode);
                     }
@@ -591,6 +609,9 @@ public:
                         scale = lim / mag;
                 }
             }
+            if (knot3Enabled && it == 0 && pushPullPreview && powerPentodeLimited)
+                triggerKnot3();
+            const bool knotActive = knotSteps.active && (!knotSteps.safeguarded || knot3Solve);
             if constexpr (!Reduced) {
                 static const bool sumdiff = livewdfPpTry("sumdiff");
                 if (sumdiff && it == 0 && limitedPorts > 0 && pushPullPreview &&
@@ -601,7 +622,7 @@ public:
                     continue;
                 }
             }
-            if (!knotSteps.active && limitedPorts > 0 && onlyTubePlatesLimited) {
+            if ((!knotActive || knotSteps.safeguarded) && limitedPorts > 0 && onlyTubePlatesLimited) {
                 ++ctx.limitHits;
                 // Bound each plate's excursion through cutoff/reverse regions
                 // without throttling the grids that move a push-pull stage across.
@@ -616,7 +637,7 @@ public:
                     ctx.blockDv[static_cast<size_t>(r)] = std::clamp(d, -lim, lim);
                 }
                 scale = 1.0;
-            } else if (!knotSteps.active && scale < 1.0) {
+            } else if ((!knotActive || knotSteps.safeguarded) && scale < 1.0) {
                 ++ctx.limitHits;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -624,7 +645,7 @@ public:
                         ctx.blockDv[static_cast<size_t>(r)] *= scale;
                 }
             }
-            if (knotSteps.active)
+            if (knotActive && !knotSteps.safeguarded)
                 scale = 1.0;
             if (landing) {
                 for (int di : devices) {
@@ -715,7 +736,7 @@ public:
                 const double baseF = maxF;
                 double stepSize = 1.0;
                 double ftNorm = 0.0;
-                if (knotSteps.active && knotSteps.polynomial) {
+                if (knotActive && knotSteps.polynomial && !knotSteps.safeguarded) {
                     const auto evaluateRay = [&](double t, double* residual) {
                         for (int di : devices) {
                             const RootDevice& dev = ctx.rootDevices[di];
@@ -748,15 +769,16 @@ public:
                         ++ctx.knotTriggeredSolves;
                     }
                 }
-                const int maxLineTrials = knotSteps.active && knotSteps.polynomial
-                    ? 0 : knotSteps.active ? knotSteps.knots + 1 : 4;
+                const int maxLineTrials = knotActive && knotSteps.polynomial && !knotSteps.safeguarded
+                    ? 0 : knotActive && !knotSteps.safeguarded ? knotSteps.knots + 1 : 4;
                 double bestTrialF = std::numeric_limits<double>::infinity();
                 double bestTrialStep = 1.0;
                 int bestTrialIndex = -1;
                 alignas(32) double trialV[64], trialI[64];
                 for (int h = 0; h < maxLineTrials; ++h) {
-                    if (knotSteps.active)
-                        stepSize = knotSteps.values[static_cast<size_t>(h)];
+                    if (knotActive)
+                        stepSize = knotSteps.safeguarded ? std::ldexp(1.0, -h)
+                                                        : knotSteps.values[static_cast<size_t>(h)];
                     for (int di : devices) {
                         const RootDevice& dev = ctx.rootDevices[di];
                         for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -818,7 +840,7 @@ public:
 
                     ftNorm = blockResidual<Reduced>(block, ctx, n);
 
-                    if (knotSteps.active) {
+                    if (knotActive) {
                         if (ftNorm < bestTrialF) {
                             bestTrialF = ftNorm;
                             bestTrialStep = stepSize;
@@ -837,7 +859,7 @@ public:
                                 ctx.blockV[p] = trialV[j];
                                 ctx.blockI[p] = trialI[j];
                             }
-                            if (bestTrialIndex >= 0 && bestTrialIndex < knotSteps.knots) {
+                            if (!knotSteps.safeguarded && bestTrialIndex >= 0 && bestTrialIndex < knotSteps.knots) {
                                 ++ctx.knotStepChoices;
                                 if (!knotTriggered) {
                                     knotTriggered = true;
@@ -850,6 +872,47 @@ public:
                             break;
                         stepSize *= 0.5;
                     }
+                }
+                if (knotActive && knotSteps.safeguarded) {
+                    const auto evaluateModelRay = [&](double t, double* residual) {
+                        for (int j = 0; j < n; ++j) {
+                            const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                            ctx.blockV[p] = ctx.blockVOld[p] + t * modelDv[j];
+                        }
+                        for (int di : devices) {
+                            RootResidual::currentsForDevice(
+                                ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                                ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
+                        }
+                        const double norm = blockResidual<Reduced>(block, ctx, n);
+                        if (residual)
+                            for (int j = 0; j < n; ++j)
+                                residual[j] = ctx.blockF[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                        return norm;
+                    };
+                    const QuarticStep model = quarticKnotStep(knotSteps, n,
+                        [&](double t, double* residual) { evaluateModelRay(t, residual); });
+                    const bool valid = std::isfinite(model.predicted) && model.step > 0.0 && model.step <= 1.0;
+                    const double actual = valid ? evaluateModelRay(model.step, nullptr)
+                                                : std::numeric_limits<double>::infinity();
+                    if (valid && std::isfinite(actual) && model.predicted > 0.0 && actual > 0.0) {
+                        const double ratio = model.predicted / actual;
+                        if (std::isfinite(ratio)) {
+                            const int bin = std::clamp(static_cast<int>(std::lround(10.0 * std::log2(ratio))), -200, 200) + 200;
+                            ++ppdiag::knot3Ratios[bin];
+                            ++ppdiag::knot3RatioCount;
+                            ++ctx.knotStepChoices;
+                        }
+                    }
+                    for (int j = 0; j < n; ++j) {
+                        const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                        ctx.blockV[p] = trialV[j];
+                        ctx.blockI[p] = trialI[j];
+                    }
+                    ftNorm = bestTrialF;
+                    stepSize = bestTrialStep;
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
@@ -898,6 +961,8 @@ public:
             ++ppdiag::ordinaryConverged;
             ++ppdiag::ordinaryIterations[std::clamp(completedIterations, 0, 48)];
         }
+        if (knot3Solve && (converged || landing))
+            ++ppdiag::knot3Iterations[std::clamp(completedIterations, 0, 48)];
         if constexpr (Reduced) {
             if ((converged || landing) && knotTriggered) {
                 ++ctx.knotConvergedSolves;
