@@ -397,10 +397,10 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         adjustableTransfer_.correctLoadedNodes(ii_.data(), rootLayout_.nodeCol, nodeData);
 
     const auto& result = finishStep(sourceValues, sourceCount, tPhase);
-    const bool cheapJointSolve = lastConverged_ && !lastStateRejected_ &&
-        jointStepPasses_ == 1 && jointStepIters_ + jointStepTrials_ < 8;
-    // Cheap joint solves beat repeating a bouncing block exchange. Leave that
-    // route at its first hard solve so cooldown cannot multiply an overrun.
+    const bool cheapJointSolve = !allClosedFormBlocks_ && lastConverged_ &&
+        !lastStateRejected_ && jointStepIters_ < maxIter;
+    // Closed-form repair is cheaper than cooldown. Newton blocks keep the
+    // joint route only until it reaches the iteration cap or rejects a state.
     if (blockCooldownActive) {
         if (cheapJointSolve)
             --blockFallbackCooldown_;
