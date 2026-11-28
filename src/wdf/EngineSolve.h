@@ -265,7 +265,7 @@ protected:
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
-            triodePreviewEnabled_ && (nPent_ > 0 || allClosedFormBlocks_), keepBlockAnswer_
+            triodePreviewEnabled_ && (nPent_ > 0 || (nTri_ > 0 && allClosedFormBlocks_)), keepBlockAnswer_
         };
     }
 
