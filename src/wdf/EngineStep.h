@@ -192,6 +192,7 @@ public:
     void keepBlockAnswer(bool enabled) noexcept { keepBlockAnswer_ = enabled; }
     void useSlowLag(bool enabled) noexcept { slowLagEnabled_ = enabled; }
     void prepareSlowLag();
+    double plateLagGain() const noexcept { return plateLagGain_; }
     void prepareLampReplay();
     void stepLampReplay();
     void foldLamp();

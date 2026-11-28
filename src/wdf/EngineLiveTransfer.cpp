@@ -1,5 +1,6 @@
 #include "wdf/Engine.h"
 #include "wdf/DenseSolve.h"
+#include "wdf/solver/PushPullTries.h"
 
 #include <algorithm>
 #include <cmath>
@@ -290,6 +291,8 @@ void EngineStep::stepLampReplay() {
 }
 
 void EngineStep::prepareSlowLag() {
+    static const bool plateLagEnabled = livewdfPpTry("platelag");
+    plateLagGain_ = 0.0;
     // Steepest loaded slope |(I + J Zdd)^-1 J| of each device over a sweep of its port voltages.
     std::vector<double> slope(size_t(K_) * K_, 0.0), v, i(K_), a, x(K_);
     std::vector<int> pivots(K_);
@@ -327,6 +330,23 @@ void EngineStep::prepareSlowLag() {
         }
     }
     std::vector<uint8_t> lag;
+    std::vector<uint8_t> forceLag(size_t(rootDevices_.size()) * rootDevices_.size());
+    bool forcePlateLag = false;
+    if (plateLagEnabled) {
+        for (int b = 0; b < blockCount_; ++b) {
+            std::vector<int> pentodes;
+            for (int d : newtonBlocks_[size_t(b)].devices)
+                if (rootDevices_[size_t(d)].kind == DeviceKind::Pentode)
+                    pentodes.push_back(d);
+            if (pentodes.size() != 2 && pentodes.size() != 4)
+                continue;
+            forcePlateLag = true;
+            for (int g : pentodes)
+                for (int h : pentodes)
+                    if (g != h)
+                        forceLag[size_t(g) * rootDevices_.size() + h] = 1;
+        }
+    }
     std::vector<int> owner;
     bool closed = false, antiParallel = false;
     int scalars = 0;
@@ -335,7 +355,7 @@ void EngineStep::prepareSlowLag() {
         retry = false;
         lagOrder_.resize(rootDevices_.size());
         auto ctx = makeRootGroupsContext(lagBlocks_, lagOrder_, owner, closed, antiParallel, lagCount_, scalars);
-        if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag) ||
+        if (!solver::RootGroups::buildRootOrder(ctx, true, &slope, &lag, forcePlateLag ? &forceLag : nullptr) ||
             (lagCount_ == blockCount_ && std::all_of(lagBlocks_.begin(), lagBlocks_.begin() + lagCount_, [](const auto& b) { return b.lagged.empty(); })))
             lagCount_ = 0;
         for (int b = 0; b < lagCount_; ++b)
@@ -379,7 +399,10 @@ void EngineStep::prepareSlowLag() {
                         }
                     }
             }
-            if (ok && *std::max_element(t.begin(), t.end()) < 0.25)
+            const double loopGain = ok ? *std::max_element(t.begin(), t.end()) : HUGE_VAL;
+            if (forcePlateLag)
+                plateLagGain_ = std::max(plateLagGain_, loopGain);
+            if ((ok && loopGain < 0.25) || forcePlateLag)
                 continue;
             lagCount_ = 0;
             // Read the worst late device on time and keep the other cuts: a finite

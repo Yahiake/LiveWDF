@@ -344,7 +344,8 @@ public:
 
     /// Build the Newton blocks and their dependency order.
     static bool buildRootOrder(RootGroupsContext& ctx, bool allowSignalFlowPruning = true,
-                               const std::vector<double>* slope = nullptr, std::vector<uint8_t>* lag = nullptr) {
+                               const std::vector<double>* slope = nullptr, std::vector<uint8_t>* lag = nullptr,
+                               const std::vector<uint8_t>* forceLag = nullptr) {
         ctx.hasAntiParallelBlock = false;
         ctx.blockCount = 0;
         ctx.scalarBlockCount = 0;
@@ -457,6 +458,8 @@ public:
         // gain around it, bounded by Z and the steepest device slopes, is below 1;
         // the margin is far lower because the late coupling also carries signal.
         const auto lagged = [&](int g, int h) {
+            if (forceLag && (*forceLag)[static_cast<size_t>(g) * nGroups + h])
+                return true;
             if (!slope || (useSignalFlow && flowReach[static_cast<size_t>(h) * nGroups + g]))
                 return false;
             const double back = gain(g, h), forward = gain(h, g);
@@ -684,7 +687,7 @@ public:
         if (allowSignalFlowPruning &&
             (!ctx.allClosedFormBlocks || cutCouplingIntoPair) &&
             !ctx.allowNonScalarSignalFlow && !(useSignalFlow && everyPrunedCouplingLagged))
-            return buildRootOrder(ctx, false, slope, lag);
+            return buildRootOrder(ctx, false, slope, lag, forceLag);
 
         compileBlockZAndPredFold(ctx.newtonBlocks, ctx.groupOrder.data(), nb, ctx.rootDevices.data(), ctx.Z.data(), ctx.K,
                                  lag ? lag->data() : nullptr, nGroups);
