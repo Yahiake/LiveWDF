@@ -438,6 +438,21 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
         }
         std::printf("predict starts %lld converged %lld iterations median %d p90 %d max %d\n",
                     wdf::ppdiag::predicted, wdf::ppdiag::predictedConverged, median, p90, maximum);
+        if (wdf::ppdiag::predictedGridEndCount) {
+            const auto gridQuantile = [](long long target) {
+                long long count = 0;
+                for (int i = 0; i <= 4000; ++i) {
+                    count += wdf::ppdiag::predictedGridEnds[i];
+                    if (count >= target)
+                        return i * 0.01 - 20.0;
+                }
+                return 20.0;
+            };
+            const long long count = wdf::ppdiag::predictedGridEndCount;
+            std::printf("predict rising grid end p10 %.2f median %.2f p90 %.2f V count %lld\n",
+                        gridQuantile((count + 9) / 10), gridQuantile((count + 1) / 2),
+                        gridQuantile((9 * count + 9) / 10), count);
+        }
     }
     if (wdf::ppdiag::ordinaryTriggered) {
         long long seen = 0;

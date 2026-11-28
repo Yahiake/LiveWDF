@@ -30,6 +30,7 @@
 namespace wdf::ppdiag {
 inline long long cap = 0, line = 0, residual = 0, sample = 0, totalBlockIterations = 0;
 inline long long predicted = 0, predictedConverged = 0, predictedIterations[49]{};
+inline long long predictedGridEnds[4001]{}, predictedGridEndCount = 0;
 inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIterations[49]{};
 inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, knot3Iterations[49]{};
 inline long long roleTriggered = 0, roleFinished = 0, roleIterations[49]{}, roleResidualEvals[129]{};
@@ -352,6 +353,7 @@ public:
         bool luValid = false;
         int luReuseCount = 0;
         bool predictedStart = false;
+        int predictedGridPort = -1;
         bool ordinaryTrigger = false;
         bool knot3Solve = false;
         bool roleSwapTriggered = false;
@@ -599,7 +601,54 @@ public:
                     ctx.blockV[static_cast<size_t>(a.portBase + 2)] = ctx.vvPrev[static_cast<size_t>(b.portBase + 2)];
                     ctx.blockV[static_cast<size_t>(b.portBase)] = ctx.vvPrev[static_cast<size_t>(a.portBase)];
                     ctx.blockV[static_cast<size_t>(b.portBase + 2)] = ctx.vvPrev[static_cast<size_t>(a.portBase + 2)];
-                    ctx.blockV[static_cast<size_t>(ctx.rootDevices[rising].portBase + 1)] = 0.25;
+                    const RootDevice& risingDevice = ctx.rootDevices[rising];
+                    const int grid = risingDevice.portBase + 1;
+                    double gridTarget = 0.25;
+                    const Pentode& pentode = ctx.pentodes[risingDevice.compIndex];
+                    if (pentode.modelKind == PentodeModelKind::Reefman && pentode.useReefman &&
+                        pentode.reefman.gridPhysics && pentode.reefman.quadric && !pentode.reefman.polyknee) {
+                        for (int di : devices)
+                            RootResidual::currentsForDevice(
+                                ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                                ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
+                        const int localGrid = static_cast<int>(std::ranges::find(ports, grid) - ports.begin());
+                        const double* gridZ = networkZ.empty()
+                            ? ctx.Z.data() + static_cast<size_t>(grid) * ctx.K
+                            : networkZ.data() + static_cast<size_t>(localGrid) * n;
+                        double gridOpen = ctx.blockBase[static_cast<size_t>(grid)];
+                        for (int j = 0; j < n; ++j)
+                            if (j != localGrid)
+                                gridOpen -= gridZ[networkZ.empty() ? ports[static_cast<size_t>(j)] : j] *
+                                            ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                        const double zgg = gridZ[networkZ.empty() ? grid : localGrid];
+                        double lo = 0.0, hi = std::max(1.0, gridOpen);
+                        const auto balance = [&](double v, double& derivative) {
+                            const PentodeCurrents current = pentode.eval(
+                                v, ctx.blockV[static_cast<size_t>(risingDevice.portBase + 2)],
+                                ctx.blockV[static_cast<size_t>(risingDevice.portBase)]);
+                            derivative = 1.0 + zgg * current.dig_dvgk;
+                            return v - gridOpen + zgg * current.ig;
+                        };
+                        double derivative = 0.0;
+                        const double flo = balance(lo, derivative);
+                        const double fhi = balance(hi, derivative);
+                        if (std::isfinite(flo) && std::isfinite(fhi) && flo <= 0.0 && fhi >= 0.0) {
+                            double v = std::clamp(gridTarget, lo, hi);
+                            for (int solve = 0; solve < 10; ++solve) {
+                                const double f = balance(v, derivative);
+                                if (!std::isfinite(f) || !std::isfinite(derivative) || derivative <= 0.0)
+                                    break;
+                                if (f <= 0.0) lo = v; else hi = v;
+                                const double next = v - f / derivative;
+                                v = next > lo && next < hi ? next : 0.5 * (lo + hi);
+                            }
+                            gridTarget = v;
+                        }
+                    }
+                    ctx.blockV[static_cast<size_t>(grid)] = gridTarget;
+                    predictedGridPort = grid;
                     predictedStart = true;
                     ++ppdiag::predicted;
                     curValid = false;
@@ -1186,6 +1235,12 @@ public:
         if (predictedStart && (converged || landing)) {
             ++ppdiag::predictedConverged;
             ++ppdiag::predictedIterations[std::clamp(completedIterations - 1, 0, 48)];
+            if (predictedGridPort >= 0) {
+                const int bin = std::clamp(static_cast<int>(std::lround(
+                    100.0 * (ctx.blockV[static_cast<size_t>(predictedGridPort)] + 20.0))), 0, 4000);
+                ++ppdiag::predictedGridEnds[bin];
+                ++ppdiag::predictedGridEndCount;
+            }
         }
         if (ordinaryTrigger && (converged || landing)) {
             ++ppdiag::ordinaryConverged;
