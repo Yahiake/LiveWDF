@@ -235,7 +235,7 @@ public:
         // stage.
         bool hasOpAmp = Reduced;
         int pentodeCount = 0;
-        const bool capCandidate = ctx.previewMode && !ctx.keepBlockAnswer &&
+        const bool capCandidate = ctx.previewMode &&
             ctx.K >= kCostlyJointRootPorts && view.count > 1;
         if (capCandidate)
             for (int di : devices)
@@ -1289,7 +1289,7 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
-        const bool resweepWorthwhile = ctx.previewMode && !ctx.keepBlockAnswer && view.count > 1 &&
+        const bool resweepWorthwhile = ctx.previewMode && view.count > 1 &&
             (ctx.K >= kCostlyJointRootPorts || ctx.newtonIters == 0);
 
         // Generalized fine blocks are a Gauss-Seidel splitting of a single
