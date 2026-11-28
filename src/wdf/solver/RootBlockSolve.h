@@ -774,11 +774,10 @@ public:
                 double bestTrialF = std::numeric_limits<double>::infinity();
                 double bestTrialStep = 1.0;
                 int bestTrialIndex = -1;
-                alignas(32) double trialV[64], trialI[64];
+                alignas(32) double trialV[64], trialI[64], trialF[64];
                 for (int h = 0; h < maxLineTrials; ++h) {
-                    if (knotActive)
-                        stepSize = knotSteps.safeguarded ? std::ldexp(1.0, -h)
-                                                        : knotSteps.values[static_cast<size_t>(h)];
+                    if (knotActive && !knotSteps.safeguarded)
+                        stepSize = knotSteps.values[static_cast<size_t>(h)];
                     for (int di : devices) {
                         const RootDevice& dev = ctx.rootDevices[di];
                         for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -840,7 +839,7 @@ public:
 
                     ftNorm = blockResidual<Reduced>(block, ctx, n);
 
-                    if (knotActive) {
+                    if (knotActive && !knotSteps.safeguarded) {
                         if (ftNorm < bestTrialF) {
                             bestTrialF = ftNorm;
                             bestTrialStep = stepSize;
@@ -874,6 +873,14 @@ public:
                     }
                 }
                 if (knotActive && knotSteps.safeguarded) {
+                    bestTrialF = ftNorm;
+                    bestTrialStep = stepSize;
+                    for (int j = 0; j < n; ++j) {
+                        const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                        trialV[j] = ctx.blockV[p];
+                        trialI[j] = ctx.blockI[p];
+                        trialF[j] = ctx.blockF[p];
+                    }
                     const auto evaluateModelRay = [&](double t, double* residual) {
                         for (int j = 0; j < n; ++j) {
                             const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
@@ -910,6 +917,7 @@ public:
                         const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
                         ctx.blockV[p] = trialV[j];
                         ctx.blockI[p] = trialI[j];
+                        ctx.blockF[p] = trialF[j];
                     }
                     ftNorm = bestTrialF;
                     stepSize = bestTrialStep;
