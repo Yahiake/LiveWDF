@@ -1249,6 +1249,8 @@ protected:
     bool fineBlockSolver_ = false;
     long long jointLastIters_ = 0;
     long long jointLastTrials_ = 0;
+    long long jointStepIters_ = 0;
+    long long jointStepTrials_ = 0;
     bool lastConverged_ = false;
     bool lastStateRejected_ = false;
     long long stateRejections_ = 0;

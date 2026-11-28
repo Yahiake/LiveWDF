@@ -240,7 +240,8 @@ protected:
             opAmps_, opAmpVp_, opAmpAlpha_, opAmpMaxDv_, triodeDomainPin_,
             staticMode_, K_, lampFolded() ? lamp_.nRed : nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
-            jointLastIters_, jointLastTrials_, bestFn_, keptBest_, lastConverged_, lastResidual_,
+            jointLastIters_, jointLastTrials_, jointStepIters_, jointStepTrials_,
+            bestFn_, keptBest_, lastConverged_, lastResidual_,
             loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_,
             loadedJunctionEnabled_ && blockCount_ == 0,
             lampFolded() ? lamp_.frozen.data() : nullptr

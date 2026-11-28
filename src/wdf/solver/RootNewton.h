@@ -83,6 +83,8 @@ struct NewtonContext {
     long long& deviceEvals;
     long long& jointLastIters;
     long long& jointLastTrials;
+    long long& jointStepIters;
+    long long& jointStepTrials;
     double& bestFn;
     bool& keptBest;
     bool& lastConverged;
@@ -545,6 +547,8 @@ public:
         ctx.lastConverged = reached || ((kept_best ? ctx.bestFn : finalFn) < tol);
         ctx.jointLastIters = ctx.newtonIters - jointIt0;
         ctx.jointLastTrials = ctx.lineTrials - jointTr0;
+        ctx.jointStepIters += ctx.jointLastIters;
+        ctx.jointStepTrials += ctx.jointLastTrials;
         return usedExtraBacktracking;
     }
 
