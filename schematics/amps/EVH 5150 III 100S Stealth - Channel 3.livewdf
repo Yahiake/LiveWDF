@@ -1363,8 +1363,7 @@
         "powerAmpFullScaleVolts": 297.07268,
         "powerAmpPreviewTrim": 1.0331539,
         "fastTrim": 1.0091325,
-        "previewTrim": 1.0616646,
-        "previewBlockAnswer": 1
+        "previewTrim": 1.0616646
       },
       "visual": {
         "flipped": false,
