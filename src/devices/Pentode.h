@@ -6,6 +6,7 @@
 #include <string>
 
 #include "devices/Triode.h"
+#include "wdf/solver/PushPullTries.h"
 
 namespace wdf {
 
@@ -135,6 +136,26 @@ struct ReefmanPentode {
     const QuadricEmission* quadric = nullptr;
     const QuadricEmission* previewQuadric = nullptr;
 
+    static constexpr double gridPowerCrossoverCurrent = 1e-5;
+    static constexpr double gridPowerCrossoverVoltage = 0.23026100917441295;
+    static constexpr double gridPowerExponent = 1.5;
+
+    static bool gridPowerEnabled() noexcept {
+        static const bool enabled = livewdfPpTry("gridpow");
+        return enabled;
+    }
+
+    bool evalGridPower(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        if (vgk <= gridPowerCrossoverVoltage)
+            return false;
+        const double base = 1.0 + (vgk - gridPowerCrossoverVoltage) / (gridPowerExponent * grid_vt);
+        const double root = std::sqrt(base);
+        const double currentAtCrossover = gridPowerCrossoverCurrent + grid_is;
+        ig = currentAtCrossover * base * root - grid_is;
+        dig_dvgk = (currentAtCrossover / grid_vt) * root;
+        return true;
+    }
+
     bool operator==(const ReefmanPentode&) const = default;
 
     /// The active plate/screen split; Reefman's is exact for DerkD without secondary emission.
@@ -260,6 +281,7 @@ struct ReefmanPentode {
     /// Evaluates control grid current and derivative using the established
     /// exponential diode law.
     void evalGrid(double vgk, double& ig, double& dig_dvgk) const noexcept {
+        if (gridPowerEnabled() && evalGridPower(vgk, ig, dig_dvgk)) return;
         const double inv_grid_vt = (grid_vt > 0.0) ? (1.0 / grid_vt) : 0.0;
         const double grid_is_over_vt = (grid_vt > 0.0) ? (grid_is / grid_vt) : 0.0;
         const double x = vgk * inv_grid_vt;
@@ -478,6 +500,7 @@ struct ReefmanPentode {
     /// outgrows any Newton step. The limiter moves the iterate in log space,
     /// never the law: at convergence it leaves the same exponential root.
     double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (gridPowerEnabled() && vnew > gridPowerCrossoverVoltage) return vnew;
         const double vcrit = grid_vt * std::log(grid_vt / (1.4142135623730950488 * (grid_is > 1e-30 ? grid_is : 1e-30)));
         if (vnew > vcrit && std::abs(vnew - vold) > 2.0 * grid_vt) {
             limited = true;
