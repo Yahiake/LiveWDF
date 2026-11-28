@@ -563,6 +563,7 @@ protected:
     int circuitPlanCooldown_ = 0, circuitPlanRetry_ = 8;
     bool circuitPlanEnabled_ = false;
     void resetControlledDevices() {
+        photoBlockPhase_ = 0;
         for (const auto& photo : photoresistors_)
             ctrlResValues_[photo.index] = circuit_.ctrlRes[photo.index].initialOhms;
         for (const auto& vca : vcas_)

@@ -215,6 +215,7 @@ protected:
         int watch = -1, port = -1, nRed = 0, length = 0, period = 0, previous = 0, base = 0, phase = 0;
         double last = 0.0, lo = HUGE_VAL, hi = -HUGE_VAL, mid = NAN, deviation = 0.0, span = 0.0, held = 0.0, drive = 0.0;
     } lamp_;
+    int photoBlockHold_ = -1, photoBlockPhase_ = 0;
     /// Two-core Preview: this clone solves one side of the first power-tube block; the
     /// other side's port currents come in from the other clone. Stage 1 reads them as
     /// lagged couplings, stage 2 folds them in as solved predecessors.

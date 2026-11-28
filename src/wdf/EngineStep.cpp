@@ -567,9 +567,11 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
         }
         double& ohms = ctrlResValues_[photo.index];
         const double previousOhms = ohms;
-        const double conductance = 1.0 / ohms;
-        const double mix = target > conductance ? photo.attack : photo.release;
-        ohms = 1.0 / (conductance + mix * (target - conductance));
+        if (static_cast<int>(photo.index) != photoBlockHold_ || photoBlockPhase_ == 0) {
+            const double conductance = 1.0 / ohms;
+            const double mix = target > conductance ? photo.attack : photo.release;
+            ohms = 1.0 / (conductance + mix * (target - conductance));
+        }
         if (std::FILE* log = ppdiag::deviceWalkLog()) {
             const auto dev = std::ranges::find_if(rootDevices_, [&](const RootDevice& candidate) {
                 return candidate.kind == DeviceKind::ControlledRes && candidate.compIndex == photo.index;
@@ -590,6 +592,8 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
             }
         }
     }
+    if (photoBlockHold_ >= 0)
+        photoBlockPhase_ = (photoBlockPhase_ + 1) % 128;
     updateVcas(node_, sourceValues, sourceCount);
     updateOtas(node_, sourceValues, sourceCount);
     // Commit the sampled charge only after the electrical solve has been

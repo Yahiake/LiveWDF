@@ -119,6 +119,8 @@ void Engine::prepareCompiledPreview(size_t inputSource, int outputNode, bool all
 
 void EngineStep::prepareLampReplay() {
     lamp_ = {};
+    photoBlockHold_ = -1;
+    photoBlockPhase_ = 0;
     std::vector<int> side(static_cast<size_t>(K_));
     std::iota(side.begin(), side.end(), 0);
     const auto find = [&](int p) { while (side[p] != p) p = side[p] = side[side[p]]; return p; };
@@ -160,6 +162,11 @@ void EngineStep::prepareLampReplay() {
                        d.kind == DeviceKind::Triode || d.kind == DeviceKind::Pentode;
         if (!fits)
             return;
+        if (livewdfPpTry("tremhold")) {
+            photoBlockHold_ = static_cast<int>(photo.index);
+            lamp_ = {};
+            return;
+        }
 
         // Record one period with the lamp side solved alone from the DC point. Preview so loses the few
         // percent the rate drifts while playing, which the supply carries back to the oscillator.
@@ -528,6 +535,8 @@ bool Engine::installLiveTransferSetup(LiveTransferSetup& setup) noexcept {
             std::swap(triodeDomainTransfer_, preparedEngine.triodeDomainTransfer_);
             std::swap(packedDrive_, preparedEngine.packedDrive_);
             std::swap(lamp_, preparedEngine.lamp_);
+            photoBlockHold_ = preparedEngine.photoBlockHold_;
+            photoBlockPhase_ = 0;
             if (!packedDrive_.panels.empty())
                 packedDrive_.revision = linearRebuilds();
             swapAffineNodePreview(preparedEngine);
