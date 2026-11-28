@@ -46,6 +46,16 @@ inline std::FILE* walkLog() {
     }();
     return file;
 }
+inline std::FILE* residualLog() {
+    static std::FILE* file = [] {
+        const char* path = std::getenv("LWDF_RESLOG");
+        std::FILE* f = path ? std::fopen(path, "w") : nullptr;
+        if (f)
+            std::fprintf(f, "sample,worst_device,worst_port,residual,tolerance,target_pos,source1,source1_port,source1_pos,relation1,contribution1,source2,source2_port,source2_pos,relation2,contribution2,source3,source3_port,source3_pos,relation3,contribution3,block_iters,path,pass,state_role,state_device,state_pos,vgrid,vplate,vcath,igrid,iplate,icath,prev_vgrid,prev_vplate,prev_vcath,prev_igrid,prev_iplate,prev_icath\n");
+        return f;
+    }();
+    return file;
+}
 }
 
 namespace wdf::solver {
@@ -1748,6 +1758,138 @@ public:
         return solveBlockNewton(view, b, s, maxIter, tol, relaxed, ctx, nullptr, acceptedDeviceCurrents);
     }
 
+    static inline int blockPosition(const BlockView& view, int device) noexcept
+    {
+        for (int s = 0; s < view.count; ++s) {
+            const auto& devices = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].devices;
+            if (std::ranges::find(devices, device) != devices.end())
+                return s;
+        }
+        return -1;
+    }
+
+    static inline void logResidualSources(
+        BlockSolveContext& ctx, const BlockView& view,
+        const std::vector<double>& stageCurrents, double tolerance,
+        const char* path, int pass) noexcept
+    {
+        std::FILE* log = ppdiag::residualLog();
+        if (!log || stageCurrents.empty() || !(ctx.lastBlockResidual > tolerance))
+            return;
+
+        int worstPort = 0;
+        for (int r = 1; r < ctx.K; ++r)
+            if (std::abs(ctx.F[static_cast<size_t>(r)]) > std::abs(ctx.F[static_cast<size_t>(worstPort)]))
+                worstPort = r;
+        int targetDevice = 0;
+        while (targetDevice + 1 < static_cast<int>(ctx.rootDevices.size()) &&
+               worstPort >= ctx.rootDevices[static_cast<size_t>(targetDevice)].portBase +
+                            ctx.rootDevices[static_cast<size_t>(targetDevice)].numPorts)
+            ++targetDevice;
+        const int targetPos = blockPosition(view, targetDevice);
+        const size_t snapshot = static_cast<size_t>(std::clamp(targetPos + 1, 0, view.count)) * ctx.K;
+
+        struct Source { double value = 0.0; int port = 0; int device = 0; int position = -1; } sources[3];
+        for (int c = 0; c < ctx.K; ++c) {
+            const double contribution = ctx.Z[static_cast<size_t>(worstPort) * ctx.K + c] *
+                (ctx.ii[static_cast<size_t>(c)] - stageCurrents[snapshot + static_cast<size_t>(c)]);
+            if (!(std::abs(contribution) > std::abs(sources[2].value)))
+                continue;
+            int device = 0;
+            while (device + 1 < static_cast<int>(ctx.rootDevices.size()) &&
+                   c >= ctx.rootDevices[static_cast<size_t>(device)].portBase +
+                        ctx.rootDevices[static_cast<size_t>(device)].numPorts)
+                ++device;
+            sources[2] = {contribution, c - ctx.rootDevices[static_cast<size_t>(device)].portBase,
+                          device, blockPosition(view, device)};
+            if (std::abs(sources[2].value) > std::abs(sources[1].value))
+                std::swap(sources[2], sources[1]);
+            if (std::abs(sources[1].value) > std::abs(sources[0].value))
+                std::swap(sources[1], sources[0]);
+        }
+
+        std::vector<double> nowI(static_cast<size_t>(ctx.K)), previousI(static_cast<size_t>(ctx.K));
+        long long diagnosticEvals = 0;
+        for (const RootDevice& device : ctx.rootDevices) {
+            RootResidual::currentsForDevice(device, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
+                ctx.vv.data(), nowI.data(), nullptr, diagnosticEvals);
+            RootResidual::currentsForDevice(device, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
+                ctx.vvPrev.data(), previousI.data(), nullptr, diagnosticEvals);
+        }
+
+        static constexpr char deviceKinds[] = "TDCPJMBO";
+        const auto relation = [&](int position) { return position < targetPos ? "before" : position > targetPos ? "after" : "same"; };
+        const auto writeState = [&](int deviceIndex, const char* role) {
+            const RootDevice& device = ctx.rootDevices[static_cast<size_t>(deviceIndex)];
+            if (device.kind != DeviceKind::Triode && device.kind != DeviceKind::Pentode)
+                return;
+            const int o = device.portBase;
+            const int grid = o + (device.kind == DeviceKind::Triode ? 2 : 1);
+            const double nowCathode = device.kind == DeviceKind::Pentode
+                ? -(nowI[static_cast<size_t>(o)] + nowI[static_cast<size_t>(o + 1)] + nowI[static_cast<size_t>(o + 2)])
+                : -(nowI[static_cast<size_t>(o)] + nowI[static_cast<size_t>(o + 2)]);
+            const double previousCathode = device.kind == DeviceKind::Pentode
+                ? -(previousI[static_cast<size_t>(o)] + previousI[static_cast<size_t>(o + 1)] + previousI[static_cast<size_t>(o + 2)])
+                : -(previousI[static_cast<size_t>(o)] + previousI[static_cast<size_t>(o + 2)]);
+            std::fprintf(log, "%lld,%c%zu,%d,%.9g,%.9g,%d", ppdiag::sample,
+                deviceKinds[static_cast<int>(ctx.rootDevices[static_cast<size_t>(targetDevice)].kind)],
+                ctx.rootDevices[static_cast<size_t>(targetDevice)].compIndex,
+                worstPort - ctx.rootDevices[static_cast<size_t>(targetDevice)].portBase,
+                ctx.F[static_cast<size_t>(worstPort)], tolerance, targetPos);
+            for (const Source& source : sources) {
+                const RootDevice& sourceDevice = ctx.rootDevices[static_cast<size_t>(source.device)];
+                std::fprintf(log, ",%c%zu,%d,%d,%s,%.9g", deviceKinds[static_cast<int>(sourceDevice.kind)],
+                    sourceDevice.compIndex, source.port, source.position, relation(source.position), source.value);
+            }
+            std::fprintf(log, ",%lld,%s,%d,%s,%c%zu,%d,%.9g,%.9g,0,%.9g,%.9g,%.9g,%.9g,%.9g,0,%.9g,%.9g,%.9g\n",
+                ctx.newtonIters, path, pass, role, deviceKinds[static_cast<int>(device.kind)], device.compIndex,
+                blockPosition(view, deviceIndex), ctx.vv[static_cast<size_t>(grid)], ctx.vv[static_cast<size_t>(o)],
+                nowI[static_cast<size_t>(grid)], nowI[static_cast<size_t>(o)], nowCathode,
+                ctx.vvPrev[static_cast<size_t>(grid)], ctx.vvPrev[static_cast<size_t>(o)],
+                previousI[static_cast<size_t>(grid)], previousI[static_cast<size_t>(o)], previousCathode);
+        };
+
+        const int sourcePos = sources[0].position;
+        for (int device = 0; device < static_cast<int>(ctx.rootDevices.size()); ++device) {
+            const int position = blockPosition(view, device);
+            if (position == targetPos || position == sourcePos)
+                writeState(device, position == targetPos ? "target" : "source");
+        }
+        std::fflush(log);
+    }
+
+    static inline void logScalarWalk(
+        BlockSolveContext& ctx, int pass, const char* trigger, const char* result) noexcept
+    {
+        std::FILE* log = ppdiag::walkLog();
+        if (!log)
+            return;
+        if (!ppdiag::walksDumped)
+            std::fprintf(log, "fallback,sample,iteration,residual_norm,max_dv,step_limit_scale,line_search_factor,largest_step_device,largest_step_port,A_vgk,A_vsk,A_vpk,A_ip,A_is,A_ig,B_vgk,B_vsk,B_vpk,B_ip,B_is,B_ig,T1_vgk,T1_vpk,T2_vgk,T2_vpk,T3_vgk,T3_vpk,T4_vgk,T4_vpk,solve_id,trigger,result\n");
+        int worstPort = 0;
+        for (int r = 1; r < ctx.K; ++r)
+            if (std::abs(ctx.F[static_cast<size_t>(r)]) > std::abs(ctx.F[static_cast<size_t>(worstPort)]))
+                worstPort = r;
+        int device = 0;
+        while (device + 1 < static_cast<int>(ctx.rootDevices.size()) &&
+               worstPort >= ctx.rootDevices[static_cast<size_t>(device)].portBase + ctx.rootDevices[static_cast<size_t>(device)].numPorts)
+            ++device;
+        static constexpr char deviceKinds[] = "TDCPJMBO";
+        const long long solve = ++ppdiag::walksDumped;
+        std::fprintf(log, "%lld,%lld,%d,%.6g,0,1,1,%c%zu,%d", solve, ppdiag::sample - 256, pass,
+            ctx.lastBlockResidual, deviceKinds[static_cast<int>(ctx.rootDevices[static_cast<size_t>(device)].kind)],
+            ctx.rootDevices[static_cast<size_t>(device)].compIndex,
+            worstPort - ctx.rootDevices[static_cast<size_t>(device)].portBase);
+        for (int c = 0; c < 20; ++c)
+            std::fprintf(log, ",0");
+        std::fprintf(log, ",%lld,%s,%s\n", solve, trigger, result);
+        std::fflush(log);
+    }
+
     /// Solve the root in block order, using the scalar closed form for a
     /// singleton and the block Newton otherwise.
     static inline void solveRootBlocks(
@@ -1773,12 +1915,20 @@ public:
         ctx.keptBest = false;
 
         bool failed = false;
+        std::vector<double> residualStages;
+        if (ppdiag::residualLog()) {
+            residualStages.resize(static_cast<size_t>(view.count + 1) * ctx.K);
+            std::copy_n(ctx.ii.data(), ctx.K, residualStages.data());
+        }
         bool acceptedDeviceCurrents = false;
         bool* saveDeviceCurrentStatus = view.count == 1 && ctx.gridLag.empty()
             ? &acceptedDeviceCurrents : nullptr;
-        for (int s = 0; s < view.count && !failed; ++s)
+        for (int s = 0; s < view.count && !failed; ++s) {
             failed = !solveBlock(view, (*view.order)[static_cast<size_t>(s)], s, maxIter, tol, false, ctx,
                                  saveDeviceCurrentStatus);
+            if (!residualStages.empty())
+                std::copy_n(ctx.ii.data(), ctx.K, residualStages.data() + static_cast<size_t>(s + 1) * ctx.K);
+        }
 
         // A predicted grid current can warm-start later blocks and be resolved
         // by resolveMissedGrids. Regardless of prediction, the full system residual
@@ -1811,6 +1961,11 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
+        if (!failed) {
+            if (ctx.lastBlockResidual > effTol && ctx.newtonIters == 0)
+                logScalarWalk(ctx, 1, "scalar", "miss");
+            logResidualSources(ctx, view, residualStages, effTol, "block", 1);
+        }
 
         static const bool resweep = livewdfPpTry("resweep");
         static const bool resweepGate = std::getenv("LWDF_RESWEEP_GATE") != nullptr;
@@ -2017,6 +2172,11 @@ public:
         ctx.runtimeBlockUsed = true;
 
         bool failed = false;
+        std::vector<double> residualStages;
+        if (ppdiag::residualLog()) {
+            residualStages.resize(static_cast<size_t>(view.count + 1) * ctx.K);
+            std::copy_n(ctx.ii.data(), ctx.K, residualStages.data());
+        }
         for (int s = 0; s < view.count; ++s) {
             const int b = (*view.order)[static_cast<size_t>(s)];
             const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
@@ -2034,6 +2194,8 @@ public:
                 failed = true;
                 break;
             }
+            if (!residualStages.empty())
+                std::copy_n(ctx.ii.data(), ctx.K, residualStages.data() + static_cast<size_t>(s + 1) * ctx.K);
         }
 
         if (!failed) {
@@ -2048,7 +2210,13 @@ public:
 
         // Pass 2: Gauss-Seidel relaxation sweep if inter-stage coupling left residual
         const double effTol = std::max(tol, 1e-9);
+        if (!failed) {
+            logScalarWalk(ctx, 1, "runtime", ctx.lastBlockResidual <= effTol ? "converged" : "miss");
+            logResidualSources(ctx, view, residualStages, effTol, "runtime", 1);
+        }
         if (!failed && ctx.lastBlockResidual > effTol) {
+            if (!residualStages.empty())
+                std::copy_n(ctx.ii.data(), ctx.K, residualStages.data());
             for (int s = 0; s < view.count; ++s) {
                 const int b = (*view.order)[static_cast<size_t>(s)];
                 const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
@@ -2066,6 +2234,8 @@ public:
                     failed = true;
                     break;
                 }
+                if (!residualStages.empty())
+                    std::copy_n(ctx.ii.data(), ctx.K, residualStages.data() + static_cast<size_t>(s + 1) * ctx.K);
             }
             if (!failed) {
                 const int nR = ctx.nRed;
@@ -2100,6 +2270,8 @@ public:
                 RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
                 RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
+                logScalarWalk(ctx, 2, "runtime", ctx.lastBlockResidual <= effTol ? "converged" : "miss");
+                logResidualSources(ctx, view, residualStages, effTol, "runtime", 2);
             }
         }
 
