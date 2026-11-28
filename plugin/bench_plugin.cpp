@@ -355,7 +355,8 @@ static std::vector<int> spreadSamples(const std::vector<int>& samples, int limit
 
 int runReplay(const juce::File& file, const juce::File& wav, const std::string& name,
               const std::string& baselineTable, const std::string& alternateTable,
-              int lead, int tail, int failureLimit, int difficultLimit, int difficultThreshold) {
+              const std::string& stateSet, const std::string& stateSetOut, int lead, int tail,
+              int failureLimit, int difficultLimit, int difficultThreshold) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
@@ -439,6 +440,25 @@ int runReplay(const juce::File& file, const juce::File& wav, const std::string& 
     std::shuffle(ordinary.begin(), ordinary.end(), random);
     ordinary.resize(std::min(ordinary.size(), failing.size() + difficult.size()));
     std::ranges::sort(ordinary);
+
+    if (!stateSet.empty()) {
+        failing.clear(); difficult.clear(); ordinary.clear();
+        std::ifstream input(stateSet);
+        char type;
+        int sample;
+        while (input >> type >> sample) {
+            if (sample < 0 || sample >= frames) return 1;
+            auto& targets = type == 'f' ? failing : type == 'd' ? difficult : ordinary;
+            targets.push_back(sample);
+        }
+        if (!input.eof()) return 1;
+    }
+    if (!stateSetOut.empty()) {
+        std::ofstream output(stateSetOut);
+        for (const auto& [type, targets] : {std::pair{'f', &failing}, {'d', &difficult}, {'o', &ordinary}})
+            for (const int sample : *targets) output << type << ' ' << sample << '\n';
+        if (!output) return 1;
+    }
 
     std::vector<ReplayWindow> windows;
     const auto add = [&](ReplayClass type, const std::vector<int>& targets) {
@@ -2982,6 +3002,7 @@ int main(int argc, char** argv) {
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
                     "[--replay <wav> --replay-name <name> --replay-baseline-table <file> [--replay-alternate-table <file>] "
+                    "[--replay-state-set <file> | --replay-state-set-out <file>] "
                     "[--replay-lead <n>] [--replay-tail <n>] [--replay-failure-limit <n>] "
                     "[--replay-difficult-limit <n>] [--replay-difficult-threshold <n>]] "
                     "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
@@ -3036,6 +3057,7 @@ int main(int argc, char** argv) {
     std::string pluginProbeCsv;
     std::string wavPath;
     std::string replayPath, replayName, replayBaselineTable, replayAlternateTable;
+    std::string replayStateSet, replayStateSetOut;
     int replayLead = 32, replayTail = 3, replayFailureLimit = 256;
     int replayDifficultLimit = 256, replayDifficultThreshold = 12;
     int wavBlock = 128;
@@ -3085,6 +3107,10 @@ int main(int argc, char** argv) {
             replayBaselineTable = argv[++i];
         else if (arg == "--replay-alternate-table" && i + 1 < argc)
             replayAlternateTable = argv[++i];
+        else if (arg == "--replay-state-set" && i + 1 < argc)
+            replayStateSet = argv[++i];
+        else if (arg == "--replay-state-set-out" && i + 1 < argc)
+            replayStateSetOut = argv[++i];
         else if (arg == "--replay-lead" && i + 1 < argc)
             replayLead = std::stoi(argv[++i]);
         else if (arg == "--replay-tail" && i + 1 < argc)
@@ -3133,10 +3159,11 @@ int main(int argc, char** argv) {
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
     if (!replayPath.empty()) {
-        if (replayName.empty() || replayBaselineTable.empty() || replayLead < 0 || replayTail < 0)
+        if (replayName.empty() || replayBaselineTable.empty() || replayLead < 0 || replayTail < 0 ||
+            (!replayStateSet.empty() && !replayStateSetOut.empty()))
             return 1;
         return runReplay(file, juce::File(replayPath), replayName, replayBaselineTable,
-                         replayAlternateTable, replayLead, replayTail, replayFailureLimit,
+                         replayAlternateTable, replayStateSet, replayStateSetOut, replayLead, replayTail, replayFailureLimit,
                          replayDifficultLimit, replayDifficultThreshold);
     }
     if (!wavPath.empty())
