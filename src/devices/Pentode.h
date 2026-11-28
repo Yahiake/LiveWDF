@@ -93,6 +93,86 @@ struct QuadricEmission {
     }
 };
 
+struct PolyKneeEmission {
+    static constexpr double screenFadeMid = 4.0, screenFade = 8.0;
+    double av[5], knot[5], coef[5];
+    double plateKnot[3], plateCoef[3], lambda, rho, sigma;
+
+    template <typename Add>
+    void regimeBoundaries(double vgk, double vsk, double vpk,
+                          double dvgk, double dvsk, double dvpk, Add add) const noexcept {
+        add(vpk, dvpk);
+        add(vsk, dvsk); add(vsk - screenFadeMid, dvsk); add(vsk - screenFade, dvsk);
+        for (int j = 0; j < 5; ++j)
+            add(vgk + av[j] * vsk - knot[j], dvgk + av[j] * dvsk);
+        for (int j = 0; j < 3; ++j)
+            add(vpk - plateKnot[j], dvpk);
+    }
+
+    void currents(double vgk, double vsk, double vpk, PentodeCurrents& c) const noexcept {
+        double e = 0.0, eg = 0.0, es = 0.0;
+        for (int j = 0; j < 5; ++j) {
+            const double h = vgk + av[j] * vsk - knot[j];
+            if (h > 0.0) {
+                e += coef[j] * h * h;
+                eg += 2.0 * coef[j] * h;
+                es += 2.0 * coef[j] * av[j] * h;
+            }
+        }
+        double fade = 1.0, dfade = 0.0;
+        if (vsk < screenFadeMid) {
+            fade = vsk * vsk / 32.0;
+            dfade = vsk / 16.0;
+        } else if (vsk < screenFade) {
+            const double x = screenFade - vsk;
+            fade = 1.0 - x * x / 32.0;
+            dfade = x / 16.0;
+        }
+        es = es * fade + e * dfade;
+        e *= fade; eg *= fade;
+        double k = 0.0, dk = 0.0;
+        for (int j = 0; j < 3; ++j) {
+            const double h = plateKnot[j] - vpk;
+            if (h > 0.0) {
+                k += plateCoef[j] * h * h;
+                dk -= 2.0 * plateCoef[j] * h;
+            }
+        }
+        const double toPlate = 1.0 - k + lambda * vpk, toScreen = rho + sigma * k;
+        c.ip = e * toPlate;
+        c.dip_dvgk = eg * toPlate; c.dip_dvsk = es * toPlate;
+        c.dip_dvpk = e * (lambda - dk);
+        c.is = e * toScreen;
+        c.dis_dvgk = eg * toScreen; c.dis_dvsk = es * toScreen;
+        c.dis_dvpk = e * sigma * dk;
+    }
+};
+
+inline constexpr PolyKneeEmission kPolyKneeEL34{
+    {0.181530751438, 0.087579474734, 0.0875044954203, 0.227509270009, 0.051541656933},
+    {12.304185965, -9.96565525947, -9.9482708087, 25., -13.0464156265},
+    {1.29931423861e-7, 1.16944421115e-5, 1.86957064683e-4, 1.94429449758e-5, 9.82025448592e-5},
+    {12.8250887576, 119.642907886, 325.405411782}, {1.3468103289e-4, 3.64686043345e-5, 4.30471083189e-6},
+    4.73821229838e-7, 0.140265175607, 0.236291930004};
+inline constexpr PolyKneeEmission kPolyKnee6L6GC{
+    {0.41072988784, 0.116189891176, 0.0385047791099, 0.0640508836998, 0.00500966763651},
+    {24.9999968846, -11.8476394975, -10.4479652347, 23.8474796155, 1.26409774145},
+    {1.54699644914e-6, 8.80229426075e-5, 9.88534891942e-5, 0.00547666180405, 0.0387673271016},
+    {29.9999949669, 117.848513741, 411.528040146}, {4.97277992896e-4, 2.00790888513e-5, 1.61545614632e-6},
+    8.2046111481e-5, 0.053647533129, 0.339138606229};
+inline constexpr PolyKneeEmission kPolyKneeEL84{
+    {0.0434436085181, 0.043474144741, 0.0434743640819, 0.163080158946, 0.0748094518546},
+    {-3.49606716559, -3.4928539655, -3.4928140827, -10.489049937, 16.297623429},
+    {3.0008461314e-7, 1.01758031672e-4, 5.61572973229e-4, 4.31108394303e-6, 0.00199321184967},
+    {3.76616184895, 94.6138136183, 249.809460616}, {2.64160731599e-8, 4.82106110729e-5, 9.10874560678e-6},
+    6.35256443292e-4, 0.132780467371, 0.0852774777977};
+inline constexpr PolyKneeEmission kPolyKnee6V6S{
+    {0.00764425794421, 0.0872036031867, 0.184744771062, 0.0871889003899, 0.005},
+    {2.55227931068, -14.486737023, 24.9991333215, -14.4873412844, -5.86643688234},
+    {2.10328179997e-10, 7.74134793579e-5, 2.946097206e-5, 3.21308882983e-7, 6.1154867674e-4},
+    {29.9990189149, 119.998395193, 371.078597737}, {2.14921223062e-4, 3.89231482484e-5, 1.78726515666e-6},
+    1.02801948371e-8, 0.0943326126898, 0.116430796331};
+
 // Fitted emission laws for the Reefman cards below.
 // Regenerate with gen_table.py from the coefficient JSON files.
 inline constexpr QuadricEmission kQuadricEL34{
@@ -195,6 +275,8 @@ struct ReefmanPentode {
 
     const QuadricEmission* quadric = nullptr;
     const QuadricEmission* previewQuadric = nullptr;
+    const PolyKneeEmission* polyknee = nullptr;
+    const PolyKneeEmission* previewPolyknee = nullptr;
 
     static constexpr double gridPowerCrossoverCurrent = 1e-5;
     static constexpr double gridPowerCrossoverVoltage = 0.23026100917441295;
@@ -242,6 +324,7 @@ struct ReefmanPentode {
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
         r.quadric = &kQuadricEL34;
+        r.previewPolyknee = &kPolyKneeEL34;
         r.count = count;
         return r;
     }
@@ -266,6 +349,7 @@ struct ReefmanPentode {
         r.secondaryEmission = false;
         r.quadric = &kQuadric6L6GC;
         r.previewQuadric = &kQuadric6L6GCPreview;
+        r.previewPolyknee = &kPolyKnee6L6GC;
         r.count = count;
         return r;
     }
@@ -289,6 +373,7 @@ struct ReefmanPentode {
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
         r.quadric = &kQuadricEL84;
+        r.previewPolyknee = &kPolyKneeEL84;
         r.count = count;
         return r;
     }
@@ -312,6 +397,7 @@ struct ReefmanPentode {
         r.knee = PentodeKneeType::DerkD;
         r.secondaryEmission = false;
         r.quadric = &kQuadric6V6S;
+        r.previewPolyknee = &kPolyKnee6V6S;
         r.count = count;
         return r;
     }
@@ -362,6 +448,12 @@ struct ReefmanPentode {
     PentodeCurrents eval(double vgk, double vsk, double vpk) const noexcept {
         PentodeCurrents c;
         evalGrid(vgk, c.ig, c.dig_dvgk);
+        if (polyknee) {
+            if (vpk >= 0.0 && vsk > 0.0)
+                polyknee->currents(vgk, vsk, vpk, c);
+            c.scale(count);
+            return c;
+        }
         if (quadric) {
             if (vpk >= 0.0 && vsk > 0.0)
                 quadric->currents(vgk, vsk, vpk, c);
@@ -483,7 +575,7 @@ struct ReefmanPentode {
     /// Value-only evaluation for currents (in Amperes).
     void evalCurrents(double vgk, double vsk, double vpk,
                       double& ig, double& is, double& ip) const noexcept {
-        if (quadric) {
+        if (polyknee || quadric) {
             const auto c = eval(vgk, vsk, vpk);
             ig = c.ig, is = c.is, ip = c.ip;
             return;

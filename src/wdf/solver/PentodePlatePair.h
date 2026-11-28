@@ -16,7 +16,7 @@ struct DerkDPlate {
     bool at(const Pentode& model, const double* voltage, double screenCurrent) noexcept {
         const auto& m = model.reefman;
         const auto q = m.split();
-        if (model.modelKind != PentodeModelKind::Reefman || !model.useReefman ||
+        if (model.modelKind != PentodeModelKind::Reefman || !model.useReefman || m.polyknee ||
             (!m.quadric && (m.knee != PentodeKneeType::DerkD || m.secondaryEmission)) ||
             !(q.beta > 0. && q.plate >= 0. && q.lambda >= 0. && q.rho > 0. && q.sigma >= 0. &&
               m.count > 0. && m.isSupported(voltage[1], voltage[2], 0.)))
