@@ -492,6 +492,38 @@ public:
                 }
             }
 
+            if constexpr (!Reduced) {
+                static const bool predict = livewdfPpTry("predict");
+                int pair[2]{-1, -1}, pairCount = 0, rising = -1;
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    if (dev.kind != DeviceKind::Pentode)
+                        continue;
+                    if (pairCount < 2)
+                        pair[pairCount++] = di;
+                    if (ctx.blockDv[static_cast<size_t>(dev.portBase + 1)] > 80.0)
+                        rising = di;
+                }
+                if (predict && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
+                    for (int di : devices) {
+                        const RootDevice& dev = ctx.rootDevices[di];
+                        for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                            ctx.blockV[static_cast<size_t>(r)] += ctx.blockDv[static_cast<size_t>(r)];
+                    }
+                    const RootDevice& a = ctx.rootDevices[pair[0]];
+                    const RootDevice& b = ctx.rootDevices[pair[1]];
+                    ctx.blockV[static_cast<size_t>(a.portBase)] = ctx.vvPrev[static_cast<size_t>(b.portBase)];
+                    ctx.blockV[static_cast<size_t>(a.portBase + 2)] = ctx.vvPrev[static_cast<size_t>(b.portBase + 2)];
+                    ctx.blockV[static_cast<size_t>(b.portBase)] = ctx.vvPrev[static_cast<size_t>(a.portBase)];
+                    ctx.blockV[static_cast<size_t>(b.portBase + 2)] = ctx.vvPrev[static_cast<size_t>(a.portBase + 2)];
+                    ctx.blockV[static_cast<size_t>(ctx.rootDevices[rising].portBase + 1)] = 0.25;
+                    curValid = false;
+                    luValid = false;
+                    fullDescent = 0;
+                    continue;
+                }
+            }
+
             for (int di : devices) {
                 const RootDevice& dev = ctx.rootDevices[di];
                 if (dev.kind == DeviceKind::Bjt) {
