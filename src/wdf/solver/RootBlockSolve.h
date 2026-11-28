@@ -36,6 +36,7 @@ inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, kno
 inline long long roleTriggered = 0, roleFinished = 0, roleIterations[49]{}, roleResidualEvals[129]{};
 inline long long doglegTrials = 0, doglegRejected = 0, doglegShrinks = 0;
 inline long long neighbourLoads = 0;
+inline long long repairMisses = 0, repairKept = 0, repairSettled[9]{};
 inline bool atCap = true;
 inline double lastStep = 1.0;
 inline int walkCount = 0;
@@ -165,9 +166,10 @@ public:
     }
 
     static inline bool neighbourCoupled(const BlockView& view, int b, int s,
-                                        const BlockSolveContext& ctx) noexcept
+                                        const BlockSolveContext& ctx,
+                                        bool rescue = false) noexcept
     {
-        if (!ctx.neighbourSlope || !ctx.previewMode || s + 1 >= view.count)
+        if ((!ctx.neighbourSlope && !rescue) || !ctx.previewMode || s + 1 >= view.count)
             return false;
         const NewtonBlock& a = (*view.blocks)[static_cast<size_t>(b)];
         const NewtonBlock& next = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s + 1)])];
@@ -233,9 +235,10 @@ public:
     }
 
     static inline bool prepareNeighbourLoad(const BlockView& view, int b, int s,
-                                            BlockSolveContext& ctx) noexcept
+                                            BlockSolveContext& ctx,
+                                            bool actualState = false) noexcept
     {
-        if (!neighbourCoupled(view, b, s, ctx))
+        if (!neighbourCoupled(view, b, s, ctx, actualState))
             return false;
         const NewtonBlock& a = (*view.blocks)[static_cast<size_t>(b)];
         const NewtonBlock& next = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s + 1)])];
@@ -255,10 +258,13 @@ public:
         for (int di : next.devices) {
             const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
-                double v = ctx.vOc[static_cast<size_t>(r)];
-                const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
-                for (int c : ctx.redCol)
-                    v -= z[c] * ctx.ii[static_cast<size_t>(c)];
+                double v = ctx.vv[static_cast<size_t>(r)];
+                if (!actualState) {
+                    v = ctx.vOc[static_cast<size_t>(r)];
+                    const double* z = ctx.Z.data() + static_cast<size_t>(r) * ctx.K;
+                    for (int c : ctx.redCol)
+                        v -= z[c] * ctx.ii[static_cast<size_t>(c)];
+                }
                 ctx.blockVOld[static_cast<size_t>(r)] = v;
             }
             RootResidual::currentsForDevice(
@@ -267,7 +273,7 @@ public:
                 ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(), ctx.K,
                 ctx.blockVOld.data(), ctx.iv.data(), ctx.J.data(), ctx.deviceEvals);
         }
-        bool material = false;
+        bool material = actualState;
         for (int di : a.devices) {
             const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
             for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -467,7 +473,9 @@ public:
                 }
             }
         }
-        const bool neighbourLoad = !Reduced && !relaxed && prepareNeighbourLoad(view, b, s, ctx);
+        const bool neighbourRescue = relaxed && livewdfPpTry("nsloperescue");
+        const bool neighbourLoad = !Reduced && ((!relaxed && ctx.neighbourSlope) || neighbourRescue) &&
+            prepareNeighbourLoad(view, b, s, ctx, neighbourRescue);
         const auto& networkZ = neighbourLoad ? ctx.blockNeighbourZ :
             (Reduced ? block.reducedZ : block.blockZ);
         const auto residualNorm = [&] {
@@ -2002,6 +2010,8 @@ public:
         // Later stages amplify an error left in a block without a pentode, so only power tubes get the loose Preview tolerance.
         if (std::ranges::none_of(block.devices, [&](int d) { return ctx.rootDevices[static_cast<size_t>(d)].kind == DeviceKind::Pentode; }))
             tol = std::min(tol, ctx.modeTol);
+        if (relaxed && livewdfPpTry("nsloperescue") && neighbourCoupled(view, b, s, ctx, true))
+            return solveBlockNewton(view, b, s, maxIter, tol, true, ctx, nullptr, acceptedDeviceCurrents);
         if (!relaxed && neighbourNeedsLoad(view, b, s, ctx))
             return solveBlockNewton(view, b, s, maxIter, tol, false, ctx, nullptr, acceptedDeviceCurrents);
         if (hasDirectSingleton(block, ctx.rootDevices, ctx.comp, ctx.opAmps, ctx.Z, ctx.K))
@@ -2233,10 +2243,22 @@ public:
         }
 
         static const bool resweep = livewdfPpTry("resweep");
+        static const bool sweeps4 = livewdfPpTry("sweeps4");
+        static const bool sweeps8 = livewdfPpTry("sweeps8");
+        static const bool symmetricSweep = livewdfPpTry("symsweep");
+        static const bool dampSweep = livewdfPpTry("damp");
+        static const bool aitkenSweep = livewdfPpTry("aitken");
+        static const bool neighbourRescue = livewdfPpTry("nsloperescue");
+        static const bool keepResidual = livewdfPpTry("keepresid");
+        static const bool keepResidualUnbounded = livewdfPpTry("keepresid-unbounded");
+        const bool repair = resweep || sweeps4 || sweeps8 || symmetricSweep || dampSweep ||
+            aitkenSweep || neighbourRescue || keepResidual;
         static const bool resweepGate = std::getenv("LWDF_RESWEEP_GATE") != nullptr;
         static const bool oneResweep = std::getenv("LWDF_RESWEEP_ONE_SWEEP") != nullptr;
-        if (resweep && ctx.previewMode && !failed && ctx.lastBlockResidual > effTol &&
+        int repairSweeps = 0;
+        if (repair && ctx.previewMode && !failed && ctx.lastBlockResidual > effTol &&
             !(resweepGate && ctx.keepBlockAnswer)) {
+            ++ppdiag::repairMisses;
             static std::FILE* resweepTrace = [] {
                 const char* path = std::getenv("LWDF_RESWEEPLOG");
                 std::FILE* f = path ? std::fopen(path, "w") : nullptr;
@@ -2264,10 +2286,34 @@ public:
                     }
             };
             traceMisses(0);
-            const int maxSweeps = oneResweep ? 1 : 2;
+            const int maxSweeps = oneResweep ? 1 : sweeps8 ? 8 : sweeps4 ? 4 : aitkenSweep ? 3 : 2;
+            alignas(32) double previousI[64]{}, olderI[64]{}, oldestI[64]{};
+            const int historyPorts = std::min(ctx.K, 64);
+            std::copy_n(ctx.ii.data(), historyPorts, olderI);
+            std::copy_n(ctx.ii.data(), historyPorts, oldestI);
             for (int sweep = 0; sweep < maxSweeps && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+                const double beforeResidual = ctx.lastBlockResidual;
+                std::copy_n(ctx.ii.data(), historyPorts, previousI);
+                if (aitkenSweep && sweep == 2) {
+                    for (int r = 0; r < historyPorts; ++r) {
+                        const double d1 = olderI[r] - oldestI[r];
+                        const double d2 = previousI[r] - 2.0 * olderI[r] + oldestI[r];
+                        if (std::isfinite(d2) && std::abs(d2) > 1e-18) {
+                            const double extrapolated = oldestI[r] - d1 * d1 / d2;
+                            if (std::isfinite(extrapolated))
+                                ctx.ii[static_cast<size_t>(r)] = extrapolated;
+                        }
+                    }
+                    for (int s = 0; s < view.count; ++s) {
+                        const int b = (*view.order)[static_cast<size_t>(s)];
+                        RootClosedForms::settleBlockVoltages(
+                            view, b, s, true, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                            ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
+                    }
+                }
                 bool tried = false;
-                for (int s = 0; s < view.count && !failed; ++s) {
+                for (int k = 0; k < view.count && !failed; ++k) {
+                    const int s = symmetricSweep && (sweep & 1) ? view.count - 1 - k : k;
                     const int b = (*view.order)[static_cast<size_t>(s)];
                     const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
                     const bool missed = std::ranges::any_of(block.devices, [&](int di) {
@@ -2284,12 +2330,23 @@ public:
                     for (const auto& [r, d] : block.lagged)
                         ctx.vOc[static_cast<size_t>(r)] += d.z * ctx.ii[static_cast<size_t>(d.col)];
                     failed = !solveBlock(view, b, s, maxIter, tol, true, ctx);
+                    if (!failed && dampSweep && sweep > 0) {
+                        constexpr double relaxation = 2.0 / 3.0;
+                        for (int r : block.ports)
+                            if (r < historyPorts)
+                                ctx.ii[static_cast<size_t>(r)] = previousI[r] + relaxation *
+                                    (ctx.ii[static_cast<size_t>(r)] - previousI[r]);
+                        RootClosedForms::settleBlockVoltages(
+                            view, b, s, true, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+                            ctx.vv.data(), ctx.rootDevices.data(), ctx.K);
+                    }
                     for (const auto& [r, d] : block.lagged)
                         ctx.vOc[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
                 }
                 if (!tried)
                     break;
                 ++ctx.resweepSweeps;
+                ++repairSweeps;
                 if (failed)
                     break;
                 for (int r = 0; view.frozen && r < ctx.K; ++r)
@@ -2306,8 +2363,18 @@ public:
                     ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
                 traceMisses(sweep + 1);
-                if (ctx.lastBlockResidual <= effTol)
-                    ++(sweep ? ctx.resweepClearedSecond : ctx.resweepClearedFirst);
+                if (ctx.lastBlockResidual <= effTol) {
+                    ++ppdiag::repairSettled[std::min(sweep + 1, 8)];
+                    if (sweep == 0)
+                        ++ctx.resweepClearedFirst;
+                    else if (sweep == 1)
+                        ++ctx.resweepClearedSecond;
+                }
+                if (aitkenSweep && sweep == 0)
+                    std::copy_n(ctx.ii.data(), historyPorts, olderI);
+                if ((sweeps4 || sweeps8 || symmetricSweep || dampSweep || aitkenSweep || neighbourRescue) &&
+                    ctx.lastBlockResidual >= beforeResidual)
+                    break;
             }
         }
 
@@ -2366,7 +2433,11 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol || (ctx.keepBlockAnswer && withinSwing(ctx)))) {
+        const bool keepRepair = repairSweeps > 0 && keepResidual && ctx.lastBlockResidual > effTol &&
+            (keepResidualUnbounded || ctx.lastBlockResidual <= 10.0 * std::max(effTol, 3e-3));
+        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol ||
+            (ctx.keepBlockAnswer && withinSwing(ctx)) || keepRepair)) {
+            ppdiag::repairKept += keepRepair;
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;

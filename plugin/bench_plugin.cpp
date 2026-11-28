@@ -340,6 +340,10 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     const long long resweepSweepsBefore = engine->resweepSweepCount();
     const long long resweepFirstBefore = engine->resweepClearedCount(1);
     const long long resweepSecondBefore = engine->resweepClearedCount(2);
+    const long long repairMissesBefore = wdf::ppdiag::repairMisses;
+    const long long repairKeptBefore = wdf::ppdiag::repairKept;
+    long long repairSettledBefore[9];
+    std::copy_n(wdf::ppdiag::repairSettled, 9, repairSettledBefore);
     const long long newtonIterationsBefore = wdf::ppdiag::totalBlockIterations;
     long long fallbacksPrevious = fallbacksBefore;
     long long fallbackBlocks2 = 0, fallbackBlocks3 = 0, fallbackBlocks4 = 0, maxFallbacksPerBlock = 0;
@@ -424,6 +428,14 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
                 engine->resweepSweepCount() - resweepSweepsBefore,
                 engine->resweepClearedCount(1) - resweepFirstBefore,
                 engine->resweepClearedCount(2) - resweepSecondBefore);
+    std::printf("repair misses %lld sweeps %lld kept %lld settle",
+                wdf::ppdiag::repairMisses - repairMissesBefore,
+                engine->resweepSweepCount() - resweepSweepsBefore,
+                wdf::ppdiag::repairKept - repairKeptBefore);
+    for (int sweep = 1; sweep <= 8; ++sweep)
+        std::printf(" %d=%lld", sweep,
+                    wdf::ppdiag::repairSettled[sweep] - repairSettledBefore[sweep]);
+    std::printf("\n");
     if (wdf::ppdiag::predicted) {
         long long seen = 0;
         int median = 0, p90 = 0, maximum = 0;

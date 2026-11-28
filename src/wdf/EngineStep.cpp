@@ -86,6 +86,8 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     lineTrials_ = 0;
     limitHits_ = 0;
     gridLimitHits_ = 0;
+    jointStepIters_ = 0;
+    jointStepTrials_ = 0;
     keptBest_ = false;
     runtimeBlockUsed_ = false;
     lastBlockFallback_ = false;
@@ -392,13 +394,7 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
         }
     }
 
-    // A block that had to fall back is not paying for itself. Spend a few
-    // samples on the joint Newton reference before trying the partition
-    // again; this is bounded and cannot disable the block path forever.
-    if (blockFallbacks_ > fallbacksBefore)
-        blockFallbackCooldown_ = blockFallbackCooldownLimit_;
-    else if (blockFallbackCooldown_ > 0)
-        --blockFallbackCooldown_;
+    const bool blockFellBack = blockFallbacks_ > fallbacksBefore;
 
     // Reconstruct the nodes before committing any state. A solved state
     // that is not a voltage this circuit can hold is a failed solve, not
@@ -435,7 +431,17 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     if (adjustedTransfer && K_ > 0)
         adjustableTransfer_.correctLoadedNodes(ii_.data(), rootLayout_.nodeCol, nodeData);
 
-    return finishStep(sourceValues, sourceCount, tPhase);
+    const auto& result = finishStep(sourceValues, sourceCount, tPhase);
+    const bool cheapResidualRepair = std::isfinite(lastBlockResidual_) && lastConverged_ &&
+        !lastStateRejected_ && jointStepIters_ + jointStepTrials_ < 8;
+    // A failed block, costly repair, or rejected state can repeat a bad warm
+    // start. A cheap certified residual repair is not evidence to disable the
+    // block path for the next 16 samples.
+    if (blockFellBack && !cheapResidualRepair)
+        blockFallbackCooldown_ = blockFallbackCooldownLimit_;
+    else if (blockFallbackCooldown_ > 0)
+        --blockFallbackCooldown_;
+    return result;
 }
 
 const std::vector<double>& EngineStep::finishStep(const double* sourceValues, size_t sourceCount,
