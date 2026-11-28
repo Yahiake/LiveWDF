@@ -135,9 +135,9 @@ public:
                     jData[base * K + base] = cur.dip_dvpk;
                     jData[base * K + base + 1] = cur.dip_dvgk;
                     jData[base * K + base + 2] = cur.dip_dvsk;
-                    jData[(base + 1) * K + base] = 0.0;
+                    jData[(base + 1) * K + base] = cur.dig_dvpk;
                     jData[(base + 1) * K + base + 1] = cur.dig_dvgk;
-                    jData[(base + 1) * K + base + 2] = 0.0;
+                    jData[(base + 1) * K + base + 2] = cur.dig_dvsk;
                     jData[(base + 2) * K + base] = cur.dis_dvpk;
                     jData[(base + 2) * K + base + 1] = cur.dis_dvgk;
                     jData[(base + 2) * K + base + 2] = cur.dis_dvsk;

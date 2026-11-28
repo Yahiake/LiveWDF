@@ -39,12 +39,13 @@ inline void evalGridLaw(double vgk, double& ig, double& dig_dvgk) noexcept {
 /// Currents flow into the grid, screen, and plate and out of the cathode.
 struct PentodeCurrents {
     double ig = 0.0, is = 0.0, ip = 0.0;
-    double dig_dvgk = 0.0;                                    // dIg/dVsk = dIg/dVpk = 0
+    double dig_dvgk = 0.0, dig_dvsk = 0.0, dig_dvpk = 0.0;
     double dis_dvgk = 0.0, dis_dvsk = 0.0, dis_dvpk = 0.0;
     double dip_dvgk = 0.0, dip_dvsk = 0.0, dip_dvpk = 0.0;
 
     void scale(double k) noexcept {
-        for (double* x : {&ig, &is, &ip, &dig_dvgk, &dis_dvgk, &dis_dvsk, &dis_dvpk, &dip_dvgk, &dip_dvsk, &dip_dvpk})
+        for (double* x : {&ig, &is, &ip, &dig_dvgk, &dig_dvsk, &dig_dvpk,
+                          &dis_dvgk, &dis_dvsk, &dis_dvpk, &dip_dvgk, &dip_dvsk, &dip_dvpk})
             *x *= k;
     }
 };
@@ -67,7 +68,8 @@ struct QuadricEmission {
 
     double screenShare(double vpk) const noexcept { return rho + sigma / (1.0 + beta * vpk); }
 
-    void currents(double vgk, double vsk, double vpk, PentodeCurrents& c) const noexcept {
+    void currents(double vgk, double vsk, double vpk, PentodeCurrents& c,
+                  double gridDelta = 0.0) const noexcept {
         double e = 0.0, eg = 0.0, es = 0.0;
         for (int j = 0; j < 5; ++j) {
             const double h = vgk + av[j] * vsk - knot[j];
@@ -91,6 +93,41 @@ struct QuadricEmission {
         c.dis_dvgk = eg * toScreen;
         c.dis_dvsk = es * toScreen;
         c.dis_dvpk = e * sigma * dk;
+        if (gridDelta > 0.0 && vgk > 0.0 && e > 0.0) {
+            // The division law assumes a sufficiently positive grid; ease its onset to keep the zero-current join C1.
+            constexpr double join = 0.25;
+            double onset = 1.0, donset = 0.0;
+            if (vgk < join) {
+                const double x = vgk / join;
+                onset = x * x * (3.0 - 2.0 * x);
+                donset = 6.0 * x * (1.0 - x) / join;
+            }
+            const double den = vgk + gridDelta * vsk;
+            const double fraction = onset * vgk / den;
+            const double df_dvgk = donset * vgk / den
+                + onset * gridDelta * vsk / (den * den);
+            const double df_dvsk = -onset * gridDelta * vgk / (den * den);
+            c.ig = e * fraction;
+            c.dig_dvgk = eg * fraction + e * df_dvgk;
+            c.dig_dvsk = es * fraction + e * df_dvsk;
+
+            const double total = c.ip + c.is;
+            const double dtotal_dvgk = c.dip_dvgk + c.dis_dvgk;
+            const double dtotal_dvsk = c.dip_dvsk + c.dis_dvsk;
+            const double dtotal_dvpk = c.dip_dvpk + c.dis_dvpk;
+            const double remain = 1.0 - c.ig / total;
+            const double dremain_dvgk = -c.dig_dvgk / total + c.ig * dtotal_dvgk / (total * total);
+            const double dremain_dvsk = -c.dig_dvsk / total + c.ig * dtotal_dvsk / (total * total);
+            const double dremain_dvpk = c.ig * dtotal_dvpk / (total * total);
+            c.dip_dvgk = c.dip_dvgk * remain + c.ip * dremain_dvgk;
+            c.dip_dvsk = c.dip_dvsk * remain + c.ip * dremain_dvsk;
+            c.dip_dvpk = c.dip_dvpk * remain + c.ip * dremain_dvpk;
+            c.dis_dvgk = c.dis_dvgk * remain + c.is * dremain_dvgk;
+            c.dis_dvsk = c.dis_dvsk * remain + c.is * dremain_dvsk;
+            c.dis_dvpk = c.dis_dvpk * remain + c.is * dremain_dvpk;
+            c.ip *= remain;
+            c.is *= remain;
+        }
     }
 };
 
@@ -318,6 +355,9 @@ struct ReefmanPentode {
     const QuadricEmission* previewQuadric = nullptr;
     const PolyKneeEmission* polyknee = nullptr;
     const PolyKneeEmission* previewPolyknee = nullptr;
+    bool gridPhysics = false;
+    // 807-calibrated 6L6-family geometry; EL34, EL84, and 6V6 are UNFITTED.
+    double gridDelta = 561.066966019585;
 
     static constexpr double gridPowerCrossoverCurrent = 1e-5;
     static constexpr double gridPowerCrossoverVoltage = 0.23026100917441295;
@@ -497,7 +537,7 @@ struct ReefmanPentode {
         }
         if (quadric) {
             if (vpk >= 0.0 && vsk > 0.0)
-                quadric->currents(vgk, vsk, vpk, c);
+                quadric->currents(vgk, vsk, vpk, c, gridPhysics ? gridDelta : 0.0);
             c.scale(count);
             return c;
         }
@@ -975,6 +1015,8 @@ struct Pentode {
     }
 
     double limitGrid(double vold, double vnew, bool& limited) const noexcept {
+        if (modelKind == PentodeModelKind::Reefman && useReefman && reefman.gridPhysics)
+            return vnew;
         if (livewdfGridLawEnabled()) return vnew;
         if (modelKind == PentodeModelKind::Reefman && useReefman) {
             return reefman.limitGrid(vold, vnew, limited);
