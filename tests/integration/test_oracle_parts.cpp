@@ -296,8 +296,7 @@ TEST_CASE("dbx 200 matched pairs follow the original transistor drawing and symm
           "[parts-validation][dbx200][ngspice]") {
     if (!lwdf_test::requireNgspice("dbx 200 module drawing 110557"))
         return;
-    const auto fixture = std::filesystem::path(__FILE__).parent_path().parent_path()
-                         / "fixtures/parts/dbx200-110557.lib";
+    const auto fixture = std::filesystem::path("tests/fixtures/parts/dbx200-110557.lib");
     std::ifstream referenceFile(fixture);
     REQUIRE(referenceFile.good());
     std::ostringstream device;
