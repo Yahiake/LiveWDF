@@ -717,7 +717,7 @@ protected:
                     }
                 }
             }
-            if (pentodes == 2 && corePorts == target) {
+            if (pentodes == 2 && corePorts <= target) {
                 append(block, core, false);
                 append(block, core, true);
             } else {
