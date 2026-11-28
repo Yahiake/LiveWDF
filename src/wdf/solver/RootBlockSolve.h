@@ -1,11 +1,13 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include <cmath>
 #include <algorithm>
 #include <chrono>
 #include <limits>
 #include <cstddef>
+#include <cstdlib>
 
 #include "wdf/DenseTopology.h"
 #include "wdf/DenseSolve.h"
@@ -82,6 +84,15 @@ struct BlockSolveContext {
     double& lastBlockResidual;
     long long& blockFallbacks;
     long long& runtimeBlockFallbacks;
+    long long& residualMisses;
+    long long& repairSweeps;
+    std::array<long long, 5>& repairOutcomes;
+    long long& closedFormRepairSweeps;
+    long long& newtonRepairSweeps;
+    long long& newtonRepairIters;
+    long long& keptResiduals;
+    double& keptResidualMax;
+    std::array<unsigned int, 4096>& keptResidualHistogram;
     bool& runtimeBlockUsed;
     bool& lastConverged;
     double& lastResidual;
@@ -97,6 +108,7 @@ struct BlockSolveContext {
     double modeTol;
     bool previewMode;
     bool keepBlockAnswer = false;
+    int keepAfterRepairMode = 0;
     bool reductions = true;
 };
 
@@ -1242,14 +1254,17 @@ public:
         ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
     }
 
-    static inline void repairMissedBlocks(
+    static inline int repairMissedBlocks(
         BlockSolveContext& ctx, NewtonContext& newtonCtx, const BlockView& view,
         int maxIter, double tol, bool& failed) noexcept
     {
         const double effTol = std::max(tol, 1e-9);
-        for (int sweep = 0; sweep < 2 && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+        int sweeps = 0;
+        for (int sweep = 0; sweep < 8 && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+            const double before = ctx.lastBlockResidual;
             bool tried = false;
-            for (int s = 0; s < view.count && !failed && ctx.lastBlockResidual > effTol; ++s) {
+            for (int k = 0; k < view.count && !failed && ctx.lastBlockResidual > effTol; ++k) {
+                const int s = (sweep & 1) ? view.count - 1 - k : k;
                 const int b = (*view.order)[static_cast<size_t>(s)];
                 const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
                 const bool missed = std::ranges::any_of(block.devices, [&](int di) {
@@ -1272,14 +1287,55 @@ public:
             }
             if (!tried || failed)
                 break;
+            ++sweeps;
+            if (!(ctx.lastBlockResidual < before))
+                break;
         }
+        return sweeps;
     }
 
     static inline bool repairWorthwhile(const BlockSolveContext& ctx, const BlockView& view) noexcept
     {
+        static const bool repairAll = std::getenv("LIVEWDF_RESWEEP_ALL") != nullptr;
         // A closed-form pass makes a selective retry cheaper than a joint fallback even in a small circuit.
         return ctx.previewMode && !ctx.keepBlockAnswer && view.count > 1 &&
-            (ctx.K >= kCostlyJointRootPorts || ctx.newtonIters == 0);
+            (repairAll || ctx.K >= kCostlyJointRootPorts || ctx.newtonIters == 0);
+    }
+
+    static inline int tryRepairMissedBlocks(
+        BlockSolveContext& ctx, NewtonContext& newtonCtx, const BlockView& view,
+        int maxIter, double tol, bool& failed) noexcept
+    {
+        if (!repairWorthwhile(ctx, view) || failed || !(ctx.lastBlockResidual > tol))
+            return 0;
+        const long long itersBefore = ctx.newtonIters;
+        const int sweeps = repairMissedBlocks(ctx, newtonCtx, view, maxIter, tol, failed);
+        ctx.repairSweeps += sweeps;
+        if (itersBefore == 0)
+            ctx.closedFormRepairSweeps += sweeps;
+        else
+            ctx.newtonRepairSweeps += sweeps;
+        ctx.newtonRepairIters += ctx.newtonIters - itersBefore;
+        const int outcome = ctx.lastBlockResidual <= tol
+            ? sweeps == 1 ? 0 : sweeps == 2 ? 1 : sweeps <= 4 ? 2 : 3
+            : 4;
+        ++ctx.repairOutcomes[static_cast<size_t>(outcome)];
+        return sweeps;
+    }
+
+    static inline bool keepAfterRepair(const BlockSolveContext& ctx, double residual, double tol) noexcept
+    {
+        return ctx.keepAfterRepairMode == 2 ||
+            (ctx.keepAfterRepairMode == 1 && residual <= 10.0 * std::max(tol, 3e-3));
+    }
+
+    static inline void recordKeptResidual(BlockSolveContext& ctx, double residual) noexcept
+    {
+        ++ctx.keptResiduals;
+        ctx.keptResidualMax = std::max(ctx.keptResidualMax, residual);
+        const size_t bin = std::min<size_t>(static_cast<size_t>(residual / 0.00025),
+                                            ctx.keptResidualHistogram.size() - 1);
+        ++ctx.keptResidualHistogram[bin];
     }
 
     /// Solve the root in block order, using the scalar closed form for a
@@ -1345,6 +1401,8 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
+        if (!failed && ctx.lastBlockResidual > effTol)
+            ++ctx.residualMisses;
         const bool resweepWorthwhile = repairWorthwhile(ctx, view);
 
         // Generalized fine blocks are a Gauss-Seidel splitting of a single
@@ -1395,8 +1453,9 @@ public:
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
+        int repairSweeps = 0;
         if (resweepWorthwhile && !failed && ctx.lastBlockResidual > effTol)
-            repairMissedBlocks(ctx, newtonCtx, view, maxIter, tol, failed);
+            repairSweeps = tryRepairMissedBlocks(ctx, newtonCtx, view, maxIter, effTol, failed);
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
@@ -1404,7 +1463,12 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol || (ctx.keepBlockAnswer && withinSwing(ctx)))) {
+        const bool keepRepair = repairSweeps > 0 && keepAfterRepair(ctx, ctx.lastBlockResidual, effTol);
+        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol ||
+            (ctx.keepBlockAnswer && withinSwing(ctx)) ||
+            keepRepair)) {
+            if (keepRepair && ctx.lastBlockResidual > effTol)
+                recordKeptResidual(ctx, ctx.lastBlockResidual);
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
@@ -1498,15 +1562,21 @@ public:
 
         // Pass 2: Gauss-Seidel relaxation sweep if inter-stage coupling left residual
         const double effTol = std::max(tol, 1e-9);
+        if (!failed && ctx.lastBlockResidual > effTol)
+            ++ctx.residualMisses;
+        int repairSweeps = 0;
         if (repairWorthwhile(ctx, view) && !failed && ctx.lastBlockResidual > effTol)
-            repairMissedBlocks(ctx, newtonCtx, view, maxIter, tol, failed);
+            repairSweeps = tryRepairMissedBlocks(ctx, newtonCtx, view, maxIter, effTol, failed);
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
-        if (!failed && ctx.lastBlockResidual <= effTol &&
-            !RootClosedForms::pinTriodeDomains(
-                view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
-                ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
+        const bool pinChanged = RootClosedForms::pinTriodeDomains(
+            view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
+            ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
+        const bool keepRepair = repairSweeps > 0 && keepAfterRepair(ctx, ctx.lastBlockResidual, effTol);
+        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol || keepRepair)) {
+            if (keepRepair && ctx.lastBlockResidual > effTol)
+                recordKeptResidual(ctx, ctx.lastBlockResidual);
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;

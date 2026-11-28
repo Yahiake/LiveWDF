@@ -30,12 +30,16 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <optional>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <thread>
 #include <vector>
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 struct ThreadUsage {
     double cpuNs = 0.0;
@@ -96,6 +100,14 @@ bool waitForBenchmarkPlan(LiveWDFPluginProcessor& processor, juce::AudioBuffer<f
     }
     std::fprintf(stderr, "%s worker did not install within 30 s\n", mode);
     return false;
+}
+
+wdf::Engine* benchEngine(LiveWDFPluginProcessor& processor) { return processor.leftEngine_.get(); }
+void benchConfigureRepair(LiveWDFPluginProcessor& processor) {
+    const char* keep = std::getenv("LIVEWDF_KEEP_AFTER_REPAIR");
+    const int mode = keep && std::strcmp(keep, "unbounded") == 0 ? 2 : keep ? 1 : 0;
+    processor.leftEngine_->setKeepAfterRepairMode(mode);
+    processor.rightEngine_->setKeepAfterRepairMode(mode);
 }
 
 }  // namespace livewdf
@@ -247,7 +259,8 @@ bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurr
 
 // Plays a WAV through processBlock() one callback at a time and reports the
 // spread of callback cost against the block's real-time budget (--wav).
-int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent, BenchMode mode) {
+int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent,
+           bool twoCores, BenchMode mode) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
@@ -268,6 +281,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(twoCores ? 1.0f : 0.0f);
     std::printf("quality=%s\n", selectMode(processor, mode));
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
@@ -282,11 +296,35 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     const double budgetNs = blockSize / fs * 1.0e9;
     DeadlineMisses missed;
     std::vector<double> wall, cpu;
+    perf_event_attr attr{};
+    attr.type = PERF_TYPE_HARDWARE;
+    attr.size = sizeof(attr);
+    attr.config = PERF_COUNT_HW_INSTRUCTIONS | (10ull << 32);
+    attr.exclude_kernel = 1;
+    attr.exclude_hv = 1;
+    const int perf = static_cast<int>(syscall(SYS_perf_event_open, &attr, 0, -1, -1, 0));
+    const auto instructions = [&] {
+        long long count = 0;
+        return read(perf, &count, sizeof(count)) == sizeof(count) ? count : 0;
+    };
+    std::vector<double> instructionCounts;
+    std::FILE* output = std::getenv("LWDF_OUT") ? std::fopen(std::getenv("LWDF_OUT"), "wb") : nullptr;
+    auto* engine = livewdf::benchEngine(processor);
+    livewdf::benchConfigureRepair(processor);
+    engine->resetBlockRepairDiagnostics();
+    const long long fallbacksBefore = engine->blockFallbackCount();
+    const long long wholePassesBefore = engine->wholeSolvePasses();
+    const long long wholeItersBefore = engine->wholeSolveIterations();
+    const long long wholeCapsBefore = engine->wholeSolveCapHits();
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
     for (int start = 0; start <= frames - blockSize; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
+        const long long before = instructions();
         const auto cost = measureBlock(processor, buffer, midi);
+        instructionCounts.push_back(static_cast<double>(instructions() - before));
+        if (output)
+            std::fwrite(buffer.getReadPointer(0), sizeof(float), static_cast<size_t>(blockSize), output);
         missed.count(cost, budgetNs);
         wall.push_back(100.0 * cost.wallNs / budgetNs);
         cpu.push_back(100.0 * cost.cpuNs / budgetNs);
@@ -310,6 +348,40 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 #endif
     std::printf("\n");
     missed.print(wall.size());
+    std::sort(instructionCounts.rbegin(), instructionCounts.rend());
+    const size_t worstCount = std::max<size_t>(instructionCounts.size() / 100, 1);
+    const double total = std::accumulate(instructionCounts.begin(), instructionCounts.end(), 0.0);
+    const double worst = std::accumulate(instructionCounts.begin(), instructionCounts.begin() + worstCount, 0.0);
+    std::printf("Minstr mean %.2f worst1%% %.2f max %.2f\n",
+                total / instructionCounts.size() / 1e6, worst / worstCount / 1e6,
+                instructionCounts.front() / 1e6);
+    const auto outcomes = engine->repairOutcomes();
+    std::printf("misses %lld sweeps %lld fallbacks %lld settle 1=%lld 2=%lld 3-4=%lld 5-8=%lld never=%lld\n",
+                engine->residualMissCount(), engine->repairSweepCount(),
+                engine->blockFallbackCount() - fallbacksBefore,
+                outcomes[0], outcomes[1], outcomes[2], outcomes[3], outcomes[4]);
+    std::printf("repair closed sweeps %lld newton sweeps %lld iterations %lld\n",
+                engine->closedFormRepairSweeps(), engine->newtonRepairSweeps(),
+                engine->newtonRepairIterations());
+    std::printf("whole passes %lld iterations %lld cap %lld\n",
+                engine->wholeSolvePasses() - wholePassesBefore,
+                engine->wholeSolveIterations() - wholeItersBefore,
+                engine->wholeSolveCapHits() - wholeCapsBefore);
+    const auto& hist = engine->keptResidualHistogram();
+    const auto quantile = [&](long long target) {
+        long long seen = 0;
+        for (size_t i = 0; i < hist.size(); ++i)
+            if ((seen += hist[i]) >= target)
+                return (static_cast<double>(i) + 0.5) * 0.25;
+        return 0.0;
+    };
+    const long long kept = engine->keptResidualCount();
+    std::printf("kept %lld median %.3f mV p90 %.3f mV max %.3f mV\n", kept,
+                kept ? quantile((kept + 1) / 2) : 0.0,
+                kept ? quantile((9 * kept + 9) / 10) : 0.0,
+                1000.0 * engine->keptResidualMax());
+    if (output)
+        std::fclose(output);
     if (const auto [unclaimed, late] = processor.twoCoreMisses(); unclaimed || late)
         std::printf("two cores: %lld blocks not taken by the worker, %lld blocks it fell behind in\n", unclaimed, late);
     return 0;
@@ -2743,7 +2815,7 @@ int main(int argc, char** argv) {
         std::printf("usage: LiveWDF_PluginBench <circuit.livewdf> [--validate] [--b1-diag] [--audit] [--wiring] "
                     "[--sweep] [--runtime-check] [--spice <dir>] [--probe <csv>] "
                     "[--probe-rate <hz>] [--probe-drive <volts>] [--probe-freq <hz>] [--plugin-probe <csv>] "
-                    "[--wav <file> [--block <n>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>] [--two-cores]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -2796,6 +2868,7 @@ int main(int argc, char** argv) {
     std::string wavPath;
     int wavBlock = 128;
     bool gridCurrent = true;
+    bool twoCores = false;
     double probeRate = kSampleRate;
     double probeDrive = 0.001;
     double probeFreq = 1000.0;
@@ -2833,6 +2906,8 @@ int main(int argc, char** argv) {
             pluginProbeCsv = argv[++i];
         else if (arg == "--wav" && i + 1 < argc)
             wavPath = argv[++i];
+        else if (arg == "--two-cores")
+            twoCores = true;
         else if (arg == "--grid-current") {
             if (i + 1 >= argc) {
                 std::printf("--grid-current requires on or off\n");
@@ -2871,7 +2946,8 @@ int main(int argc, char** argv) {
     if (!pluginProbeCsv.empty())
         return runPluginProbe(file, pluginProbeCsv, probeDrive, probeFreq);
     if (!wavPath.empty())
-        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent, mode.value_or(BenchMode::FastLive));
+        return runWav(file, juce::File(wavPath), wavBlock, gridCurrent, twoCores,
+                      mode.value_or(BenchMode::FastLive));
 
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))

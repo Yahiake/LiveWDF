@@ -318,6 +318,26 @@ public:
     bool fineBlockSolver() const { return fineBlockSolver_; }
     bool lastBlockFallback() const { return lastBlockFallback_; }
     long long blockFallbackCount() const { return blockFallbacks_; }
+    long long residualMissCount() const { return residualMisses_; }
+    long long repairSweepCount() const { return repairSweeps_; }
+    const std::array<long long, 5>& repairOutcomes() const { return repairOutcomes_; }
+    long long closedFormRepairSweeps() const { return closedFormRepairSweeps_; }
+    long long newtonRepairSweeps() const { return newtonRepairSweeps_; }
+    long long newtonRepairIterations() const { return newtonRepairIters_; }
+    long long keptResidualCount() const { return keptResiduals_; }
+    double keptResidualMax() const { return keptResidualMax_; }
+    const std::array<unsigned int, 4096>& keptResidualHistogram() const { return keptResidualHistogram_; }
+    long long wholeSolvePasses() const { return jointTotalPasses_; }
+    long long wholeSolveIterations() const { return jointTotalIters_; }
+    long long wholeSolveCapHits() const { return jointTotalCaps_; }
+    void resetBlockRepairDiagnostics() {
+        residualMisses_ = repairSweeps_ = closedFormRepairSweeps_ = 0;
+        newtonRepairSweeps_ = newtonRepairIters_ = keptResiduals_ = 0;
+        repairOutcomes_.fill(0);
+        keptResidualMax_ = 0.0;
+        keptResidualHistogram_.fill(0);
+    }
+    void setKeepAfterRepairMode(int mode) { keepAfterRepairMode_ = mode; }
     double lastBlockResidual() const { return lastBlockResidual_; }
     int rootBlockDeviceCount(int s) const {
         return static_cast<int>(newtonBlocks_[static_cast<size_t>(groupOrder_[static_cast<size_t>(s)])].devices.size());
@@ -1233,8 +1253,18 @@ protected:
     std::vector<double> dcValues_;
     mutable long long blockFallbacks_ = 0;
     mutable long long runtimeBlockFallbacks_ = 0;
+    mutable long long residualMisses_ = 0;
+    mutable long long repairSweeps_ = 0;
+    mutable std::array<long long, 5> repairOutcomes_{};
+    mutable long long closedFormRepairSweeps_ = 0;
+    mutable long long newtonRepairSweeps_ = 0;
+    mutable long long newtonRepairIters_ = 0;
+    mutable long long keptResiduals_ = 0;
+    mutable double keptResidualMax_ = 0.0;
+    mutable std::array<unsigned int, 4096> keptResidualHistogram_{};
     bool lastBlockFallback_ = false;
     double lastBlockResidual_ = 0.0;
+    int keepAfterRepairMode_ = 0;
     bool runtimeBlockEnabled_ = false;
     bool runtimeBlockUsed_ = false;
     int runtimeBlockCount_ = 0;
@@ -1251,6 +1281,9 @@ protected:
     long long jointLastTrials_ = 0;
     long long jointStepIters_ = 0;
     long long jointStepTrials_ = 0;
+    long long jointTotalPasses_ = 0;
+    long long jointTotalIters_ = 0;
+    long long jointTotalCaps_ = 0;
     bool lastConverged_ = false;
     bool lastStateRejected_ = false;
     long long stateRejections_ = 0;

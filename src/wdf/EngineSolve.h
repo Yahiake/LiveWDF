@@ -241,6 +241,7 @@ protected:
             staticMode_, K_, lampFolded() ? lamp_.nRed : nRed_, keepBestOn_, &prof_, profileOn_,
             newtonIters_, lineTrials_, limitHits_, gridLimitHits_, deviceEvals_,
             jointLastIters_, jointLastTrials_, jointStepIters_, jointStepTrials_,
+            jointTotalPasses_, jointTotalIters_, jointTotalCaps_,
             bestFn_, keptBest_, lastConverged_, lastResidual_,
             loadedJunctionEnabled_, triodePreviewEnabled_ && nPent_ > 0, modeTol_,
             loadedJunctionEnabled_ && blockCount_ == 0,
@@ -261,12 +262,15 @@ protected:
             staticMode_, &prof_, profileOn_,
             newtonIters_, deviceEvals_, limitHits_, gridLimitHits_,
             lastBlockFallback_, lastBlockResidual_, blockFallbacks_,
-            runtimeBlockFallbacks_, runtimeBlockUsed_, lastConverged_,
+            runtimeBlockFallbacks_, residualMisses_, repairSweeps_, repairOutcomes_,
+            closedFormRepairSweeps_, newtonRepairSweeps_, newtonRepairIters_,
+            keptResiduals_, keptResidualMax_, keptResidualHistogram_,
+            runtimeBlockUsed_, lastConverged_,
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
-            triodePreviewEnabled_, keepBlockAnswer_
+            triodePreviewEnabled_, keepBlockAnswer_, keepAfterRepairMode_
         };
     }
 
