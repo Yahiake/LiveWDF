@@ -234,7 +234,8 @@ public:
         // stage.
         bool hasOpAmp = Reduced;
         int pentodeCount = 0;
-        const bool capCandidate = ctx.previewMode && ctx.K >= kCostlyJointRootPorts;
+        const bool capCandidate = ctx.previewMode && !ctx.keepBlockAnswer &&
+            ctx.K >= kCostlyJointRootPorts && view.count > 1;
         if (capCandidate)
             for (int di : devices)
                 pentodeCount += ctx.rootDevices[di].kind == DeviceKind::Pentode;
@@ -1286,7 +1287,8 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
-        const bool resweepWorthwhile = ctx.previewMode && ctx.K >= kCostlyJointRootPorts && !ctx.keepBlockAnswer;
+        const bool resweepWorthwhile = ctx.previewMode && !ctx.keepBlockAnswer &&
+            ctx.K >= kCostlyJointRootPorts && view.count > 1;
 
         // Generalized fine blocks are a Gauss-Seidel splitting of a single
         // strongly-coupled SCC. The first pass is the usual forward sweep with
