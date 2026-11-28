@@ -278,6 +278,8 @@ struct QuadricFileTables {
     std::array<QuadricEmission, 5> values = {kQuadricEL34, kQuadric6L6GC,
         kQuadric6L6GCPreview, kQuadric6V6S, kQuadricEL84};
     QuadricTriodeParams triode = kQuadric12AX7;
+    std::array<TriodeModel::GridLine, 3> gridLines = {
+        TriodeModel::kGridLines[0], TriodeModel::kGridLines[1], TriodeModel::kGridLines[2]};
     bool loaded[5]{};
     bool triodeLoaded = false;
 
@@ -290,6 +292,11 @@ struct QuadricFileTables {
                 input >> triode.kP2 >> triode.kPg >> triode.kP;
                 triodeLoaded = input && triode.valid();
                 if (!triodeLoaded) break;
+                continue;
+            }
+            if (name == "12AX7GRID") {
+                for (auto& line : gridLines) input >> line.on >> line.r;
+                if (!input) break;
                 continue;
             }
             int index = 0;
@@ -326,6 +333,11 @@ inline QuadricTriodeParams quadricTriodeFromFile(QuadricTriodeParams compiled) {
     if (tables.triodeLoaded && std::memcmp(&compiled, &kQuadric12AX7, sizeof(compiled)) == 0)
         return tables.triode;
     return compiled;
+}
+
+inline void quadricTriodeGridFromFile(TriodeModel& model) {
+    if (std::memcmp(&model.p, &kQuadric12AX7, sizeof(model.p)) == 0)
+        model.gridLines = quadricFileTables().gridLines;
 }
 
 /// Clean, self-contained constitutive evaluator for the Reefman pentode model
