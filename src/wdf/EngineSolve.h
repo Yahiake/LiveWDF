@@ -699,13 +699,13 @@ protected:
             const NewtonBlock& block = old[static_cast<size_t>(bi)];
             std::vector<unsigned char> core(static_cast<size_t>(nGroups), 0);
             int corePorts = 0, pentodes = 0;
-            if (block.ports.size() == 13) {
-                for (int device : block.devices)
-                    if (rootDevices_[static_cast<size_t>(device)].kind == DeviceKind::Pentode) {
-                        core[static_cast<size_t>(device)] = 1;
-                        corePorts += activePortCount(rootDevices_[static_cast<size_t>(device)]);
-                        ++pentodes;
-                    }
+            for (int device : block.devices)
+                if (rootDevices_[static_cast<size_t>(device)].kind == DeviceKind::Pentode) {
+                    core[static_cast<size_t>(device)] = 1;
+                    corePorts += activePortCount(rootDevices_[static_cast<size_t>(device)]);
+                    ++pentodes;
+                }
+            if (pentodes == 2) {
                 for (auto it = block.devices.rbegin(); it != block.devices.rend() && corePorts < target; ++it) {
                     const int device = *it;
                     if (core[static_cast<size_t>(device)])
