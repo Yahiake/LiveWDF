@@ -507,6 +507,11 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
         return node_;
     }
 
+    if (ppdiag::deviceWalkLog()) {
+        auto traceCtx = makeBlockSolveContext();
+        solver::RootBlockSolve::logAcceptedDeviceTraces(traceCtx);
+    }
+
     // Commit the op-amp dominant-pole state for the next sample. This is
     // the same backward-Euler expression the device law used during the
     // solve, evaluated at the accepted root voltages; recomputing it here
@@ -540,7 +545,7 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
             const double iNeg = std::max(0.0, -iOut);
             const double vPos = opAmpPsuPos_[ci].tick(iPos);
             const double vNeg = opAmpPsuNeg_[ci].tick(iNeg);
-            opAmps_[ci].setVRails(vPos, vNeg);
+            opAmps_[ci].setSupplyRails(vPos, vNeg);
         }
     }
 

@@ -582,8 +582,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                 }
                 model.walkBoundLow = model.railLow();
                 model.walkBoundHigh = model.railHigh();
-                const double low = model.railLow() + overrides.number("opamp", modelName, "headroomNeg", 0.0);
-                const double high = model.railHigh() - overrides.number("opamp", modelName, "headroomPos", 0.0);
+                model.railHeadroomNeg = overrides.number("opamp", modelName, "headroomNeg", 0.0);
+                model.railHeadroomPos = overrides.number("opamp", modelName, "headroomPos", 0.0);
+                const double low = model.railLow() + model.railHeadroomNeg;
+                const double high = model.railHigh() - model.railHeadroomPos;
                 if (low > high) throw std::runtime_error("Op-amp '" + comp.id + "' has invalid headroom");
                 model.setVRailBounds(low, high);
                 model.railKnee = overrides.number("opamp", modelName, "railKnee", model.railKnee);

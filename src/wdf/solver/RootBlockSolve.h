@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <array>
 #include <cmath>
 #include <algorithm>
 #include <chrono>
@@ -8,6 +9,7 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 #include "wdf/DenseTopology.h"
 #include "wdf/DenseSolve.h"
@@ -43,6 +45,7 @@ inline double lastStep = 1.0;
 inline int walkCount = 0;
 inline long long walksDumped = 0;
 inline long long deviceWalkSolves = 0;
+inline long long deviceWalkClasses[3]{};
 inline double walkTrace[64][28]{};
 
 inline std::FILE* walkLog() {
@@ -71,6 +74,27 @@ inline std::FILE* deviceWalkLog() {
         return f;
     }();
     return file;
+}
+inline int deviceWalkLimit() {
+    static const int limit = [] {
+        const char* value = std::getenv("LWDF_DEVICE_WALK_LIMIT");
+        return value ? std::clamp(std::atoi(value), 0, 256) : 64;
+    }();
+    return limit;
+}
+inline bool traceDevice(const std::string& name) {
+    const char* list = std::getenv("LWDF_DEVICE_TRACE_NAMES");
+    if (!list || !*list) return false;
+    const char* start = list;
+    while (*start) {
+        const char* end = std::strchr(start, ',');
+        const size_t length = end ? static_cast<size_t>(end - start) : std::strlen(start);
+        if (name.size() == length && std::strncmp(start, name.c_str(), length) == 0)
+            return true;
+        if (!end) break;
+        start = end + 1;
+    }
+    return false;
 }
 }
 
@@ -270,11 +294,71 @@ public:
     }
 
 private:
+    struct DeviceWalkRow {
+        std::string run, circuit, group, trigger, family, name, model;
+        long long solveId = 0, sample = 0;
+        int iteration = 0, portCount = 0;
+        size_t deviceIndex = 0;
+        bool bounds = false;
+        double boundLow = 0.0, boundHigh = 0.0, lineFactor = 1.0;
+        std::array<double, 3> v{}, i{}, dv{}, h{};
+        std::array<double, 9> j{};
+    };
+
+    static bool fillDeviceIdentity(DeviceWalkRow& row, const RootDevice& dev,
+                                   const BlockSolveContext& ctx) {
+        row.deviceIndex = dev.compIndex;
+        row.portCount = dev.numPorts;
+        switch (dev.kind) {
+            case DeviceKind::Diode:
+                row.family = "diode"; row.name = ctx.comp.diodeNames[dev.compIndex];
+                row.model = ctx.comp.diodeModelNames[dev.compIndex]; break;
+            case DeviceKind::Jfet:
+                row.family = "jfet"; row.name = ctx.comp.jfet[dev.compIndex].name;
+                row.model = ctx.comp.jfet[dev.compIndex].modelName; break;
+            case DeviceKind::Bjt:
+                row.family = "bjt"; row.name = ctx.comp.bjt[dev.compIndex].name;
+                row.model = ctx.comp.bjt[dev.compIndex].modelName; break;
+            case DeviceKind::OpAmp: {
+                row.family = "opamp"; row.name = ctx.comp.opamp[dev.compIndex].name;
+                row.model = ctx.comp.opamp[dev.compIndex].modelName;
+                const OpAmpModel& oa = ctx.opAmps[dev.compIndex];
+                row.bounds = true; row.boundLow = oa.walkBoundLow; row.boundHigh = oa.walkBoundHigh;
+                break;
+            }
+            default: return false;
+        }
+        return true;
+    }
+
+    static void writeDeviceWalkRow(std::FILE* log, const DeviceWalkRow& row,
+                                   const char* result) {
+        std::fprintf(log, "%s,%s,%s,%lld,%lld,%d,%s,%s,%s,%zu,%s,%s,%d,",
+                     row.run.c_str(), row.circuit.c_str(), row.group.c_str(), row.solveId,
+                     row.sample, row.iteration, row.trigger.c_str(), result, row.family.c_str(),
+                     row.deviceIndex, row.name.c_str(), row.model.c_str(), row.portCount);
+        if (row.bounds) std::fprintf(log, "%.17g,%.17g,", row.boundLow, row.boundHigh);
+        else std::fprintf(log, ",,");
+        const auto values = [&](const auto& data, int count) {
+            for (int p = 0; p < count; ++p)
+                std::fprintf(log, p < row.portCount ? "%.17g," : ",", data[static_cast<size_t>(p)]);
+        };
+        values(row.v, 3);
+        values(row.i, 3);
+        for (int r = 0; r < 3; ++r)
+            for (int c = 0; c < 3; ++c)
+                std::fprintf(log, r < row.portCount && c < row.portCount ? "%.17g," : ",",
+                             row.j[static_cast<size_t>(r * 3 + c)]);
+        values(row.dv, 3);
+        std::fprintf(log, "%.17g,%.17g,%.17g,%.17g\n",
+                     row.h[0], row.h[1], row.h[2], row.lineFactor);
+    }
+
     static void logDeviceWalk(const NewtonBlock& block, BlockSolveContext& ctx,
                               const double* oldV, int iteration, long long solveId,
-                              const char* trigger, double lineFactor) {
-        std::FILE* log = ppdiag::deviceWalkLog();
-        if (!log) return;
+                              const char* trigger, double lineFactor,
+                              std::vector<DeviceWalkRow>& rows) {
+        if (!ppdiag::deviceWalkLog()) return;
         std::vector<double> v = ctx.blockV, i(static_cast<size_t>(ctx.K), 0.0),
                             j(static_cast<size_t>(ctx.K) * ctx.K, 0.0);
         for (int di : block.devices) {
@@ -286,57 +370,84 @@ private:
                 ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
                 ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
                 ctx.K, v.data(), i.data(), j.data(), ctx.deviceEvals);
-            const char* family = nullptr;
-            const char* name = "";
-            const char* model = "";
-            switch (dev.kind) {
-                case DeviceKind::Diode:
-                    family = "diode"; name = ctx.comp.diodeNames[dev.compIndex].c_str();
-                    model = ctx.comp.diodeModelNames[dev.compIndex].c_str(); break;
-                case DeviceKind::Jfet:
-                    family = "jfet"; name = ctx.comp.jfet[dev.compIndex].name.c_str();
-                    model = ctx.comp.jfet[dev.compIndex].modelName.c_str(); break;
-                case DeviceKind::Bjt:
-                    family = "bjt"; name = ctx.comp.bjt[dev.compIndex].name.c_str();
-                    model = ctx.comp.bjt[dev.compIndex].modelName.c_str(); break;
-                case DeviceKind::OpAmp:
-                    family = "opamp"; name = ctx.comp.opamp[dev.compIndex].name.c_str();
-                    model = ctx.comp.opamp[dev.compIndex].modelName.c_str(); break;
-                default: break;
-            }
-            if (!family) continue;
+            DeviceWalkRow row;
+            if (!fillDeviceIdentity(row, dev, ctx)) continue;
             const char* run = std::getenv("LWDF_WALK_RUN");
             const char* circuit = std::getenv("LWDF_WALK_CIRCUIT");
             const char* group = std::getenv("LWDF_WALK_GROUP");
-            std::fprintf(log, "%s,%s,%s,%lld,%lld,%d,%s,iterate,%s,%zu,%s,%s,%d,",
-                         run ? run : "", circuit ? circuit : "", group ? group : "", solveId,
-                         ppdiag::sample - 256, iteration, trigger, family, dev.compIndex, name, model,
-                         dev.numPorts);
-            if (dev.kind == DeviceKind::OpAmp) {
-                const OpAmpModel& oa = ctx.opAmps[dev.compIndex];
-                std::fprintf(log, "%.17g,%.17g,", oa.walkBoundLow, oa.walkBoundHigh);
-            } else {
-                std::fprintf(log, ",,");
-            }
+            row.run = run ? run : ""; row.circuit = circuit ? circuit : "";
+            row.group = group ? group : ""; row.solveId = solveId;
+            row.sample = ppdiag::sample - 256; row.iteration = iteration;
+            row.trigger = trigger; row.lineFactor = lineFactor;
             const int o = dev.portBase;
-            for (int p = 0; p < 3; ++p) std::fprintf(log, p < dev.numPorts ? "%.17g," : ",", p < dev.numPorts ? v[o + p] : 0.0);
-            for (int p = 0; p < 3; ++p) std::fprintf(log, p < dev.numPorts ? "%.17g," : ",", p < dev.numPorts ? i[o + p] : 0.0);
+            for (int p = 0; p < std::min(3, dev.numPorts); ++p) {
+                row.v[static_cast<size_t>(p)] = v[static_cast<size_t>(o + p)];
+                row.i[static_cast<size_t>(p)] = i[static_cast<size_t>(o + p)];
+                row.dv[static_cast<size_t>(p)] = ctx.blockV[static_cast<size_t>(o + p)] - row.v[static_cast<size_t>(p)];
+            }
             for (int r = 0; r < 3; ++r)
                 for (int c = 0; c < 3; ++c)
-                    std::fprintf(log, r < dev.numPorts && c < dev.numPorts ? "%.17g," : ",",
-                                 r < dev.numPorts && c < dev.numPorts ? j[static_cast<size_t>(o + r) * ctx.K + o + c] : 0.0);
-            for (int p = 0; p < 3; ++p)
-                std::fprintf(log, p < dev.numPorts ? "%.17g," : ",",
-                             p < dev.numPorts ? ctx.blockV[static_cast<size_t>(o + p)] - v[o + p] : 0.0);
-            if (dev.kind == DeviceKind::OpAmp)
-                std::fprintf(log, "%.17g,%.17g,%.17g,%.17g\n", ctx.opAmpVp[dev.compIndex],
-                             ctx.opAmpAlpha[dev.compIndex], ctx.opAmpMaxDv[dev.compIndex], lineFactor);
-            else
-                std::fprintf(log, "0,0,0,%.17g\n", lineFactor);
+                    if (r < dev.numPorts && c < dev.numPorts)
+                        row.j[static_cast<size_t>(r * 3 + c)] =
+                            j[static_cast<size_t>(o + r) * ctx.K + o + c];
+            if (dev.kind == DeviceKind::OpAmp) {
+                row.h[0] = ctx.opAmpVp[dev.compIndex];
+                row.h[1] = ctx.opAmpAlpha[dev.compIndex];
+                row.h[2] = ctx.opAmpMaxDv[dev.compIndex];
+            }
+            rows.push_back(std::move(row));
         }
+    }
+
+    static void flushDeviceWalk(std::vector<DeviceWalkRow>& rows, const char* result,
+                                bool failed, bool difficult) {
+        std::FILE* log = ppdiag::deviceWalkLog();
+        if (!log || rows.empty()) return;
+        const int cls = failed ? 0 : difficult ? 1 : 2;
+        if (ppdiag::deviceWalkClasses[cls]++ >= ppdiag::deviceWalkLimit()) return;
+        for (const auto& row : rows) writeDeviceWalkRow(log, row, result);
         std::fflush(log);
     }
 public:
+    static void logAcceptedDeviceTraces(BlockSolveContext& ctx) {
+        std::FILE* log = ppdiag::deviceWalkLog();
+        if (!log || !std::getenv("LWDF_DEVICE_TRACE_NAMES")) return;
+        std::vector<double> currents(static_cast<size_t>(ctx.K), 0.0);
+        std::vector<double> jacobian(static_cast<size_t>(ctx.K) * ctx.K, 0.0);
+        long long diagnosticEvals = 0;
+        for (const RootDevice& dev : ctx.rootDevices) {
+            DeviceWalkRow row;
+            if (!fillDeviceIdentity(row, dev, ctx) || !ppdiag::traceDevice(row.name)) continue;
+            std::ranges::fill(jacobian, 0.0);
+            RootResidual::currentsForDevice(
+                dev, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(), ctx.bjts.data(),
+                ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                ctx.K, ctx.vv.data(), currents.data(), jacobian.data(), diagnosticEvals);
+            const char* run = std::getenv("LWDF_WALK_RUN");
+            const char* circuit = std::getenv("LWDF_WALK_CIRCUIT");
+            const char* group = std::getenv("LWDF_WALK_GROUP");
+            row.run = run ? run : ""; row.circuit = circuit ? circuit : "";
+            row.group = group ? group : ""; row.solveId = ppdiag::sample;
+            row.sample = ppdiag::sample - 256; row.iteration = -1; row.trigger = "accepted";
+            const int o = dev.portBase;
+            for (int p = 0; p < std::min(3, dev.numPorts); ++p) {
+                row.v[static_cast<size_t>(p)] = ctx.vv[static_cast<size_t>(o + p)];
+                row.i[static_cast<size_t>(p)] = currents[static_cast<size_t>(o + p)];
+            }
+            for (int r = 0; r < std::min(3, dev.numPorts); ++r)
+                for (int c = 0; c < std::min(3, dev.numPorts); ++c)
+                    row.j[static_cast<size_t>(r * 3 + c)] =
+                        jacobian[static_cast<size_t>(o + r) * ctx.K + o + c];
+            if (dev.kind == DeviceKind::OpAmp) {
+                row.h[0] = ctx.opAmpVp[dev.compIndex];
+                row.h[1] = ctx.opAmpAlpha[dev.compIndex];
+                row.h[2] = ctx.opAmpMaxDv[dev.compIndex];
+            }
+            writeDeviceWalkRow(log, row, "accepted");
+        }
+        std::fflush(log);
+    }
     static inline bool neighbourGridPort(const NewtonBlock& block, int port,
                                          const BlockSolveContext& ctx) noexcept
     {
@@ -782,6 +893,7 @@ public:
         bool keptDump = false;
         bool doglegSolve = false;
         const long long deviceWalkSolve = ppdiag::deviceWalkLog() ? ++ppdiag::deviceWalkSolves : 0;
+        std::vector<DeviceWalkRow> deviceWalkRows;
         double doglegRadius = 1.0;
         int completedIterations = 0;
         alignas(16) int piv[64];
@@ -1091,6 +1203,20 @@ public:
                                    nextCe, nextBe);
                     ctx.blockDv[static_cast<size_t>(o)] = nextCe - ctx.blockV[static_cast<size_t>(o)];
                     ctx.blockDv[static_cast<size_t>(o + 1)] = nextBe - ctx.blockV[static_cast<size_t>(o + 1)];
+                }
+            }
+
+            static const bool opRail = livewdfPpTry("oprail");
+            if (opRail) {
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    if (dev.kind != DeviceKind::OpAmp)
+                        continue;
+                    const size_t port = static_cast<size_t>(dev.portBase);
+                    const double limited = ctx.opAmps[dev.compIndex].limitOutputStep(
+                        ctx.blockV[port], ctx.blockDv[port]);
+                    ctx.limitHits += limited != ctx.blockDv[port];
+                    ctx.blockDv[port] = limited;
                 }
             }
 
@@ -1616,7 +1742,8 @@ public:
 
                 if (deviceWalkSolve)
                     logDeviceWalk(block, ctx, ctx.blockVOld.data(), it, deviceWalkSolve,
-                                  roleSwapTriggered ? "role" : "ordinary", stepSize);
+                                  roleSwapTriggered ? "role" : "ordinary", stepSize,
+                                  deviceWalkRows);
 
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
@@ -1671,6 +1798,13 @@ public:
         }
         if (knot3Solve && (converged || landing))
             ++ppdiag::knot3Iterations[std::clamp(completedIterations, 0, 48)];
+        const bool walkKept = !converged && !landing && ctx.keepBlockAnswer && std::isfinite(bestF);
+        const bool walkFailed = hardFailure || (!converged && !landing && !walkKept);
+        const char* walkResult = hardFailure ? "lu" : converged ? "converged" :
+            landing ? "landing" : walkKept ? "kept" :
+            ppdiag::atCap && ppdiag::lastStep == 1.0 ? "cap" : "line";
+        flushDeviceWalk(deviceWalkRows, walkResult, walkFailed,
+                        roleSwapTriggered || completedIterations >= 12);
         if constexpr (!Reduced) {
             if (ppdiag::walkLog() && ppdiag::walkCount &&
                 (roleSwapTriggered || completedIterations >= 12)) {

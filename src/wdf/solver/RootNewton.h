@@ -15,6 +15,7 @@
 #include "wdf/solver/SharedNewtonColumns.h"
 #include "wdf/solver/TriodeDomainTransfer.h"
 #include "wdf/solver/RootClosedForms.h"
+#include "wdf/solver/PushPullTries.h"
 
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
@@ -417,6 +418,19 @@ public:
                 tock(ctx.prof->lu);
             if (!solved)
                 break;
+
+            static const bool opRail = livewdfPpTry("oprail");
+            if (opRail) {
+                for (const auto& dev : ctx.rootDevices) {
+                    if (dev.kind != DeviceKind::OpAmp)
+                        continue;
+                    const size_t port = static_cast<size_t>(dev.portBase);
+                    const double limited = ctx.opAmps[dev.compIndex].limitOutputStep(
+                        ctx.vv[port], ctx.dv[port]);
+                    ctx.limitHits += limited != ctx.dv[port];
+                    ctx.dv[port] = limited;
+                }
+            }
 
             double scale = 1.0;
             const double* LIVEWDF_RESTRICT dvData = ctx.dv.data();

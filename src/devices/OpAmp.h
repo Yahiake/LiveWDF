@@ -227,6 +227,8 @@ struct OpAmpModel {
     double railKnee = 0.25;
     double walkBoundLow = std::numeric_limits<double>::quiet_NaN();
     double walkBoundHigh = std::numeric_limits<double>::quiet_NaN();
+    double railHeadroomPos = 0.0;
+    double railHeadroomNeg = 0.0;
     /// Solver-only state on an Engine's private model copy: the linear
     /// output conductance is already present in the passive network.
     bool outputResistanceEmbedded = false;
@@ -566,6 +568,15 @@ struct OpAmpModel {
         vRailNeg = std::max(0.0, neg);
     }
 
+    void setSupplyRails(double pos, double neg) {
+        setVRails(pos - railHeadroomPos, neg - railHeadroomNeg);
+    }
+
+    double limitOutputStep(double voltage, double step) const noexcept {
+        const double margin = std::max(1.0, outputCurrentLimit * outputImpedance);
+        return std::clamp(voltage + step, railLow() - margin, railHigh() + margin) - voltage;
+    }
+
     /// Signed output swing bounds. For example, a single 9 V supply can
     /// have both its lower and upper output limit above circuit ground.
     void setVRailBounds(double low, double high) noexcept {
@@ -764,6 +775,7 @@ struct OpAmpRoot {
     }
 
     void setVRails(double pos, double neg) { model.setVRails(pos, neg); }
+    void setSupplyRails(double pos, double neg) { model.setSupplyRails(pos, neg); }
     void setVMax(double vMax) { model.setVMax(vMax); }
     double vMax() const { return std::min(model.vRailPos, model.vRailNeg); }
 
@@ -786,7 +798,7 @@ struct OpAmpRoot {
 
     void tickPowerSag(double iPos, double iNeg) {
         if (sagEnabled) {
-            model.setVRails(psuPos.tick(iPos), psuNeg.tick(iNeg));
+            model.setSupplyRails(psuPos.tick(iPos), psuNeg.tick(iNeg));
         }
     }
 
