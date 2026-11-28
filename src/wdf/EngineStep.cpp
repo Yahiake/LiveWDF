@@ -358,7 +358,8 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     // A block that had to fall back is not paying for itself. Spend a few
     // samples on the joint Newton reference before trying the partition
     // again; this is bounded and cannot disable the block path forever.
-    if (blockFallbacks_ > fallbacksBefore)
+    if (blockFallbacks_ > fallbacksBefore &&
+        (lastBlockSolveFailed_ || !triodePreviewEnabled_ || nTri_ == 0 || !allClosedFormBlocks_))
         blockFallbackCooldown_ = blockFallbackCooldownLimit_;
     else if (blockFallbackCooldown_ > 0)
         --blockFallbackCooldown_;

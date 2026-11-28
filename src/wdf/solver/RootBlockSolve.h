@@ -79,6 +79,7 @@ struct BlockSolveContext {
     long long& limitHits;
     long long& gridLimitHits;
     bool& lastBlockFallback;
+    bool& lastBlockSolveFailed;
     double& lastBlockResidual;
     long long& blockFallbacks;
     long long& runtimeBlockFallbacks;
@@ -1241,6 +1242,7 @@ public:
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
         ctx.lastBlockFallback = false;
+        ctx.lastBlockSolveFailed = false;
         ctx.lastBlockResidual = std::numeric_limits<double>::infinity();
         ctx.jfetSolveFailed = false;
         ctx.mosfetSolveFailed = false;
@@ -1394,6 +1396,7 @@ public:
         }
 
         ctx.lastBlockFallback = true;
+        ctx.lastBlockSolveFailed = failed;
         ++ctx.blockFallbacks;
         ctx.lastConverged = false;
         if (failed)
@@ -1439,6 +1442,7 @@ public:
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
         ctx.lastBlockFallback = false;
+        ctx.lastBlockSolveFailed = false;
         ctx.lastBlockResidual = std::numeric_limits<double>::infinity();
         ctx.jfetSolveFailed = false;
         ctx.mosfetSolveFailed = false;
@@ -1548,6 +1552,7 @@ public:
         }
 
         ctx.lastBlockFallback = true;
+        ctx.lastBlockSolveFailed = failed;
         ++ctx.blockFallbacks;
         ++ctx.runtimeBlockFallbacks;
         ctx.lastConverged = false;

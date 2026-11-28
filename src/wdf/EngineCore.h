@@ -1234,6 +1234,7 @@ protected:
     mutable long long blockFallbacks_ = 0;
     mutable long long runtimeBlockFallbacks_ = 0;
     bool lastBlockFallback_ = false;
+    bool lastBlockSolveFailed_ = false;
     double lastBlockResidual_ = 0.0;
     bool runtimeBlockEnabled_ = false;
     bool runtimeBlockUsed_ = false;
