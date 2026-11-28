@@ -1,7 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 
 #include <string>
 
@@ -97,6 +100,43 @@ inline constexpr QuadricEmission kQuadricEL84{
     {-2.95930771384, -2.98612383167, -2.98559010944, -35.3285120241, 0.00780446244687},
     {3.41060925377e-07, 0.000110300864644, 0.000623071538105, 3.67939579773e-11, 3.69299380011e-05},
     0.0285128761724, 1.0, 5.7088672908e-05, 0.0844099160086, 0.143847084188};
+
+inline const QuadricEmission* quadricTableFromFile(const QuadricEmission* compiled) {
+    struct Tables {
+        const QuadricEmission* keys[5] = {&kQuadricEL34, &kQuadric6L6GC,
+            &kQuadric6L6GCPreview, &kQuadric6V6S, &kQuadricEL84};
+        const char* names[5] = {"EL34", "6L6GC", "6L6GCPREVIEW", "6V6S", "EL84"};
+        std::array<QuadricEmission, 5> values = {kQuadricEL34, kQuadric6L6GC,
+            kQuadric6L6GCPreview, kQuadric6V6S, kQuadricEL84};
+        bool loaded[5]{};
+
+        Tables() {
+            const char* path = std::getenv("LIVEWDF_PP_TABLE");
+            std::ifstream input(path ? path : "");
+            std::string name;
+            while (input >> name) {
+                int index = 0;
+                while (index < 5 && name != names[index]) ++index;
+                QuadricEmission value{};
+                for (double& x : value.av) input >> x;
+                for (double& x : value.knot) input >> x;
+                for (double& x : value.coef) input >> x;
+                input >> value.beta >> value.plate >> value.lambda >> value.rho >> value.sigma;
+                if (!input || index == 5) break;
+                values[static_cast<size_t>(index)] = value;
+                loaded[index] = true;
+            }
+        }
+
+        const QuadricEmission* get(const QuadricEmission* key) const noexcept {
+            for (int i = 0; i < 5; ++i)
+                if (key == keys[i]) return loaded[i] ? &values[static_cast<size_t>(i)] : key;
+            return key;
+        }
+    };
+    static const Tables tables;
+    return tables.get(compiled);
+}
 
 /// Clean, self-contained constitutive evaluator for the Reefman pentode model
 /// (incorporating Derk D and Derk E knees and optional secondary emission).

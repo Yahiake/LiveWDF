@@ -6,6 +6,7 @@
 // one sample using the prepared root solver and its fallback.
 
 #include "wdf/EngineCompile.h"
+#include "wdf/solver/PushPullTries.h"
 
 #include <optional>
 
@@ -183,9 +184,11 @@ public:
     void prepareCircuitPlan();
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     void usePreviewPentodes(bool enabled) noexcept {
+        static const bool table = livewdfPpTry("table");
         for (size_t i = 0; i < pentodes_.size(); ++i) {
             const auto& card = comp_.pent[i].model.reefman;
-            pentodes_[i].reefman.quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
+            const auto* quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
+            pentodes_[i].reefman.quadric = table ? quadricTableFromFile(quadric) : quadric;
         }
     }
     void useTriodePreview(bool enabled) noexcept { triodePreviewEnabled_ = enabled; }
