@@ -99,7 +99,6 @@ void prepareFast(wdf::Engine& engine, const wdf::Circuit& circuit,
     engine.useCircuitPlan(true);
     engine.useCompiledOptical(compiled);
     engine.useLoadedJunctionPreview(compiled);
-    engine.usePreviewPentodes(compiled);
 }
 
 void swapWaveBytes(std::vector<double>& wave) {
