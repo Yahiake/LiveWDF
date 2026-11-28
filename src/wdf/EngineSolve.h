@@ -260,6 +260,7 @@ protected:
             staticMode_, &prof_, profileOn_,
             newtonIters_, deviceEvals_, limitHits_, gridLimitHits_,
             lastBlockFallback_, lastBlockResidual_, blockFallbacks_,
+            resweepSweeps_, resweepClearedFirst_, resweepClearedSecond_,
             runtimeBlockFallbacks_, runtimeBlockUsed_, lastConverged_,
             lastResidual_, keptBest_, jfetSolveFailed_, mosfetSolveFailed_,
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
