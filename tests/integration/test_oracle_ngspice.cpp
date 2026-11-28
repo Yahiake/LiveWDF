@@ -988,6 +988,7 @@ TEST_CASE("ngspice oracle: every factory schematic exports and matches in DC and
         REQUIRE(e.solveDc(node, rootV));
         auto result = wdf::spiceExport(c, kFs, 0.05);
         REQUIRE(result.ok);
+        // ngspice does not converge on this circuit from zero; it starts at our operating point and still solves its own.
         if (docs[i].filename() == "Drawmer-DS201.livewdf") {
             std::ostringstream nodeset;
             for (const auto& name : c.allNodes()) {
