@@ -192,11 +192,13 @@ public:
     void useCircuitPlan(bool enabled) noexcept { circuitPlanEnabled_ = enabled; }
     void usePreviewPentodes(bool enabled) noexcept {
         static const bool usePolyknee = livewdfPpTry("polyknee") || livewdfPpTry("knots2");
+        static const bool useGridPhysics = livewdfPpTry("gridphys");
         for (size_t i = 0; i < pentodes_.size(); ++i) {
             const auto& card = comp_.pent[i].model.reefman;
             const auto* quadric = enabled && card.previewQuadric ? card.previewQuadric : card.quadric;
             pentodes_[i].reefman.quadric = livewdfTableTry() ? quadricTableFromFile(quadric) : quadric;
             pentodes_[i].reefman.polyknee = enabled && usePolyknee ? card.previewPolyknee : nullptr;
+            pentodes_[i].reefman.gridPhysics = enabled && useGridPhysics;
         }
     }
     bool usePentodeTableFile(const char* path, bool preview) {
