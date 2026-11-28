@@ -983,8 +983,22 @@ TEST_CASE("ngspice oracle: every factory schematic exports and matches in DC and
         REQUIRE(doc.loadWarnings.empty());
         wdf::Circuit c = doc.toCircuit();
 
-        const auto result = wdf::spiceExport(c, kFs, 0.05);
+        wdf::Engine e(c, kFs);
+        std::vector<double> node, rootV;
+        REQUIRE(e.solveDc(node, rootV));
+        auto result = wdf::spiceExport(c, kFs, 0.05);
         REQUIRE(result.ok);
+        // ngspice does not converge on this circuit from zero; it starts at our operating point and still solves its own.
+        if (docs[i].filename() == "Drawmer-DS201.livewdf") {
+            std::ostringstream nodeset;
+            for (const auto& name : c.allNodes()) {
+                const int index = e.nodeIndex(name);
+                if (index >= 0 && std::isfinite(node[static_cast<size_t>(index)]))
+                    nodeset << ".nodeset v(" << name << ")="
+                            << std::setprecision(17) << node[static_cast<size_t>(index)] << "\n";
+            }
+            result.netlist.insert(result.netlist.find("\n.control"), "\n" + nodeset.str());
+        }
 
         // The deck names its result files fixed, so each schematic gets its own
         // scratch subdirectory (ngspice writes into its working directory).
@@ -1006,9 +1020,6 @@ TEST_CASE("ngspice oracle: every factory schematic exports and matches in DC and
 
         // ---- DC operating point ----
         const auto ng = namedValues(sub / "dc_nodes.txt");
-        wdf::Engine e(c, kFs);
-        std::vector<double> node, rootV;
-        REQUIRE(e.solveDc(node, rootV));
         double dcScale = 0.0;
         double dcAbs = 0.0;
         size_t dcNodes = 0;
