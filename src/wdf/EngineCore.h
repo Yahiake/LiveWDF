@@ -325,6 +325,7 @@ public:
     bool fineBlockSolver() const { return fineBlockSolver_; }
     bool lastBlockFallback() const { return lastBlockFallback_; }
     long long blockFallbackCount() const { return blockFallbacks_; }
+    long long blockCooldownPassCount() const { return blockCooldownPasses_; }
     long long resweepSweepCount() const { return resweepSweeps_; }
     long long resweepClearedCount(int sweep) const {
         return sweep == 1 ? resweepClearedFirst_ : sweep == 2 ? resweepClearedSecond_ : 0;
@@ -1253,6 +1254,7 @@ protected:
     std::vector<double> predDown_, predUp_, stepDown_, stepUp_;
     std::vector<double> dcValues_;
     mutable long long blockFallbacks_ = 0;
+    mutable long long blockCooldownPasses_ = 0;
     mutable long long resweepSweeps_ = 0;
     mutable long long resweepClearedFirst_ = 0;
     mutable long long resweepClearedSecond_ = 0;

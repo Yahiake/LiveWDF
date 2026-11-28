@@ -1,11 +1,15 @@
 #include "format/Document.h"
 
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <map>
 #include <optional>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
+#include <unordered_map>
 
 #include "devices/Bjt.h"
 #include "devices/Diode.h"
@@ -20,8 +24,142 @@
 
 namespace wdf {
 
+namespace {
+
+struct DeviceTable {
+    std::unordered_map<std::string, std::string> values;
+
+    static std::string key(std::string_view family, std::string_view model,
+                           std::string_view parameter) {
+        return std::string(family) + '\t' + std::string(model) + '\t' + std::string(parameter);
+    }
+
+    std::optional<std::string> get(std::string_view family, std::string_view model,
+                                   std::string_view parameter) const {
+        const auto it = values.find(key(family, model, parameter));
+        return it == values.end() ? std::nullopt : std::optional<std::string>(it->second);
+    }
+
+    double number(std::string_view family, std::string_view model,
+                  std::string_view parameter, double fallback) const {
+        const auto value = get(family, model, parameter);
+        if (!value) return fallback;
+        size_t used = 0;
+        const double result = std::stod(*value, &used);
+        if (used != value->size() || !std::isfinite(result))
+            throw std::runtime_error("invalid device-table number for " + key(family, model, parameter));
+        return result;
+    }
+};
+
+const DeviceTable& deviceTable() {
+    static const DeviceTable table = [] {
+        DeviceTable result;
+        const char* path = std::getenv("LIVEWDF_DEVICE_TABLE");
+        if (!path || !*path) return result;
+        std::ifstream input(path);
+        if (!input) throw std::runtime_error(std::string("could not open device table '") + path + "'");
+        const std::map<std::string, std::set<std::string>> supported = {
+            {"opamp", {"openLoopGain", "gbw", "slewRate", "outputImpedance", "outputCapacitance",
+                       "outputCurrentLimit", "outputJunctionIs", "railLaw", "railKnee", "headroomPos", "headroomNeg"}},
+            {"bjt", {"Is", "Bf", "Br", "Nf", "Nr", "Vaf", "Var", "Ise", "Ne", "Ikf", "cbe", "cbc"}},
+            {"jfet", {"Is0", "Vp", "lambda", "rd", "rs", "cgs", "cgd", "cds", "rgate"}},
+            {"diode", {"isat", "n", "rs", "rp", "bv", "ibv"}},
+            {"photo", {"darkOhms", "brightOhms", "referenceVolts", "gamma", "attackSeconds", "releaseSeconds"}},
+        };
+        std::string line;
+        bool signature = false, header = false;
+        while (std::getline(input, line)) {
+            if (line.empty() || line[0] == '#') continue;
+            if (!signature) {
+                if (line != "LIVEWDF_DEVICE_TABLE\t1") throw std::runtime_error("invalid device-table signature");
+                signature = true;
+                continue;
+            }
+            if (!header) {
+                if (line != "family\tmodel\tparameter\tvalue") throw std::runtime_error("invalid device-table header");
+                header = true;
+                continue;
+            }
+            std::array<std::string, 4> field;
+            size_t begin = 0;
+            for (int i = 0; i < 4; ++i) {
+                const size_t end = i == 3 ? std::string::npos : line.find('\t', begin);
+                if (end == std::string::npos && i != 3) throw std::runtime_error("invalid device-table row");
+                field[static_cast<size_t>(i)] = line.substr(begin, end - begin);
+                begin = end == std::string::npos ? line.size() : end + 1;
+            }
+            const auto family = supported.find(field[0]);
+            if (family == supported.end() || !family->second.contains(field[2]))
+                throw std::runtime_error("unsupported device-table field " + field[0] + "/" + field[2]);
+            bool knownModel = field[0] == "photo" ? field[1].find('/') != std::string::npos
+                : field[0] == "diode" ? findDiodeByName(field[1]) != nullptr
+                : field[0] == "jfet" ? findJfetByName(field[1].c_str()) != nullptr
+                : field[0] == "bjt" ? findBjtByName(field[1]) != nullptr
+                : std::ranges::any_of(kOpAmpTypeNames, [&](const char* name) { return field[1] == name; });
+            if (!knownModel) throw std::runtime_error("unknown device-table model " + field[0] + "/" + field[1]);
+            const std::string k = DeviceTable::key(field[0], field[1], field[2]);
+            if (!result.values.emplace(k, field[3]).second)
+                throw std::runtime_error("duplicate device-table field " + k);
+        }
+        if (!signature || !header) throw std::runtime_error("incomplete device table");
+        return result;
+    }();
+    return table;
+}
+
+void applyOverride(const DeviceTable& table, std::string_view name, OpAmpModel& model) {
+    model.openLoopGain = table.number("opamp", name, "openLoopGain", model.openLoopGain);
+    model.gbw = table.number("opamp", name, "gbw", model.gbw);
+    model.slewRate = table.number("opamp", name, "slewRate", model.slewRate);
+    model.outputImpedance = table.number("opamp", name, "outputImpedance", model.outputImpedance);
+    model.outputCapacitance = table.number("opamp", name, "outputCapacitance", model.outputCapacitance);
+    model.outputCurrentLimit = table.number("opamp", name, "outputCurrentLimit", model.outputCurrentLimit);
+    model.outputJunctionIs = table.number("opamp", name, "outputJunctionIs", model.outputJunctionIs);
+}
+
+void applyOverride(const DeviceTable& table, std::string_view name, BjtModel& model) {
+    model.Is = table.number("bjt", name, "Is", model.Is);
+    model.Bf = table.number("bjt", name, "Bf", model.Bf);
+    model.Br = table.number("bjt", name, "Br", model.Br);
+    model.Nf = table.number("bjt", name, "Nf", model.Nf);
+    model.Nr = table.number("bjt", name, "Nr", model.Nr);
+    model.Vaf = table.number("bjt", name, "Vaf", model.Vaf);
+    model.Var = table.number("bjt", name, "Var", model.Var);
+    model.Ise = table.number("bjt", name, "Ise", model.Ise);
+    model.Ne = table.number("bjt", name, "Ne", model.Ne);
+    model.Ikf = table.number("bjt", name, "Ikf", model.Ikf);
+    model.cbe = table.number("bjt", name, "cbe", model.cbe);
+    model.cbc = table.number("bjt", name, "cbc", model.cbc);
+    model.prepare();
+}
+
+void applyOverride(const DeviceTable& table, std::string_view name, JfetModel& model) {
+    model.p.Is0 = table.number("jfet", name, "Is0", model.p.Is0);
+    model.p.Vp = table.number("jfet", name, "Vp", model.p.Vp);
+    model.p.lambda = table.number("jfet", name, "lambda", model.p.lambda);
+    model.p.rd = table.number("jfet", name, "rd", model.p.rd);
+    model.p.rs = table.number("jfet", name, "rs", model.p.rs);
+    model.p.cgs = table.number("jfet", name, "cgs", model.p.cgs);
+    model.p.cgd = table.number("jfet", name, "cgd", model.p.cgd);
+    model.p.cds = table.number("jfet", name, "cds", model.p.cds);
+    model.p.rgate = table.number("jfet", name, "rgate", model.p.rgate);
+}
+
+void applyOverride(const DeviceTable& table, std::string_view name, DiodeModel& model) {
+    model = DiodeModel(table.number("diode", name, "isat", model.isat),
+                       table.number("diode", name, "n", model.n),
+                       table.number("diode", name, "rs", model.rs),
+                       table.number("diode", name, "rp", model.rp),
+                       table.number("diode", name, "bv", model.bv),
+                       table.number("diode", name, "ibv", model.ibv));
+}
+
+}  // namespace
+
 Circuit LiveWDFDocument::toCircuit() const {
     Circuit c;
+    const DeviceTable& overrides = deviceTable();
     struct DocumentBucketBrigade {
         std::string input, output, clock, common, name;
         BucketBrigadeModel model;
@@ -132,7 +270,14 @@ Circuit LiveWDFDocument::toCircuit() const {
                 photo.releaseSeconds = getVal("releaseSeconds", photo.releaseSeconds);
                 photo.strikeVolts = getVal("strikeVolts", 0.0);
                 photo.extinguishVolts = getVal("extinguishVolts", 0.0);
-                c.addPhotoresistor(getPin("a"), getPin("b"), getVal("darkOhms", 1e6),
+                const std::string modelName = sourceBasename + "/" + comp.id;
+                photo.brightOhms = overrides.number("photo", modelName, "brightOhms", photo.brightOhms);
+                photo.referenceVolts = overrides.number("photo", modelName, "referenceVolts", photo.referenceVolts);
+                photo.gamma = overrides.number("photo", modelName, "gamma", photo.gamma);
+                photo.attackSeconds = overrides.number("photo", modelName, "attackSeconds", photo.attackSeconds);
+                photo.releaseSeconds = overrides.number("photo", modelName, "releaseSeconds", photo.releaseSeconds);
+                c.addPhotoresistor(getPin("a"), getPin("b"),
+                                   overrides.number("photo", modelName, "darkOhms", getVal("darkOhms", 1e6)),
                                    photo, comp.id);
             } else if (comp.type == "ne570") {
                 opAmpsOnSupplyPins.push_back(c.opamp.size());
@@ -148,7 +293,10 @@ Circuit LiveWDFDocument::toCircuit() const {
                                       : DiodeModel(getVal("isat", 1e-14), getVal("n", 1.0),
                                                    getVal("rs", 0.0), 1e6, getVal("bv", 0.0),
                                                    getVal("ibv", 1e-3));
-                c.addDiode(getPin("anode"), getPin("cathode"), dm, comp.id);
+                applyOverride(overrides, modelName, dm);
+                if (!(dm.isat > 0.0 && dm.n > 0.0 && dm.rs >= 0.0 && dm.rp >= 0.0))
+                    throw std::runtime_error("diode '" + comp.id + "' has invalid override");
+                c.addDiode(getPin("anode"), getPin("cathode"), dm, comp.id, modelName);
             } else if (comp.type == "triode") {
                 const std::string modelName = getProp("model", "12AX7");
                 const bool isCustom = modelName == "Custom";
@@ -266,13 +414,16 @@ Circuit LiveWDFDocument::toCircuit() const {
                     const double cds = comp.values.count("cds") ? comp.values.at("cds") : 0.0;
                     const wdf::JfetModel userModel = wdf::JfetModel::fromSpice(
                         beta, vto, lambda, rd, rs, cgs, cgd, cds, 1.0e9, pChannel);
-                    c.addJfet(getPin("drain"), getPin("gate"), getPin("source"), userModel, comp.id);
+                    c.addJfet(getPin("drain"), getPin("gate"), getPin("source"), userModel, comp.id, "0", modelName);
                 } else {
                     const auto* jm = wdf::findJfetByName(modelName.c_str());
                     if (!jm)
                         throw std::runtime_error("unknown JFET model '" + modelName +
                                                  "' on part '" + comp.id + "'");
-                    c.addJfet(getPin("drain"), getPin("gate"), getPin("source"), jm->model, comp.id);
+                    JfetModel model = jm->model;
+                    applyOverride(overrides, modelName, model);
+                    if (!model.valid()) throw std::runtime_error("JFET '" + comp.id + "' has invalid override");
+                    c.addJfet(getPin("drain"), getPin("gate"), getPin("source"), model, comp.id, "0", modelName);
                 }
             } else if (comp.type == "mosfet") {
                 // A recognized preset supplies the nominal numbers and the
@@ -338,6 +489,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                 if (entry && hasEmValues) {
                     // Recognized card with edited values -- build model from them.
                     wdf::BjtModel userModel = entry->model;
+                    applyOverride(overrides, modelName, userModel);
                     userModel.Is = comp.values.at("is");
                     userModel.Bf = comp.values.at("bf");
                     userModel.Br = comp.values.at("br");
@@ -347,11 +499,13 @@ Circuit LiveWDFDocument::toCircuit() const {
                     if (!userModel.valid())
                         throw std::runtime_error("BJT '" + comp.id + "' has invalid model values");
                     c.addBjt(getPin("collector"), getPin("base"), getPin("emitter"),
-                             userModel, comp.id);
+                             userModel, comp.id, modelName);
                 } else if (entry) {
                     // Recognized card, no edited values -- use card defaults.
-                    c.addBjt(getPin("collector"), getPin("base"), getPin("emitter"),
-                             entry->model, comp.id);
+                    BjtModel model = entry->model;
+                    applyOverride(overrides, modelName, model);
+                    if (!model.valid()) throw std::runtime_error("BJT '" + comp.id + "' has invalid override");
+                    c.addBjt(getPin("collector"), getPin("base"), getPin("emitter"), model, comp.id, modelName);
                 } else if (isCustom && hasEmValues) {
                     // Custom model with its five EM values provided.
                     const bool pnp = transistorPolarity(comp) == TransistorPolarity::PType;
@@ -361,7 +515,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                     if (!userModel.valid())
                         throw std::runtime_error("BJT '" + comp.id + "' has invalid model values");
                     c.addBjt(getPin("collector"), getPin("base"), getPin("emitter"),
-                             userModel, comp.id);
+                             userModel, comp.id, modelName);
                 } else {
                     throw std::runtime_error("unsupported BJT model '" + modelName +
                                              "' on part '" + comp.id + "'");
@@ -414,6 +568,7 @@ Circuit LiveWDFDocument::toCircuit() const {
                 const std::string modelName = getProp("model", "TL072");
                 const OpAmpType type = opAmpTypeFromString(modelName);
                 OpAmpModel model = OpAmpModel::fromType(type);
+                applyOverride(overrides, modelName, model);
                 if (comp.values.count("vRailMin") || comp.values.count("vRailMax")) {
                     const double low = getVal("vRailMin", model.railLow());
                     const double high = getVal("vRailMax", model.railHigh());
@@ -425,8 +580,24 @@ Circuit LiveWDFDocument::toCircuit() const {
                 } else {
                     opAmpsOnSupplyPins.push_back(c.opamp.size());
                 }
+                model.walkBoundLow = model.railLow();
+                model.walkBoundHigh = model.railHigh();
+                const double low = model.railLow() + overrides.number("opamp", modelName, "headroomNeg", 0.0);
+                const double high = model.railHigh() - overrides.number("opamp", modelName, "headroomPos", 0.0);
+                if (low > high) throw std::runtime_error("Op-amp '" + comp.id + "' has invalid headroom");
+                model.setVRailBounds(low, high);
+                model.railKnee = overrides.number("opamp", modelName, "railKnee", model.railKnee);
+                if (const auto law = overrides.get("opamp", modelName, "railLaw")) {
+                    if (*law == "hard") model.enableSoftRails(false);
+                    else if (*law == "tanh") model.enableSoftRails();
+                    else if (*law == "softplus" && model.railKnee > 0.0) {
+                        model.softRails = true;
+                        model.railLaw = OpAmpModel::RailLaw::Softplus;
+                    } else throw std::runtime_error("invalid op-amp rail law '" + *law + "'");
+                }
+                if (!model.valid()) throw std::runtime_error("Op-amp '" + comp.id + "' has invalid override");
                 c.addOpAmp(getPin("out"), getPin("neg"), getPin("pos"),
-                           getPin("vcc", "0"), getPin("vee", "0"), model, comp.id);
+                           getPin("vcc", "0"), getPin("vee", "0"), model, comp.id, modelName);
             } else if (comp.type == "idealopamp") {
                 // The ideal op-amp is the limit of the op-amp model with no
                 // supply pins to read and no headroom to clip against. The VCVS

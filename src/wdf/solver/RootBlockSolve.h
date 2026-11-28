@@ -41,6 +41,7 @@ inline bool atCap = true;
 inline double lastStep = 1.0;
 inline int walkCount = 0;
 inline long long walksDumped = 0;
+inline long long deviceWalkSolves = 0;
 inline double walkTrace[64][28]{};
 inline std::FILE* walkLog() {
     static std::FILE* file = [] {
@@ -55,6 +56,16 @@ inline std::FILE* residualLog() {
         std::FILE* f = path ? std::fopen(path, "w") : nullptr;
         if (f)
             std::fprintf(f, "sample,worst_device,worst_port,residual,tolerance,target_pos,source1,source1_port,source1_pos,relation1,contribution1,source2,source2_port,source2_pos,relation2,contribution2,source3,source3_port,source3_pos,relation3,contribution3,block_iters,path,pass,state_role,state_device,state_pos,vgrid,vplate,vcath,igrid,iplate,icath,prev_vgrid,prev_vplate,prev_vcath,prev_igrid,prev_iplate,prev_icath\n");
+        return f;
+    }();
+    return file;
+}
+inline std::FILE* deviceWalkLog() {
+    static std::FILE* file = [] {
+        const char* path = std::getenv("LWDF_DEVICE_WALK");
+        std::FILE* f = path ? std::fopen(path, "w") : nullptr;
+        if (f)
+            std::fprintf(f, "run,circuit,group,solve_id,sample,iteration,trigger,result,family,device_index,device_name,model,port_count,bound_low,bound_high,v0,v1,v2,i0,i1,i2,j00,j01,j02,j10,j11,j12,j20,j21,j22,dv0,dv1,dv2,h0,h1,h2,line_search_factor\n");
         return f;
     }();
     return file;
@@ -151,6 +162,72 @@ struct BlockSolveContext {
 };
 
 class RootBlockSolve {
+    static void logDeviceWalk(const NewtonBlock& block, BlockSolveContext& ctx,
+                              const double* oldV, int iteration, long long solveId,
+                              const char* trigger, double lineFactor) {
+        std::FILE* log = ppdiag::deviceWalkLog();
+        if (!log) return;
+        std::vector<double> v = ctx.blockV, i(static_cast<size_t>(ctx.K), 0.0),
+                            j(static_cast<size_t>(ctx.K) * ctx.K, 0.0);
+        for (int di : block.devices) {
+            const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+            for (int p = 0; p < dev.numPorts; ++p)
+                v[static_cast<size_t>(dev.portBase + p)] = oldV[dev.portBase + p];
+            RootResidual::currentsForDevice(
+                dev, ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(), ctx.bjts.data(),
+                ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                ctx.K, v.data(), i.data(), j.data(), ctx.deviceEvals);
+            const char* family = nullptr;
+            const char* name = "";
+            const char* model = "";
+            switch (dev.kind) {
+                case DeviceKind::Diode:
+                    family = "diode"; name = ctx.comp.diodeNames[dev.compIndex].c_str();
+                    model = ctx.comp.diodeModelNames[dev.compIndex].c_str(); break;
+                case DeviceKind::Jfet:
+                    family = "jfet"; name = ctx.comp.jfet[dev.compIndex].name.c_str();
+                    model = ctx.comp.jfet[dev.compIndex].modelName.c_str(); break;
+                case DeviceKind::Bjt:
+                    family = "bjt"; name = ctx.comp.bjt[dev.compIndex].name.c_str();
+                    model = ctx.comp.bjt[dev.compIndex].modelName.c_str(); break;
+                case DeviceKind::OpAmp:
+                    family = "opamp"; name = ctx.comp.opamp[dev.compIndex].name.c_str();
+                    model = ctx.comp.opamp[dev.compIndex].modelName.c_str(); break;
+                default: break;
+            }
+            if (!family) continue;
+            const char* run = std::getenv("LWDF_WALK_RUN");
+            const char* circuit = std::getenv("LWDF_WALK_CIRCUIT");
+            const char* group = std::getenv("LWDF_WALK_GROUP");
+            std::fprintf(log, "%s,%s,%s,%lld,%lld,%d,%s,iterate,%s,%zu,%s,%s,%d,",
+                         run ? run : "", circuit ? circuit : "", group ? group : "", solveId,
+                         ppdiag::sample - 256, iteration, trigger, family, dev.compIndex, name, model,
+                         dev.numPorts);
+            if (dev.kind == DeviceKind::OpAmp) {
+                const OpAmpModel& oa = ctx.opAmps[dev.compIndex];
+                std::fprintf(log, "%.17g,%.17g,", oa.walkBoundLow, oa.walkBoundHigh);
+            } else {
+                std::fprintf(log, ",,");
+            }
+            const int o = dev.portBase;
+            for (int p = 0; p < 3; ++p) std::fprintf(log, p < dev.numPorts ? "%.17g," : ",", p < dev.numPorts ? v[o + p] : 0.0);
+            for (int p = 0; p < 3; ++p) std::fprintf(log, p < dev.numPorts ? "%.17g," : ",", p < dev.numPorts ? i[o + p] : 0.0);
+            for (int r = 0; r < 3; ++r)
+                for (int c = 0; c < 3; ++c)
+                    std::fprintf(log, r < dev.numPorts && c < dev.numPorts ? "%.17g," : ",",
+                                 r < dev.numPorts && c < dev.numPorts ? j[static_cast<size_t>(o + r) * ctx.K + o + c] : 0.0);
+            for (int p = 0; p < 3; ++p)
+                std::fprintf(log, p < dev.numPorts ? "%.17g," : ",",
+                             p < dev.numPorts ? ctx.blockV[static_cast<size_t>(o + p)] - v[o + p] : 0.0);
+            if (dev.kind == DeviceKind::OpAmp)
+                std::fprintf(log, "%.17g,%.17g,%.17g,%.17g\n", ctx.opAmpVp[dev.compIndex],
+                             ctx.opAmpAlpha[dev.compIndex], ctx.opAmpMaxDv[dev.compIndex], lineFactor);
+            else
+                std::fprintf(log, "0,0,0,%.17g\n", lineFactor);
+        }
+        std::fflush(log);
+    }
 public:
     static inline bool neighbourGridPort(const NewtonBlock& block, int port,
                                          const BlockSolveContext& ctx) noexcept
@@ -579,6 +656,7 @@ public:
         bool roleSwapTriggered = false;
         bool hardFailure = false;
         bool doglegSolve = false;
+        const long long deviceWalkSolve = ppdiag::deviceWalkLog() ? ++ppdiag::deviceWalkSolves : 0;
         double doglegRadius = 1.0;
         int completedIterations = 0;
         alignas(16) int piv[64];
@@ -1411,6 +1489,10 @@ public:
                 fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
                     ? fullDescent + 1 : 0;
 
+                if (deviceWalkSolve)
+                    logDeviceWalk(block, ctx, ctx.blockVOld.data(), it, deviceWalkSolve,
+                                  roleSwapTriggered ? "role" : "ordinary", stepSize);
+
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -2046,10 +2128,10 @@ public:
     static inline void logResidualSources(
         BlockSolveContext& ctx, const BlockView& view,
         const std::vector<double>& stageCurrents, double tolerance,
-        const char* path, int pass) noexcept
+        const char* path, int pass, bool allTubeStates = false) noexcept
     {
         std::FILE* log = ppdiag::residualLog();
-        if (!log || stageCurrents.empty() || !(ctx.lastBlockResidual > tolerance))
+        if (!log || stageCurrents.empty() || (!allTubeStates && !(ctx.lastBlockResidual > tolerance)))
             return;
 
         int worstPort = 0;
@@ -2131,7 +2213,9 @@ public:
         const int sourcePos = sources[0].position;
         for (int device = 0; device < static_cast<int>(ctx.rootDevices.size()); ++device) {
             const int position = blockPosition(view, device);
-            if (position == targetPos || position == sourcePos)
+            if (allTubeStates)
+                writeState(device, "repair");
+            else if (position == targetPos || position == sourcePos)
                 writeState(device, position == targetPos ? "target" : "source");
         }
         std::fflush(log);
@@ -2363,6 +2447,7 @@ public:
                     ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
                 traceMisses(sweep + 1);
+                logResidualSources(ctx, view, residualStages, effTol, "repair", sweep + 1, true);
                 if (ctx.lastBlockResidual <= effTol) {
                     ++ppdiag::repairSettled[std::min(sweep + 1, 8)];
                     if (sweep == 0)

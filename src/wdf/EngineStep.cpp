@@ -335,8 +335,11 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
             solveRootBlocksRuntime(maxIter, tol);
         else if ((explicitRootsActive_ || blockRoots() || !lamp_.alone.empty()) && blockFallbackCooldown_ == 0)
             solveRootBlocks(maxIter, tol, slowLagActive(), adjustedTransfer);
-        else
+        else {
+            if (blockFallbackCooldown_ > 0 && (pipeline || blockRoots() || !lamp_.alone.empty()))
+                ++blockCooldownPasses_;
             solveRootsNewton(maxIter, tol);
+        }
     } else if (K_ == 0) {
         lastConverged_ = true;
         lastResidual_ = 0.0;
@@ -546,9 +549,29 @@ const std::vector<double>& EngineStep::finishStep(const double* sourceValues, si
             target = photoTargetConductance(photo, node_, sourceValues, sourceCount);
         }
         double& ohms = ctrlResValues_[photo.index];
+        const double previousOhms = ohms;
         const double conductance = 1.0 / ohms;
         const double mix = target > conductance ? photo.attack : photo.release;
         ohms = 1.0 / (conductance + mix * (target - conductance));
+        if (std::FILE* log = ppdiag::deviceWalkLog()) {
+            const auto dev = std::ranges::find_if(rootDevices_, [&](const RootDevice& candidate) {
+                return candidate.kind == DeviceKind::ControlledRes && candidate.compIndex == photo.index;
+            });
+            if (dev != rootDevices_.end() && dev->kind == DeviceKind::ControlledRes) {
+                const double branch = vv_[static_cast<size_t>(dev->portBase)];
+                const double sense = photoSenseVoltage(photo, node_, sourceValues, sourceCount);
+                const char* run = std::getenv("LWDF_WALK_RUN");
+                const char* circuit = std::getenv("LWDF_WALK_CIRCUIT");
+                const char* group = std::getenv("LWDF_WALK_GROUP");
+                std::fprintf(log,
+                    "%s,%s,%s,%lld,%lld,-1,photo,accepted,photo,%zu,%s,%s/%s,2,,,%0.17g,%0.17g,,%0.17g,,,%0.17g,0,,,,,,,,,0,0,,%0.17g,%0.17g,%0.17g,1\n",
+                    run ? run : "", circuit ? circuit : "", group ? group : "", ppdiag::sample,
+                    ppdiag::sample - 256, photo.index, ctrlResNames_[photo.index].c_str(),
+                    circuit ? circuit : "", ctrlResNames_[photo.index].c_str(), branch, sense,
+                    branch / ohms, 1.0 / ohms, previousOhms, 1.0 / target, ohms);
+                std::fflush(log);
+            }
+        }
     }
     updateVcas(node_, sourceValues, sourceCount);
     updateOtas(node_, sourceValues, sourceCount);

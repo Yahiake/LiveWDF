@@ -303,6 +303,7 @@ struct Diode {
     std::string a, b;  // anode, cathode
     DiodeModel model;
     std::string name;
+    std::string modelName;
 };
 
 /// An ideal or finite-output-resistance Voltage-Controlled Voltage Source (SPICE `E` element).
@@ -336,6 +337,7 @@ struct Jfet {
     std::string dExt, gExt, sExt; // visible terminals
     JfetModel model;
     std::string name;
+    std::string modelName;
 };
 
 /// One n-channel MOSFET (`M1 drain gate source model`). The paper's device is
@@ -356,6 +358,7 @@ struct OpAmp {
     std::string out, neg, pos, vcc, vee;
     OpAmpModel model;
     std::string name;
+    std::string modelName;
 };
 
 /// The small, user-facing transformer shape: turns plus one of three behaviour
@@ -475,6 +478,7 @@ struct BjtDevice {
     std::string c, b, e;    // collector, base, emitter
     BjtModel model;
     std::string name;
+    std::string modelName;
 };
 
 /// A clocked audio delay whose output drives a Norton equivalent.
@@ -568,8 +572,8 @@ struct Circuit {
         tri.push_back({g, p, k, gi, m});
     }
     void addDiode(const std::string& a, const std::string& b, const DiodeModel& m,
-                  const std::string& name = {}) {
-        diode.push_back({a, b, m, name});
+                  const std::string& name = {}, const std::string& modelName = {}) {
+        diode.push_back({a, b, m, name, modelName});
     }
     void addPot(const std::string& n1, const std::string& wiper, const std::string& n2,
                 double totalR, double pos = 0.5, PotTaper taper = PotTaper::Linear,
@@ -898,7 +902,7 @@ struct Circuit {
     /// exactly the two-port nonlinear branch of the paper.
     void addJfet(const std::string& drain, const std::string& gate, const std::string& source,
                  const JfetModel& model, const std::string& name = {},
-                 const std::string& ground = "0") {
+                 const std::string& ground = "0", const std::string& modelName = {}) {
         if (!model.valid())
             throw std::invalid_argument("invalid JFET model parameters");
         const std::string jName = name.empty() ? ("J" + std::to_string(jfet.size() + 1)) : name;
@@ -920,7 +924,7 @@ struct Circuit {
             addCap(gate, dInt, model.p.cgd, jName + "$cgd");
         if (model.p.cds > 0.0)
             addCap(dInt, sInt, model.p.cds, jName + "$cds");
-        jfet.push_back({dInt, gate, sInt, drain, gate, source, model, jName});
+        jfet.push_back({dInt, gate, sInt, drain, gate, source, model, jName, modelName});
     }
 
     /// Add a three-terminal n-channel MOSFET. The model's `K`, `Vth` and
@@ -939,11 +943,11 @@ struct Circuit {
     /// Terminals: collector (c), base (b), emitter (e).
     /// Constant junction capacitances stamp into the linear network.
     void addBjt(const std::string& collector, const std::string& base, const std::string& emitter,
-                const BjtModel& model, const std::string& name = {}) {
+                const BjtModel& model, const std::string& name = {}, const std::string& modelName = {}) {
         if (!model.valid())
             throw std::invalid_argument("invalid BjtDevice model parameters");
         const std::string bName = name.empty() ? ("Q" + std::to_string(bjt.size() + 1)) : name;
-        bjt.push_back({collector, base, emitter, model, bName});
+        bjt.push_back({collector, base, emitter, model, bName, modelName});
         if (model.cbe > 0.0)
             addCap(base, emitter, model.cbe, bName + "$cbe");
         if (model.cbc > 0.0)
@@ -954,10 +958,10 @@ struct Circuit {
     /// Terminals: out, neg (inverting input), pos (non-inverting input), vcc, vee (supply rails).
     void addOpAmp(const std::string& out, const std::string& neg, const std::string& pos,
                   const std::string& vcc, const std::string& vee,
-                  const OpAmpModel& model, const std::string& name = {}) {
+                  const OpAmpModel& model, const std::string& name = {}, const std::string& modelName = {}) {
         const std::string oName = name.empty() ? ("U" + std::to_string(opamp.size() + 1)) : name;
         if (model.type != OpAmpType::Lm358) {
-            opamp.push_back({out, neg, pos, vcc, vee, model, oName});
+            opamp.push_back({out, neg, pos, vcc, vee, model, oName, modelName});
             return;
         }
         // MiSTer-Discrete 692e777, circuits/parts/lm358.lib. Each driver

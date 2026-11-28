@@ -196,6 +196,7 @@ inline bool opAmpIsOTA(OpAmpType type) { return type == OpAmpType::Ca3080; }
 /// slew rate. Output impedance and capacitance retain the generic assumptions
 /// unless the card specifies them.
 struct OpAmpModel {
+    enum class RailLaw { Hard, Tanh, Softplus };
     OpAmpType type = OpAmpType::Generic;
 
     /// Open-loop DC gain (dimensionless). TL072 ~ 200k (106 dB), LM308 ~ 300k.
@@ -222,6 +223,10 @@ struct OpAmpModel {
     ///   v < 0: -vRailNeg * tanh(-v / vRailNeg)
     /// providing continuous derivatives everywhere and natural analog warmth.
     bool softRails = false;
+    RailLaw railLaw = RailLaw::Hard;
+    double railKnee = 0.25;
+    double walkBoundLow = std::numeric_limits<double>::quiet_NaN();
+    double walkBoundHigh = std::numeric_limits<double>::quiet_NaN();
     /// Solver-only state on an Engine's private model copy: the linear
     /// output conductance is already present in the passive network.
     bool outputResistanceEmbedded = false;
@@ -567,16 +572,28 @@ struct OpAmpModel {
         vRailPos = high;
         vRailNeg = -low;
         softRails = false;
+        railLaw = RailLaw::Hard;
     }
 
     /// Output limits in the model's port frame.
     double railHigh() const { return vRailPos; }
     double railLow() const { return -vRailNeg; }
 
-    void enableSoftRails(bool enable = true) { softRails = enable; }
+    void enableSoftRails(bool enable = true) {
+        softRails = enable;
+        railLaw = enable ? RailLaw::Tanh : RailLaw::Hard;
+    }
 
     /// Apply rail saturation (piecewise hard clamp or smooth asymmetric tanh).
     double applyRails(double v) const {
+        if (railLaw == RailLaw::Softplus) {
+            const auto sp = [this](double x) {
+                const double z = x / railKnee;
+                return railKnee * (z > 0.0 ? z + std::log1p(std::exp(-z))
+                                            : std::log1p(std::exp(z)));
+            };
+            return railLow() + sp(v - railLow()) - sp(v - railHigh());
+        }
         if (softRails) {
             if (v > 0.0 && vRailPos < 1.0e9) {
                 return vRailPos * std::tanh(v / vRailPos);
@@ -590,6 +607,14 @@ struct OpAmpModel {
 
     /// Exact derivative of rail saturation with respect to input voltage v.
     double railDerivative(double v) const {
+        if (railLaw == RailLaw::Softplus) {
+            const auto sigmoid = [this](double x) {
+                const double z = x / railKnee;
+                return z >= 0.0 ? 1.0 / (1.0 + std::exp(-z))
+                                : std::exp(z) / (1.0 + std::exp(z));
+            };
+            return sigmoid(v - railLow()) - sigmoid(v - railHigh());
+        }
         if (softRails) {
             if (v > 0.0 && vRailPos < 1.0e9) {
                 const double t = std::tanh(v / vRailPos);

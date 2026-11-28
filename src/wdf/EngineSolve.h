@@ -272,7 +272,7 @@ protected:
             jfetFallbacks_, mosfetFallbacks_, gridLag_,
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
-            triodePreviewEnabled_ && nPent_ > 0,
+            triodePreviewEnabled_,
             keepBlockAnswer_ || ((acceptPushPull || slewPushPull) && triodePreviewEnabled_ && nPent_ == 2),
             livewdfPpTry("nslope")
         };
@@ -665,8 +665,80 @@ protected:
     void refreshRootGroups() {
         auto ctx = makeRootGroupsContext();
         solver::RootGroups::refreshRootGroups(ctx);
+        splitPowerCore();
         prepareLinearReductions();
         compileZred();
+    }
+
+    void splitPowerCore() {
+        const int target = livewdfPpTry("powercore6") ? 6 : livewdfPpTry("powercore9") ? 9 : 0;
+        if (!target)
+            return;
+        const int nGroups = static_cast<int>(rootDevices_.size());
+        std::vector<NewtonBlock> old;
+        old.swap(newtonBlocks_);
+        newtonBlocks_.resize(static_cast<size_t>(nGroups));
+        std::fill(blockOf_.begin(), blockOf_.end(), -1);
+        int nb = 0;
+        const auto append = [&](const NewtonBlock& source, const std::vector<unsigned char>& core, bool takeCore) {
+            NewtonBlock& block = newtonBlocks_[static_cast<size_t>(nb++)];
+            for (int device : source.devices) {
+                if ((core[static_cast<size_t>(device)] != 0) != takeCore)
+                    continue;
+                block.devices.push_back(device);
+                const RootDevice& dev = rootDevices_[static_cast<size_t>(device)];
+                for (int row = 0; row < activePortCount(dev); ++row) {
+                    block.ports.push_back(activePort(dev, row));
+                    block.portDevice.push_back(device);
+                }
+                blockOf_[static_cast<size_t>(device)] = nb - 1;
+            }
+        };
+        for (int bi = 0; bi < blockCount_; ++bi) {
+            const NewtonBlock& block = old[static_cast<size_t>(bi)];
+            std::vector<unsigned char> core(static_cast<size_t>(nGroups), 0);
+            int corePorts = 0, pentodes = 0;
+            if (block.ports.size() == 13) {
+                for (int device : block.devices)
+                    if (rootDevices_[static_cast<size_t>(device)].kind == DeviceKind::Pentode) {
+                        core[static_cast<size_t>(device)] = 1;
+                        corePorts += activePortCount(rootDevices_[static_cast<size_t>(device)]);
+                        ++pentodes;
+                    }
+                for (auto it = block.devices.rbegin(); it != block.devices.rend() && corePorts < target; ++it) {
+                    const int device = *it;
+                    if (core[static_cast<size_t>(device)])
+                        continue;
+                    const int ports = activePortCount(rootDevices_[static_cast<size_t>(device)]);
+                    if (corePorts + ports <= target) {
+                        core[static_cast<size_t>(device)] = 1;
+                        corePorts += ports;
+                    }
+                }
+            }
+            if (pentodes == 2 && corePorts == target) {
+                append(block, core, false);
+                append(block, core, true);
+            } else {
+                std::fill(core.begin(), core.end(), 1);
+                append(block, core, true);
+            }
+        }
+        blockCount_ = groupCount_ = nb;
+        scalarBlockCount_ = 0;
+        int closed = 0;
+        hasAntiParallelBlock_ = false;
+        for (int b = 0; b < nb; ++b) {
+            groupOrder_[static_cast<size_t>(b)] = b;
+            const NewtonBlock& block = newtonBlocks_[static_cast<size_t>(b)];
+            const bool scalar = isScalarBlock(block, rootDevices_.data());
+            scalarBlockCount_ += scalar;
+            closed += scalar || block.isAntiParallelDiodePair;
+            hasAntiParallelBlock_ |= block.isAntiParallelDiodePair;
+        }
+        allClosedFormBlocks_ = closed == nb;
+        solver::RootGroups::compileBlockZAndPredFold(
+            newtonBlocks_, groupOrder_.data(), blockCount_, rootDevices_.data(), Z_.data(), K_);
     }
 
     /// Break a large coupled Newton block into one block per nonlinear device.

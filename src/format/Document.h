@@ -226,6 +226,7 @@ inline bool validNetLabelName(const std::string& name, const std::string& ground
 }
 
 struct LiveWDFDocument {
+    std::string sourceBasename;
     int version = kLiveWDFVersion;
     std::string name = "Untitled Circuit";
     std::string category = "Custom";

@@ -55,6 +55,7 @@ struct Compiled {
     std::vector<CompiledTube> tri;
     /// Diodes as compiled ports: each becomes a root port, after the tubes'.
     std::vector<std::pair<Port, DiodeModel>> diode;
+    std::vector<std::string> diodeNames, diodeModelNames;
     /// Controlled resistors as compiled root ports, after the diodes'.
     std::vector<std::pair<Port, double>> ctrlRes;
     /// High-impedance sense ports, indexed by the controlled resistance moved.
@@ -90,6 +91,7 @@ struct Compiled {
         int id = -1, ig = -1, is = -1;
         JfetModel model;
         std::string name;
+        std::string modelName;
     };
     std::vector<CompiledJfet> jfet;
     /// N-channel MOSFETs: the same two root ports as a JFET, (drain, source)
@@ -108,6 +110,7 @@ struct Compiled {
         BjtModel model;
         std::string name;
         bool validModel = false;
+        std::string modelName;
     };
     std::vector<CompiledBjt> bjt;
     /// Op-Amp: three root ports, all referenced to ground:
@@ -119,6 +122,7 @@ struct Compiled {
         Port out, pos, neg;
         OpAmpModel model;
         std::string name;
+        std::string modelName;
     };
     std::vector<CompiledOpAmp> opamp;
     /// Magnetically coupled inductors (SPICE `K` directive) and explicit
@@ -241,8 +245,11 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         ct.model = t.model;
         out.tri.push_back(std::move(ct));
     }
-    for (const auto& d : c.diode)
+    for (const auto& d : c.diode) {
         out.diode.emplace_back(port(d.a, d.b), d.model);
+        out.diodeNames.push_back(d.name);
+        out.diodeModelNames.push_back(d.modelName);
+    }
     for (const auto& cr : c.ctrlRes) {
         if (cr.photo)
             out.photoSensePorts.emplace_back(out.ctrlRes.size(),
@@ -292,6 +299,7 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         cj.is = slotIndex(j.s);
         cj.model = j.model;
         cj.name = j.name;
+        cj.modelName = j.modelName;
         out.jfet.push_back(std::move(cj));
     }
     for (const auto& m : c.mosfet) {
@@ -325,6 +333,7 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         cb.ie = slotIndex(b.e);
         cb.model = b.model;
         cb.name = b.name;
+        cb.modelName = b.modelName;
         cb.validModel = cb.model.valid();
         out.bjt.push_back(std::move(cb));
     }
@@ -336,6 +345,7 @@ inline Compiled compile(const Circuit& c, const std::vector<double>& /*sourceVal
         co.neg = port(o.neg, ref);
         co.model = o.model;
         co.name = o.name;
+        co.modelName = o.modelName;
         out.opamp.push_back(std::move(co));
     }
     for (const auto& m : c.mutual) {

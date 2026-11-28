@@ -3,6 +3,7 @@
 #include "format/Json.h"
 
 #include <algorithm>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <map>
@@ -591,7 +592,9 @@ bool LiveWDFDocument::loadFromFile(const std::string& filepath, LiveWDFDocument&
         }
         std::stringstream ss;
         ss << f.rdbuf();
-        return fromJson(ss.str(), doc, error);
+        const bool loaded = fromJson(ss.str(), doc, error);
+        if (loaded) doc.sourceBasename = std::filesystem::path(filepath).stem().string();
+        return loaded;
 }
 
 } // namespace wdf

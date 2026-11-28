@@ -25,6 +25,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <cstdio>
 #include <exception>
 #include <fstream>
@@ -258,7 +259,7 @@ bool selectGridCurrent(livewdf::LiveWDFPluginProcessor& processor, bool gridCurr
 // Plays a WAV through processBlock() one callback at a time and reports the
 // spread of callback cost against the block's real-time budget (--wav).
 int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gridCurrent, BenchMode mode,
-           const std::string& currentCsv, const std::string& deviceNames) {
+           bool twoCores, const std::string& currentCsv, const std::string& deviceNames) {
     juce::AudioFormatManager formats;
     formats.registerBasicFormats();
     const std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(wav));
@@ -280,7 +281,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
     std::printf("quality=%s\n", selectMode(processor, mode));
-    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(0.0f);
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(twoCores ? 1.0f : 0.0f);
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -308,6 +309,12 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     std::vector<double> instructionCounts;
     std::FILE* output = std::getenv("LWDF_OUT") ? std::fopen(std::getenv("LWDF_OUT"), "wb") : nullptr;
     auto* engine = livewdf::benchEngine(processor);
+    if (const char* flags = std::getenv("LIVEWDF_PP"); flags && std::strstr(flags, "powercore")) {
+        std::printf("root block ports");
+        for (int b = 0; b < engine->rootBlockCount(); ++b)
+            std::printf(" %d", engine->rootBlockPortCount(b));
+        std::printf("\n");
+    }
     if (std::getenv("LWDF_DATA_PENT"))
         engine->usePreviewPentodes(false);
     std::vector<std::pair<std::string, int>> currentPorts;
@@ -337,6 +344,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
         currents << '\n';
     }
     const long long fallbacksBefore = engine->blockFallbackCount();
+    const long long cooldownBefore = engine->blockCooldownPassCount();
     const long long resweepSweepsBefore = engine->resweepSweepCount();
     const long long resweepFirstBefore = engine->resweepClearedCount(1);
     const long long resweepSecondBefore = engine->resweepClearedCount(2);
@@ -424,6 +432,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     std::printf("fallback blocks 2=%lld 3=%lld 4+=%lld max=%lld\n",
                 fallbackBlocks2, fallbackBlocks3, fallbackBlocks4, maxFallbacksPerBlock);
     std::printf("block Newton iterations %lld\n", wdf::ppdiag::totalBlockIterations - newtonIterationsBefore);
+    std::printf("cooldown passes %lld\n", engine->blockCooldownPassCount() - cooldownBefore);
     std::printf("resweep sweeps %lld cleared first %lld second %lld\n",
                 engine->resweepSweepCount() - resweepSweepsBefore,
                 engine->resweepClearedCount(1) - resweepFirstBefore,
@@ -3228,7 +3237,7 @@ int main(int argc, char** argv) {
                     "[--replay-state-set <file> | --replay-state-set-out <file>] "
                     "[--replay-lead <n>] [--replay-tail <n>] [--replay-failure-limit <n>] "
                     "[--replay-difficult-limit <n>] [--replay-difficult-threshold <n>]] "
-                    "[--wav <file> [--block <n>] [--device-currents <csv> <name,...>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
+                    "[--wav <file> [--block <n>] [--two-cores] [--device-currents <csv> <name,...>]] [--calibration-render <in.f32> <out.f32> [--fast-live | --live-preview] [--preamp-only | --power-amp-only] [--chain-input] [--chain-output] [--cabinet <id>]] [--grid-current on|off] [--accurate | --fast-live | --live-preview]\n");
         return 1;
     }
 
@@ -3286,6 +3295,7 @@ int main(int argc, char** argv) {
     int replayDifficultLimit = 256, replayDifficultThreshold = 12;
     int wavBlock = 128;
     bool gridCurrent = true;
+    bool twoCores = false;
     double probeRate = kSampleRate;
     double probeDrive = 0.001;
     double probeFreq = 1000.0;
@@ -3366,6 +3376,8 @@ int main(int argc, char** argv) {
         }
         else if (arg == "--block" && i + 1 < argc)
             wavBlock = std::stoi(argv[++i]);
+        else if (arg == "--two-cores")
+            twoCores = true;
     }
 
     if (validate)
@@ -3396,7 +3408,7 @@ int main(int argc, char** argv) {
     }
     if (!wavPath.empty())
         return runWav(file, juce::File(wavPath), currentCsv.empty() ? wavBlock : 1, gridCurrent,
-                      mode.value_or(BenchMode::FastLive), currentCsv, currentDevices);
+                      mode.value_or(BenchMode::FastLive), twoCores, currentCsv, currentDevices);
 
     livewdf::LiveWDFPluginProcessor processor;
     if (!selectGridCurrent(processor, gridCurrent))
