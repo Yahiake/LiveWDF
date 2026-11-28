@@ -95,12 +95,14 @@ struct BlockSolveContext {
     long long& mixedAttempts;
     long long& mixedAccepted;
     double modeTol;
+    bool previewMode;
     bool keepBlockAnswer = false;
     bool reductions = true;
 };
 
 class RootBlockSolve {
 public:
+    static constexpr int kCostlyJointRootPorts = 30;
     /// Use the current sample's exact scalar law before cached affine reduction.
     static bool hasDirectSingleton(const NewtonBlock& block, const std::vector<RootDevice>& devices,
                                    const Compiled& comp, const std::vector<OpAmpModel>& opAmps,
@@ -231,12 +233,18 @@ public:
         // sample's state converged and never advance a slewing or railed
         // stage.
         bool hasOpAmp = Reduced;
+        int pentodeCount = 0;
+        const bool capCandidate = ctx.previewMode && ctx.K >= kCostlyJointRootPorts;
+        if (capCandidate)
+            for (int di : devices)
+                pentodeCount += ctx.rootDevices[di].kind == DeviceKind::Pentode;
         for (int di : devices) {
             if (ctx.rootDevices[di].kind == DeviceKind::OpAmp) {
                 hasOpAmp = true;
                 break;
             }
         }
+        const bool pushPullPreview = capCandidate && pentodeCount == 2;
         if (hasOpAmp && n >= 4 && !relaxed) {
             // In coupled stages the preceding two samples give a useful
             // first iterate. Keep the guess local to the last accepted
@@ -271,13 +279,15 @@ public:
 
         bool converged = false;
         bool curValid = false;
+        int fullDescent = 0;
         double maxF = 0.0;
         double prevF = 0.0;
         bool luValid = false;
         int luReuseCount = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
-        const int localMax = std::min(maxIter, Reduced ? 10 : 24);
+        const int localMax = Reduced ? std::min(maxIter, 10) :
+            std::min(maxIter, pushPullPreview ? 48 : 24);
         alignas(32) double bestV[64], bestI[64];
         double bestF = std::numeric_limits<double>::infinity();
         const auto keepBest = [&] {
@@ -290,6 +300,10 @@ public:
             }
         };
         for (int it = 0; it < localMax; ++it) {
+            if constexpr (!Reduced) {
+                if (it >= (pushPullPreview ? 40 : 24) && fullDescent < 2)
+                    break;
+            }
             ++ctx.newtonIters;
             if (!curValid) {
                 for (int di : devices) {
@@ -500,6 +514,7 @@ public:
             }
 
             if (n < 3) {
+                fullDescent = 0;
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -642,6 +657,9 @@ public:
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
+
+                fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
+                    ? fullDescent + 1 : 0;
 
                 double maxStep = 0.0, maxV = 0.0;
                 for (int di : devices) {
@@ -1268,13 +1286,14 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
+        const bool resweepWorthwhile = ctx.previewMode && ctx.K >= kCostlyJointRootPorts && !ctx.keepBlockAnswer;
 
         // Generalized fine blocks are a Gauss-Seidel splitting of a single
         // strongly-coupled SCC. The first pass is the usual forward sweep with
         // predecessor currents; each extra sweep refolds every block against
         // the latest currents, so a per-device split converges to the same
         // fixed point as the joint Newton when the coupling is linear.
-        for (int sweep = 0; sweep < relaxSweeps && !failed; ++sweep) {
+        for (int sweep = 0; sweep < relaxSweeps && !resweepWorthwhile && !failed; ++sweep) {
             if (ctx.lastBlockResidual <= effTol)
                 break;
             for (int s = 0; s < view.count && !failed; ++s)
@@ -1317,6 +1336,46 @@ public:
             ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
         }
 
+        if (resweepWorthwhile && !failed && ctx.lastBlockResidual > effTol) {
+            for (int sweep = 0; sweep < 2 && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+                bool tried = false;
+                for (int s = 0; s < view.count && !failed; ++s) {
+                    const int b = (*view.order)[static_cast<size_t>(s)];
+                    const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+                    const bool missed = std::ranges::any_of(block.devices, [&](int di) {
+                        const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+                        for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                            if (std::abs(ctx.F[static_cast<size_t>(r)]) > effTol)
+                                return true;
+                        return false;
+                    });
+                    if (!missed)
+                        continue;
+                    tried = true;
+                    // vOc already holds the lagged current used by this block.
+                    for (const auto& [r, d] : block.lagged)
+                        ctx.vOc[static_cast<size_t>(r)] += d.z * ctx.ii[static_cast<size_t>(d.col)];
+                    failed = !solveBlock(view, b, s, maxIter, tol, true, ctx);
+                    for (const auto& [r, d] : block.lagged)
+                        ctx.vOc[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
+                }
+                if (!tried || failed)
+                    break;
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    ctx.F[static_cast<size_t>(r)] = ctx.ii[static_cast<size_t>(r)];
+                RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    if (view.frozen[r])
+                        ctx.ii[static_cast<size_t>(r)] = ctx.F[static_cast<size_t>(r)];
+                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
+                for (int s = 0; view.held && s < view.count; ++s)
+                    for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged)
+                        ctx.F[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
+                ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
+            }
+        }
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
