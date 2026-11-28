@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 
 #include <string>
@@ -222,29 +223,61 @@ inline bool loadQuadricTables(const char* path, std::array<QuadricEmission, 5>& 
     return std::ranges::any_of(loaded, std::identity{});
 }
 
+struct QuadricFileTables {
+    const QuadricEmission* keys[5] = {&kQuadricEL34, &kQuadric6L6GC,
+        &kQuadric6L6GCPreview, &kQuadric6V6S, &kQuadricEL84};
+    const char* names[5] = {"EL34", "6L6GC", "6L6GCPREVIEW", "6V6S", "EL84"};
+    std::array<QuadricEmission, 5> values = {kQuadricEL34, kQuadric6L6GC,
+        kQuadric6L6GCPreview, kQuadric6V6S, kQuadricEL84};
+    QuadricTriodeParams triode = kQuadric12AX7;
+    bool loaded[5]{};
+    bool triodeLoaded = false;
+
+    QuadricFileTables() {
+        const char* path = std::getenv("LIVEWDF_PP_TABLE");
+        std::ifstream input(path ? path : "");
+        std::string name;
+        while (input >> name) {
+            if (name == "12AX7") {
+                input >> triode.kP2 >> triode.kPg >> triode.kP;
+                triodeLoaded = input && triode.valid();
+                if (!triodeLoaded) break;
+                continue;
+            }
+            int index = 0;
+            while (index < 5 && name != names[index]) ++index;
+            QuadricEmission value{};
+            for (double& x : value.av) input >> x;
+            for (double& x : value.knot) input >> x;
+            for (double& x : value.coef) input >> x;
+            input >> value.beta >> value.plate >> value.lambda >> value.rho >> value.sigma;
+            if (!input || index == 5) break;
+            values[static_cast<size_t>(index)] = value;
+            loaded[index] = true;
+        }
+    }
+
+    const QuadricEmission* get(const QuadricEmission* key) const noexcept {
+        for (int i = 0; i < 5; ++i)
+            if (key == keys[i]) return loaded[i] ? &values[static_cast<size_t>(i)] : key;
+        return key;
+    }
+};
+
+inline const QuadricFileTables& quadricFileTables() {
+    static const QuadricFileTables tables;
+    return tables;
+}
+
 inline const QuadricEmission* quadricTableFromFile(const QuadricEmission* compiled) {
-    struct Tables {
-        const QuadricEmission* keys[5] = {&kQuadricEL34, &kQuadric6L6GC,
-            &kQuadric6L6GCPreview, &kQuadric6V6S, &kQuadricEL84};
-        const char* names[5] = {"EL34", "6L6GC", "6L6GCPREVIEW", "6V6S", "EL84"};
-        std::array<QuadricEmission, 5> values = {kQuadricEL34, kQuadric6L6GC,
-            kQuadric6L6GCPreview, kQuadric6V6S, kQuadricEL84};
-        bool loaded[5]{};
+    return quadricFileTables().get(compiled);
+}
 
-        Tables() {
-            std::array<bool, 5> found{};
-            loadQuadricTables(std::getenv("LIVEWDF_PP_TABLE"), values, found);
-            std::copy(found.begin(), found.end(), loaded);
-        }
-
-        const QuadricEmission* get(const QuadricEmission* key) const noexcept {
-            for (int i = 0; i < 5; ++i)
-                if (key == keys[i]) return loaded[i] ? &values[static_cast<size_t>(i)] : key;
-            return key;
-        }
-    };
-    static const Tables tables;
-    return tables.get(compiled);
+inline QuadricTriodeParams quadricTriodeFromFile(QuadricTriodeParams compiled) {
+    const auto& tables = quadricFileTables();
+    if (tables.triodeLoaded && std::memcmp(&compiled, &kQuadric12AX7, sizeof(compiled)) == 0)
+        return tables.triode;
+    return compiled;
 }
 
 /// Clean, self-contained constitutive evaluator for the Reefman pentode model

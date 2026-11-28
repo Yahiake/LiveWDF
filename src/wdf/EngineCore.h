@@ -529,8 +529,14 @@ protected:
         if (const char* cd = std::getenv("LIVEWDF_BLOCK_COOLDOWN"))
             blockFallbackCooldownLimit_ = std::clamp(std::atoi(cd), 0, 64);
         comp_ = compile(circuit_, {});
-        for (auto& t : comp_.tri)
+        static const bool tableTry = livewdfPpTry("table");
+        for (auto& t : comp_.tri) {
             t.model.gridConducts = gridCurrent;
+            if (tableTry) {
+                t.model.p = quadricTriodeFromFile(t.model.p);
+                t.model.prepareQuadric();
+            }
+        }
         N_ = comp_.N;
         nsrc_ = comp_.nsrc;
         dcValues_.resize(static_cast<size_t>(nsrc_));
@@ -620,7 +626,6 @@ protected:
         for (size_t i = 0; i < circuit_.varRes.size(); ++i)
             varResResIndex_[i] = resIndexByNameCore(circuit_.varRes[i].name);
         pentodes_.clear();
-        static const bool tableTry = livewdfPpTry("table");
         for (const auto& cp : comp_.pent) {
             pentodes_.push_back(cp.model);
             if (tableTry && pentodes_.back().modelKind == PentodeModelKind::Reefman)
