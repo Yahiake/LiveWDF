@@ -83,6 +83,9 @@ struct BlockSolveContext {
     bool& lastBlockFallback;
     double& lastBlockResidual;
     long long& blockFallbacks;
+    long long& resweepSweeps;
+    long long& resweepClearedFirst;
+    long long& resweepClearedSecond;
     long long& runtimeBlockFallbacks;
     bool& runtimeBlockUsed;
     bool& lastConverged;
@@ -1335,6 +1338,53 @@ public:
         }
 
         const double effTol = std::max(tol, 1e-9);
+
+        static const bool resweep = livewdfPpTry("resweep");
+        if (resweep && ctx.previewMode && !failed && ctx.lastBlockResidual > effTol) {
+            for (int sweep = 0; sweep < 2 && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+                bool tried = false;
+                for (int s = 0; s < view.count && !failed; ++s) {
+                    const int b = (*view.order)[static_cast<size_t>(s)];
+                    const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+                    const bool missed = std::ranges::any_of(block.devices, [&](int di) {
+                        const RootDevice& dev = ctx.rootDevices[static_cast<size_t>(di)];
+                        for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                            if (std::abs(ctx.F[static_cast<size_t>(r)]) > effTol)
+                                return true;
+                        return false;
+                    });
+                    if (!missed)
+                        continue;
+                    tried = true;
+                    // vOc already carries held lagged currents; exclude their live allFold terms.
+                    for (const auto& [r, d] : block.lagged)
+                        ctx.vOc[static_cast<size_t>(r)] += d.z * ctx.ii[static_cast<size_t>(d.col)];
+                    failed = !solveBlock(view, b, s, maxIter, tol, true, ctx);
+                    for (const auto& [r, d] : block.lagged)
+                        ctx.vOc[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
+                }
+                if (!tried)
+                    break;
+                ++ctx.resweepSweeps;
+                if (failed)
+                    break;
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    ctx.F[static_cast<size_t>(r)] = ctx.ii[static_cast<size_t>(r)];
+                RootNewton::currentsOnlyInto(newtonCtx, ctx.vv, ctx.ii);
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    if (view.frozen[r])
+                        ctx.ii[static_cast<size_t>(r)] = ctx.F[static_cast<size_t>(r)];
+                RootNewton::residualInto(newtonCtx, ctx.vv, ctx.vOc, ctx.Z, ctx.ii, ctx.F);
+                for (int s = 0; view.held && s < view.count; ++s)
+                    for (const auto& [r, d] : (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])].lagged)
+                        ctx.F[static_cast<size_t>(r)] -= d.z * ctx.ii[static_cast<size_t>(d.col)];
+                for (int r = 0; view.frozen && r < ctx.K; ++r)
+                    ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
+                ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
+                if (ctx.lastBlockResidual <= effTol)
+                    ++(sweep ? ctx.resweepClearedSecond : ctx.resweepClearedFirst);
+            }
+        }
 
         // Generalized fine blocks are a Gauss-Seidel splitting of a single
         // strongly-coupled SCC. The first pass is the usual forward sweep with
