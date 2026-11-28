@@ -2728,6 +2728,20 @@ static bool checkMultiThrowSwitchState(const juce::File& file) {
         && wdf::switchResPosition(restored.getCurrentDocument().components[1]) == 2;
 }
 
+static bool checkSingleLegPot() {
+    wdf::Circuit circuit;
+    circuit.addSrc("in", "0", 1.0);
+    circuit.addPot("in", "out", "out", 100e3, .5, wdf::PotTaper::Linear, "Level");
+    std::erase_if(circuit.res, [](const auto& resistor) { return resistor.name == "Level_2"; });
+    circuit.addRes("out", "0", 10e3);
+    wdf::Engine engine(circuit, 48000.0);
+    engine.prepareLiveControls();
+    const int leg = engine.resIndexByName("Level_1");
+    const auto expected = wdf::Pot::resistances(100e3, .75, wdf::PotTaper::Linear).first;
+    return leg >= 0 && engine.setLiveControls({{0, .75}}, {})
+        && engine.resistors()[static_cast<size_t>(leg)].value == expected;
+}
+
 int main(int argc, char** argv) {
     juce::ScopedJuceInitialiser_GUI init;
 
@@ -2737,6 +2751,8 @@ int main(int argc, char** argv) {
         return checkOutputEffectsState() ? 0 : 1;
     if (argc == 2 && std::string(argv[1]) == "--check-external-impedance-defaults")
         return checkExternalImpedanceDefaults() ? 0 : 1;
+    if (argc == 2 && std::string(argv[1]) == "--check-single-leg-pot")
+        return checkSingleLegPot() ? 0 : 1;
     const char* circuitPath = argc > 1 ? argv[1] : "";
     const juce::File file(circuitPath);
     if (!file.existsAsFile()) {
