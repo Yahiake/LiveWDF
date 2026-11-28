@@ -953,7 +953,8 @@ protected:
             blockDv_.assign(K_, 0.0);
             activeRedCol_.assign(static_cast<size_t>(nRed_), 0);
         redToActive_.assign(static_cast<size_t>(nRed_), -1);
-        blockM_.assign(static_cast<size_t>(nRed_) * nRed_, 0.0);
+            blockM_.assign(static_cast<size_t>(nRed_) * nRed_, 0.0);
+            blockNeighbourZ_.assign(static_cast<size_t>(K_) * nRed_, 0.0);
         blockRhs_.assign(static_cast<size_t>(nRed_), 0.0);
         compileZred();
             updatePortLimits();
@@ -1225,7 +1226,7 @@ protected:
     std::vector<int> activeRedCol_;
     /// Mapping from static redCol index to dynamic active index, -1 if inactive
     std::vector<int> redToActive_;
-    std::vector<double> blockM_, blockRhs_;
+    std::vector<double> blockM_, blockRhs_, blockNeighbourZ_;
     int blockCount_ = 0;
     std::vector<JunctionLimiter> junctionLimiters_;
     std::vector<GridJunctionLimiter> gridJunctionLimiters_;
