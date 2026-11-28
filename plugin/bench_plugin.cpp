@@ -37,6 +37,9 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <linux/perf_event.h>
+#include <sys/syscall.h>
+#include <unistd.h>
 
 struct ThreadUsage {
     double cpuNs = 0.0;
@@ -275,6 +278,7 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     if (!selectGridCurrent(processor, gridCurrent))
         return 1;
     std::printf("quality=%s\n", selectMode(processor, mode));
+    processor.getAPVTS().getParameter("two_cores")->setValueNotifyingHost(0.0f);
     processor.prepareToPlay(fs, blockSize);
     if (!processor.loadCircuitFromFile(file)) {
         std::printf("load failed: %s\n", processor.lastError().c_str());
@@ -288,11 +292,51 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
     const double budgetNs = blockSize / fs * 1.0e9;
     DeadlineMisses missed;
     std::vector<double> wall, cpu;
+    perf_event_attr attr{};
+    attr.type = PERF_TYPE_HARDWARE;
+    attr.size = sizeof(attr);
+    attr.config = PERF_COUNT_HW_INSTRUCTIONS | (10ull << 32);
+    attr.exclude_kernel = 1;
+    attr.exclude_hv = 1;
+    const int perf = static_cast<int>(syscall(SYS_perf_event_open, &attr, 0, -1, -1, 0));
+    const auto instructions = [&] {
+        long long count = 0;
+        return read(perf, &count, sizeof(count)) == sizeof(count) ? count : 0;
+    };
+    std::vector<double> instructionCounts;
+    std::FILE* output = std::getenv("LWDF_OUT") ? std::fopen(std::getenv("LWDF_OUT"), "wb") : nullptr;
+    auto* engine = livewdf::benchEngine(processor);
+    if (std::getenv("LWDF_DATA_PENT"))
+        engine->usePreviewPentodes(false);
+    const long long fallbacksBefore = engine->blockFallbackCount();
+    const long long resweepSweepsBefore = engine->resweepSweepCount();
+    const long long resweepFirstBefore = engine->resweepClearedCount(1);
+    const long long resweepSecondBefore = engine->resweepClearedCount(2);
+    const long long newtonIterationsBefore = wdf::ppdiag::totalBlockIterations;
+    long long fallbacksPrevious = fallbacksBefore;
+    long long fallbackBlocks2 = 0, fallbackBlocks3 = 0, fallbackBlocks4 = 0, maxFallbacksPerBlock = 0;
+    const long long rejectsBefore = engine->stateRejectCount();
+    const long long capBefore = wdf::ppdiag::cap;
+    const long long lineBefore = wdf::ppdiag::line;
+    const long long residualBefore = wdf::ppdiag::residual;
     long long allocs = 0, allocBlocks = 0, faults = 0, faultBlocks = 0;
     for (int start = 0; start <= frames - blockSize; start += blockSize) {
         buffer.copyFrom(0, 0, input, 0, start, blockSize);
         buffer.copyFrom(1, 0, input, 0, start, blockSize);
+        const long long before = instructions();
         const auto cost = measureBlock(processor, buffer, midi);
+        const long long blockFallbacks = engine->blockFallbackCount() - fallbacksPrevious;
+        fallbacksPrevious += blockFallbacks;
+        fallbackBlocks2 += blockFallbacks == 2;
+        fallbackBlocks3 += blockFallbacks == 3;
+        fallbackBlocks4 += blockFallbacks >= 4;
+        maxFallbacksPerBlock = std::max(maxFallbacksPerBlock, blockFallbacks);
+        instructionCounts.push_back(static_cast<double>(instructions() - before));
+        if (output)
+            for (int i = 0; i < blockSize; ++i) {
+                std::fwrite(buffer.getReadPointer(0) + i, sizeof(float), 1, output);
+                std::fwrite(buffer.getReadPointer(1) + i, sizeof(float), 1, output);
+            }
         missed.count(cost, budgetNs);
         wall.push_back(100.0 * cost.wallNs / budgetNs);
         cpu.push_back(100.0 * cost.cpuNs / budgetNs);
@@ -316,6 +360,69 @@ int runWav(const juce::File& file, const juce::File& wav, int blockSize, bool gr
 #endif
     std::printf("\n");
     missed.print(wall.size());
+    const auto instructionSpread = [](std::vector<double> values) {
+        double mean = 0.0;
+        for (double value : values)
+            mean += value;
+        mean /= static_cast<double>(values.size());
+        std::sort(values.rbegin(), values.rend());
+        const size_t count = std::max<size_t>(values.size() / 100, 1);
+        double worst = 0.0;
+        for (size_t i = 0; i < count; ++i)
+            worst += values[i];
+        std::printf("Minstr mean %.2f worst1%% %.2f max %.2f\n",
+                    mean / 1e6, worst / static_cast<double>(count) / 1e6, values.front() / 1e6);
+    };
+    instructionSpread(instructionCounts);
+    std::printf("fallbacks %lld cap %lld line %lld residual %lld rejects %lld\n",
+                engine->blockFallbackCount() - fallbacksBefore,
+                wdf::ppdiag::cap - capBefore, wdf::ppdiag::line - lineBefore,
+                wdf::ppdiag::residual - residualBefore, engine->stateRejectCount() - rejectsBefore);
+    std::printf("fallback blocks 2=%lld 3=%lld 4+=%lld max=%lld\n",
+                fallbackBlocks2, fallbackBlocks3, fallbackBlocks4, maxFallbacksPerBlock);
+    std::printf("block Newton iterations %lld\n", wdf::ppdiag::totalBlockIterations - newtonIterationsBefore);
+    std::printf("resweep sweeps %lld cleared first %lld second %lld\n",
+                engine->resweepSweepCount() - resweepSweepsBefore,
+                engine->resweepClearedCount(1) - resweepFirstBefore,
+                engine->resweepClearedCount(2) - resweepSecondBefore);
+    if (wdf::ppdiag::predicted) {
+        long long seen = 0;
+        int median = 0, p90 = 0, maximum = 0;
+        for (int i = 0; i <= 48; ++i) {
+            seen += wdf::ppdiag::predictedIterations[i];
+            if (!median && 2 * seen >= wdf::ppdiag::predictedConverged)
+                median = i;
+            if (!p90 && 10 * seen >= 9 * wdf::ppdiag::predictedConverged)
+                p90 = i;
+            if (wdf::ppdiag::predictedIterations[i])
+                maximum = i;
+        }
+        std::printf("predict starts %lld converged %lld iterations median %d p90 %d max %d\n",
+                    wdf::ppdiag::predicted, wdf::ppdiag::predictedConverged, median, p90, maximum);
+    }
+    if (wdf::ppdiag::ordinaryTriggered) {
+        long long seen = 0;
+        int median = 0, p90 = 0, maximum = 0;
+        for (int i = 0; i <= 48; ++i) {
+            seen += wdf::ppdiag::ordinaryIterations[i];
+            if (!median && 2 * seen >= wdf::ppdiag::ordinaryConverged)
+                median = i;
+            if (!p90 && 10 * seen >= 9 * wdf::ppdiag::ordinaryConverged)
+                p90 = i;
+            if (wdf::ppdiag::ordinaryIterations[i])
+                maximum = i;
+        }
+        std::printf("ordinary trigger starts %lld converged %lld iterations median %d p90 %d max %d\n",
+                    wdf::ppdiag::ordinaryTriggered, wdf::ppdiag::ordinaryConverged,
+                    median, p90, maximum);
+    }
+    if (engine->knotTriggeredSolves())
+        std::printf("knot steps %lld triggered %lld converged %lld iterations %lld residual predicted %.9g actual %.9g ratio %.9g\n",
+                    engine->knotStepChoices(), engine->knotTriggeredSolves(), engine->knotConvergedSolves(),
+                    engine->knotConvergedIterations(), engine->knotPredictedResidual(), engine->knotActualResidual(),
+                    engine->knotPredictedResidual() / engine->knotActualResidual());
+    if (output)
+        std::fclose(output);
     if (const auto [unclaimed, late] = processor.twoCoreMisses(); unclaimed || late)
         std::printf("two cores: %lld blocks not taken by the worker, %lld blocks it fell behind in\n", unclaimed, late);
     return 0;

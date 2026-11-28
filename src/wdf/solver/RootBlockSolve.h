@@ -26,7 +26,9 @@
 #endif
 
 namespace wdf::ppdiag {
-inline long long cap = 0, line = 0, residual = 0, totalBlockIterations = 0;
+inline long long cap = 0, line = 0, residual = 0, sample = 0, totalBlockIterations = 0;
+inline long long predicted = 0, predictedConverged = 0, predictedIterations[49]{};
+inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIterations[49]{};
 inline bool atCap = true;
 inline double lastStep = 1.0;
 }
@@ -319,6 +321,9 @@ public:
         double prevF = 0.0;
         bool luValid = false;
         int luReuseCount = 0;
+        bool predictedStart = false;
+        bool ordinaryTrigger = false;
+        int completedIterations = 0;
         alignas(16) int piv[64];
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
         static const bool cap48 = livewdfPpTry("cap48");
@@ -346,6 +351,7 @@ public:
             }
             ++ctx.newtonIters;
             ++ppdiag::totalBlockIterations;
+            completedIterations = it + 1;
             if (!curValid) {
                 for (int di : devices) {
                     RootResidual::currentsForDevice(
@@ -507,6 +513,7 @@ public:
 
             if constexpr (!Reduced) {
                 static const bool predict = livewdfPpTry("predict");
+                static const bool predictControl = std::getenv("LWDF_PREDICT_CONTROL") != nullptr;
                 int pair[2]{-1, -1}, pairCount = 0, rising = -1;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -517,7 +524,11 @@ public:
                     if (ctx.blockDv[static_cast<size_t>(dev.portBase + 1)] > 80.0)
                         rising = di;
                 }
-                if (predict && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
+                if ((predict || predictControl) && it == 0 && pushPullPreview && pairCount == 2 && rising >= 0) {
+                    if (predictControl && !predict) {
+                        ordinaryTrigger = true;
+                        ++ppdiag::ordinaryTriggered;
+                    } else {
                     for (int di : devices) {
                         const RootDevice& dev = ctx.rootDevices[di];
                         for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
@@ -530,10 +541,13 @@ public:
                     ctx.blockV[static_cast<size_t>(b.portBase)] = ctx.vvPrev[static_cast<size_t>(a.portBase)];
                     ctx.blockV[static_cast<size_t>(b.portBase + 2)] = ctx.vvPrev[static_cast<size_t>(a.portBase + 2)];
                     ctx.blockV[static_cast<size_t>(ctx.rootDevices[rising].portBase + 1)] = 0.25;
+                    predictedStart = true;
+                    ++ppdiag::predicted;
                     curValid = false;
                     luValid = false;
                     fullDescent = 0;
                     continue;
+                    }
                 }
             }
 
@@ -875,6 +889,14 @@ public:
 
                 curValid = true;
             }
+        }
+        if (predictedStart && (converged || landing)) {
+            ++ppdiag::predictedConverged;
+            ++ppdiag::predictedIterations[std::clamp(completedIterations - 1, 0, 48)];
+        }
+        if (ordinaryTrigger && (converged || landing)) {
+            ++ppdiag::ordinaryConverged;
+            ++ppdiag::ordinaryIterations[std::clamp(completedIterations, 0, 48)];
         }
         if constexpr (Reduced) {
             if ((converged || landing) && knotTriggered) {
@@ -1480,8 +1502,39 @@ public:
         const double effTol = std::max(tol, 1e-9);
 
         static const bool resweep = livewdfPpTry("resweep");
-        if (resweep && ctx.previewMode && !failed && ctx.lastBlockResidual > effTol) {
-            for (int sweep = 0; sweep < 2 && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
+        static const bool resweepGate = std::getenv("LWDF_RESWEEP_GATE") != nullptr;
+        static const bool oneResweep = std::getenv("LWDF_RESWEEP_ONE_SWEEP") != nullptr;
+        if (resweep && ctx.previewMode && !failed && ctx.lastBlockResidual > effTol &&
+            !(resweepGate && ctx.keepBlockAnswer)) {
+            static std::FILE* resweepTrace = [] {
+                const char* path = std::getenv("LWDF_RESWEEPLOG");
+                std::FILE* f = path ? std::fopen(path, "w") : nullptr;
+                if (f)
+                    std::fprintf(f, "sample,stage,kind,device,port,block,residual,tolerance\n");
+                return f;
+            }();
+            const auto traceMisses = [&](int stage) {
+                if (!resweepTrace)
+                    return;
+                for (const auto& dev : ctx.rootDevices)
+                    for (int p = 0; p < dev.numPorts; ++p) {
+                        const int r = dev.portBase + p;
+                        if (std::abs(ctx.F[static_cast<size_t>(r)]) > effTol) {
+                            int position = -1;
+                            for (int s = 0; s < view.count && position < 0; ++s) {
+                                const auto& block = (*view.blocks)[static_cast<size_t>((*view.order)[static_cast<size_t>(s)])];
+                                if (std::ranges::find(block.devices, static_cast<int>(&dev - ctx.rootDevices.data())) != block.devices.end())
+                                    position = s;
+                            }
+                            std::fprintf(resweepTrace, "%lld,%d,%d,%zu,%d,%d,%.9g,%.9g\n",
+                                         ppdiag::sample, stage, static_cast<int>(dev.kind), dev.compIndex, p, position,
+                                         ctx.F[static_cast<size_t>(r)], effTol);
+                        }
+                    }
+            };
+            traceMisses(0);
+            const int maxSweeps = oneResweep ? 1 : 2;
+            for (int sweep = 0; sweep < maxSweeps && ctx.lastBlockResidual > effTol && !failed; ++sweep) {
                 bool tried = false;
                 for (int s = 0; s < view.count && !failed; ++s) {
                     const int b = (*view.order)[static_cast<size_t>(s)];
@@ -1521,6 +1574,7 @@ public:
                 for (int r = 0; view.frozen && r < ctx.K; ++r)
                     ctx.F[static_cast<size_t>(r)] *= !view.frozen[r];
                 ctx.lastBlockResidual = RootNewton::maxAbs(ctx.F, ctx.K);
+                traceMisses(sweep + 1);
                 if (ctx.lastBlockResidual <= effTol)
                     ++(sweep ? ctx.resweepClearedSecond : ctx.resweepClearedFirst);
             }

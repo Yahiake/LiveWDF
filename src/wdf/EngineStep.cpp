@@ -1,5 +1,7 @@
 #include "wdf/EngineStep.h"
 
+#include <cstdio>
+
 namespace wdf {
 
 bool EngineStep::tryTriodePreview() noexcept {
@@ -354,6 +356,41 @@ const std::vector<double>& EngineStep::step(const double* sourceValues, std::siz
     if (lamp_.length)
         stepLampReplay();
     tock(prof_.solve);
+    ++ppdiag::sample;
+
+    if (blockFallbacks_ > fallbacksBefore && nPent_ == 2) {
+        static std::FILE* trace = [] {
+            const char* path = std::getenv("LWDF_PREDLOG");
+            std::FILE* f = path ? std::fopen(path, "w") : nullptr;
+            if (f)
+                std::fprintf(f, "tube,prev,open,answer,prev_vgk,open_vgk,answer_vgk,prev_vsk,open_vsk,answer_vsk,prev_mask,open_mask,answer_mask\n");
+            return f;
+        }();
+        if (trace) {
+            const auto regime = [](const Pentode& model, const double* v, unsigned& mask) {
+                mask = 0;
+                const auto* q = model.reefman.quadric;
+                if (q)
+                    for (int j = 0; j < 5; ++j)
+                        mask |= (v[1] + q->av[j] * v[2] - q->knot[j] > 0.0) << j;
+                return v[1] > 0.0 ? 2 : mask ? 1 : 0;
+            };
+            for (const auto& dev : rootDevices_) {
+                if (dev.kind != DeviceKind::Pentode)
+                    continue;
+                const int o = dev.portBase;
+                unsigned previousMask, openMask, answerMask;
+                const int previous = regime(pentodes_[dev.compIndex], vvSafe_.data() + o, previousMask);
+                const int open = regime(pentodes_[dev.compIndex], vOc_.data() + o, openMask);
+                const int answer = regime(pentodes_[dev.compIndex], vv_.data() + o, answerMask);
+                std::fprintf(trace, "%d,%d,%d,%d,%.9g,%.9g,%.9g,%.9g,%.9g,%.9g,%u,%u,%u\n",
+                             dev.compIndex, previous, open, answer,
+                             vvSafe_[o + 1], vOc_[o + 1], vv_[o + 1],
+                             vvSafe_[o + 2], vOc_[o + 2], vv_[o + 2],
+                             previousMask, openMask, answerMask);
+            }
+        }
+    }
 
     // A block that had to fall back is not paying for itself. Spend a few
     // samples on the joint Newton reference before trying the partition

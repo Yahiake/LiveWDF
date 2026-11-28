@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <mutex>
 
 namespace livewdf {
@@ -219,12 +220,13 @@ void LiveWDFPluginProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce
     leftEngine_->useMixedAffineReduction(fastLive);
     leftEngine_->useCircuitPlan(fastLive);
     leftEngine_->useSlowLag(fastLive);
-    leftEngine_->usePreviewPentodes(compiledPreview);
+    static const bool dataPentodes = std::getenv("LWDF_DATA_PENT");
+    leftEngine_->usePreviewPentodes(compiledPreview && !dataPentodes);
     if (secondEngine) {
         rightEngine_->useMixedAffineReduction(fastLive);
         rightEngine_->useCircuitPlan(fastLive);
         rightEngine_->useSlowLag(fastLive);
-        rightEngine_->usePreviewPentodes(compiledPreview);
+        rightEngine_->usePreviewPentodes(compiledPreview && !dataPentodes);
     }
 
     std::copy(baseSourceValues_.begin(), baseSourceValues_.end(), svLeft_.begin());
