@@ -15,6 +15,7 @@
 #include "wdf/solver/RootClosedForms.h"
 #include "wdf/solver/RootNewton.h"
 #include "wdf/solver/PushPullPairSolve.h"
+#include "wdf/solver/QuadricKnotStep.h"
 
 #if defined(_MSC_VER)
 #define LIVEWDF_RESTRICT __restrict
@@ -80,6 +81,10 @@ struct BlockSolveContext {
     long long& deviceEvals;
     long long& limitHits;
     long long& gridLimitHits;
+    long long& knotStepChoices;
+    long long& knotTriggeredSolves;
+    long long& knotConvergedSolves;
+    long long& knotConvergedIterations;
     bool& lastBlockFallback;
     double& lastBlockResidual;
     long long& blockFallbacks;
@@ -299,6 +304,7 @@ public:
         }
 
         bool converged = false;
+        bool knotTriggered = false;
         bool curValid = false;
         int fullDescent = 0;
         double maxF = 0.0;
@@ -310,6 +316,8 @@ public:
         const int localMax = std::min(maxIter, Reduced ? 10 : (pushPullPreview ? 32 : 24));
         alignas(32) double bestV[64], bestI[64];
         double bestF = std::numeric_limits<double>::infinity();
+        const bool knotsEnabled = quadricKnotStepEnabled();
+        const long long solveStartIters = knotsEnabled ? ctx.newtonIters : 0;
         const auto keepBest = [&] {
             if (!ctx.keepBlockAnswer || !(maxF < bestF) || n > 64)
                 return;
@@ -500,6 +508,11 @@ public:
                 }
             }
 
+            const QuadricKnotSteps knotSteps = knotsEnabled && ctx.previewMode
+                ? quadricKnotSteps(devices, ctx.rootDevices, ctx.comp, ctx.pentodes,
+                                   ctx.triodeDomainPin, ctx.blockV.data(), ctx.blockDv.data())
+                : QuadricKnotSteps{};
+
             double scale = 1.0;
             bool onlyTubePlatesLimited = pushPullPreview;
             int limitedPorts = 0;
@@ -529,7 +542,7 @@ public:
                     continue;
                 }
             }
-            if (limitedPorts > 0 && onlyTubePlatesLimited) {
+            if (!knotSteps.active && limitedPorts > 0 && onlyTubePlatesLimited) {
                 ++ctx.limitHits;
                 // Bound each plate's excursion through cutoff/reverse regions
                 // without throttling the grids that move a push-pull stage across.
@@ -544,7 +557,7 @@ public:
                     ctx.blockDv[static_cast<size_t>(r)] = std::clamp(d, -lim, lim);
                 }
                 scale = 1.0;
-            } else if (scale < 1.0) {
+            } else if (!knotSteps.active && scale < 1.0) {
                 ++ctx.limitHits;
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -552,6 +565,8 @@ public:
                         ctx.blockDv[static_cast<size_t>(r)] *= scale;
                 }
             }
+            if (knotSteps.active)
+                scale = 1.0;
             if (landing) {
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -640,8 +655,14 @@ public:
                 const double baseF = maxF;
                 double stepSize = 1.0;
                 double ftNorm = 0.0;
-                const int maxLineTrials = 4;
+                const int maxLineTrials = knotSteps.active ? knotSteps.knots + 1 : 4;
+                double bestTrialF = std::numeric_limits<double>::infinity();
+                double bestTrialStep = 1.0;
+                int bestTrialIndex = -1;
+                alignas(32) double trialV[64], trialI[64];
                 for (int h = 0; h < maxLineTrials; ++h) {
+                    if (knotSteps.active)
+                        stepSize = knotSteps.values[static_cast<size_t>(h)];
                     for (int di : devices) {
                         const RootDevice& dev = ctx.rootDevices[di];
                         for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
@@ -703,9 +724,38 @@ public:
 
                     ftNorm = blockResidual<Reduced>(block, ctx, n);
 
-                    if (ftNorm <= baseF || h == maxLineTrials - 1)
-                        break;
-                    stepSize *= 0.5;
+                    if (knotSteps.active) {
+                        if (ftNorm < bestTrialF) {
+                            bestTrialF = ftNorm;
+                            bestTrialStep = stepSize;
+                            bestTrialIndex = h;
+                            for (int j = 0; j < n; ++j) {
+                                const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                                trialV[j] = ctx.blockV[p];
+                                trialI[j] = ctx.blockI[p];
+                            }
+                        }
+                        if (h == maxLineTrials - 1) {
+                            ftNorm = bestTrialF;
+                            stepSize = bestTrialStep;
+                            for (int j = 0; j < n; ++j) {
+                                const size_t p = static_cast<size_t>(ports[static_cast<size_t>(j)]);
+                                ctx.blockV[p] = trialV[j];
+                                ctx.blockI[p] = trialI[j];
+                            }
+                            if (bestTrialIndex >= 0 && bestTrialIndex < knotSteps.knots) {
+                                ++ctx.knotStepChoices;
+                                if (!knotTriggered) {
+                                    knotTriggered = true;
+                                    ++ctx.knotTriggeredSolves;
+                                }
+                            }
+                        }
+                    } else {
+                        if (ftNorm <= baseF || h == maxLineTrials - 1)
+                            break;
+                        stepSize *= 0.5;
+                    }
                 }
                 if (ctx.prof)
                     tock(ctx.prof->linesearch);
@@ -745,6 +795,10 @@ public:
             }
         }
         if constexpr (Reduced) {
+            if ((converged || landing) && knotTriggered) {
+                ++ctx.knotConvergedSolves;
+                ctx.knotConvergedIterations += ctx.newtonIters - solveStartIters;
+            }
             return converged || landing; // Caller reconstructs and certifies the original block.
         } else if (!converged && !landing) {
             // A kept block answer takes a stalled block's best iterate; the full-residual guard still sends a gross miss to the joint solve.
@@ -768,6 +822,10 @@ public:
 
         if (acceptedDeviceCurrents)
             *acceptedDeviceCurrents = true;
+        if ((converged || landing) && knotTriggered) {
+            ++ctx.knotConvergedSolves;
+            ctx.knotConvergedIterations += ctx.newtonIters - solveStartIters;
+        }
         return true;
     }
 

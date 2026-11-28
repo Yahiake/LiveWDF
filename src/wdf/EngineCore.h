@@ -253,6 +253,10 @@ public:
     long long deviceEvaluations() const { return deviceEvals_; }
     long long lineSearchTrials() const { return lineTrials_; }
     long long stepLimitHits() const { return limitHits_; }
+    long long knotStepChoices() const { return knotStepChoices_; }
+    long long knotTriggeredSolves() const { return knotTriggeredSolves_; }
+    long long knotConvergedSolves() const { return knotConvergedSolves_; }
+    long long knotConvergedIterations() const { return knotConvergedIterations_; }
 
     using PhaseProfile = wdf::PhaseProfile;
     void setProfile(bool on) { profileOn_ = on; }
