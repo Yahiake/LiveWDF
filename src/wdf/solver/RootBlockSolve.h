@@ -607,12 +607,6 @@ public:
                     const Pentode& pentode = ctx.pentodes[risingDevice.compIndex];
                     if (pentode.modelKind == PentodeModelKind::Reefman && pentode.useReefman &&
                         pentode.reefman.gridPhysics && pentode.reefman.quadric && !pentode.reefman.polyknee) {
-                        for (int di : devices)
-                            RootResidual::currentsForDevice(
-                                ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
-                                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
-                                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
-                                ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
                         const int localGrid = static_cast<int>(std::ranges::find(ports, grid) - ports.begin());
                         const double* gridZ = networkZ.empty()
                             ? ctx.Z.data() + static_cast<size_t>(grid) * ctx.K
