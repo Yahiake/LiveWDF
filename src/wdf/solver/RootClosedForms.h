@@ -163,6 +163,24 @@ public:
     static inline unsigned char solvePlate(
         const TriodeModel& m, double pv, double pz, double gv, double gz, double& ip) noexcept
     {
+        if (m.childIslands) {
+            ip = 0.0;
+            for (int iteration = 0; iteration < 12; ++iteration) {
+                const auto current = m.evaluateQuadric(gv - gz * ip, pv - pz * ip);
+                const double delta = (ip - current.ip) /
+                    (1.0 + pz * current.dvpk + gz * current.dvgk);
+                ip = std::max(0.0, ip - delta);
+                if (std::abs(delta) < 1e-12) break;
+            }
+            if (pv - pz * ip >= 0.0)
+                return 0;
+            if (pz > 0.0 && pv > 0.0) {
+                ip = pv / ((1.0 + TriodeModel::kShort) * pz);
+                return 1;
+            }
+            ip = 0.0;
+            return 2;
+        }
         const double Q = pv + m.cg * gv + m.c0;
         const double D = 1.0 + 4.0 * m.p.kP2 * (pz + m.cg * gz) * Q;
         ip = 0.0;
