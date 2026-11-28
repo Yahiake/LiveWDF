@@ -250,6 +250,7 @@ protected:
 
     solver::BlockSolveContext makeBlockSolveContext() {
         static const bool acceptPushPull = livewdfPpTry("accept");
+        static const bool slewPushPull = livewdfPpTry("slew");
         return solver::BlockSolveContext{
             blockBase_, blockI_, blockJ_, blockF_, blockV_, blockVOld_,
             blockDv_, blockM_, blockRhs_,
@@ -268,7 +269,7 @@ protected:
             mixedAffineEnabled_ && (blockCount_ == 1 || loadedJunctionEnabled_ || mixedAffineHolds_),
             mixedAffineAttempts_, mixedAffineAccepted_, modeTol_,
             triodePreviewEnabled_ && nPent_ > 0,
-            keepBlockAnswer_ || (acceptPushPull && triodePreviewEnabled_ && nPent_ == 2)
+            keepBlockAnswer_ || ((acceptPushPull || slewPushPull) && triodePreviewEnabled_ && nPent_ == 2)
         };
     }
 

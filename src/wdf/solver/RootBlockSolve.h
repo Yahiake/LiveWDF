@@ -10,6 +10,7 @@
 #include "wdf/DenseTopology.h"
 #include "wdf/DenseSolve.h"
 #include "wdf/solver/RootResidual.h"
+#include "wdf/solver/PushPullTries.h"
 #include "wdf/solver/RootJacobian.h"
 #include "wdf/solver/RootClosedForms.h"
 #include "wdf/solver/RootNewton.h"
@@ -186,6 +187,11 @@ public:
         if (n <= 0 || n > ctx.nRed)
             return false;
 
+        int pentodeCount = 0;
+        for (int di : devices)
+            pentodeCount += ctx.rootDevices[di].kind == DeviceKind::Pentode;
+        const bool pushPullPreview = ctx.previewMode && pentodeCount == 2;
+
         using clk = std::chrono::steady_clock;
         const auto tick = [&] { return ctx.profileOn ? clk::now() : clk::time_point{}; };
         clk::time_point tPhase = tick();
@@ -205,6 +211,25 @@ public:
                     ctx.blockBase[static_cast<size_t>(r)] =
                         relaxed ? RootClosedForms::foldPortAll(view, block, localDevPort, r, b, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K)
                                 : RootClosedForms::foldPort(view, block, localDevPort, r, s, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(), ctx.K);
+                }
+            }
+            static const bool slewPushPull = livewdfPpTry("slew");
+            if (slewPushPull && pushPullPreview && !relaxed) {
+                constexpr double maxGridDriveStep = 40.0;
+                int localRow = 0;
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r, ++localRow) {
+                        if (dev.kind != DeviceKind::Pentode || r != dev.portBase + 1)
+                            continue;
+                        double previousDrive = ctx.vv[static_cast<size_t>(r)];
+                        const double* z = networkZ.data() + static_cast<size_t>(localRow) * n;
+                        for (int j = 0; j < n; ++j)
+                            previousDrive += z[j] * ctx.ii[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                        const double step = ctx.blockBase[static_cast<size_t>(r)] - previousDrive;
+                        ctx.blockBase[static_cast<size_t>(r)] = previousDrive +
+                            std::clamp(step, -maxGridDriveStep, maxGridDriveStep);
+                    }
                 }
             }
         }
@@ -232,14 +257,11 @@ public:
         // sample's state converged and never advance a slewing or railed
         // stage.
         bool hasOpAmp = Reduced;
-        int pentodeCount = 0;
         for (int di : devices) {
-            pentodeCount += ctx.rootDevices[di].kind == DeviceKind::Pentode;
             if (ctx.rootDevices[di].kind == DeviceKind::OpAmp) {
                 hasOpAmp = true;
             }
         }
-        const bool pushPullPreview = ctx.previewMode && pentodeCount == 2;
         if (hasOpAmp && n >= 4 && !relaxed) {
             // In coupled stages the preceding two samples give a useful
             // first iterate. Keep the guess local to the last accepted
