@@ -97,7 +97,6 @@ struct BlockSolveContext {
     long long& mixedAccepted;
     double modeTol;
     bool previewMode;
-    bool keepBlockAnswer = false;
     bool reductions = true;
 };
 
@@ -235,7 +234,7 @@ public:
         // stage.
         bool hasOpAmp = Reduced;
         int pentodeCount = 0;
-        const bool capCandidate = ctx.previewMode && !ctx.keepBlockAnswer &&
+        const bool capCandidate = ctx.previewMode &&
             ctx.K >= kCostlyJointRootPorts && view.count > 1;
         if (capCandidate)
             for (int di : devices)
@@ -290,17 +289,6 @@ public:
         const double* LIVEWDF_RESTRICT bz = networkZ.data();
         const int localMax = Reduced ? std::min(maxIter, 10) :
             std::min(maxIter, pushPullPreview ? 48 : 24);
-        alignas(32) double bestV[64], bestI[64];
-        double bestF = std::numeric_limits<double>::infinity();
-        const auto keepBest = [&] {
-            if (!ctx.keepBlockAnswer || !(maxF < bestF) || n > 64)
-                return;
-            bestF = maxF;
-            for (int j = 0; j < n; ++j) {
-                bestV[j] = ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])];
-                bestI[j] = ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])];
-            }
-        };
         for (int it = 0; it < localMax; ++it) {
             if constexpr (!Reduced) {
                 if (it >= (pushPullPreview ? 40 : 24) && fullDescent < 2)
@@ -319,7 +307,6 @@ public:
                     tock(ctx.prof->device);
 
                 maxF = blockResidual<Reduced>(block, ctx, n);
-                keepBest();
                 if (ctx.prof)
                     tock(ctx.prof->device);
                 if (maxF < landTol) {
@@ -679,7 +666,6 @@ public:
                 }
                 prevF = baseF;
                 maxF = ftNorm;
-                keepBest();
                 if (maxF < landTol) {
                     converged = true;
                     break;
@@ -697,14 +683,7 @@ public:
         if constexpr (Reduced) {
             return converged || landing; // Caller reconstructs and certifies the original block.
         } else if (!converged && !landing) {
-            // A kept block answer takes a stalled block's best iterate; the full-residual guard still sends a gross miss to the joint solve.
-            if (!ctx.keepBlockAnswer || !std::isfinite(bestF))
-                return false;
-            for (int j = 0; j < n; ++j) {
-                ctx.blockV[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestV[j];
-                ctx.blockI[static_cast<size_t>(ports[static_cast<size_t>(j)])] = bestI[j];
-            }
-            ctx.keptBest = true;
+            return false;
         }
 
 
@@ -1279,8 +1258,7 @@ public:
     static inline bool repairWorthwhile(const BlockSolveContext& ctx, const BlockView& view) noexcept
     {
         // A closed-form pass makes a selective retry cheaper than a joint fallback even in a small circuit.
-        return ctx.previewMode && !ctx.keepBlockAnswer && view.count > 1 &&
-            (ctx.K >= kCostlyJointRootPorts || ctx.newtonIters == 0);
+        return ctx.previewMode && view.count > 1;
     }
 
     /// Solve the root in block order, using the scalar closed form for a
@@ -1406,7 +1384,8 @@ public:
         const bool pinChanged = RootClosedForms::pinTriodeDomains(
             view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
             ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K);
-        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol || (ctx.keepBlockAnswer && withinSwing(ctx)))) {
+        if (!failed && !pinChanged && (ctx.lastBlockResidual <= effTol ||
+                                       (ctx.previewMode && withinSwing(ctx)))) {
             ctx.lastConverged = true;
             ctx.lastResidual = ctx.lastBlockResidual;
             ctx.vvPrev2 = ctx.vvPrev;
@@ -1424,9 +1403,8 @@ public:
             RootNewton::solveRootsNewtonSeeded(newtonCtx, maxIter, tol, view, ctx.vvPrev, ctx.vvPrev2);
     }
 
-    /// A circuit that opts in keeps a block answer whose full residual misses by a fraction of each
-    /// port's swing: that error is a lagged stage coupling, and a joint redo of
-    /// only some samples switches between two answers, which is heard as noise.
+    /// Preview keeps a residual-only block answer whose miss is small beside
+    /// the port swing, avoiding a discontinuous whole-circuit root switch.
     static inline bool withinSwing(const BlockSolveContext& ctx) noexcept
     {
         for (int r = 0; r < ctx.K; ++r) {
@@ -1507,7 +1485,8 @@ public:
 
         // The pin above is the previous sample's, so a block Newton may have
         // solved a triode in the wrong domain; the joint Newton re-decides it.
-        if (!failed && ctx.lastBlockResidual <= effTol &&
+        if (!failed && (ctx.lastBlockResidual <= effTol ||
+                        (ctx.previewMode && withinSwing(ctx))) &&
             !RootClosedForms::pinTriodeDomains(
                 view, ctx.Z.data(), ctx.vOc.data(), ctx.ii.data(),
                 ctx.triodeDomainPin.data(), ctx.comp, ctx.rootDevices.data(), ctx.K)) {
