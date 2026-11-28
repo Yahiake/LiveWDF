@@ -264,6 +264,7 @@ protected:
             staticMode_, &prof_, profileOn_,
             newtonIters_, deviceEvals_, limitHits_, gridLimitHits_,
             knotStepChoices_, knotTriggeredSolves_, knotConvergedSolves_, knotConvergedIterations_,
+            knotPredictedResidual_, knotActualResidual_,
             lastBlockFallback_, lastBlockResidual_, blockFallbacks_,
             resweepSweeps_, resweepClearedFirst_, resweepClearedSecond_,
             runtimeBlockFallbacks_, runtimeBlockUsed_, lastConverged_,

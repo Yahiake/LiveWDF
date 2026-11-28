@@ -257,6 +257,8 @@ public:
     long long knotTriggeredSolves() const { return knotTriggeredSolves_; }
     long long knotConvergedSolves() const { return knotConvergedSolves_; }
     long long knotConvergedIterations() const { return knotConvergedIterations_; }
+    double knotPredictedResidual() const { return knotPredictedResidual_; }
+    double knotActualResidual() const { return knotActualResidual_; }
 
     using PhaseProfile = wdf::PhaseProfile;
     void setProfile(bool on) { profileOn_ = on; }

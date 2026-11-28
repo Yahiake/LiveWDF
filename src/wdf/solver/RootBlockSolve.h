@@ -91,6 +91,8 @@ struct BlockSolveContext {
     long long& knotTriggeredSolves;
     long long& knotConvergedSolves;
     long long& knotConvergedIterations;
+    double& knotPredictedResidual;
+    double& knotActualResidual;
     bool& lastBlockFallback;
     double& lastBlockResidual;
     long long& blockFallbacks;
@@ -699,7 +701,41 @@ public:
                 const double baseF = maxF;
                 double stepSize = 1.0;
                 double ftNorm = 0.0;
-                const int maxLineTrials = knotSteps.active ? knotSteps.knots + 1 : 4;
+                if (knotSteps.active && knotSteps.polynomial) {
+                    const auto evaluateRay = [&](double t, double* residual) {
+                        for (int di : devices) {
+                            const RootDevice& dev = ctx.rootDevices[di];
+                            for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r)
+                                ctx.blockV[static_cast<size_t>(r)] = ctx.blockVOld[static_cast<size_t>(r)] +
+                                    t * ctx.blockDv[static_cast<size_t>(r)];
+                        }
+                        for (int di : devices) {
+                            RootResidual::currentsForDevice(
+                                ctx.rootDevices[di], ctx.comp, ctx.ctrlResValues.data(), ctx.pentodes.data(),
+                                ctx.bjts.data(), ctx.opAmps.data(), ctx.opAmpVp.data(), ctx.opAmpAlpha.data(),
+                                ctx.opAmpMaxDv.data(), ctx.staticMode, ctx.triodeDomainPin.data(), ctx.Z.data(),
+                                ctx.K, ctx.blockV.data(), ctx.blockI.data(), nullptr, ctx.deviceEvals);
+                        }
+                        const double norm = blockResidual<Reduced>(block, ctx, n);
+                        if (residual)
+                            for (int j = 0; j < n; ++j)
+                                residual[j] = ctx.blockF[static_cast<size_t>(ports[static_cast<size_t>(j)])];
+                        return norm;
+                    };
+                    const QuarticStep model = quarticKnotStep(knotSteps, n,
+                        [&](double t, double* residual) { evaluateRay(t, residual); });
+                    stepSize = std::isfinite(model.predicted) ? model.step : 1.0;
+                    ftNorm = evaluateRay(stepSize, nullptr);
+                    ++ctx.knotStepChoices;
+                    ctx.knotPredictedResidual += model.predicted;
+                    ctx.knotActualResidual += ftNorm;
+                    if (!knotTriggered) {
+                        knotTriggered = true;
+                        ++ctx.knotTriggeredSolves;
+                    }
+                }
+                const int maxLineTrials = knotSteps.active && knotSteps.polynomial
+                    ? 0 : knotSteps.active ? knotSteps.knots + 1 : 4;
                 double bestTrialF = std::numeric_limits<double>::infinity();
                 double bestTrialStep = 1.0;
                 int bestTrialIndex = -1;
