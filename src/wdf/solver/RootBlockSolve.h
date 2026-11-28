@@ -6,6 +6,8 @@
 #include <chrono>
 #include <limits>
 #include <cstddef>
+#include <cstdio>
+#include <cstdlib>
 
 #include "wdf/DenseTopology.h"
 #include "wdf/DenseSolve.h"
@@ -32,6 +34,15 @@ inline long long ordinaryTriggered = 0, ordinaryConverged = 0, ordinaryIteration
 inline long long knot3Ratios[401]{}, knot3RatioCount = 0, knot3Accepted = 0, knot3Iterations[49]{};
 inline bool atCap = true;
 inline double lastStep = 1.0;
+inline int walkCount = 0, walksDumped = 0;
+inline double walkTrace[64][28]{};
+inline std::FILE* walkLog() {
+    static std::FILE* file = [] {
+        const char* path = std::getenv("LWDF_ITLOG");
+        return path ? std::fopen(path, "w") : nullptr;
+    }();
+    return file;
+}
 }
 
 namespace wdf::solver {
@@ -647,6 +658,41 @@ public:
             }
             if (knotActive && !knotSteps.safeguarded)
                 scale = 1.0;
+            if (!Reduced && ppdiag::walkLog() && ppdiag::walkCount < 64) {
+                double* trace = ppdiag::walkTrace[ppdiag::walkCount++];
+                std::fill_n(trace, 28, 0.0);
+                trace[0] = it;
+                trace[1] = maxF;
+                trace[3] = scale;
+                trace[4] = 1.0;
+                int pentode = 0, triode = 0;
+                for (int di : devices) {
+                    const RootDevice& dev = ctx.rootDevices[di];
+                    const size_t o = static_cast<size_t>(dev.portBase);
+                    for (int r = dev.portBase; r < dev.portBase + dev.numPorts; ++r) {
+                        const double step = std::abs(ctx.blockDv[static_cast<size_t>(r)]);
+                        if (step > trace[2]) {
+                            trace[2] = step;
+                            trace[25] = di;
+                            trace[26] = r - dev.portBase;
+                        }
+                    }
+                    if (dev.kind == DeviceKind::Pentode && pentode < 2) {
+                        const auto current = ctx.pentodes[dev.compIndex].eval(
+                            ctx.blockV[o + 1], ctx.blockV[o + 2], ctx.blockV[o]);
+                        double* values = trace + 5 + pentode++ * 6;
+                        values[0] = ctx.blockV[o + 1];
+                        values[1] = ctx.blockV[o + 2];
+                        values[2] = ctx.blockV[o];
+                        values[3] = current.ip;
+                        values[4] = current.is;
+                        values[5] = current.ig;
+                    } else if (dev.kind == DeviceKind::Triode && triode < 4) {
+                        trace[17 + triode * 2] = ctx.blockV[o + 2];
+                        trace[18 + triode++ * 2] = ctx.blockV[o];
+                    }
+                }
+            }
             if (landing) {
                 for (int di : devices) {
                     const RootDevice& dev = ctx.rootDevices[di];
@@ -926,6 +972,8 @@ public:
                     tock(ctx.prof->linesearch);
 
                 ppdiag::lastStep = stepSize;
+                if (ppdiag::walkCount)
+                    ppdiag::walkTrace[ppdiag::walkCount - 1][4] = ftNorm > baseF ? -stepSize : stepSize;
                 fullDescent = stepSize == 1.0 && scale == 1.0 && ftNorm < baseF
                     ? fullDescent + 1 : 0;
 
@@ -1488,6 +1536,8 @@ public:
         BlockSolveContext& ctx, bool* acceptedDeviceCurrents = nullptr) noexcept
     {
         const NewtonBlock& block = (*view.blocks)[static_cast<size_t>(b)];
+        if (ppdiag::walkLog())
+            ppdiag::walkCount = 0;
         // Later stages amplify an error left in a block without a pentode, so only power tubes get the loose Preview tolerance.
         if (std::ranges::none_of(block.devices, [&](int d) { return ctx.rootDevices[static_cast<size_t>(d)].kind == DeviceKind::Pentode; }))
             tol = std::min(tol, ctx.modeTol);
@@ -1717,6 +1767,25 @@ public:
         }
 
         ctx.lastBlockFallback = true;
+        if (failed && ppdiag::walkLog() && ppdiag::walkCount && ppdiag::walksDumped < 30) {
+            std::FILE* log = ppdiag::walkLog();
+            if (!ppdiag::walksDumped)
+                std::fprintf(log, "fallback,sample,iteration,residual_norm,max_dv,step_limit_scale,line_search_factor,largest_step_device,largest_step_port,A_vgk,A_vsk,A_vpk,A_ip,A_is,A_ig,B_vgk,B_vsk,B_vpk,B_ip,B_is,B_ig,T1_vgk,T1_vpk,T2_vgk,T2_vpk,T3_vgk,T3_vpk,T4_vgk,T4_vpk\n");
+            const int fallback = ++ppdiag::walksDumped;
+            static constexpr char deviceKinds[] = "TDCPJMBO";
+            for (int k = 0; k < ppdiag::walkCount; ++k) {
+                const double* trace = ppdiag::walkTrace[k];
+                const auto& device = ctx.rootDevices[static_cast<size_t>(static_cast<int>(trace[25]))];
+                std::fprintf(log, "%d,%lld,%d,%.6g,%.6g,%.4g,%.4g,%c%zu,%d", fallback,
+                             ppdiag::sample - 256, static_cast<int>(trace[0]), trace[1], trace[2],
+                             trace[3], trace[4], deviceKinds[static_cast<int>(device.kind)],
+                             device.compIndex, static_cast<int>(trace[26]));
+                for (int c = 5; c < 25; ++c)
+                    std::fprintf(log, ",%.6g", trace[c]);
+                std::fprintf(log, "\n");
+            }
+            std::fflush(log);
+        }
         if (failed) {
             if (ppdiag::atCap && ppdiag::lastStep == 1.0)
                 ++ppdiag::cap;
