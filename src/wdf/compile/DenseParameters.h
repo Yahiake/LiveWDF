@@ -64,11 +64,11 @@ public:
         auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper, pot.taperMid);
         const int idx1 = ctx.potResA[static_cast<size_t>(potIdx)];
         const int idx2 = ctx.potResB[static_cast<size_t>(potIdx)];
-        if (idx1 < 0 || idx2 < 0)
+        if (idx1 < 0 && idx2 < 0)
             return false;
 
-        setResistorValue(ctx, idx1, r1);
-        setResistorValue(ctx, idx2, r2);
+        if (idx1 >= 0) setResistorValue(ctx, idx1, r1);
+        if (idx2 >= 0) setResistorValue(ctx, idx2, r2);
         return rebuild();
     }
 
@@ -98,8 +98,8 @@ public:
                                      RebuildFn&& rebuild) {
         for (const auto& [idx, pos] : pots) {
             if (idx < 0 || idx >= static_cast<int>(ctx.circuit.pots.size()) ||
-                !std::isfinite(pos) || ctx.potResA[static_cast<size_t>(idx)] < 0 ||
-                ctx.potResB[static_cast<size_t>(idx)] < 0)
+                !std::isfinite(pos) || (ctx.potResA[static_cast<size_t>(idx)] < 0 &&
+                ctx.potResB[static_cast<size_t>(idx)] < 0))
                 return false;
         }
         for (const auto& [idx, pos] : varRes) {
@@ -123,8 +123,8 @@ public:
             auto [r1, r2] = Pot::resistances(pot.totalResistance, pot.position, pot.taper, pot.taperMid);
             const int idx1 = ctx.potResA[static_cast<size_t>(idx)];
             const int idx2 = ctx.potResB[static_cast<size_t>(idx)];
-            setResistorValue(ctx, idx1, r1);
-            setResistorValue(ctx, idx2, r2);
+            if (idx1 >= 0) setResistorValue(ctx, idx1, r1);
+            if (idx2 >= 0) setResistorValue(ctx, idx2, r2);
             any = true;
         }
         for (const auto& [idx, pos] : varRes) {
