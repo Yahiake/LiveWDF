@@ -176,14 +176,16 @@ void EngineStep::prepareLampReplay() {
             return;
         }
         lamp_.frozen[size_t(r)] = 1;
-        for (auto d : rootDevices_) {
-            if (lamp_.frozen[size_t(d.portBase)])
+        lamp_.devices = rootDevices_;
+        for (auto& d : lamp_.devices) {
+            if (lamp_.frozen[size_t(d.portBase)]) {
+                d.numActiveRows = 0;
                 continue;
+            }
             for (int q = 0; q < d.numActiveRows; ++q)
                 lamp_.redCol.push_back(redCol_[size_t(d.activeRowBase + q)]);
             d.activeRowBase = lamp_.nRed;
             lamp_.nRed += d.numActiveRows;
-            lamp_.devices.push_back(d);
         }
         lamp_.Z.resize(Z_.size());
         lamp_.Zred.resize(size_t(K_) * size_t(lamp_.nRed));

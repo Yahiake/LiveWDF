@@ -461,10 +461,25 @@ TEST_CASE("Preview Newton recovers through repeated compressor overloads", "[new
     CHECK(preview.stateRejectCount() == 0);
 }
 
-TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pentode]") {
+TEST_CASE("Deluxe Reverb tremolo Preview accepts a driven ramp", "[newton][preview][pentode]") {
+    struct Engine : wdf::Engine {
+        using wdf::Engine::Engine;
+        bool lampDevicesCoverBlocks() const {
+            return std::ranges::all_of(newtonBlocks_, [&](const auto& block) {
+                return std::ranges::all_of(block.devices, [&](int device) {
+                    return device >= 0 && static_cast<size_t>(device) < lamp_.devices.size();
+                });
+            });
+        }
+    };
     wdf::LiveWDFDocument document;
     std::string error;
     REQUIRE(document.loadFromFile("schematics/amps/Fender Deluxe Reverb AB763.livewdf", error));
+    for (auto& component : document.components) {
+        if (component.id == "VIBRATO") component.properties["select"] = "1";
+        if (component.id == "INTENSITY") component.values["pos"] = 1.0;
+        if (component.id == "SPEED") component.values["pos"] = 0.5;
+    }
     auto circuit = wdf::circuitWithPortImpedances(document);
     // Preview plays the drawn supply on stiff rails, as the plugin builds it.
     REQUIRE(wdf::replaceMainsSupplies(circuit, document, kFs, true));
@@ -472,12 +487,13 @@ TEST_CASE("Deluxe Reverb Preview accepts a driven ramp", "[newton][preview][pent
     REQUIRE(source != circuit.src.end());
     const auto input = static_cast<size_t>(source - circuit.src.begin());
 
-    wdf::Engine preview(circuit, kFs);
+    Engine preview(circuit, kFs);
     const int output = preview.nodeIndex(document.outputNet());
     REQUIRE(output >= 0);
     preview.prepareLiveControls();
     preview.prepareMixedAffineReduction(input);
     preview.prepareCompiledPreview(input, output, false);
+    REQUIRE(preview.lampDevicesCoverBlocks());
     preview.useMixedAffineReduction(true);
     preview.useLoadedJunctionPreview(true);
     preview.useTriodePreview(true);
