@@ -102,11 +102,25 @@ struct QuadricEmission {
                 onset = x * x * (3.0 - 2.0 * x);
                 donset = 6.0 * x * (1.0 - x) / join;
             }
-            const double den = vgk + gridDelta * vsk;
-            const double fraction = onset * vgk / den;
-            const double df_dvgk = donset * vgk / den
-                + onset * gridDelta * vsk / (den * den);
-            const double df_dvsk = -onset * gridDelta * vgk / (den * den);
+            constexpr double split = 0.8;
+            const double ratio = vsk / vgk;
+            double division = 0.0, ddivision_dvgk = 0.0, ddivision_dvsk = 0.0;
+            if (ratio > split) {
+                division = gridDelta * std::sqrt(ratio);
+                ddivision_dvgk = -0.5 * division / vgk;
+                ddivision_dvsk = 0.5 * division / vsk;
+            } else {
+                // Eq. 9.13 prints 1.392; use its exact continuous join at Vsk/Vgk = 0.8.
+                constexpr double lowScale = std::sqrt(split) / (split * split);
+                division = lowScale * gridDelta * ratio * ratio;
+                ddivision_dvgk = -2.0 * division / vgk;
+                ddivision_dvsk = 2.0 * division / vsk;
+            }
+            const double rawFraction = 1.0 / (1.0 + division);
+            const double fraction = onset * rawFraction;
+            const double df_dvgk = donset * rawFraction
+                - onset * rawFraction * rawFraction * ddivision_dvgk;
+            const double df_dvsk = -onset * rawFraction * rawFraction * ddivision_dvsk;
             const double total = c.ip + c.is;
             const double dtotal_dvgk = c.dip_dvgk + c.dis_dvgk;
             const double dtotal_dvsk = c.dip_dvsk + c.dis_dvsk;
@@ -354,7 +368,7 @@ struct ReefmanPentode {
     const PolyKneeEmission* previewPolyknee = nullptr;
     bool gridPhysics = false;
     // RCA 807/6L6-calibrated geometry; EL34, EL84, and 6V6 are UNFITTED.
-    double gridDelta = 1.36244251749747;
+    double gridDelta = 7.45426646903859;
 
     static constexpr double gridPowerCrossoverCurrent = 1e-5;
     static constexpr double gridPowerCrossoverVoltage = 0.23026100917441295;
