@@ -163,15 +163,51 @@ public:
     static inline unsigned char solvePlate(
         const TriodeModel& m, double pv, double pz, double gv, double gz, double& ip) noexcept
     {
-        if (m.childIslands) {
+        if (m.pieceQuadric) {
+            constexpr double a = 9.97167208, b = 3.4528332, cc = 1.40669992;
+            constexpr double d = -3.12592106, e = 2.40056664, f = 1.71907587;
+            constexpr double h = -7.98593702, jointV = 100.43918363;
+            const double x0 = pv / 250.0, y0 = gv / 2.0;
+            const double xz = pz / 250.0, yz = gz / 2.0;
+            const auto solveRegion = [&](bool upper) noexcept {
+                const double joint = jointV / 250.0;
+                const double q0 = a * x0 * x0 + b * x0 * y0 + cc * y0 * y0 +
+                    d * x0 + e * y0 + f + (upper ? h * (x0 - joint) * (x0 - joint) : 0.0);
+                const double q1 = -2.0 * a * x0 * xz - b * (x0 * yz + y0 * xz) -
+                    2.0 * cc * y0 * yz - d * xz - e * yz -
+                    (upper ? 2.0 * h * (x0 - joint) * xz : 0.0);
+                const double q2 = a * xz * xz + b * xz * yz + cc * yz * yz +
+                    (upper ? h * xz * xz : 0.0);
+                const double c2 = 0.001 * m.pieceScale * q2;
+                const double c1 = 0.001 * m.pieceScale * q1 - 1.0;
+                const double c0 = 0.001 * m.pieceScale * q0;
+                if (std::abs(c2) < 1e-30) {
+                    const double candidate = -c0 / c1;
+                    const double vpk = pv - pz * candidate;
+                    if (candidate >= 0.0 && ((upper && vpk > jointV) || (!upper && vpk <= jointV))) {
+                        ip = candidate;
+                        return true;
+                    }
+                    return false;
+                }
+                const double discriminant = c1 * c1 - 4.0 * c2 * c0;
+                if (discriminant < 0.0)
+                    return false;
+                const double root = std::sqrt(discriminant);
+                const double roots[2] = {(-c1 - root) / (2.0 * c2), (-c1 + root) / (2.0 * c2)};
+                for (double candidate : roots) {
+                    const double vpk = pv - pz * candidate;
+                    if (candidate >= 0.0 && ((upper && vpk > jointV) || (!upper && vpk <= jointV))) {
+                        ip = candidate;
+                        return true;
+                    }
+                }
+                return false;
+            };
             ip = 0.0;
-            for (int iteration = 0; iteration < 12; ++iteration) {
-                const auto current = m.evaluateQuadric(gv - gz * ip, pv - pz * ip);
-                const double delta = (ip - current.ip) /
-                    (1.0 + pz * current.dvpk + gz * current.dvgk);
-                ip = std::max(0.0, ip - delta);
-                if (std::abs(delta) < 1e-12) break;
-            }
+            const bool upperFirst = pv > jointV;
+            if (!solveRegion(upperFirst))
+                solveRegion(!upperFirst);
             if (pv - pz * ip >= 0.0)
                 return 0;
             if (pz > 0.0 && pv > 0.0) {
